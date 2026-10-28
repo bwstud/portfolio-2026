@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Brian Studwell</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="nav">
+    <a class="nav__brand" href="#top">BS</a>
+    <nav class="nav__links">
+      <div class="dropdown">
+        <button class="dropdown__toggle" aria-expanded="false" aria-controls="work-menu">
+          Work <span class="dropdown__caret" aria-hidden="true">▾</span>
+        </button>
+        <ul class="dropdown__menu" id="work-menu">
+          <li><a href="#praxis-web">Praxis Web</a></li>
+          <li><a href="#praxis-mobile">Praxis Mobile</a></li>
+          <li><a href="#concierge-dashboarding">Concierge Dashboarding</a></li>
+          <li><a href="#qr-codes">QR Codes</a></li>
+          <li><a href="#forge-harness">Forge Harness</a></li>
+          <li><a href="#casper">Casper</a></li>
+          <li><a href="#mazlan-builder">Mazlan Builder</a></li>
+        </ul>
+      </div>
+      <a href="https://www.linkedin.com/" target="_blank" rel="noopener">LinkedIn</a>
+      <a href="https://github.com/" target="_blank" rel="noopener">GitHub</a>
+      <a href="#contact">Contact</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="cover" id="top">
+      <div class="cover__text">
+        <h1 class="cover__name">Brian Studwell</h1>
+        <p class="cover__tag">
+          Designer with 11 years of experience building high-stakes enterprise products.
+          I design how people configure, oversee, and trust AI in regulated work.
+        </p>
+        <a class="button" href="#agents">Brian for Agents</a>
+      </div>
+
+      <figure class="cover__image placeholder" aria-label="Image placeholder">
+        <span>Image</span>
+      </figure>
+    </section>
+
+    <section class="project" id="praxis-web">
+      <div class="project__head">
+        <h2 class="project__title">Praxis Web</h2>
+        <p class="project__desc">
+          Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod
+          tempor incididunt ut labore et dolore magna aliqua.
+        </p>
+      </div>
+      <figure class="project__hero placeholder" aria-label="Praxis Web hero image"><span>Hero image</span></figure>
+    </section>
+
+    <section class="project" id="praxis-mobile">
+      <div class="project__head">
+        <h2 class="project__title">Praxis Mobile</h2>
+        <p class="project__desc">
+          Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod
+          tempor incididunt ut labore et dolore magna aliqua.
+        </p>
+      </div>
+      <figure class="project__hero placeholder" aria-label="Praxis Mobile hero image"><span>Hero image</span></figure>
+    </section>
+
+    <section class="project" id="concierge-dashboarding">
+      <div class="project__head">
+        <h2 class="project__title">Concierge Dashboarding</h2>
+        <p class="project__desc">
+          Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod
+          tempor incididunt ut labore et dolore magna aliqua.
+        </p>
+      </div>
+      <figure class="project__hero placeholder" aria-label="Concierge Dashboarding hero image"><span>Hero image</span></figure>
+    </section>
+
+    <section class="project" id="qr-codes">
+      <div class="project__head">
+        <h2 class="project__title">QR Codes</h2>
+        <p class="project__desc">
+          Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod
+          tempor incididunt ut labore et dolore magna aliqua.
+        </p>
+      </div>
+      <figure class="project__hero placeholder" aria-label="QR Codes hero image"><span>Hero image</span></figure>
+    </section>
+
+    <section class="project" id="forge-harness">
+      <div class="project__head">
+        <h2 class="project__title">Forge Harness</h2>
+        <p class="project__desc">
+          Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod
+          tempor incididunt ut labore et dolore magna aliqua.
+        </p>
+      </div>
+      <figure class="project__hero placeholder" aria-label="Forge Harness hero image"><span>Hero image</span></figure>
+    </section>
+
+    <section class="project" id="casper">
+      <div class="project__head">
+        <h2 class="project__title">Casper</h2>
+        <p class="project__desc">
+          Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod
+          tempor incididunt ut labore et dolore magna aliqua.
+        </p>
+      </div>
+      <figure class="project__hero placeholder" aria-label="Casper hero image"><span>Hero image</span></figure>
+    </section>
+
+    <section class="project" id="mazlan-builder">
+      <div class="project__head">
+        <h2 class="project__title">Mazlan Builder</h2>
+        <p class="project__desc">
+          Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod
+          tempor incididunt ut labore et dolore magna aliqua.
+        </p>
+      </div>
+      <figure class="project__hero placeholder" aria-label="Mazlan Builder hero image"><span>Hero image</span></figure>
+    </section>
+  </main>
+
+  <script>
+    const dropdown = document.querySelector('.dropdown');
+    const toggle = dropdown.querySelector('.dropdown__toggle');
+
+    function setOpen(open) {
+      dropdown.classList.toggle('is-open', open);
+      toggle.setAttribute('aria-expanded', open);
+    }
+
+    toggle.addEventListener('click', () => setOpen(!dropdown.classList.contains('is-open')));
+    dropdown.querySelectorAll('.dropdown__menu a').forEach(a => a.addEventListener('click', () => setOpen(false)));
+    document.addEventListener('click', e => { if (!dropdown.contains(e.target)) setOpen(false); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') setOpen(false); });
+
+    /* ---- Split-flap board → name (ported from Showcase July 2026) ---- */
+    const FLAP_OFF = '#1b1b1d';     // unlit tile
+    const FLAP_ON = '#f2f0ec';      // lit tile (matches --fg)
+    const FLAP_COLORS = ['#C62E6C', '#71C2CB', '#4A8C96', '#DBDEE3', '#E30072', '#5CC9D0'];
+    const NOISE_MS = 1250, SETTLE_MS = 850;
+    const GLYPHS = {   // 5×7 pixel font, one string per row
+      A: ['01110','10001','10001','11111','10001','10001','10001'],
+      B: ['11110','10001','10001','11110','10001','10001','11110'],
+      D: ['11110','10001','10001','10001','10001','10001','11110'],
+      E: ['11111','10000','10000','11110','10000','10000','11111'],
+      I: ['11111','00100','00100','00100','00100','00100','11111'],
+      L: ['10000','10000','10000','10000','10000','10000','11111'],
+      N: ['10001','11001','10101','10011','10001','10001','10001'],
+      R: ['11110','10001','10001','11110','10100','10010','10001'],
+      S: ['01111','10000','10000','01110','00001','00001','11110'],
+      T: ['11111','00100','00100','00100','00100','00100','00100'],
+      U: ['10001','10001','10001','10001','10001','10001','01110'],
+      W: ['10001','10001','10001','10101','10101','10101','01010']
+    };
+    const FLAP_LINES = ['BRIAN', 'STUDWELL'];
+
+    function flipCell(cell, dur) {
+      cell.style.transition = 'none'; cell.style.transform = 'rotateX(-90deg)';
+      requestAnimationFrame(() => {
+        cell.style.transition = 'transform ' + dur + 'ms ease-out';
+        cell.style.transform = 'rotateX(0deg)';
+      });
+    }
+
+    function buildNameBitmap(lines) {
+      const cols = Math.max(...lines.map(l => l.length * 6 - 1));
+      const rows = [];
+      lines.forEach((line, li) => {
+        if (li) rows.push('0'.repeat(cols), '0'.repeat(cols));   // 2-row gap between lines
+        for (let r = 0; r < 7; r++) {
+          rows.push([...line].map(ch => GLYPHS[ch][r]).join('0').padEnd(cols, '0'));
+        }
+      });
+      return rows;
+    }
+
+    function flapName() {
+      const heading = document.querySelector('.cover__name');
+      const bitmap = buildNameBitmap(FLAP_LINES);
+      const board = document.createElement('span');
+      board.className = 'sf-board';
+      board.setAttribute('aria-hidden', 'true');
+      board.style.setProperty('--cols', bitmap[0].length);
+
+      const cells = [];
+      bitmap.forEach(row => [...row].forEach(bit => {
+        const cell = document.createElement('span');
+        cell.className = 'sf-cell';
+        cell._target = bit === '1' ? FLAP_ON : FLAP_OFF;
+        cell.style.background = FLAP_OFF;
+        board.appendChild(cell); cells.push(cell);
+      }));
+      heading.appendChild(board);
+      heading.classList.add('is-flap');
+
+      if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        cells.forEach(cell => { cell.style.background = cell._target; });
+        return;
+      }
+
+      // noisy churn, then resolve every cell to its target
+      let noising = true;
+      cells.forEach(cell => {
+        const tick = () => {
+          if (!noising) return;
+          cell.style.background = FLAP_COLORS[(Math.random() * FLAP_COLORS.length) | 0];
+          flipCell(cell, 110);
+          setTimeout(tick, 90 + Math.random() * 140);
+        };
+        setTimeout(tick, Math.random() * 260);
+      });
+      setTimeout(() => {
+        noising = false;
+        cells.forEach(cell => setTimeout(() => {
+          cell.style.background = cell._target; flipCell(cell, 230);
+        }, Math.random() * SETTLE_MS));
+      }, NOISE_MS);
+    }
+
+    flapName();
+  </script>
+</body>
+</html>

@@ -15,8 +15,8 @@
           Work <span class="dropdown__caret" aria-hidden="true">▾</span>
         </button>
         <ul class="dropdown__menu" id="work-menu">
-          <li><a href="#praxis-web">Praxis Web</a></li>
-          <li><a href="#praxis-mobile">Praxis Mobile</a></li>
+          <li><a href="#groom-lake">Groom Lake</a></li>
+          <li><a href="#blackbird">Blackbird</a></li>
           <li><a href="#concierge-dashboarding">Concierge Dashboarding</a></li>
           <li><a href="#qr-codes">QR Codes</a></li>
           <li><a href="#forge-harness">Forge Harness</a></li>
@@ -46,26 +46,36 @@
       </figure>
     </section>
 
-    <section class="project" id="praxis-web">
+    <section class="project" id="groom-lake">
       <div class="project__head">
-        <h2 class="project__title">Praxis Web</h2>
+        <h2 class="project__title">Groom Lake</h2>
         <p class="project__desc">
           Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod
           tempor incididunt ut labore et dolore magna aliqua.
         </p>
       </div>
-      <figure class="project__hero placeholder" aria-label="Praxis Web hero image"><span>Hero image</span></figure>
+      <div class="project__hero reel">
+        <iframe src="reels/groom-lake/?autoplay=0&amp;loop=0&amp;t=4" title="Groom Lake product reel" allow="fullscreen" loading="lazy"></iframe>
+        <button class="reel__play" type="button" aria-label="Play Groom Lake reel">
+          <span class="reel__pill"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5v11a1 1 0 0 0 1.5.86l9-5.5a1 1 0 0 0 0-1.72l-9-5.5A1 1 0 0 0 4 2.5z"/></svg><span class="reel__label">Play reel</span><span class="reel__dur">1:04</span></span>
+        </button>
+      </div>
     </section>
 
-    <section class="project" id="praxis-mobile">
+    <section class="project" id="blackbird">
       <div class="project__head">
-        <h2 class="project__title">Praxis Mobile</h2>
+        <h2 class="project__title">Blackbird</h2>
         <p class="project__desc">
           Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod
           tempor incididunt ut labore et dolore magna aliqua.
         </p>
       </div>
-      <figure class="project__hero placeholder" aria-label="Praxis Mobile hero image"><span>Hero image</span></figure>
+      <div class="project__hero reel">
+        <iframe src="reels/blackbird/?autoplay=0&amp;loop=0&amp;t=3" title="Blackbird product reel" allow="fullscreen" loading="lazy"></iframe>
+        <button class="reel__play" type="button" aria-label="Play Blackbird reel">
+          <span class="reel__pill"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5v11a1 1 0 0 0 1.5.86l9-5.5a1 1 0 0 0 0-1.72l-9-5.5A1 1 0 0 0 4 2.5z"/></svg><span class="reel__label">Play reel</span><span class="reel__dur">1:05</span></span>
+        </button>
+      </div>
     </section>
 
     <section class="project" id="concierge-dashboarding">
@@ -223,6 +233,28 @@
     }
 
     flapName();
+
+    /* ---- Reels: start on click, offer replay when finished ---- */
+    document.querySelectorAll('.reel').forEach(reel => {
+      const frame = reel.querySelector('iframe');
+      const button = reel.querySelector('.reel__play');
+      const label = button.querySelector('.reel__label');
+      let started = false;
+
+      button.addEventListener('click', () => {
+        const player = frame.contentWindow && frame.contentWindow.__reel;
+        if (!player || !player.play) return;   // player still loading
+        if (!started) { player.seek(0); started = true; }   // poster frame → beginning
+        player.onend = () => {
+          label.textContent = 'Replay';
+          button.setAttribute('aria-label', 'Replay ' + frame.title);
+          reel.classList.remove('is-playing');
+        };
+        player.play();
+        reel.classList.add('is-playing');
+        frame.focus();
+      });
+    });
   </script>
 </body>
 </html>

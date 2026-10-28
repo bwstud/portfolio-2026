@@ -238,10 +238,89 @@ a { color: inherit; text-decoration: none; }
   width: 100%;
 }
 
+/* Embedded reel: breaks out of the content column to fill the viewport,
+   capped so the whole 16:9 frame still fits on screen below the nav */
+main { overflow-x: clip; }
+
+.reel {
+  --reel-w: min(100vw - 48px, (100svh - var(--nav-h) - 32px) * 16 / 9);
+  width: var(--reel-w);
+  margin-left: calc(50% - var(--reel-w) / 2);
+  position: relative;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #060a14;
+}
+
+.reel iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+/* Play overlay: covers the whole reel; the visible pill sits bottom-left
+   so it doesn't cover the title card */
+.reel__play {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  padding: clamp(16px, 3vw, 40px);
+  border: 0;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.45), transparent 40%);
+  color: var(--fg);
+  font-family: inherit;
+  cursor: pointer;
+  transition: opacity 0.25s, visibility 0.25s;
+}
+
+.reel.is-playing .reel__play {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.reel__pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 22px 14px 18px;
+  border-radius: 999px;
+  background: rgba(14, 14, 15, 0.7);
+  border: 1px solid rgba(242, 240, 236, 0.25);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  font-size: 16px;
+  font-weight: 500;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.reel__pill svg {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+}
+
+.reel__dur { color: var(--muted); font-variant-numeric: tabular-nums; }
+
+.reel__play:hover .reel__pill,
+.reel__play:focus-visible .reel__pill {
+  background: var(--fg);
+  border-color: var(--fg);
+  color: var(--bg);
+}
+
+.reel__play:hover .reel__dur,
+.reel__play:focus-visible .reel__dur { color: inherit; opacity: 0.6; }
+
+.reel__play:focus-visible { outline: 2px solid var(--fg); outline-offset: -2px; }
+
 @media (max-width: 800px) {
   :root { --nav-h: 64px; }
   .nav { padding: 0 16px; }
   .nav__links { gap: 20px; }
+  .reel { --reel-w: calc(100vw - 32px); }
   .dropdown__menu { left: auto; right: -16px; }
   .cover {
     grid-template-columns: 1fr;

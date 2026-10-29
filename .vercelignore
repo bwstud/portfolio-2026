@@ -1,0 +1,8 @@
+# Allowlist: upload only the site. Everything else in this folder (Work/, etc.) stays local.
+/*
+!index.html
+!styles.css
+!nav.js
+!fonts
+!reels
+!tinkering

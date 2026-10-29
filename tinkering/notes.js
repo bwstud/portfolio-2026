@@ -18,7 +18,7 @@
       border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 10px;
       background: rgba(8, 11, 16, 0.78);
       backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-      color: #e8ecf2; font: 13px/1.5 -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
+      color: #e8ecf2; font: 13px/1.5 "Geist", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
       overflow: hidden; cursor: auto;
     }
     .notes__head {

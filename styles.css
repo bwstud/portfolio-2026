@@ -1,3 +1,10 @@
+@font-face {
+  font-family: "Geist";
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("fonts/Geist-Variable.woff2") format("woff2");
+}
+
 :root {
   --bg: #0e0e0f;
   --fg: #f2f0ec;
@@ -18,7 +25,7 @@ html {
 body {
   background: var(--bg);
   color: var(--fg);
-  font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-family: "Geist", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 

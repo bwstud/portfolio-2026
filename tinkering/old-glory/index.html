@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Old Glory · Brian Studwell</title>
+  <style>
+    :root {
+      --bg: #03050b;
+      --fg: #f2f4f8;
+      --muted: #8790a3;
+      --accent: #ff5a5f;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100%;
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--fg);
+      font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    #scene {
+      position: fixed;
+      inset: 0;
+      display: block;
+      width: 100%;
+      height: 100%;
+      cursor: grab;
+      touch-action: none;
+    }
+    #scene:active { cursor: grabbing; }
+
+    .hud {
+      position: fixed;
+      z-index: 2;
+      pointer-events: none;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .hud a { pointer-events: auto; color: var(--fg); text-decoration: none; }
+    .hud a:hover { color: var(--accent); }
+
+    .hud--top { top: 24px; left: 28px; }
+    .hud--bottom { bottom: 24px; left: 28px; line-height: 1.6; max-width: 46ch; }
+    .hud__title { color: var(--fg); font-size: 15px; font-weight: 600; letter-spacing: 0.02em; }
+
+    /* Control panel (lil-gui), docked right */
+    body .lil-gui.root {
+      --background-color: rgba(8, 11, 20, 0.82);
+      --widget-color: #161c2c;
+      --hover-color: #1f2740;
+      --focus-color: #28324f;
+      --number-color: var(--accent);
+      --string-color: var(--accent);
+      --title-background-color: rgba(14, 18, 32, 0.95);
+      --text-color: #d5dae6;
+      --font-family: inherit;
+      --width: 300px;
+      top: 16px;
+      right: 16px;
+      max-height: calc(100vh - 32px);
+      border: 1px solid rgba(140, 160, 220, 0.18);
+      border-radius: 10px;
+      overflow: hidden auto;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      cursor: auto;
+    }
+
+    @media (max-width: 700px) {
+      .lil-gui.root { --width: 260px; }
+      .hud--top { left: 16px; }
+      .hud--bottom { display: none; }
+    }
+  </style>
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.min.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/",
+        "lil-gui": "https://cdn.jsdelivr.net/npm/lil-gui@0.20.0/dist/lil-gui.esm.min.js"
+      }
+    }
+  </script>
+</head>
+<body>
+  <canvas id="scene" aria-label="Night-time drone show: about a thousand lights forming a waving American flag"></canvas>
+
+  <div class="hud hud--top"><a href="../">← Tinkering</a></div>
+  <div class="hud hud--bottom">
+    <div class="hud__title">Old Glory</div>
+    A drone show of Americana. Scene 1: the American flag.
+    Drag to orbit, scroll to zoom.
+  </div>
+
+  <script type="module" src="oldglory.js"></script>
+  <script src="../notes.js" data-key="old-glory"></script>
+</body>
+</html>

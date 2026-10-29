@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tinkering · Brian Studwell</title>
+  <link rel="stylesheet" href="../styles.css">
+</head>
+<body>
+  <header class="nav">
+    <a class="nav__brand" href="../">BS</a>
+    <nav class="nav__links">
+      <div class="dropdown">
+        <button class="dropdown__toggle" aria-expanded="false" aria-controls="work-menu">
+          Work <span class="dropdown__caret" aria-hidden="true">▾</span>
+        </button>
+        <ul class="dropdown__menu" id="work-menu">
+          <li><a href="../#groom-lake">Groom Lake</a></li>
+          <li><a href="../#blackbird">Blackbird</a></li>
+          <li><a href="../#concierge-dashboarding">Concierge Dashboarding</a></li>
+          <li><a href="../#qr-codes">QR Codes</a></li>
+          <li><a href="../#forge-harness">Forge Harness</a></li>
+          <li><a href="../#casper">Casper</a></li>
+          <li><a href="../#mazlan-builder">Mazlan Builder</a></li>
+        </ul>
+      </div>
+      <a href="./" aria-current="page">Tinkering</a>
+      <a href="https://www.linkedin.com/" target="_blank" rel="noopener">LinkedIn</a>
+      <a href="https://github.com/" target="_blank" rel="noopener">GitHub</a>
+      <a href="../#contact">Contact</a>
+    </nav>
+  </header>
+
+  <main class="tinkering">
+    <header class="tinkering__head">
+      <h1 class="tinkering__title">Tinkering</h1>
+      <p class="tinkering__intro">Experiments, sketches, and things I built to see what would happen.</p>
+    </header>
+
+    <ul class="cards">
+      <li>
+        <a class="card" href="sandtable/">
+          <span class="card__thumb"><img src="sandtable/thumb.jpg" alt="" loading="lazy"></span>
+          <span class="card__body">
+            <span class="card__title">Sandtable</span>
+            <span class="card__desc">Acadia National Park as a glowing 3D particle cloud. Move the cursor to stir the sand.</span>
+            <span class="card__meta">three.js · WebGL shaders</span>
+          </span>
+        </a>
+      </li>
+      <li>
+        <a class="card" href="old-glory/">
+          <span class="card__thumb"><img src="old-glory/thumb.jpg" alt="" loading="lazy"></span>
+          <span class="card__body">
+            <span class="card__title">Old Glory</span>
+            <span class="card__desc">A night-sky drone show of Americana. A thousand lights launch from the ground and hold a waving American flag.</span>
+            <span class="card__meta">three.js · drone flight sim</span>
+          </span>
+        </a>
+      </li>
+      <li class="card card--soon" aria-hidden="true"><span>More soon</span></li>
+    </ul>
+  </main>
+
+  <script src="../nav.js"></script>
+</body>
+</html>

@@ -24,6 +24,7 @@
           <li><a href="#mazlan-builder">Mazlan Builder</a></li>
         </ul>
       </div>
+      <a href="tinkering/">Tinkering</a>
       <a href="https://www.linkedin.com/" target="_blank" rel="noopener">LinkedIn</a>
       <a href="https://github.com/" target="_blank" rel="noopener">GitHub</a>
       <a href="#contact">Contact</a>
@@ -49,10 +50,15 @@
     <section class="project" id="groom-lake">
       <div class="project__head">
         <h2 class="project__title">Groom Lake</h2>
-        <p class="project__desc">
-          Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod
-          tempor incididunt ut labore et dolore magna aliqua.
-        </p>
+        <div>
+          <p class="project__desc">Redesigning a flagship product for the modern world</p>
+          <ul class="project__tags" aria-label="Project focus">
+            <li>UI Overhaul</li>
+            <li>Design Systems</li>
+            <li>Core Feature Revamp</li>
+            <li>Mobile Integration</li>
+          </ul>
+        </div>
       </div>
       <div class="project__hero reel">
         <iframe src="reels/groom-lake/?autoplay=0&amp;loop=0&amp;t=4" title="Groom Lake product reel" allow="fullscreen" loading="lazy"></iframe>
@@ -134,24 +140,12 @@
     </section>
   </main>
 
+  <script src="nav.js"></script>
   <script>
-    const dropdown = document.querySelector('.dropdown');
-    const toggle = dropdown.querySelector('.dropdown__toggle');
-
-    function setOpen(open) {
-      dropdown.classList.toggle('is-open', open);
-      toggle.setAttribute('aria-expanded', open);
-    }
-
-    toggle.addEventListener('click', () => setOpen(!dropdown.classList.contains('is-open')));
-    dropdown.querySelectorAll('.dropdown__menu a').forEach(a => a.addEventListener('click', () => setOpen(false)));
-    document.addEventListener('click', e => { if (!dropdown.contains(e.target)) setOpen(false); });
-    document.addEventListener('keydown', e => { if (e.key === 'Escape') setOpen(false); });
-
     /* ---- Split-flap board → name (ported from Showcase July 2026) ---- */
-    const FLAP_OFF = '#1b1b1d';     // unlit tile
-    const FLAP_ON = '#f2f0ec';      // lit tile (matches --fg)
-    const FLAP_COLORS = ['#C62E6C', '#71C2CB', '#4A8C96', '#DBDEE3', '#E30072', '#5CC9D0'];
+    const FLAP_OFF = '#1a1a1a';     // unlit tile
+    const FLAP_ON = '#ffffff';      // lit tile
+    const FLAP_COLORS = ['#000000', '#3a3a3a', '#6b6b6b', '#9e9e9e', '#cfcfcf', '#ffffff'];
     const NOISE_MS = 1250, SETTLE_MS = 850;
     const GLYPHS = {   // 5×7 pixel font, one string per row
       A: ['01110','10001','10001','11111','10001','10001','10001'],

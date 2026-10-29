@@ -1,0 +1,22 @@
+{
+  "width": 725,
+  "height": 768,
+  "units": "decimetres, int16 little-endian, row-major north to south",
+  "metersPerPixel": 36.23,
+  "min": -516.013671875,
+  "max": 464.9716491699219,
+  "bounds": {
+    "north": 44.46,
+    "south": 44.21,
+    "west": -68.48,
+    "east": -68.15
+  },
+  "source": "AWS Terrain Tiles (Terrarium, zoom 12), Mapzen / USGS 3DEP",
+  "mercator": {
+    "zoom": 12,
+    "x0": 1268.84765625,
+    "y0": 1482.08203125,
+    "x1": 1272.6015625,
+    "y1": 1486.05859375
+  }
+}

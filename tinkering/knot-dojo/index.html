@@ -148,6 +148,7 @@
     .toggles { margin-top: 10px; display: grid; gap: 6px; }
     .toggles label { display: flex; align-items: center; gap: 8px; cursor: pointer; color: #c4c8cf; }
     .toggles input { accent-color: var(--accent); }
+    .toggles .dim { color: #7d828b; }
     .hint { margin-top: 10px; color: var(--faint); font-size: 11.5px; }
 
     /* ---------- step card and transport (bottom) ---------- */
@@ -272,6 +273,7 @@
         <label><input type="checkbox" id="orbit"> Slowly orbit</label>
         <label><input type="checkbox" id="show-path"> Show the path ahead</label>
         <label><input type="checkbox" id="show-hands" checked> Show hands</label>
+        <label><input type="checkbox" id="show-ao"> Contact shadows <span class="dim">(slower)</span></label>
       </div>
       <p class="hint">Drag to orbit. Right-drag or two fingers to pan. Scroll or pinch to zoom.</p>
     </section>

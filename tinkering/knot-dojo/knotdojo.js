@@ -1,18 +1,25 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { GTAOPass } from 'three/addons/postprocessing/GTAOPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { KNOTS } from './knots.js';
 import { Player } from './player.js';
 import { TABLE, BAR } from './physics.js';
 
 /* ---------- rope materials: how each one looks and how it behaves ---------- */
 // bend: resistance to bending. friction: grip against itself and the table.
+// The look: rough is the surface's scatter, spec how much it reflects at all (fibres reflect
+// little), sheen the fuzz of loose fibres catching light at grazing angles, relief how deep
+// the strands are cut into the rope's outline.
 const MATERIALS = {
-  poly: { name: 'Polyester braid', note: 'Firm double braid. A good all-rounder.', pattern: 'braid', rough: 0.55, sheen: 0.25, bend: 0.14, friction: 0.35 },
-  nylon: { name: 'Nylon kernmantle', note: 'Smooth, slick sheath. Knots slide easily.', pattern: 'fine', rough: 0.36, clearcoat: 0.35, bend: 0.17, friction: 0.2 },
-  paracord: { name: 'Paracord', note: 'Thin, soft and supple.', pattern: 'paracord', rough: 0.5, sheen: 0.45, bend: 0.08, friction: 0.3 },
-  cotton: { name: 'Cotton', note: 'Soft 3-strand. Floppy, holds well.', pattern: 'soft', rough: 1, sheen: 0.9, bend: 0.06, friction: 0.55 },
-  manila: { name: 'Manila', note: 'Natural fibre, 3-strand. Stiff and grippy.', pattern: 'laid', rough: 0.9, sheen: 0.15, bend: 0.3, friction: 0.65 },
+  poly: { name: 'Polyester braid', note: 'Firm double braid. A good all-rounder.', pattern: 'braid', rough: 0.62, spec: 0.55, sheen: 0.5, relief: 0.09, bend: 0.14, friction: 0.35 },
+  nylon: { name: 'Nylon kernmantle', note: 'Smooth, slick sheath. Knots slide easily.', pattern: 'fine', rough: 0.48, spec: 0.75, sheen: 0.35, relief: 0.05, bend: 0.17, friction: 0.3 },
+  paracord: { name: 'Paracord', note: 'Thin, soft and supple.', pattern: 'paracord', rough: 0.58, spec: 0.6, sheen: 0.6, relief: 0.07, bend: 0.08, friction: 0.3 },
+  cotton: { name: 'Cotton', note: 'Soft 3-strand. Floppy, holds well.', pattern: 'soft', rough: 0.95, spec: 0.3, sheen: 1, relief: 0.12, bend: 0.06, friction: 0.55 },
+  manila: { name: 'Manila', note: 'Natural fibre, 3-strand. Stiff and grippy.', pattern: 'laid', rough: 0.88, spec: 0.35, sheen: 0.7, relief: 0.16, bend: 0.3, friction: 0.65 },
 };
 const COLORS = ['#d9542b', '#e8a33a', '#e9d36b', '#3f9a5c', '#2f6fd6', '#1f3557', '#7a4bb3', '#ece6da', '#c9a66b', '#2a2a2c'];
 const SPEEDS = [0.25, 0.5, 1, 1.5, 2];
@@ -33,24 +40,63 @@ const state = {
   playing: params.get('play') !== '0',
   showPath: store.get('path') === '1',
   showHands: store.get('hands') !== '0',
+  // ambient occlusion costs a few milliseconds a frame: on by default except on small screens
+  ao: params.has('ao') ? params.get('ao') === '1' : store.get('ao') ? store.get('ao') === '1' : innerWidth >= 900,
   orbit: false,
 };
 
 /* ---------- renderer, scene, camera ---------- */
 const canvas = document.getElementById('scene');
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: params.has('shot') });
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, preserveDrawingBuffer: params.has('shot') });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-renderer.toneMapping = THREE.ACESFilmicToneMapping;
+// Neutral: made for product renders, it keeps the rope colours true instead of washing them out
+renderer.toneMapping = THREE.NeutralToneMapping;
 renderer.toneMappingExposure = 1.05;
 renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.shadowMap.type = THREE.PCFShadowMap;      // supports a blur radius, for soft-edged shadows
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x0c0d10);
-scene.fog = new THREE.Fog(0x0c0d10, 1.6, 4.5);
+scene.background = new THREE.Color(0x0d0e10);
+scene.fog = new THREE.Fog(0x0d0e10, 1.6, 4.5);
+
+// Light comes mostly from the reflections of a photo studio. Large soft sources are what make
+// fibres and wood read as real; small point lights make everything look plastic. The real
+// studio is a photograph (Studio Small 09, Poly Haven, CC0) with two big octagonal softboxes;
+// until it loads, and if it can't, a stand-in built from glowing panels does the same job.
+function studio() {
+  const room = new THREE.Scene();
+  const walls = new THREE.Mesh(new THREE.BoxGeometry(12, 7, 12), new THREE.MeshBasicMaterial({ color: 0x17181b, side: THREE.BackSide }));
+  walls.position.y = 2.5;
+  room.add(walls);
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(12, 12), new THREE.MeshBasicMaterial({ color: 0x0c0b0a }));
+  floor.rotation.x = -Math.PI / 2; floor.position.y = -0.9;
+  room.add(floor);
+  const panel = (w, h, color, power, at, look) => {
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ color: new THREE.Color(color).multiplyScalar(power), side: THREE.DoubleSide }));
+    m.position.set(...at); m.lookAt(...look);
+    room.add(m);
+  };
+  panel(2.6, 2.0, 0xfff0dc, 9, [-2.2, 3.2, 2.4], [0, 0, 0]);      // key softbox
+  panel(0.6, 3.2, 0xf4f2ee, 3.5, [3.4, 1.6, 1.0], [0, 0.3, 0]);   // fill strip
+  panel(2.0, 0.8, 0xbcd0ff, 5, [1.4, 1.8, -3.4], [0, 0, 0]);      // cool kicker from behind
+  panel(4.0, 4.0, 0xffffff, 0.8, [0, 5.4, 0], [0, 0, 0]);         // ceiling bounce
+  return room;
+}
 const pmrem = new THREE.PMREMGenerator(renderer);
-scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+scene.environment = pmrem.fromScene(studio(), 0.02).texture;
 scene.environmentIntensity = 0.35;
+new RGBELoader().load('assets/studio_small_09_1k.hdr', hdr => {
+  hdr.mapping = THREE.EquirectangularReflectionMapping;
+  const old = scene.environment;
+  scene.environment = pmrem.fromEquirectangular(hdr).texture;
+  scene.environmentIntensity = 0.5;
+  // the studio itself, dim and far out of focus behind the table, as a camera would see it
+  scene.background = hdr;
+  scene.backgroundBlurriness = 0.35;
+  scene.backgroundIntensity = 0.12;
+  scene.fog = null;
+  old.dispose();
+});
 
 const camera = new THREE.PerspectiveCamera(34, innerWidth / innerHeight, 0.01, 20);
 const controls = new OrbitControls(camera, canvas);
@@ -61,18 +107,30 @@ controls.maxDistance = 2.5;
 controls.screenSpacePanning = true;
 controls.autoRotateSpeed = 0.6;
 
-scene.add(new THREE.HemisphereLight(0xdfe6f0, 0x2a2018, 0.55));
-const key = new THREE.DirectionalLight(0xfff1de, 2.4);
-key.position.set(-0.6, 1.4, 0.9);
+// the direct light of the front-left softbox in the photo (azimuth 149°, 34° up), which also
+// casts the shadows, so they fall the way the reflections say the light comes from
+const key = new THREE.DirectionalLight(0xfff4ea, 4.2);
+key.position.set(-1.14, 0.95, 0.69);
 key.castShadow = true;
 key.shadow.mapSize.set(2048, 2048);
 Object.assign(key.shadow.camera, { left: -0.45, right: 0.45, top: 0.45, bottom: -0.45, near: 0.3, far: 3.5 });
-key.shadow.bias = -0.0002;
-key.shadow.normalBias = 0.004;
+key.shadow.bias = -0.0003;
+key.shadow.normalBias = 0.003;
+key.shadow.radius = 5;
 scene.add(key);
-const rim = new THREE.DirectionalLight(0x9fb8ff, 0.7);
-rim.position.set(0.8, 0.6, -1.0);
-scene.add(rim);
+scene.add(new THREE.HemisphereLight(0xdfe6f0, 0x2a2018, 0.12));
+
+// Ambient occlusion darkens the places light can't easily reach: where rope presses on the
+// table, and the gaps inside a knot. It's most of what makes the rope sit in the scene
+// instead of floating over it.
+const composer = new EffectComposer(renderer, new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, samples: 4 }));
+composer.addPass(new RenderPass(scene, camera));
+const gtao = new GTAOPass(scene, camera, 1, 1);
+gtao.updateGtaoMaterial({ radius: 0.04, distanceExponent: 1, thickness: 1, scale: 1.4, samples: 16, distanceFallOff: 1 });
+gtao.updatePdMaterial({ lumaPhi: 10, depthPhi: 2, normalPhi: 3, radius: 6, rings: 2, samples: 16 });
+gtao.blendIntensity = 1;
+composer.addPass(gtao);
+composer.addPass(new OutputPass());
 
 /* ---------- table and rail ---------- */
 function woodTexture(w, h, base, dark, seed) {
@@ -87,14 +145,58 @@ function woodTexture(w, h, base, dark, seed) {
     for (let x = 0; x <= w; x += 8) g.lineTo(x, y0 + Math.sin(x * f + ph) * amp + Math.sin(x * f * 3.1 + ph) * amp * 0.3);
     g.stroke();
   }
+  // broad colour drift between boards, then pores
+  for (let i = 0; i < 18; i++) {
+    g.globalAlpha = 0.02 + rnd() * 0.04;
+    g.fillStyle = rnd() < 0.6 ? dark : '#ffffff';
+    g.fillRect(0, rnd() * h, w, 20 + rnd() * 120);
+  }
+  g.fillStyle = dark;
+  for (let i = 0; i < w * h / 90; i++) {
+    g.globalAlpha = 0.05 + rnd() * 0.15;
+    g.fillRect(rnd() * w, rnd() * h, 1 + rnd() * 4, 1);
+  }
   g.globalAlpha = 1;
   const t = new THREE.CanvasTexture(c);
   t.colorSpace = THREE.SRGBColorSpace;
   t.anisotropy = 8;
-  return t;
+  // the same picture, read as height and roughness: grain lines sit lower and are less polished
+  const b = new THREE.CanvasTexture(c);
+  b.anisotropy = 8;
+  return { map: t, bump: b };
 }
 
-const tableMat = new THREE.MeshStandardMaterial({ map: woodTexture(2048, 1024, '#4a3526', '#1e130b', 7), roughness: 0.72, metalness: 0 });
+// an oiled table top: mostly matte, with a faint sheen of finish on top
+const tableWood = woodTexture(2048, 1024, '#4a3526', '#1e130b', 7);
+const tableMat = new THREE.MeshPhysicalMaterial({
+  map: tableWood.map, bumpMap: tableWood.bump, bumpScale: 1.5, roughnessMap: tableWood.bump, roughness: 0.9,
+  clearcoat: 0.25, clearcoatRoughness: 0.55, specularIntensity: 0.6,
+});
+
+// Scanned wood (Poly Haven, CC0) replaces the drawn grain once it arrives. size: how many
+// metres one copy of the texture covers; turn: rotate it so the grain runs the right way;
+// rough: the roughness to use where there is no roughness scan; tint: a colour to multiply it by.
+const loader = new THREE.TextureLoader();
+function scanned(mat, files, size, across, along, turn = 0, rough = 1, tint = 0xffffff) {
+  const maps = {};
+  let left = Object.keys(files).length;
+  for (const [slot, file] of Object.entries(files)) {
+    loader.load(`assets/${file}`, t => {
+      t.wrapS = t.wrapT = THREE.RepeatWrapping;
+      t.repeat.set(across / size, along / size);
+      t.center.set(0.5, 0.5); t.rotation = turn;
+      t.anisotropy = renderer.capabilities.getMaxAnisotropy();
+      if (slot === 'map') t.colorSpace = THREE.SRGBColorSpace;
+      maps[slot] = t;
+      if (--left) return;
+      // all in: swap them together, so the surface never shows half old, half new
+      Object.assign(mat, { bumpMap: null, roughnessMap: null, roughness: maps.roughnessMap ? 1 : rough, color: new THREE.Color(tint), ...maps });
+      mat.needsUpdate = true;
+    });
+  }
+}
+scanned(tableMat, { map: 'wood_table_001_diff_2k.jpg', normalMap: 'wood_table_001_nor_gl_2k.jpg', roughnessMap: 'wood_table_001_rough_2k.jpg' },
+  1.5, TABLE.w, TABLE.d, Math.PI / 2, 1, 0xbdb6b8);     // toned down: the scan is very red under this light
 const table = new THREE.Mesh(roundedBox(TABLE.w, TABLE.t, TABLE.d, TABLE.round), tableMat);
 table.position.y = -TABLE.t / 2;
 table.castShadow = table.receiveShadow = true;
@@ -112,7 +214,9 @@ for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
 }
 
 const rail = new THREE.Group();
-const railWood = new THREE.MeshStandardMaterial({ map: woodTexture(512, 256, '#b08453', '#5a3b1c', 3), roughness: 0.55 });
+const dowelWood = woodTexture(1024, 256, '#b08453', '#5a3b1c', 3);
+const railWood = new THREE.MeshPhysicalMaterial({ map: dowelWood.map, bumpMap: dowelWood.bump, bumpScale: 1, roughnessMap: dowelWood.bump, roughness: 0.8, clearcoat: 0.2, clearcoatRoughness: 0.5 });
+scanned(railWood, { map: 'oak_veneer_01_diff_1k.jpg', normalMap: 'oak_veneer_01_nor_gl_1k.jpg' }, 1.83, 2 * Math.PI * BAR.r, BAR.half * 2, 0, 0.6);
 const dowel = new THREE.Mesh(new THREE.CylinderGeometry(BAR.r, BAR.r, BAR.half * 2, 48), railWood);
 dowel.rotation.x = Math.PI / 2;
 dowel.position.set(BAR.x, BAR.y, 0);
@@ -153,35 +257,49 @@ function ropeTextures(pattern) {
     }
     h[y * W + x] = val;
   }
-  const albedo = document.createElement('canvas'), normal = document.createElement('canvas');
-  albedo.width = normal.width = W; albedo.height = normal.height = H;
+  const rnd = mulberry(11);
+  const canvases = () => Object.assign(document.createElement('canvas'), { width: W, height: H });
+  const albedo = canvases(), normal = canvases(), surf = canvases();
   const ia = albedo.getContext('2d').createImageData(W, H), inn = normal.getContext('2d').createImageData(W, H);
+  const isf = surf.getContext('2d').createImageData(W, H);
   const strength = pattern === 'laid' ? 3.2 : pattern === 'soft' ? 2.2 : 2.4;
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
     const i = y * W + x, val = h[i];
     const dx = h[y * W + (x + 1) % W] - h[y * W + (x + W - 1) % W];
     const dy = h[((y + 1) % H) * W + x] - h[((y + H - 1) % H) * W + x];
     const nx = -dx * strength, ny = -dy * strength, nz = 1, l = Math.hypot(nx, ny, nz);
-    const g = Math.round(255 * (0.5 + 0.5 * val));
+    // fibres: each texel a little lighter or darker, and the crests worn paler
+    const fib = 0.92 + 0.16 * rnd();
+    const g = Math.round(255 * Math.min(1, (0.78 + 0.22 * val) * fib));
     ia.data.set([g, g, g, 255], i * 4);
+    // red: ambient occlusion (crevices see less of the room). green: roughness (crevices rougher)
+    isf.data.set([255 * (0.35 + 0.65 * Math.pow(val, 0.7)), 255 * (1 - 0.25 * val), 0, 255], i * 4);
     inn.data.set([(nx / l * 0.5 + 0.5) * 255, (ny / l * 0.5 + 0.5) * 255, (nz / l * 0.5 + 0.5) * 255, 255], i * 4);
   }
   albedo.getContext('2d').putImageData(ia, 0, 0);
   normal.getContext('2d').putImageData(inn, 0, 0);
-  const map = new THREE.CanvasTexture(albedo), normalMap = new THREE.CanvasTexture(normal);
-  for (const t of [map, normalMap]) { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 8; }
+  surf.getContext('2d').putImageData(isf, 0, 0);
+  const map = new THREE.CanvasTexture(albedo), normalMap = new THREE.CanvasTexture(normal), surfMap = new THREE.CanvasTexture(surf);
+  for (const t of [map, normalMap, surfMap]) { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 8; }
   map.colorSpace = THREE.SRGBColorSpace;
-  return (textures[pattern] = { map, normalMap, albedo });
+  return (textures[pattern] = { map, normalMap, surfMap, albedo, height: { h, W, H } });
 }
 
 function ropeMaterial(id, color) {
   const m = MATERIALS[id], tx = ropeTextures(m.pattern);
   return new THREE.MeshPhysicalMaterial({
     color, map: tx.map, normalMap: tx.normalMap, normalScale: new THREE.Vector2(1, 1),
-    roughness: m.rough, metalness: 0,
-    sheen: m.sheen || 0, sheenRoughness: 0.6, sheenColor: new THREE.Color(color).lerp(new THREE.Color(0xffffff), 0.4),
-    clearcoat: m.clearcoat || 0, clearcoatRoughness: 0.45,
+    aoMap: tx.surfMap, aoMapIntensity: 1, roughnessMap: tx.surfMap, roughness: m.rough, metalness: 0,
+    specularIntensity: m.spec, ior: 1.5,
+    sheen: m.sheen, sheenRoughness: 0.8, sheenColor: new THREE.Color(color).lerp(new THREE.Color(0xffffff), 0.15),
   });
+}
+
+// the rope mesh takes its outline from the same strands the textures draw
+function dressMesh(me, id, color) {
+  const m = MATERIALS[id];
+  me.mesh.material = ropeMaterial(id, color);
+  me.relief = { ...ropeTextures(m.pattern).height, amp: m.relief };
 }
 
 /* ---------- rope mesh: a tube swept along the particles every frame ---------- */
@@ -189,7 +307,8 @@ class RopeMesh {
   constructor(n, material) {
     this.n = n;
     this.sub = 3;           // smoothed points per segment
-    this.radial = 14;
+    this.radial = 28;
+    this.relief = null;     // { h, W, H, amp }: strand heights to raise the surface by
     this.cap = 4;           // rings rounding off each end
     this.rings = (n - 1) * this.sub + 1 + this.cap * 2;
     const V = this.rings * (this.radial + 1);
@@ -201,7 +320,7 @@ class RopeMesh {
     const R = this.radial + 1;
     for (let k = 0; k < this.rings - 1; k++) for (let j = 0; j < this.radial; j++) {
       const a = k * R + j, b = a + R;
-      idx.push(a, b, a + 1, b, b + 1, a + 1);
+      idx.push(a, a + 1, b, b, a + 1, b + 1);     // counter-clockwise seen from outside
     }
     geo.setIndex(idx);
     this.mesh = new THREE.Mesh(geo, material);
@@ -237,6 +356,13 @@ class RopeMesh {
     const norA = this.mesh.geometry.attributes.normal.array;
     const uvA = this.mesh.geometry.attributes.uv.array;
     const R = this.radial + 1, tile = 2 * 2 * Math.PI * r;
+    const rel = this.relief;
+    // height of the strands under texture coordinate (u, v), centred on zero
+    const bump = (u, v) => {
+      if (!rel) return 0;
+      const x = Math.floor(u * rel.W) % rel.W, y = ((Math.floor(v * rel.H) % rel.H) + rel.H) % rel.H;
+      return (rel.h[y * rel.W + x] - 0.62) * rel.amp;
+    };
     // parallel-transport frame, so the tube doesn't twist as the rope moves
     let tx = c[3] - c[0], ty = c[4] - c[1], tz = c[5] - c[2];
     let l = Math.hypot(tx, ty, tz) || 1; tx /= l; ty /= l; tz /= l;
@@ -251,7 +377,8 @@ class RopeMesh {
         const a = (j / this.radial) * Math.PI * 2, ca = Math.cos(a), sa = Math.sin(a);
         const ox = nx * ca + bx * sa, oy = ny * ca + by * sa, oz = nz * ca + bz * sa;
         const o = (ring * R + j) * 3;
-        posA[o] = cx + ox * rad; posA[o + 1] = cy + oy * rad; posA[o + 2] = cz + oz * rad;
+        const rr = rad * (1 + (axialN === 0 ? bump(j / this.radial, v / tile) : 0));
+        posA[o] = cx + ox * rr; posA[o + 1] = cy + oy * rr; posA[o + 2] = cz + oz * rr;
         norA[o] = ox * sinA + tx * axialN; norA[o + 1] = oy * sinA + ty * axialN; norA[o + 2] = oz * sinA + tz * axialN;
         uvA[(ring * R + j) * 2] = j / this.radial;
         uvA[(ring * R + j) * 2 + 1] = v / tile;
@@ -305,7 +432,8 @@ function build(keepTime = false) {
   for (const me of meshes) { me.mesh.geometry.dispose(); me.mesh.material.dispose(); ropeGroup.remove(me.mesh); }
   for (const l of pathLines) { l.geometry.dispose(); ropeGroup.remove(l); }
   meshes = player.ropes.map((rp, k) => {
-    const me = new RopeMesh(rp.n, ropeMaterial(state.material, ropeColors()[k]));
+    const me = new RopeMesh(rp.n, null);
+    dressMesh(me, state.material, ropeColors()[k]);
     ropeGroup.add(me.mesh);
     return me;
   });
@@ -365,6 +493,12 @@ function knotFrame() {
   if (state.knot.bar) box.expandByPoint(new THREE.Vector3(BAR.x, BAR.y, 0));
   const c = box.getCenter(new THREE.Vector3());
   const size = box.getSize(new THREE.Vector3());
+  if (player.gripsOn && !state.knot.bar) {
+    // being pulled tight: frame the knot where it is now
+    const [x, , z] = player.knotBody();
+    c.x = x; c.z = z;
+    followAt.set(x, 0, z);
+  }
   c.y = state.knot.bar ? 0.035 : 0.01;
   return { c, span: Math.max(size.x, size.z, 0.12) + 0.12 };
 }
@@ -373,7 +507,7 @@ function knotFrame() {
 const followAt = new THREE.Vector3();
 let followReady = false;
 function follow() {
-  const [x, , z] = player.knotCenter();
+  const [x, , z] = player.gripsOn ? player.knotBody() : player.knotCenter();
   const now = new THREE.Vector3(x, 0, z);
   if (!followReady || !player.gripsOn) { followAt.copy(now); followReady = true; return; }
   const d = now.sub(followAt).multiplyScalar(0.08);
@@ -502,6 +636,8 @@ function buildOptions() {
     store.set('path', state.showPath ? '1' : '0');
     for (const l of pathLines) l.visible = state.showPath;
   });
+  $('show-ao').checked = state.ao;
+  $('show-ao').addEventListener('change', e => { state.ao = e.target.checked; store.set('ao', state.ao ? '1' : '0'); });
   $('show-hands').checked = state.showHands;
   $('show-hands').addEventListener('change', e => { state.showHands = e.target.checked; store.set('hands', state.showHands ? '1' : '0'); });
 
@@ -524,7 +660,7 @@ function setColor(keyName, c) {
 function restyle() {
   meshes.forEach((me, k) => {
     me.mesh.material.dispose();
-    me.mesh.material = ropeMaterial(state.material, ropeColors()[k]);
+    dressMesh(me, state.material, ropeColors()[k]);
   });
   pathLines.forEach((l, k) => l.material.color.set(ropeColors()[k]));
 }
@@ -639,6 +775,8 @@ for (const el of document.querySelectorAll('.panel')) ['pointerdown', 'wheel'].f
 /* ---------- loop ---------- */
 function resize() {
   renderer.setSize(innerWidth, innerHeight, false);
+  composer.setPixelRatio(renderer.getPixelRatio());
+  composer.setSize(innerWidth, innerHeight);
   camera.aspect = innerWidth / innerHeight;
   camera.updateProjectionMatrix();
 }
@@ -670,7 +808,7 @@ function frame(now) {
   controls.update();
   drawRope();
   renderStep();
-  renderer.render(scene, camera);
+  if (state.ao) composer.render(); else renderer.render(scene, camera);
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);

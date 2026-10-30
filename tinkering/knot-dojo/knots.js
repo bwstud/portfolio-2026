@@ -42,7 +42,7 @@ function railTurn(z, exitZ) {
 
 // two half hitches round the standing part (which runs along z = s), the end arriving along z = s + 4.5
 function halfHitches(s) {
-  const p = (x, z) => at(x, z + s);
+  const p = (x, z) => at(-4.5 + (x + 4.5) * 0.78, z + s);     // tied close up to the rail
   return [
     [-4.5, s + 4, 3.8], p(-9, 4.5), p(-12.5, 4.3), p(-14.5, 1.8), '#back',
     p(-14.6, -2), p(-13.5, -4.6), p(-11, -5.2), p(-9.6, -2.6), p(-9.1, 2.4), p(-8.7, 6.5), p(-9.6, 8.6), '#hitch1',
@@ -52,9 +52,10 @@ function halfHitches(s) {
 }
 
 // grips pull with a bounded force, so a long pull just means "until it's snug"
-const STANDING = { at: 'standing', dist: 0.22 };
-const TIP = { at: 'tip', dist: 0.22 };
-const RAIL_HOLD = { at: 'hold', dist: 0.2 };
+const STANDING = { at: 'standing', dist: 0.28 };
+const TIP = { at: 'tip', dist: 0.28 };
+const TAIL = { at: 'tip', dist: 0.06 };    // hold a hitch's tail and snug it, don't haul it out
+const RAIL_HOLD = { at: 'hold', dist: 0.25 };
 
 export const KNOTS = [
   /* ---------------- stoppers ---------------- */
@@ -139,7 +140,7 @@ export const KNOTS = [
       { title: 'Up through the bight', text: 'Bring the second rope’s end up through the bight from underneath.', moves: [{ rope: 1, to: 'through' }] },
       { title: 'Around the back', text: 'Take the end around behind both legs of the bight.', moves: [{ rope: 1, to: 'around' }] },
       { title: 'Tuck under itself', text: 'Bring the end back across the front and tuck it under its own standing part, so it is trapped against the bight.', moves: [{ rope: 1, to: 'end' }] },
-      { title: 'Snug it up', text: 'Hold the bight and pull the second rope’s standing part. Both short ends finish on the same side of the knot.', tighten: [{ rope: 0, at: 'standing', dist: 0.15 }, { rope: 0, at: 'tip', dist: 0.15 }, { rope: 1, at: 'standing', dist: 0.2 }, { rope: 1, at: 'tip', dist: 0.04 }] },
+      { title: 'Snug it up', text: 'Hold the bight and pull the second rope’s standing part. Both short ends finish on the same side of the knot.', tighten: [{ rope: 0, at: 'standing', dist: 0.15 }, { rope: 0, at: 'tip', dist: 0.15 }, { rope: 1, at: 'standing', dist: 0.2 }, { rope: 1, at: 'tip', dist: 0.1, force: 0.3 }] },
     ],
   },
 
@@ -166,7 +167,7 @@ export const KNOTS = [
       { title: 'Up through the hole', text: 'The rabbit comes up out of the hole: pass the end up through the small loop from underneath.', moves: [{ rope: 0, to: 'up' }] },
       { title: 'Around the tree', text: 'Take the end around behind the standing part.', moves: [{ rope: 0, to: 'tree' }] },
       { title: 'Back down the hole', text: 'Then back down through the small loop, the same way it came out. The tail ends up inside the big loop, beside its own leg.', moves: [{ rope: 0, to: 'end' }] },
-      { title: 'Set the knot', text: 'Hold the tail against the loop and pull the standing part away. The collar locks around the end.', tighten: [STANDING, { at: 'bottom', dist: 0.12, dir: [0, 1] }, { at: 'tip', dist: 0.05, dir: [0, 1] }] },
+      { title: 'Set the knot', text: 'Hold the tail against the loop and pull the standing part away. The collar locks around the end.', tighten: [STANDING, { at: 'bottom', dist: 0.12, dir: [0, 1] }, { at: 'tip', dist: 0.1, dir: [0, 1], force: 0.4 }] },
     ],
   },
 
@@ -194,7 +195,7 @@ export const KNOTS = [
       { title: 'Cross over: the X', text: 'Carry the end diagonally across the front, over the standing part. This crossing is the X.', moves: [{ rope: 0, to: 'cross' }] },
       { title: 'Second turn', text: 'Go around the rail a second time, in the same direction as the first.', moves: [{ rope: 0, to: 'turn2' }] },
       { title: 'Tuck under the X', text: 'Tuck the end under the diagonal of the X. It should come out between the two turns, heading away from the standing part. If it comes out to one side, it isn’t a clove hitch.', moves: [{ rope: 0, to: 'end' }] },
-      { title: 'Pull both ways', text: 'Pull the standing part and the end in opposite directions to bed the turns down on the rail.', tighten: [RAIL_HOLD, { at: 'tip', dist: 0.08 }] },
+      { title: 'Pull both ways', text: 'Pull the standing part and the end in opposite directions to bed the turns down on the rail.', tighten: [RAIL_HOLD, TAIL] },
     ],
   },
   {
@@ -212,7 +213,7 @@ export const KNOTS = [
       { title: 'Around the rail', text: 'Pass the working end over the rail and back around underneath.', moves: [{ rope: 0, to: 'turn' }] },
       { title: 'First half hitch', text: 'Bring the end over the standing part, around behind it, and back up through the loop you just made.', moves: [{ rope: 0, to: 'hitch1' }] },
       { title: 'Second half hitch', text: 'Go around the standing part again in the same direction, this time outside the first hitch, and tuck through the same way.', moves: [{ rope: 0, to: 'end' }] },
-      { title: 'Snug against the rail', text: 'Pull the standing part, then slide the two hitches up until they sit against the rail.', tighten: [RAIL_HOLD, { at: 'tip', dist: 0.05 }] },
+      { title: 'Snug against the rail', text: 'Pull the standing part, then slide the two hitches up until they sit against the rail.', tighten: [RAIL_HOLD, TAIL] },
     ],
   },
   {
@@ -236,7 +237,7 @@ export const KNOTS = [
       { title: 'Complete the round turn', text: 'Go around a second time, so the rope wraps the rail completely. It now holds the load by friction.', moves: [{ rope: 0, to: 'turn' }] },
       { title: 'First half hitch', text: 'Bring the end over the standing part, around it, and back through.', moves: [{ rope: 0, to: 'hitch1' }] },
       { title: 'Second half hitch', text: 'Repeat in the same direction, further along the standing part.', moves: [{ rope: 0, to: 'end' }] },
-      { title: 'Snug it up', text: 'Draw the hitches tight and slide them up against the round turn.', tighten: [RAIL_HOLD, { at: 'tip', dist: 0.05 }] },
+      { title: 'Snug it up', text: 'Draw the hitches tight and slide them up against the round turn.', tighten: [RAIL_HOLD, TAIL] },
     ],
   },
   {
@@ -262,7 +263,7 @@ export const KNOTS = [
       { title: 'Wrap inside the loop', text: 'Take the end over and around the standing part, coming back up inside the loop.', moves: [{ rope: 0, to: 'wrap1' }] },
       { title: 'Wrap again, nearer the anchor', text: 'Go around the standing part a second time, still inside the loop and closer to the anchor. The two wraps grip the line.', moves: [{ rope: 0, to: 'wrap2' }] },
       { title: 'Half hitch outside', text: 'Cross over and finish with a half hitch around the standing part outside the loop, going the same direction as the wraps.', moves: [{ rope: 0, to: 'end' }] },
-      { title: 'Snug and adjust', text: 'Snug the hitch firmly. Slide it away from the anchor to tighten the line, or toward the anchor to slacken it.', tighten: [RAIL_HOLD, { at: 'tip', dist: 0.05 }] },
+      { title: 'Snug and adjust', text: 'Snug the hitch firmly. Slide it away from the anchor to tighten the line, or toward the anchor to slacken it.', tighten: [RAIL_HOLD, TAIL] },
     ],
   },
   {
@@ -285,7 +286,7 @@ export const KNOTS = [
       { title: 'Around the log', text: 'Pass the working end all the way around the log (here, the rail).', moves: [{ rope: 0, to: 'turn' }] },
       { title: 'Around the standing part', text: 'Bring the end around the standing part, making a loop that encircles the log.', moves: [{ rope: 0, to: 'around' }] },
       { title: 'Twist it three times', text: 'Twist the end around its own part three times, following the lay of the rope. Those turns are what grip.', moves: [{ rope: 0, to: 'end' }] },
-      { title: 'Pull the standing part', text: 'Pull the standing part. The loop closes on the log and pins the twists against it.', tighten: [RAIL_HOLD, { at: 'tip', dist: 0.02 }] },
+      { title: 'Pull the standing part', text: 'Pull the standing part. The loop closes on the log and pins the twists against it.', tighten: [RAIL_HOLD, TAIL] },
     ],
   },
 ];

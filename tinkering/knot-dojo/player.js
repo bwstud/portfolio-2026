@@ -12,8 +12,8 @@ const SEG = 0.0125;           // particle spacing, m
 const HAND_SPEED = 0.13;      // m/s along the path at 1x
 const HOLD = 0.7;             // pause after each step, s
 const GUIDE = 0.22;           // guide stiffness per solver iteration
-const TIGHTEN = 4;          // s
-const SETTLE = 1.6;           // s
+const TIGHTEN = 6.5;          // s: pull until the knot stalls
+const SETTLE = 2;             // s: dress and let it rest
 
 export class Player {
   constructor(knot, { radius, material }) {
@@ -135,19 +135,32 @@ export class Player {
       this.guide(GUIDE);
     } else if (phase.kind === 'tighten') {
       if (!this.gripsOn) this.startGrips(phase.grips);
-      const f = (t - phase.start) / (phase.end - phase.start);
-      this.guide(GUIDE * Math.max(0, 1 - f / 0.35));     // let the shape go early in the pull
+      const el = t - phase.start;
+      this.guide(GUIDE * Math.max(0, 1 - el / 1.2));     // let the shape go early in the pull
       // hands pull apart but follow the knot, so it tightens where it lies instead of being dragged off
       const c = this.knotCenter();
-      const sx = c[0] - this.c0[0], sz = c[2] - this.c0[2];
-      for (const g of this.sim.grips) {
-        const e = ease(Math.min(1, f / 0.85));
-        g.x = g.x0 + g.dx * e - sx; g.y = g.y0 + g.dy * e; g.z = g.z0 + g.dz * e - sz;
+      let sx = c[0] - this.c0[0], sz = c[2] - this.c0[2];
+      const drift = Math.hypot(sx, sz), cap = 0.03;
+      if (drift > cap) { sx *= cap / drift; sz *= cap / drift; }
+      // the hands only draw further while every one of them is keeping up with where it
+      // is reaching: once the knot jams (or an end starts slipping back in) they all stall
+      // and just hold the tension
+      const { pos, grips } = this.sim, lead = 0.01 + 2 * this.sim.r;
+      const lag = Math.max(...grips.map(g => Math.hypot(g.x - pos[g.i * 3], g.z - pos[g.i * 3 + 2])));
+      const ds = lag < lead ? DT / (TIGHTEN - 1) * Math.min(1, el / 0.6) : 0;
+      for (const g of grips) {
+        g.s = Math.min(1, g.s + ds);
+        g.x = g.x0 + g.dx * g.s - sx; g.y = g.y0; g.z = g.z0 + g.dz * g.s - sz;
         this.hands.push({ i: g.i });
       }
     } else {
+      // dressed: the hands ease off and just hold the ends while the knot settles
       this.guide(0);
-      for (const g of this.sim.grips) this.hands.push({ i: g.i });
+      for (const g of this.sim.grips) {
+        if (!g.full) g.full = g.max;
+        g.max = g.full * 0.35;
+        this.hands.push({ i: g.i });
+      }
     }
     this.sim.step(DT);
     this.t += DT;
@@ -160,18 +173,53 @@ export class Player {
     this.ropes.forEach((rp, k) => {
       const base = sim.ropes[k].start;
       const p = rp.progress;
+      const P = rp.path;
+      // a strand the end will pass under is raised only as the end arrives
+      const acts = P.lifts.map(l => {
+        const mp = this.ropes[l.mover].progress;
+        const a = smooth(l.at - 0.1, l.at - 0.035, mp);
+        if (a > 0.02 && mp < l.at + 0.04 && w > 0) this.hands.push({ i: this.particleAt(k, l.k * DS) });
+        return a;
+      });
       for (let j = 0; j < rp.n; j++) {
         const i = base + j;
         const d = (rp.n - 1 - j) * SEG;
         const u = p - d;
         if (u < 0 || w === 0) { sim.guideW[i] = 0; continue; }
-        sampleAt(rp.path, u, tmp);
+        sampleAt(P, u, tmp);
+        let a = 0;
+        const q = u / DS;
+        P.lifts.forEach((l, li) => { if (Math.abs(q - l.k) <= l.w && acts[li] > a) a = acts[li]; });
+        if (a > 0) {
+          const kq = Math.min(P.n - 1, Math.round(q)) * 3;
+          tmp[0] += P.lift[kq] * a; tmp[1] += P.lift[kq + 1] * a; tmp[2] += P.lift[kq + 2] * a;
+        }
         const o = i * 3;
         if (j === rp.n - 1 && !this.gripsOn) { sim.pin(i, tmp[0], tmp[1], tmp[2]); continue; }
         sim.guide[o] = tmp[0]; sim.guide[o + 1] = tmp[1]; sim.guide[o + 2] = tmp[2];
         sim.guideW[i] = w;
       }
     });
+  }
+
+  // the particle currently lying at path position u
+  particleAt(k, u) {
+    const rp = this.ropes[k];
+    const j = Math.max(0, Math.min(rp.n - 1, Math.round(rp.n - 1 - (rp.progress - u) / SEG)));
+    return this.sim.ropes[k].start + j;
+  }
+
+  // the body of the knot: wherever the rope is pressed against itself. Rope slides through
+  // a knot as it tightens, so this tracks the knot better than the crossing points do.
+  knotBody() {
+    const { sim } = this, out = [0, 0, 0];
+    let n = 0;
+    for (let i = 0; i < sim.N; i++) {
+      if (!(sim.contact[i] & 2)) continue;
+      out[0] += sim.pos[i * 3]; out[1] += sim.pos[i * 3 + 1]; out[2] += sim.pos[i * 3 + 2];
+      n++;
+    }
+    return n >= 4 ? out.map(v => v / n) : this.knotCenter();
   }
 
   // middle of the knot: the average of the rope at every crossing laid so far
@@ -200,6 +248,7 @@ export class Player {
   startGrips(specs) {
     this.gripsOn = true;
     this.c0 = this.knotCenter();
+    this.sim.iterations = 10;            // stiffer rope while it's under tension
     this.setTipsPinned(false);
     const rot = (this.knot.rotate || 0) * Math.PI / 180;
     const { sim } = this;
@@ -222,11 +271,17 @@ export class Player {
       else dir = tangentAt(rp.path, u).map(v => -v);     // a named point pulls back toward the standing side
       const h = Math.hypot(dir[0], dir[2]) || 1;
       const o = i * 3;
+      const x0 = sim.pos[o], z0 = sim.pos[o + 2];
+      let dx = dir[0] / h, dz = dir[2] / h;
+      // never reach past the edge of the table
+      const ex = TABLE.w / 2 - 0.04, ez = TABLE.d / 2 - 0.04;
+      let dist = g.dist;
+      if (dx) dist = Math.min(dist, Math.max(0, ((dx > 0 ? ex : -ex) - x0) / dx));
+      if (dz) dist = Math.min(dist, Math.max(0, ((dz > 0 ? ez : -ez) - z0) / dz));
       return {
-        i, k: 0.08, max: 0.0005,
-        x0: sim.pos[o], y0: sim.pos[o + 1], z0: sim.pos[o + 2],
-        x: sim.pos[o], y: sim.pos[o + 1], z: sim.pos[o + 2],
-        dx: dir[0] / h * g.dist, dy: 0, dz: dir[2] / h * g.dist,
+        i, k: 0.08, max: 0.0005 * (g.force ?? 1), s: 0,
+        x0, y0: sim.pos[o + 1], z0, x: x0, y: sim.pos[o + 1], z: z0,
+        dx: dx * dist, dz: dz * dist,
       };
     });
   }
@@ -260,4 +315,5 @@ function distToEdge(p, t) {
   return Math.max(0.05, best);
 }
 
+function smooth(a, b, x) { return ease((x - a) / (b - a)); }
 function ease(x) { x = Math.min(1, Math.max(0, x)); return x * x * (3 - 2 * x); }

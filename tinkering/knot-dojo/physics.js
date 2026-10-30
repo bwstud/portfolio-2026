@@ -50,14 +50,19 @@ export class Sim {
     const { pos, prev, inv, N } = this;
     const damp = this.mat.damping;
     const gdt2 = G * dt * dt;
+    const vmax = this.r * 0.35;          // no particle moves more than a third of a radius per step,
+                                         // so rope can't tunnel through rope
     for (let i = 0; i < N; i++) {
       const o = i * 3;
       if (inv[i] === 0) { prev[o] = pos[o]; prev[o + 1] = pos[o + 1]; prev[o + 2] = pos[o + 2]; continue; }
-      const vx = (pos[o] - prev[o]) * damp;
-      const vy = (pos[o + 1] - prev[o + 1]) * damp;
-      const vz = (pos[o + 2] - prev[o + 2]) * damp;
+      let vx = (pos[o] - prev[o]) * damp;
+      let vy = (pos[o + 1] - prev[o + 1]) * damp;
+      let vz = (pos[o + 2] - prev[o + 2]) * damp;
+      vy += gdt2;
+      const v = Math.sqrt(vx * vx + vy * vy + vz * vz);
+      if (v > vmax) { const f = vmax / v; vx *= f; vy *= f; vz *= f; }
       prev[o] = pos[o]; prev[o + 1] = pos[o + 1]; prev[o + 2] = pos[o + 2];
-      pos[o] += vx; pos[o + 1] += vy + gdt2; pos[o + 2] += vz;
+      pos[o] += vx; pos[o + 1] += vy; pos[o + 2] += vz;
     }
     this.contact.fill(0);
     this.findPairs();

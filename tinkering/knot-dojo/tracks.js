@@ -62,9 +62,10 @@ function smooth(nodes) {
   return resample(dense, ctrlAt);
 }
 
-function resample(dense, ctrlAt) {
+// even spacing by arc length; `by` measures arc on another polyline with the same points count
+function resample(dense, ctrlAt, by = dense) {
   const arc = [0];
-  for (let i = 1; i < dense.length; i++) arc.push(arc[i - 1] + dist(dense[i - 1], dense[i]));
+  for (let i = 1; i < by.length; i++) arc.push(arc[i - 1] + dist(by[i - 1], by[i]));
   const L = arc.at(-1);
   const n = Math.max(2, Math.round(L / DS) + 1);
   const pts = new Float64Array(n * 3);
@@ -158,7 +159,6 @@ export function buildPaths(knot, r) {
   const crossings = findCrossings(paths, r, knot.bar);
 
   // order of laying: the step in which the end first reaches each sample
-  const laidStep = paths.map(() => null);
   const reach = paths.map(() => 0);
   const stepOf = paths.map(P => new Float64Array(P.n).fill(1e9));
   knot.steps.forEach((st, si) => {
@@ -199,29 +199,57 @@ export function buildPaths(knot, r) {
     return d;
   });
   const h = 2 * r + GAP;
-  for (let pass = 0; pass < 4; pass++) {
-    for (const c of crossings) {
-      const ku = Math.round(c.under.k), ko = Math.round(c.over.k);
-      const need = off[c.under.rope][ku] + h;
-      if (off[c.over.rope][ko] >= need - 1e-6) continue;
-      const O = off[c.over.rope], w = Math.round(BUMP / DS);
-      for (let j = Math.max(0, ko - w); j <= Math.min(O.length - 1, ko + w); j++) {
-        const x = Math.abs(j - ko) / w;
-        const f = x < 0.35 ? 1 : 0.5 * (1 + Math.cos(Math.PI * (x - 0.35) / 0.65));
-        O[j] = Math.max(O[j], need * f);
+  const w = Math.round(BUMP / DS);
+  const shape = x => (x < 0.35 ? 1 : 0.5 * (1 + Math.cos(Math.PI * (x - 0.35) / 0.65)));
+  const raise = (off, list) => {
+    for (let pass = 0; pass < 4; pass++) {
+      for (const c of list) {
+        const ku = Math.round(c.under.k), ko = Math.round(c.over.k);
+        const need = off[c.under.rope][ku] + h;
+        if (off[c.over.rope][ko] >= need - 1e-6) continue;
+        const O = off[c.over.rope];
+        for (let j = Math.max(0, ko - w); j <= Math.min(O.length - 1, ko + w); j++) O[j] = Math.max(O[j], need * shape(Math.abs(j - ko) / w));
       }
     }
-  }
+  };
+  raise(off, crossings);
+  // the lifts a strand needs when it is laid: everything except passing over a later end
+  const laid = paths.map(P => new Float64Array(P.n));
+  raise(laid, crossings.filter(c => c.over === c.mover));
   paths.forEach((P, i) => {
     for (let k = 0; k < P.n; k++) for (let c = 0; c < 3; c++) P.pts[k * 3 + c] += off[i][k] * dirs[i][k * 3 + c];
   });
 
+  // Where the end later passes under a strand that is already down, that strand is only
+  // lifted at the moment the end arrives (a finger raising it). Record how far each such
+  // lift raises the path, so it can lie flat until then.
+  const dyn = paths.map((P, i) => off[i].map((v, k) => Math.max(0, v - laid[i][k])));
+  const lifts = paths.map(() => []);
+  for (const c of crossings) {
+    if (c.over !== c.still) continue;
+    lifts[c.still.rope].push({ k: Math.round(c.still.k), w, mover: c.mover.rope, at: c.mover.k * DS });
+  }
+
   relax(paths, r, knot.bar);
   const out = paths.map((P, i) => {
+    const flat = new Float64Array(P.pts);
+    for (let k = 0; k < P.n; k++) {
+      for (let c = 0; c < 3; c++) flat[k * 3 + c] -= dyn[i][k] * dirs[i][k * 3 + c];
+      flat[k * 3 + 1] = Math.max(r, flat[k * 3 + 1]);
+    }
     const R = resample(toList(P.pts, P.n), null);
+    const F = resample(toList(flat, P.n), null, toList(P.pts, P.n));
+    const ratio = (R.n - 1) / (P.n - 1);
     R.ctrl = P.ctrl.map(a => (a === undefined ? undefined : a * R.length / P.length));
+    // pts: path with every lift down; lift: how far each lift raises it
+    R.lift = new Float64Array(R.n * 3);
+    for (let k = 0; k < R.n * 3; k++) R.lift[k] = R.pts[k] - F.pts[k];
+    R.pts = F.pts;
+    R.lifts = lifts[i].map(l => ({ ...l, k: l.k * ratio, w: l.w * ratio }));
     return R;
   });
+  // movers' crossing arcs were measured before resampling, scale them the same way
+  out.forEach(R => R.lifts.forEach(l => { l.at *= out[l.mover].length / paths[l.mover].length; }));
   return { paths: out, crossings, warning };
 }
 

@@ -1,0 +1,1131 @@
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { Pass, FullScreenQuad } from 'three/addons/postprocessing/Pass.js';
+import { CopyShader } from 'three/addons/shaders/CopyShader.js';
+import { GTAOPass } from 'three/addons/postprocessing/GTAOPass.js';
+import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import GUI from 'lil-gui';
+import { addVersions } from '../versions.js';
+import { SPECIES, SPECIES_LIST } from './species.js';
+import { POTS, POT, buildPot, potIcon, POT_SWATCH, preloadSoil } from './pots.js';
+import { leafTexture, leafGeometry } from './leaves.js';
+import { STEPS_PER_YEAR, START_STEP, START_MONTH } from './sim.js';
+
+const $ = id => document.getElementById(id);
+const params = new URLSearchParams(location.search);
+if (params.get('ui') === '0') document.body.classList.add('no-ui');
+const store = {
+  get(k) { try { return localStorage.getItem('bonsai:' + k); } catch { return null; } },
+  set(k, v) { try { localStorage.setItem('bonsai:' + k, v); } catch {} },
+  del(k) { try { localStorage.removeItem('bonsai:' + k); } catch {} },
+};
+
+/* ---------- settings: where the tree lives ---------- */
+// key: the main light, as a direction towards it. grow: where the tree's light comes from, which
+// is what it grows towards. In the alcove that's the window, so the tree leans unless it's turned.
+const SETTINGS = {
+  studio: {
+    name: 'Studio', note: 'A dark sweep and one soft key light from above and in front.',
+    hdr: 'studio_small_08_1k.hdr', env: 0.6, exposure: 1.35,
+    key: { dir: [0.5, 0.95, 0.65], color: '#fff0de', intensity: 2.6 }, grow: [0.3, 1, 0.45],
+  },
+  tokonoma: {
+    name: 'Tokonoma', note: 'A plaster alcove lit from a window on the left. Turn the pot now and then, or the tree will lean.',
+    hdr: 'studio_kominka_03_1k.hdr', env: 0.5, exposure: 1.3,
+    key: { dir: [-0.95, 0.55, 0.3], color: '#ffe2c0', intensity: 3 }, grow: [-0.55, 1, 0.2],
+  },
+  garden: {
+    name: 'Garden bench', note: 'Outdoors in soft, misty light from overhead.',
+    hdr: 'misty_pines_1k.hdr', env: 1, exposure: 1.15, background: true,
+    key: { dir: [0.3, 1, 0.25], color: '#eef1ff', intensity: 1.3 }, grow: [0.15, 1, 0.15],
+  },
+};
+const SETTING_LIST = Object.entries(SETTINGS).map(([id, s]) => ({ id, ...s }));
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const SPEEDS = [{ label: '½×', sps: 2.4 }, { label: '1×', sps: 4.8 }, { label: '3×', sps: 14.4 }, { label: '8×', sps: 38.4 }];
+const MAX_STEP = START_STEP + 45 * STEPS_PER_YEAR;
+
+/* ---------- renderer, scene, camera ---------- */
+const canvas = $('scene');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, preserveDrawingBuffer: params.has('shot') || params.has('portrait') });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.toneMapping = THREE.AgXToneMapping;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFShadowMap;
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(30, innerWidth / innerHeight, 0.02, 30);
+camera.position.set(0.22, 0.42, 1.05);
+const controls = new OrbitControls(camera, canvas);
+controls.enableDamping = true;
+controls.dampingFactor = 0.08;
+controls.minDistance = 0.12;
+controls.maxDistance = 4;
+controls.maxPolarAngle = Math.PI * 0.62;
+controls.target.set(0, 0.2, 0);
+
+const key = new THREE.DirectionalLight(0xffffff, 2.5);
+key.castShadow = true;
+key.shadow.mapSize.set(2048, 2048);
+Object.assign(key.shadow.camera, { left: -0.6, right: 0.6, top: 0.8, bottom: -0.4, near: 0.2, far: 5 });
+key.shadow.bias = -0.0004;
+key.shadow.normalBias = 0.002;
+scene.add(key, key.target);
+
+const world = new THREE.Group();          // setting and stand
+const turntable = new THREE.Group();      // the pot and tree, turned together
+const treeGroup = new THREE.Group();
+turntable.add(treeGroup);
+scene.add(world, turntable);
+
+/* ---------- post: AO from the main depth, depth of field, grade ----------
+   The scene renders once into its own multisampled target with a depth texture. AO and depth of
+   field both read that depth, so alpha-tested leaves are leaf-shaped to them, not rectangles. */
+const sceneRT = new THREE.WebGLRenderTarget(1, 1, {
+  type: THREE.HalfFloatType, samples: params.get('msaa') === '0' ? 0 : 4, depthTexture: new THREE.DepthTexture(1, 1),
+});
+class ScenePass extends Pass {
+  constructor() {
+    super();
+    this.copy = new FullScreenQuad(new THREE.ShaderMaterial({ ...CopyShader, uniforms: THREE.UniformsUtils.clone(CopyShader.uniforms) }));
+  }
+  setSize(w, h) { sceneRT.setSize(w, h); }
+  render(renderer, writeBuffer) {
+    renderer.setRenderTarget(sceneRT);
+    renderer.clear();
+    renderer.render(scene, camera);
+    this.copy.material.uniforms.tDiffuse.value = sceneRT.texture;
+    renderer.setRenderTarget(this.renderToScreen ? null : writeBuffer);
+    this.copy.render(renderer);
+  }
+}
+const composer = new EffectComposer(renderer, new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType }));
+composer.addPass(new ScenePass());
+const gtao = new GTAOPass(scene, camera, 1, 1);
+gtao.setGBuffer(sceneRT.depthTexture);
+gtao.output = GTAOPass.OUTPUT.Default;
+gtao.blendIntensity = 0.9;
+gtao.updateGtaoMaterial({ radius: 0.06, distanceExponent: 1.4, thickness: 1.2, scale: 1 });
+composer.addPass(gtao);
+
+const dof = new ShaderPass({
+  uniforms: {
+    tDiffuse: { value: null }, tDepth: { value: sceneRT.depthTexture },
+    near: { value: 0.02 }, far: { value: 30 }, focus: { value: 1 }, aperture: { value: 0.02 },
+    maxBlur: { value: 10 }, resolution: { value: new THREE.Vector2(1, 1) },
+  },
+  vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+  fragmentShader: /* glsl */`
+    #include <packing>
+    uniform sampler2D tDiffuse, tDepth; uniform float near, far, focus, aperture, maxBlur; uniform vec2 resolution;
+    varying vec2 vUv;
+    float viewZ(vec2 uv) { return -perspectiveDepthToViewZ(texture2D(tDepth, uv).x, near, far); }
+    float coc(float z) { return clamp(abs(z - focus) / max(z, 1e-3) * aperture * resolution.y, 0.0, maxBlur); }
+    void main() {
+      float z = viewZ(vUv);
+      float c = coc(z);
+      vec4 sum = texture2D(tDiffuse, vUv); float wsum = 1.0;
+      // golden-angle disc; a sample only spreads onto us if it is blurry itself or behind us
+      for (int i = 1; i < 40; i++) {
+        float fi = float(i);
+        float r = sqrt(fi / 40.0) * maxBlur;
+        float a = fi * 2.39996;
+        vec2 o = vec2(cos(a), sin(a)) * r / resolution;
+        float zs = viewZ(vUv + o);
+        float cs = coc(zs);
+        float w = smoothstep(r - 1.0, r + 1.0, zs < z ? cs : min(cs, c));
+        sum += texture2D(tDiffuse, vUv + o) * w; wsum += w;
+      }
+      gl_FragColor = sum / wsum;
+    }`,
+});
+dof.uniforms.tDepth.value = sceneRT.depthTexture;     // ShaderPass clones uniforms, textures included
+composer.addPass(dof);
+composer.addPass(new OutputPass());
+const grade = new ShaderPass({
+  uniforms: { tDiffuse: { value: null }, vignette: { value: 0.35 }, grain: { value: 0.03 }, time: { value: 0 }, aspect: { value: 1 } },
+  vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+  fragmentShader: /* glsl */`
+    uniform sampler2D tDiffuse; uniform float vignette, grain, time, aspect; varying vec2 vUv;
+    float h(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233)) + time) * 43758.5453); }
+    void main() {
+      vec4 c = texture2D(tDiffuse, vUv);
+      vec2 d = (vUv - 0.5) * vec2(aspect, 1.0);
+      c.rgb *= mix(1.0, smoothstep(1.05, 0.25, length(d)), vignette);
+      c.rgb += (h(vUv * 911.0) - 0.5) * grain;
+      gl_FragColor = c;
+    }`,
+});
+composer.addPass(grade);
+
+/* ---------- loading ---------- */
+const texLoader = new THREE.TextureLoader();
+const rgbe = new RGBELoader();
+const pmrem = new THREE.PMREMGenerator(renderer);
+const envCache = {};
+function loadEnv(file) {
+  if (!envCache[file]) envCache[file] = new Promise(res => rgbe.load('assets/' + file, hdr => {
+    const env = pmrem.fromEquirectangular(hdr).texture;
+    hdr.dispose();
+    res(env);
+  }));
+  return envCache[file];
+}
+function tex(file, srgb, repeat = 1) {
+  const t = texLoader.load('assets/' + file);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.repeat.set(repeat, repeat);
+  t.anisotropy = 8;
+  if (srgb) t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+
+/* ---------- materials ---------- */
+const HI = {
+  select: new THREE.Color('#9fd3ff'), cut: new THREE.Color('#ff5a46'), pinch: new THREE.Color('#d4f57a'),
+  defoliate: new THREE.Color('#ffb347'), wire: new THREE.Color('#ff9a4d'), guy: new THREE.Color('#ff9a4d'), jin: new THREE.Color('#fff1d6'),
+};
+const shared = {
+  uHi: { value: new THREE.Vector4(-10, -10, 0, 0) },    // highlighted dfs range, strength
+  uHiColor: { value: HI.select.clone() },
+  uSel: { value: new THREE.Vector2(-10, -10) },         // selected range
+  uTime: { value: 0 }, uWind: { value: 1 }, uTransl: { value: 1 },
+  uLightView: { value: new THREE.Vector3(0, 1, 0) }, uLightColor: { value: new THREE.Color(1, 1, 1) },
+};
+
+const barkCache = {};
+function barkMaterial(sp) {
+  if (barkCache[sp.id]) return barkCache[sp.id];
+  const t = sp.bark.tex;
+  const m = new THREE.MeshStandardMaterial({
+    map: tex(`${t}_diff_1k.jpg`, true), normalMap: tex(`${t}_nor_gl_1k.jpg`), roughnessMap: tex(`${t}_rough_1k.jpg`),
+    color: new THREE.Color(sp.bark.tint), roughness: 1, normalScale: new THREE.Vector2(1.2, 1.2),
+  });
+  const young = new THREE.Color(sp.bark.young);
+  m.onBeforeCompile = sh => {
+    Object.assign(sh.uniforms, shared, { uYoung: { value: young }, uDead: { value: new THREE.Color('#d9d2c4') } });
+    sh.vertexShader = 'attribute vec4 aInfo; attribute float aDfs; varying vec4 vInfo; varying float vDfs;\n' + sh.vertexShader
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvInfo = aInfo; vDfs = aDfs;');
+    sh.fragmentShader = `uniform vec3 uYoung, uDead, uHiColor; uniform vec4 uHi; uniform vec2 uSel;
+      varying vec4 vInfo; varying float vDfs;\n` + sh.fragmentShader
+      .replace('#include <map_fragment>', `#include <map_fragment>
+        float lum = dot(diffuseColor.rgb, vec3(0.3333));
+        vec3 youngBark = uYoung * mix(0.8, 1.2, smoothstep(0.02, 0.2, lum));
+        diffuseColor.rgb = mix(youngBark, diffuseColor.rgb, vInfo.x);
+        vec3 deadwood = uDead * mix(0.62, 1.08, smoothstep(0.01, 0.16, lum));
+        diffuseColor.rgb = mix(diffuseColor.rgb, deadwood, vInfo.y);
+        float groove = 1.0 - smoothstep(0.03, 0.09, abs(fract(vInfo.w) - 0.5));
+        diffuseColor.rgb *= 1.0 - 0.6 * vInfo.z * groove;`)
+      .replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>
+        roughnessFactor = mix(0.55, roughnessFactor, vInfo.x);
+        roughnessFactor = mix(roughnessFactor, 0.72, vInfo.y);`)
+      .replace('mapN.xy *= normalScale;', 'mapN.xy *= normalScale * mix(0.2, 1.0, max(vInfo.x, vInfo.y));')
+      .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
+        float hi = step(uHi.x - 0.5, vDfs) * step(vDfs, uHi.y + 0.5) * uHi.z;
+        float sel = step(uSel.x - 0.5, vDfs) * step(vDfs, uSel.y + 0.5);
+        diffuseColor.rgb = mix(diffuseColor.rgb, uHiColor * 0.5, hi * 0.55);
+        totalEmissiveRadiance += uHiColor * hi * 0.22 + vec3(0.62, 0.83, 1.0) * sel * 0.07;`);
+  };
+  return (barkCache[sp.id] = m);
+}
+
+const leafCache = {};
+function leafMaterial(sp) {
+  if (leafCache[sp.id]) return leafCache[sp.id];
+  const m = new THREE.MeshStandardMaterial({
+    map: leafTexture(sp.leaf.shape), alphaTest: sp.leaf.shape === 'spray' ? 0.3 : 0.5, side: THREE.DoubleSide,
+    roughness: sp.leaf.shape === 'spray' ? 0.8 : 0.68, envMapIntensity: 0.65, alphaToCoverage: true,
+  });
+  m.onBeforeCompile = sh => {
+    Object.assign(sh.uniforms, shared);
+    sh.vertexShader = 'attribute float aDfs; varying float vDfs; uniform float uTime, uWind;\n' + sh.vertexShader
+      .replace('#include <begin_vertex>', `#include <begin_vertex>
+        vDfs = aDfs;
+        #ifdef USE_INSTANCING
+          vec3 ip = instanceMatrix[3].xyz;
+          float ph = uTime * 1.6 + dot(ip, vec3(41.0, 23.0, 31.0));
+          float sway = uWind * uv.y;
+          transformed.z += (sin(ph) * 0.1 + sin(ph * 2.3 + 0.7) * 0.04) * sway;
+          transformed.x += sin(ph * 0.8 + 1.3) * 0.05 * sway;
+        #endif`);
+    sh.fragmentShader = `uniform vec3 uHiColor, uLightView, uLightColor; uniform vec4 uHi; uniform vec2 uSel; uniform float uTransl;
+      varying float vDfs;\n` + sh.fragmentShader
+      .replace('#include <opaque_fragment>', `
+        // light passing through the blade: strongest when the sun is behind the leaf
+        vec3 V = normalize(vViewPosition);
+        float back = pow(clamp(dot(-V, uLightView), 0.0, 1.0), 2.5);
+        outgoingLight += diffuseColor.rgb * uLightColor * (back * 0.9 + 0.08) * uTransl;
+        float hi = step(uHi.x - 0.5, vDfs) * step(vDfs, uHi.y + 0.5) * uHi.z;
+        float sel = step(uSel.x - 0.5, vDfs) * step(vDfs, uSel.y + 0.5);
+        outgoingLight = mix(outgoingLight, uHiColor * 0.6, hi * 0.5) + vec3(0.62, 0.83, 1.0) * sel * 0.03;
+        #include <opaque_fragment>`);
+  };
+  return (leafCache[sp.id] = m);
+}
+
+const wireMat = new THREE.MeshStandardMaterial({ color: '#c07445', metalness: 0.9, roughness: 0.32 });
+const pickMat = new THREE.ShaderMaterial({
+  vertexShader: `attribute float aDfs; varying float vId;
+    void main() {
+      vId = aDfs + 1.0;
+      vec4 p = vec4(position, 1.0);
+      #ifdef USE_INSTANCING
+        p = instanceMatrix * p;
+      #endif
+      gl_Position = projectionMatrix * modelViewMatrix * p;
+    }`,
+  fragmentShader: `varying float vId;
+    void main() {
+      float id = floor(vId + 0.5);
+      gl_FragColor = vec4(mod(id, 256.0) / 255.0, mod(floor(id / 256.0), 256.0) / 255.0, floor(id / 65536.0) / 255.0, 1.0);
+    }`,
+  side: THREE.DoubleSide,
+});
+
+/* ---------- tree meshes ---------- */
+const branchMesh = new THREE.Mesh(new THREE.BufferGeometry(), new THREE.MeshStandardMaterial());
+branchMesh.castShadow = branchMesh.receiveShadow = true;
+let leafMesh = null, leafCapacity = 0, leafShape = null;
+const wireMesh = new THREE.Mesh(new THREE.BufferGeometry(), wireMat);
+wireMesh.castShadow = true;
+treeGroup.add(branchMesh, wireMesh);
+
+function ensureLeaves(count, sp) {
+  if (leafMesh && count <= leafCapacity && leafShape === sp.leaf.shape) return;
+  if (leafMesh) { treeGroup.remove(leafMesh); leafMesh.geometry.dispose(); leafMesh.dispose(); }
+  leafCapacity = Math.max(256, Math.ceil(count * 1.5));
+  leafShape = sp.leaf.shape;
+  const geo = leafGeometry(sp.leaf.shape);
+  geo.setAttribute('aDfs', new THREE.InstancedBufferAttribute(new Float32Array(leafCapacity), 1));
+  leafMesh = new THREE.InstancedMesh(geo, leafMaterial(sp), leafCapacity);
+  leafMesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(leafCapacity * 3), 3);
+  leafMesh.castShadow = true;
+  leafMesh.receiveShadow = true;
+  leafMesh.frustumCulled = false;
+  treeGroup.add(leafMesh);
+}
+
+/* ---------- the setting: backdrop and stand ---------- */
+const walnut = {
+  map: tex('black_walnut_veneer_01_diff_1k.jpg', true), normalMap: tex('black_walnut_veneer_01_nor_gl_1k.jpg'),
+  roughnessMap: tex('black_walnut_veneer_01_rough_1k.jpg'),
+};
+let settingId = null, potId = null, pot = null;
+const settingGroup = new THREE.Group();
+world.add(settingGroup);
+const shadowCatcher = new THREE.Mesh(new THREE.PlaneGeometry(12, 12), new THREE.ShadowMaterial({ opacity: 0.4 }));
+shadowCatcher.rotation.x = -Math.PI / 2;
+shadowCatcher.receiveShadow = true;
+
+function gradientBackground(top, bottom) {
+  const cv = document.createElement('canvas');
+  cv.width = 2; cv.height = 512;
+  const ctx = cv.getContext('2d');
+  const g = ctx.createLinearGradient(0, 0, 0, 512);
+  g.addColorStop(0, top); g.addColorStop(0.62, bottom); g.addColorStop(1, bottom);
+  ctx.fillStyle = g; ctx.fillRect(0, 0, 2, 512);
+  const t = new THREE.CanvasTexture(cv);
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+const backgrounds = { studio: gradientBackground('#2b2c2a', '#0b0b0a'), tokonoma: new THREE.Color('#15110d') };
+
+function slab(w, h, d, tint, radius = 0.004) {
+  const m = new THREE.MeshStandardMaterial({ ...walnut, color: tint });
+  const mesh = new THREE.Mesh(new RoundedBoxGeometry(w, h, d, 3, radius), m);
+  mesh.castShadow = mesh.receiveShadow = true;
+  return mesh;
+}
+
+async function applySetting(id) {
+  if (id === settingId) return;
+  settingId = id;
+  const s = SETTINGS[id];
+  settingGroup.clear();
+  if (id === 'studio') {
+    const stand = slab(0.5, 0.03, 0.36, '#8a7262');
+    stand.position.y = -0.015;
+    shadowCatcher.position.y = -0.03;
+    settingGroup.add(stand, shadowCatcher);
+  } else if (id === 'tokonoma') {
+    const board = slab(1.9, 0.05, 0.72, '#7b6352', 0.003);
+    board.position.set(0, -0.025, -0.06);
+    const plaster = new THREE.MeshStandardMaterial({
+      map: tex('clay_plaster_diff_1k.jpg', true, 2), normalMap: tex('clay_plaster_nor_gl_1k.jpg', false, 2),
+      color: '#e8d6b8', roughness: 0.95,
+    });
+    const wall = new THREE.Mesh(new THREE.PlaneGeometry(1.9, 1.4), plaster);
+    wall.position.set(0, 0.68, -0.42);
+    wall.receiveShadow = true;
+    const side = new THREE.Mesh(new THREE.PlaneGeometry(0.72, 1.4), plaster);
+    side.rotation.y = -Math.PI / 2;
+    side.position.set(0.95, 0.68, -0.06);
+    side.receiveShadow = true;
+    const post = slab(0.07, 1.45, 0.07, '#5e4a3c', 0.006);
+    post.position.set(0.9, 0.7, -0.38);
+    const stand = slab(0.42, 0.022, 0.3, '#a08770', 0.003);
+    stand.position.y = 0.011;
+    settingGroup.add(board, wall, side, post, stand);
+    settingGroup.position.y = -0.022;
+  } else {
+    const bench = slab(0.95, 0.05, 0.4, '#a8a49a', 0.006);
+    bench.position.y = -0.025;
+    const legMat = new THREE.MeshStandardMaterial({ color: '#77746c', roughness: 0.92 });
+    for (const x of [-0.34, 0.34]) {
+      const leg = new THREE.Mesh(new RoundedBoxGeometry(0.1, 0.44, 0.34, 3, 0.01), legMat);
+      leg.position.set(x, -0.27, 0);
+      leg.castShadow = leg.receiveShadow = true;
+      settingGroup.add(leg);
+    }
+    shadowCatcher.position.y = -0.49;
+    settingGroup.add(bench, shadowCatcher);
+  }
+  if (id !== 'tokonoma') settingGroup.position.y = 0;
+  const env = await loadEnv(s.hdr);
+  if (settingId !== id) return;
+  scene.environment = env;
+  scene.environmentIntensity = s.env * look.env;
+  if (s.background) {
+    scene.background = env;
+    scene.backgroundBlurriness = 0.5;
+    scene.backgroundIntensity = 0.85;
+  } else {
+    scene.background = backgrounds[id];
+    scene.backgroundBlurriness = 0;
+    scene.backgroundIntensity = 1;
+  }
+  applyLook();
+}
+
+function applyPot(id) {
+  if (id === potId) return;
+  potId = id;
+  if (pot) { turntable.remove(pot.group); }
+  pot = buildPot(POT[id]);
+  turntable.add(pot.group);
+  treeGroup.position.y = pot.soilY;
+}
+
+/* ---------- the worker and what it sends back ---------- */
+const worker = new Worker(new URL('./worker.js', import.meta.url), { type: 'module' });
+let frame = null, meta = null, busy = false, previewing = false;
+const queue = [];          // actions run in order, never dropped
+let latest = null;         // only the newest scrub or preview matters
+let speciesId = null;
+
+worker.onmessage = ({ data }) => {
+  if (data.type === 'error') { console.error(data.message); busy = false; return; }
+  busy = false;
+  if (data.saved && !setupOpen) store.set('project', JSON.stringify(data.saved));
+  if (data.acted) selected = -1;
+  if (data.rejected && data.rejected !== 'undo') flash(rejectText(data.rejected));
+  applyFrame(data.frame, data.preview);
+  meta = data.meta;
+  previewing = data.preview;
+  renderTimeline();
+  pump();
+};
+function send(msg) {
+  if (msg.type === 'goto' || msg.type === 'preview') latest = msg;
+  else queue.push(msg);
+  pump();
+}
+function pump() {
+  if (busy) return;
+  const msg = queue.shift() || latest;
+  if (!msg) return;
+  if (msg === latest) latest = null;
+  busy = true;
+  worker.postMessage(msg);
+}
+
+function applyFrame(f, isPreview) {
+  frame = f;
+  const sp = SPECIES[f.species];
+  if (speciesId !== f.species) {
+    speciesId = f.species;
+    branchMesh.material = barkMaterial(sp);
+    updateToolAvailability();
+  }
+  const b = f.branch;
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(b.position, 3));
+  g.setAttribute('normal', new THREE.BufferAttribute(b.normal, 3));
+  g.setAttribute('uv', new THREE.BufferAttribute(b.uv, 2));
+  g.setAttribute('aInfo', new THREE.BufferAttribute(b.info, 4));
+  g.setAttribute('aDfs', new THREE.BufferAttribute(b.dfs, 1));
+  g.setIndex(new THREE.BufferAttribute(b.index, 1));
+  g.computeBoundingSphere();
+  branchMesh.geometry.dispose();
+  branchMesh.geometry = g;
+
+  const L = f.leaves;
+  ensureLeaves(L.count, sp);
+  leafMesh.instanceMatrix.array.set(L.matrix);
+  leafMesh.instanceMatrix.needsUpdate = true;
+  leafMesh.instanceColor.array.set(L.color);
+  leafMesh.instanceColor.needsUpdate = true;
+  const da = leafMesh.geometry.attributes.aDfs;
+  da.array.set(L.dfs);
+  da.needsUpdate = true;
+  leafMesh.count = L.count;
+
+  const w = f.wires;
+  const wg = new THREE.BufferGeometry();
+  wg.setAttribute('position', new THREE.BufferAttribute(w.position, 3));
+  wg.setAttribute('normal', new THREE.BufferAttribute(w.normal, 3));
+  wg.setIndex(new THREE.BufferAttribute(w.index, 1));
+  wireMesh.geometry.dispose();
+  wireMesh.geometry = wg;
+
+  if (f.env.pot && f.env.pot !== potId) applyPot(f.env.pot);
+  if (f.env.setting && f.env.setting !== settingId) applySetting(f.env.setting);
+  turnTarget = f.env.turn;
+  if (autoFrame && !isPreview && !playing) frameTree(true);
+  if (!isPreview) {
+    if (selected >= f.info.ids.length) selected = -1;
+    if (selected >= 0 && !selectedId(selected)) selected = -1;
+    renderInspector();
+    renderCare();
+  }
+  updateHighlight();
+}
+const selectedId = dfs => frame && dfs >= 0 && dfs < frame.info.ids.length ? frame.info.ids[dfs] : null;
+
+/* ---------- picking: render the tree's dfs ids into a small patch under the cursor ----------
+   Twigs can be a pixel wide, so the patch is 9×9 and the hit nearest its centre wins. */
+const PICK = 9;
+const pickRT = new THREE.WebGLRenderTarget(PICK, PICK);
+const pickBuf = new Uint8Array(PICK * PICK * 4);
+function pick(x, y) {
+  if (!frame) return -1;
+  const bg = scene.background;
+  const vis = [world.visible, wireMesh.visible, pot?.group.visible];
+  world.visible = false; wireMesh.visible = false; if (pot) pot.group.visible = false;
+  scene.background = null;
+  scene.overrideMaterial = pickMat;
+  renderer.shadowMap.autoUpdate = false;
+  camera.setViewOffset(innerWidth, innerHeight, x - (PICK - 1) / 2, y - (PICK - 1) / 2, PICK, PICK);
+  renderer.setRenderTarget(pickRT);
+  renderer.setClearColor(0x000000, 0);
+  renderer.clear();
+  renderer.render(scene, camera);
+  renderer.readRenderTargetPixels(pickRT, 0, 0, PICK, PICK, pickBuf);
+  renderer.setRenderTarget(null);
+  camera.clearViewOffset();
+  scene.overrideMaterial = null;
+  scene.background = bg;
+  renderer.shadowMap.autoUpdate = true;
+  [world.visible, wireMesh.visible] = vis;
+  if (pot) pot.group.visible = vis[2];
+  let best = -1, bestD = Infinity;
+  const c = (PICK - 1) / 2;
+  for (let j = 0; j < PICK; j++) for (let i = 0; i < PICK; i++) {
+    const o = (j * PICK + i) * 4;
+    const id = pickBuf[o] + pickBuf[o + 1] * 256 + pickBuf[o + 2] * 65536;
+    const d = (i - c) ** 2 + (j - c) ** 2;
+    if (id && d < bestD) { bestD = d; best = id - 1; }
+  }
+  return best;
+}
+
+/* ---------- tools ---------- */
+const TOOLS = {
+  select: { title: 'Look and inspect', hint: 'Click a branch to see its age, vigour and wire. Drag to orbit, right-drag to pan, scroll to zoom.' },
+  cut: { title: 'Concave cutter', hint: 'Click a branch to cut it off where it joins its parent. Its growth goes to the buds that are left, and buds below the cut may wake.' },
+  pinch: { title: 'Pinch', hint: 'Click a soft new shoot to take out its growing tip. The buds lower down break instead, which builds fine ramification.' },
+  defoliate: { title: 'Defoliate', hint: 'Click a branch to strip its leaves, or the trunk for the whole tree. In early summer it pushes a second flush of smaller leaves. Weakens the area you strip, which helps balance a strong top.' },
+  wire: { title: 'Wire and bend', hint: 'Drag a branch to bend it. The wire holds it while the wood sets; remove it before it bites into the bark.' },
+  guy: { title: 'Guy wire', hint: 'Drag a branch towards the pot rim to pull it down with a guy wire.' },
+  jin: { title: 'Jin', hint: 'Click a branch to strip its bark and keep it as bleached deadwood.' },
+};
+let tool = 'select', hover = -1, selected = -1, bending = null, downAt = null;
+
+function setTool(t) {
+  if (!TOOLS[t] || document.querySelector(`.tool[data-tool="${t}"]`)?.disabled) return;
+  tool = t;
+  document.body.dataset.tool = t;
+  document.querySelectorAll('.tool[data-tool]').forEach(b => b.setAttribute('aria-pressed', b.dataset.tool === t));
+  shared.uHiColor.value.copy(HI[t]);
+  renderHint();
+  updateHighlight();
+}
+function renderHint(extra = '') {
+  const t = TOOLS[tool], sp = speciesId && SPECIES[speciesId];
+  let warn = '';
+  if (sp && tool === 'cut' && sp.backBud < 0.2) warn = `${sp.name} rarely buds on bare wood. Cut into wood with no green and it won't regrow.`;
+  if (sp && tool === 'cut' && sp.backBud >= 0.8) warn = `${sp.name} buds back almost anywhere after a cut.`;
+  if (sp && tool === 'pinch' && sp.habit === 'evergreen') warn = 'On juniper, pinching keeps foliage pads compact.';
+  $('toolhint').innerHTML = `<b>${t.title}</b>${t.hint}${warn ? `<span class="warn">${warn}</span>` : ''}${extra ? `<span class="warn">${extra}</span>` : ''}`;
+}
+function updateToolAvailability() {
+  const sp = SPECIES[speciesId];
+  const d = document.querySelector('.tool[data-tool="defoliate"]');
+  d.disabled = !sp.defoliate;
+  d.querySelector('.tip').firstChild.textContent = sp.defoliate ? 'Defoliate' : `Defoliate (not for ${sp.name.toLowerCase()})`;
+  if (tool === 'defoliate' && !sp.defoliate) setTool('select');
+  renderHint();
+}
+
+// which dfs range a tool would act on from a hovered node
+function toolRange(t, i) {
+  if (!frame || i < 0) return null;
+  const f = frame.info;
+  const dead = f.flags[i] & 1;
+  switch (t) {
+    case 'select': return [i, f.chainEnd[i]];
+    case 'cut': return i === 0 ? null : [i, f.end[i]];
+    case 'jin': return i === 0 || dead ? null : [i, f.end[i]];
+    case 'defoliate': return dead ? null : [i, f.end[i]];
+    case 'pinch': {
+      if (dead) return null;
+      for (let k = i; k <= f.chainEnd[i]; k++) if (f.flags[k] & 4) return [k, f.chainEnd[i]];
+      return null;
+    }
+    case 'wire': case 'guy': return dead && t === 'wire' ? null : [i, Math.min(f.chainEnd[i], i + 23)];
+  }
+  return null;
+}
+function updateHighlight() {
+  const r = bending ? [bending.start, bending.end] : toolRange(tool, hover);
+  shared.uHi.value.set(r ? r[0] : -10, r ? r[1] : -10, r ? (tool === 'select' ? 0.45 : 1) : 0, 0);
+  if (selected >= 0 && frame && selected < frame.info.ids.length) shared.uSel.value.set(selected, frame.info.end[selected]);
+  else shared.uSel.value.set(-10, -10);
+}
+
+const pointer = new THREE.Vector2();
+const ray = new THREE.Raycaster();
+let pickQueued = false, lastXY = [0, 0];
+canvas.addEventListener('pointermove', e => {
+  lastXY = [e.clientX, e.clientY];
+  if (bending) { bendTo(e); return; }
+  if (e.buttons && tool === 'select') return;
+  if (!pickQueued) { pickQueued = true; requestAnimationFrame(() => { pickQueued = false; hover = pick(...lastXY); updateHighlight(); }); }
+});
+canvas.addEventListener('pointerleave', () => { hover = -1; updateHighlight(); });
+canvas.addEventListener('pointerdown', e => {
+  if (e.button !== 0) return;
+  downAt = [e.clientX, e.clientY];
+  if ((tool === 'wire' || tool === 'guy') && frame) {
+    const i = pick(e.clientX, e.clientY);
+    const r = toolRange(tool, i);
+    if (!r) return;
+    pause();
+    controls.enabled = false;
+    document.body.classList.add('is-bending');
+    canvas.setPointerCapture(e.pointerId);
+    const f = frame.info;
+    const local = k => new THREE.Vector3(f.base[k * 3], f.base[k * 3 + 1], f.base[k * 3 + 2]);
+    const base = local(r[0]);
+    const tip = new THREE.Vector3(f.tip[r[1] * 3], f.tip[r[1] * 3 + 1], f.tip[r[1] * 3 + 2]);
+    treeGroup.updateMatrixWorld();
+    const tipWorld = tip.clone().applyMatrix4(treeGroup.matrixWorld);
+    const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(camera.getWorldDirection(new THREE.Vector3()).negate(), tipWorld);
+    bending = { start: r[0], end: r[1], id: f.ids[r[0]], base, tip, plane, axis: null, angle: 0, target: null,
+      gauge: Math.min(0.004, Math.max(0.0009, f.radius[r[0]] * 0.75)) };
+    updateHighlight();
+  }
+});
+canvas.addEventListener('pointerup', e => {
+  if (bending) { finishBend(); return; }
+  if (!downAt || Math.hypot(e.clientX - downAt[0], e.clientY - downAt[1]) > 5) { downAt = null; return; }
+  downAt = null;
+  const i = pick(e.clientX, e.clientY);
+  click(i);
+});
+
+function click(i) {
+  if (!frame) return;
+  if (tool === 'select') { selected = i; renderInspector(); updateHighlight(); return; }
+  if (tool === 'wire' || tool === 'guy') { if (i >= 0) flash('Drag the branch to bend it.'); return; }
+  const r = toolRange(tool, i);
+  if (!r) {
+    if (i >= 0 && tool === 'pinch') flash('Nothing to pinch there: pinching works on this year’s soft shoots.');
+    if (i === 0 && (tool === 'cut' || tool === 'jin')) flash('That’s the base of the trunk. Cut higher up to chop the trunk.');
+    return;
+  }
+  pause();
+  const id = frame.info.ids[i];
+  if (tool === 'defoliate' && i === 0) act({ t: 'defoliate' });
+  else act({ t: tool, id });
+  selected = -1;
+}
+
+function bendTo(e) {
+  pointer.set((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
+  ray.setFromCamera(pointer, camera);
+  const hit = ray.ray.intersectPlane(bending.plane, new THREE.Vector3());
+  if (!hit) return;
+  const inv = treeGroup.matrixWorld.clone().invert();
+  const target = hit.applyMatrix4(inv);
+  const v0 = bending.tip.clone().sub(bending.base), v1 = target.clone().sub(bending.base);
+  const axis = v0.clone().cross(v1);
+  if (axis.lengthSq() < 1e-10) return;
+  axis.normalize();
+  bending.axis = axis;
+  bending.angle = Math.min(1.7, v0.angleTo(v1));
+  bending.target = target;
+  send({ type: 'preview', op: bendOp() });
+}
+function bendOp() {
+  const op = { t: 'wire', kind: tool, id: bending.id, length: bending.end - bending.start + 1, axis: bending.axis.toArray(), angle: bending.angle, gauge: bending.gauge };
+  if (tool === 'guy' && bending.target && pot) {
+    const t = Math.atan2(bending.target.z, bending.target.x);
+    const [x, y, z] = pot.rim(t);
+    op.anchor = [x, y - pot.soilY + 0.003, z];
+  }
+  return op;
+}
+function finishBend() {
+  controls.enabled = true;
+  document.body.classList.remove('is-bending');
+  const op = bending.axis && bending.angle > 0.03 ? bendOp() : null;
+  bending = null;
+  if (op) act(op);
+  else { flash('Drag the branch to bend it.'); send({ type: 'goto', step: frame.step }); }
+  updateHighlight();
+}
+
+function act(op) {
+  if (latest?.type === 'preview') latest = null;
+  send({ type: 'act', op });
+}
+function rejectText(t) {
+  return { cut: 'Can’t cut there.', pinch: 'Nothing to pinch there.', defoliate: 'There are no leaves to take off.', jin: 'Can’t make deadwood there.', wire: 'Can’t wire there.' }[t] || 'That didn’t work.';
+}
+let flashTimer = 0;
+function flash(text) {
+  renderHint(text);
+  clearTimeout(flashTimer);
+  flashTimer = setTimeout(() => renderHint(), 3500);
+}
+
+document.querySelectorAll('.tool[data-tool]').forEach(b => b.addEventListener('click', () => setTool(b.dataset.tool)));
+$('frame').addEventListener('click', () => frameTree());
+
+/* ---------- inspector ---------- */
+const pct = x => `${Math.round(x * 100)}%`;
+const mm = r => `${(r * 2000).toFixed(r < 0.0025 ? 1 : 0)} mm`;
+function renderInspector() {
+  const el = $('inspector');
+  if (!frame) { el.innerHTML = ''; return; }
+  const sp = SPECIES[frame.species];
+  const s = frame.stats;
+  if (selected < 0) {
+    const bound = s.rootBound;
+    const potName = POT[frame.env.pot]?.name || '';
+    el.innerHTML = `
+      <div class="sec__head"><h3>${sp.name}</h3><span class="meta">${sp.latin}</span></div>
+      <dl class="facts">
+        <dt>Height</dt><dd>${Math.round(s.height * 100)} cm</dd>
+        <dt>Trunk</dt><dd>${mm(s.trunk / 2)}</dd>
+        <dt>Vigour</dt><dd class="${s.vigor < 0.55 ? 'warn' : ''}">${pct(Math.min(1, s.vigor / 1.3))}</dd>
+        <dt>Roots</dt><dd class="${bound > 0.5 ? 'warn' : ''}">${bound > 0.5 ? 'Pot-bound' : bound > 0.05 ? 'Filling the pot' : 'Growing'}</dd>
+        <dt>Branch tips</dt><dd>${frame.info.ids.length}</dd>
+      </dl>
+      ${bound > 0.5 ? `<p class="say">The roots have filled the ${potName.toLowerCase()}. Repot in early spring to restore vigour.</p>` : ''}
+      ${s.stress > 0.25 ? '<p class="say">Recovering from heavy work. It will grow more slowly this year.</p>' : ''}
+      ${frame.wireList.some(w => w.biting) ? '<p class="say">A wire is biting into the bark. Select the wired branch to remove it.</p>' : ''}
+      <p class="say">${sp.blurb}</p>`;
+    return;
+  }
+  const f = frame.info, i = selected;
+  const flags = f.flags[i];
+  let chainLen = 0;
+  for (let k = i; k <= f.chainEnd[i]; k++) chainLen += f.len[k];
+  const wire = frame.wireList.find(w => i >= w.start && i <= w.end);
+  const kind = i === 0 ? 'Trunk base' : f.order[i] === 0 ? 'Trunk' : (flags & 4) ? 'New shoot' : f.order[i] === 1 ? 'Primary branch' : 'Branch';
+  const light = f.light[i];
+  el.innerHTML = `
+    <div class="sec__head"><h3>${flags & 1 ? 'Deadwood' : kind}</h3><button class="btn" type="button" id="deselect">Done</button></div>
+    <dl class="facts">
+      <dt>Thickness</dt><dd>${mm(f.radius[i])}</dd>
+      <dt>Length to tip</dt><dd>${(chainLen * 100).toFixed(1)} cm</dd>
+      <dt>Age</dt><dd>${f.age[i] < 1 ? `${Math.max(1, Math.round(f.age[i] * 52))} weeks` : `${Math.floor(f.age[i])} years`}</dd>
+      ${flags & 1 ? '' : `<dt>Light</dt><dd>${light > 0.66 ? 'Bright' : light > 0.33 ? 'Partial shade' : light > 0 ? 'Shaded' : '—'}</dd>`}
+      ${wire ? `<dt>${wire.kind === 'guy' ? 'Guy wire' : 'Wire'}</dt><dd class="${wire.biting ? 'warn' : ''}">${wire.biting ? 'Biting in' : `${pct(wire.set)} set`}</dd>` : ''}
+    </dl>
+    ${wire ? `<p class="say">${wire.set >= 0.95 ? 'The bend has set. Safe to remove.' : `If removed now it springs back about ${pct(1 - wire.set)} of the way.`}</p>
+      <div class="row"><button class="btn btn--accent" type="button" id="unwire">Remove ${wire.kind === 'guy' ? 'guy wire' : 'wire'}</button></div>` : ''}
+    ${!(flags & 1) && light > 0 && light < 0.3 ? '<p class="say">Shaded branches weaken and may be shed. Thin above it to let light in.</p>' : ''}`;
+  $('deselect').onclick = () => { selected = -1; renderInspector(); updateHighlight(); };
+  if (wire) $('unwire').onclick = () => { pause(); act({ t: 'unwire', wire: wire.id }); };
+}
+
+/* ---------- care ---------- */
+function renderCare() {
+  if (!frame) return;
+  document.querySelectorAll('#feed button').forEach(b => b.setAttribute('aria-pressed', +b.dataset.level === frame.env.feed));
+  document.querySelectorAll('#place button').forEach(b => b.setAttribute('aria-pressed', b.dataset.id === frame.env.setting));
+  document.querySelectorAll('#repot-pots button').forEach(b => b.setAttribute('aria-pressed', b.dataset.id === repotChoice));
+  const m = frameMonth();
+  $('repot-say').textContent = m >= 1 && m <= 3 ? 'Early spring: the best time to repot.' : 'Best done in early spring, just before the buds open. Root work at other times sets the tree back further.';
+}
+let repotChoice = null;
+$('feed').addEventListener('click', e => { const b = e.target.closest('button'); if (b) act({ t: 'feed', level: +b.dataset.level }); });
+$('turn-left').addEventListener('click', () => act({ t: 'turn', angle: Math.PI / 2 }));
+$('turn-right').addEventListener('click', () => act({ t: 'turn', angle: -Math.PI / 2 }));
+$('place').innerHTML = SETTING_LIST.map(s => `<button type="button" data-id="${s.id}">${s.name.split(' ')[0]}</button>`).join('');
+$('place').addEventListener('click', e => {
+  const b = e.target.closest('button');
+  if (b && frame && b.dataset.id !== frame.env.setting) act({ t: 'place', setting: b.dataset.id, light: SETTINGS[b.dataset.id].grow });
+});
+$('repot-pots').innerHTML = POTS.map(p => `<button type="button" data-id="${p.id}" title="${p.name}" aria-label="${p.name}">${potIcon(p, POT_SWATCH[p.id])}</button>`).join('');
+$('repot-pots').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { repotChoice = b.dataset.id; renderCare(); } });
+$('repot').addEventListener('toggle', () => { if ($('repot').open && frame) { repotChoice = frame.env.pot; renderCare(); } });
+$('prune').addEventListener('input', () => { $('prune-out').textContent = `${$('prune').value}%`; });
+$('do-repot').addEventListener('click', () => {
+  const p = POT[repotChoice] || POT[frame.env.pot];
+  pause();
+  act({ t: 'repot', pot: p.id, cap: p.cap, prune: +$('prune').value / 100 });
+  $('repot').open = false;
+});
+
+/* ---------- time ---------- */
+let playing = false, clock = START_STEP, speed = +(store.get('speed') ?? 1);
+if (!SPEEDS[speed]) speed = 1;
+const frameMonth = () => frame ? Math.floor((((frame.step / STEPS_PER_YEAR) + START_MONTH / 12) % 1) * 12) : 2;
+$('speeds').innerHTML = SPEEDS.map((s, i) => `<button type="button" data-i="${i}" title="${(STEPS_PER_YEAR / s.sps).toFixed(1)} s a year">${s.label}</button>`).join('');
+$('speeds').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { speed = +b.dataset.i; store.set('speed', speed); renderTimeline(); } });
+function play() {
+  if (!frame) return;
+  if (frame.step >= MAX_STEP) return;
+  playing = true;
+  clock = frame.step;
+  selected = -1;
+  renderInspector();
+  renderTimeline();
+}
+function pause() {
+  if (!playing) return;
+  playing = false;
+  if (frame) send({ type: 'goto', step: frame.step, save: true });
+  renderTimeline();
+}
+$('play').addEventListener('click', () => playing ? pause() : play());
+
+function trackEnd() {
+  const reach = meta ? Math.max(...meta.branches.map(b => b.reach || START_STEP)) : START_STEP;
+  const now = frame ? frame.step : START_STEP;
+  const yrs = Math.ceil((Math.max(reach, now) - START_STEP) / STEPS_PER_YEAR) + 3;
+  return START_STEP + Math.max(10, yrs) * STEPS_PER_YEAR;
+}
+function renderTimeline() {
+  if (!frame) return;
+  const age = frame.step / STEPS_PER_YEAR + START_MONTH / 12;
+  $('date-age').textContent = `Age ${Math.floor(age)}`;
+  $('date-month').textContent = MONTHS[frameMonth()];
+  $('play-icon').innerHTML = playing ? '<path d="M4 2.5h3v11H4zM9 2.5h3v11H9z"/>' : '<path d="M4 2.5v11L13.5 8z"/>';
+  $('play').setAttribute('aria-label', playing ? 'Pause' : 'Grow');
+  document.querySelectorAll('#speeds button').forEach(b => b.setAttribute('aria-pressed', +b.dataset.i === speed));
+  const end = trackEnd(), span = end - START_STEP;
+  const x = s => `${((s - START_STEP) / span) * 100}%`;
+  $('head').style.left = x(frame.step);
+  const yearPct = (STEPS_PER_YEAR / span) * 100;
+  // seasons, one year per tile, starting in March
+  $('seasons').style.backgroundImage = `linear-gradient(90deg, #8fb85e 0%, #4f8a3a 17%, #4f8a3a 50%, #c8722c 58%, #b0562a 70%, #55606c 80%, #55606c 100%)`;
+  $('seasons').style.backgroundSize = `${yearPct}% 100%`;
+  const active = meta?.branches.find(b => b.id === meta.active);
+  const reach = active ? active.reach : frame.step;
+  $('reach').style.left = x(Math.max(reach, frame.step));
+  $('marks').innerHTML = (active ? active.ops.filter(o => o.step >= START_STEP).map(o => `<span class="mark" style="left:${x(o.step)}" title="${o.t}"></span>`).join('') : '')
+    + (active && active.parent ? `<span class="mark mark--fork" style="left:${x(active.fork)}" title="Branched here"></span>` : '');
+  // ticks on whole ages
+  const ageAt = s => s / STEPS_PER_YEAR + START_MONTH / 12;
+  const years = span / STEPS_PER_YEAR, every = years > 24 ? 5 : years > 12 ? 2 : 1;
+  let ticks = '';
+  for (let a = Math.ceil(ageAt(START_STEP)); a <= ageAt(end); a += every) {
+    ticks += `<span style="left:${x((a - START_MONTH / 12) * STEPS_PER_YEAR)}">${a}</span>`;
+  }
+  $('ticks').innerHTML = ticks;
+  $('track').setAttribute('aria-valuenow', Math.floor(age));
+  $('track').setAttribute('aria-valuetext', `Age ${Math.floor(age)}, ${MONTHS[frameMonth()]}`);
+  if (meta) {
+    const sel = $('branch');
+    const opts = meta.branches.map(b => `<option value="${b.id}" ${b.id === meta.active ? 'selected' : ''}>${b.name}${b.parent ? ` · from age ${Math.floor(b.fork / STEPS_PER_YEAR + START_MONTH / 12)}` : ''}</option>`).join('');
+    if (sel.dataset.opts !== opts) { sel.innerHTML = opts; sel.dataset.opts = opts; }
+    sel.disabled = meta.branches.length < 2;
+  }
+  $('busy').hidden = !(playing && busy);
+}
+$('branch').addEventListener('change', e => { pause(); send({ type: 'branch', id: +e.target.value }); });
+
+let scrubbing = false;
+function scrubTo(e) {
+  const r = $('track').getBoundingClientRect();
+  const t = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width));
+  const step = Math.round(START_STEP + t * (trackEnd() - START_STEP));
+  playing = false;
+  send({ type: 'goto', step: Math.min(MAX_STEP, step) });
+}
+$('track').addEventListener('pointerdown', e => { scrubbing = true; $('track').setPointerCapture(e.pointerId); scrubTo(e); });
+$('track').addEventListener('pointermove', e => { if (scrubbing) scrubTo(e); });
+$('track').addEventListener('pointerup', () => { scrubbing = false; if (frame) send({ type: 'goto', step: frame.step, save: true }); });
+$('track').addEventListener('keydown', e => {
+  if (!frame) return;
+  const d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+  if (!d) return;
+  e.preventDefault();
+  stepBy(d * (e.shiftKey ? STEPS_PER_YEAR : 4));
+});
+function stepBy(n) {
+  playing = false;
+  send({ type: 'goto', step: Math.max(START_STEP, Math.min(MAX_STEP, frame.step + n)), save: true });
+}
+
+/* ---------- keyboard ---------- */
+addEventListener('keydown', e => {
+  if (e.target.closest('input, select, textarea') || setupOpen) return;
+  const k = e.key.toLowerCase();
+  if ((e.metaKey || e.ctrlKey) && k === 'z') { e.preventDefault(); pause(); send({ type: 'undo' }); return; }
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  if (k === ' ') { e.preventDefault(); playing ? pause() : play(); return; }
+  if (e.target.closest('#track')) return;
+  const map = { v: 'select', c: 'cut', p: 'pinch', d: 'defoliate', w: 'wire', g: 'guy', j: 'jin' };
+  if (map[k]) setTool(map[k]);
+  else if (k === 'f') frameTree();
+  else if (k === 'escape') { if (bending) { bending = null; controls.enabled = true; send({ type: 'goto', step: frame.step }); } setTool('select'); selected = -1; renderInspector(); updateHighlight(); }
+  else if (k === 'arrowright') stepBy(e.shiftKey ? STEPS_PER_YEAR : 4);
+  else if (k === 'arrowleft') stepBy(-(e.shiftKey ? STEPS_PER_YEAR : 4));
+});
+
+/* ---------- camera framing ---------- */
+// keep the tree framed until the viewer moves the camera themselves
+let camGoal = null, autoFrame = true;
+controls.addEventListener('start', () => { autoFrame = false; camGoal = null; });
+function frameTree(immediate = false) {
+  if (!frame) return;
+  const h = Math.max(0.12, frame.stats.height);
+  const potW = pot ? pot.width : 0.3;
+  const soil = pot ? pot.soilY : 0.07;
+  const target = new THREE.Vector3(0, soil + h * 0.42, 0);
+  const size = Math.max(h + soil, potW * 1.1);
+  const dist = size / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2)) * 1.25 / Math.min(1, camera.aspect * 0.9);
+  const dir = camera.position.clone().sub(controls.target).normalize();
+  if (dir.y < 0.05 || dir.y > 0.8) dir.set(0.22, 0.28, 1).normalize();
+  const pos = target.clone().add(dir.multiplyScalar(dist));
+  if (immediate) { controls.target.copy(target); camera.position.copy(pos); camGoal = null; }
+  else camGoal = { target, pos };
+}
+
+/* ---------- the look: light, lens, grade ---------- */
+const LOOK_DEFAULTS = {
+  exposure: 1, toneMapping: 'AgX', key: 1, warmth: 0, keyTurn: 0, keyLift: 0, softness: 4, env: 1,
+  ao: true, focal: 70, dof: true, aperture: 1, vignette: 0.35, grain: 0.03, wind: 1, translucency: 1,
+};
+const look = { ...LOOK_DEFAULTS, ...(() => { try { return JSON.parse(store.get('look')) || {}; } catch { return {}; } })() };
+const TONE = { AgX: THREE.AgXToneMapping, ACES: THREE.ACESFilmicToneMapping, Neutral: THREE.NeutralToneMapping };
+const keyColor = new THREE.Color();
+function applyLook() {
+  const s = SETTINGS[settingId || 'studio'];
+  renderer.toneMapping = TONE[look.toneMapping];
+  renderer.toneMappingExposure = s.exposure * look.exposure;
+  // key light: the setting's direction, turned and lifted by the look
+  const d = new THREE.Vector3(...s.key.dir).normalize();
+  const az = Math.atan2(d.x, d.z) + THREE.MathUtils.degToRad(look.keyTurn);
+  const el = THREE.MathUtils.clamp(Math.asin(d.y) + THREE.MathUtils.degToRad(look.keyLift), 0.08, 1.5);
+  key.position.set(Math.sin(az) * Math.cos(el), Math.sin(el), Math.cos(az) * Math.cos(el)).multiplyScalar(2.2);
+  key.target.position.set(0, 0.15, 0);
+  keyColor.set(s.key.color);
+  if (look.warmth) keyColor.lerp(new THREE.Color(look.warmth > 0 ? '#ffb46b' : '#a9c8ff'), Math.abs(look.warmth) * 0.6);
+  key.color.copy(keyColor);
+  key.intensity = s.key.intensity * look.key;
+  key.shadow.radius = look.softness;
+  scene.environmentIntensity = s.env * look.env;
+  gtao.enabled = look.ao;
+  dof.enabled = look.dof && params.get('dof') !== '0';
+  if (params.get('ao') === '0') gtao.enabled = false;
+  camera.fov = THREE.MathUtils.radToDeg(2 * Math.atan(24 / (2 * look.focal)));
+  camera.updateProjectionMatrix();
+  grade.uniforms.vignette.value = look.vignette;
+  grade.uniforms.grain.value = look.grain;
+  shared.uWind.value = look.wind;
+  shared.uTransl.value = look.translucency;
+  store.set('look', JSON.stringify(look));
+}
+
+const gui = new GUI({ container: $('look'), title: 'Look' });
+const help = (c, text) => { c.domElement.insertAdjacentHTML('afterend', `<div class="gui-help">${text}</div>`); return c; };
+const fLight = gui.addFolder('Light');
+help(fLight.add(look, 'key', 0, 2, 0.01).name('Key light'), 'The main light. It sets the shadows and the mood.');
+help(fLight.add(look, 'keyTurn', -180, 180, 1).name('Key direction'), 'Swing the light round the tree. Side light shows bark texture; back light makes leaves glow.');
+help(fLight.add(look, 'keyLift', -40, 40, 1).name('Key height'), 'Lower is more dramatic, with long shadows; higher is flatter, like midday.');
+help(fLight.add(look, 'warmth', -1, 1, 0.01).name('Warmth'), 'Golden hour to the right, cool overcast to the left.');
+help(fLight.add(look, 'softness', 0, 12, 0.5).name('Shadow softness'), 'Blurs shadow edges, as if the light source were larger.');
+help(fLight.add(look, 'env', 0, 2, 0.01).name('Ambient'), 'Light from the surroundings, filling in the shadows.');
+help(fLight.add(look, 'ao').name('Contact shadows'), 'Darkens creases, forks and where the trunk meets the soil.');
+const fLens = gui.addFolder('Lens');
+help(fLens.add(look, 'focal', 24, 135, 1).name('Focal length (mm)'), 'Long lenses flatten and isolate; wide ones exaggerate depth. Portraits usually sit at 70–105.');
+help(fLens.add(look, 'dof').name('Depth of field'), 'Focus on the tree and let the background fall away.');
+help(fLens.add(look, 'aperture', 0, 3, 0.05).name('Aperture'), 'How shallow the focus is. Higher is a wider aperture, with more blur.');
+const fGrade = gui.addFolder('Grade');
+help(fGrade.add(look, 'exposure', 0.4, 2, 0.01).name('Exposure'), 'Overall brightness, before tone mapping.');
+help(fGrade.add(look, 'toneMapping', Object.keys(TONE)).name('Tone mapping'), 'How highlights roll off. AgX is filmic and gentle, ACES punchier, Neutral the most literal.');
+help(fGrade.add(look, 'vignette', 0, 1, 0.01).name('Vignette'), 'Darkens the corners to hold the eye on the tree.');
+help(fGrade.add(look, 'grain', 0, 0.12, 0.005).name('Grain'), 'A little film grain hides banding in smooth backgrounds.');
+const fLife = gui.addFolder('Life');
+help(fLife.add(look, 'wind', 0, 3, 0.05).name('Breeze'), 'How much the leaves stir.');
+help(fLife.add(look, 'translucency', 0, 2, 0.05).name('Leaf glow'), 'Light shining through leaves held up to it.');
+gui.onChange(applyLook);
+addVersions(gui, { key: 'bonsai-look', params: look, defaults: LOOK_DEFAULTS, apply: applyLook, camera, controls });
+gui.folders.forEach(f => f.close());
+fLight.open();
+
+/* ---------- setup ---------- */
+let setupOpen = false;
+const setup = {
+  species: store.get('species') || 'maple',
+  pot: store.get('pot') || 'namako',
+  setting: store.get('setting') || 'studio',
+  seed: Math.floor(Math.random() * 1e9),
+};
+if (!SPECIES[setup.species]) setup.species = 'maple';
+if (!POT[setup.pot]) setup.pot = 'namako';
+if (!SETTINGS[setup.setting]) setup.setting = 'studio';
+
+$('species-list').innerHTML = SPECIES_LIST.map(s => `
+  <button class="choice" type="button" data-id="${s.id}"><b>${s.name}</b><i>${s.latin}</i><small>${s.blurb}</small></button>`).join('');
+$('pot-list').innerHTML = POTS.map(p => `
+  <button class="choice" type="button" data-id="${p.id}">${potIcon(p, POT_SWATCH[p.id])}<b>${p.name}</b><small>${p.note}</small></button>`).join('');
+$('setting-list').innerHTML = SETTING_LIST.map(s => `
+  <button class="choice choice--compact" type="button" data-id="${s.id}" title="${s.note}"><b>${s.name}</b><small>${s.note}</small></button>`).join('');
+function renderSetup() {
+  for (const [list, key] of [['species-list', 'species'], ['pot-list', 'pot'], ['setting-list', 'setting']]) {
+    $(list).querySelectorAll('.choice').forEach(b => b.setAttribute('aria-pressed', b.dataset.id === setup[key]));
+  }
+}
+function plantPreview() {
+  store.set('species', setup.species); store.set('pot', setup.pot); store.set('setting', setup.setting);
+  applyPot(setup.pot);
+  applySetting(setup.setting);
+  newTree();
+}
+function newTree() {
+  const p = POT[setup.pot];
+  send({ type: 'new', species: setup.species, seed: setup.seed, light: SETTINGS[setup.setting].grow, potCap: p.cap, pot: setup.pot, setting: setup.setting });
+}
+for (const [list, key] of [['species-list', 'species'], ['pot-list', 'pot'], ['setting-list', 'setting']]) {
+  $(list).addEventListener('click', e => {
+    const b = e.target.closest('.choice');
+    if (!b) return;
+    setup[key] = b.dataset.id;
+    renderSetup();
+    autoFrame = true;
+    plantPreview();
+  });
+}
+$('reroll').addEventListener('click', () => { setup.seed = Math.floor(Math.random() * 1e9); newTree(); });
+$('begin').addEventListener('click', () => {
+  openSetup(false);
+  // the worker saved nothing while setup was open; ask for the current state so it's stored
+  send({ type: 'goto', step: START_STEP, save: true });
+  play();
+});
+$('new-tree').addEventListener('click', () => {
+  if (!confirm('Start a new tree? The current tree and its timelines will be replaced.')) return;
+  pause();
+  store.del('project');
+  setup.seed = Math.floor(Math.random() * 1e9);
+  openSetup(true);
+  plantPreview();
+});
+function openSetup(open) {
+  setupOpen = open;
+  $('setup').hidden = !open;
+  for (const id of ['tools', 'side', 'timeline', 'toolhint']) $(id).hidden = open;
+  $('new-tree').hidden = open;
+  if (open) { setTool('select'); renderSetup(); }
+}
+
+/* ---------- loop ---------- */
+let turnTarget = 0, last = performance.now();
+const lightView = new THREE.Vector3();
+function resize() {
+  renderer.setSize(innerWidth, innerHeight, false);
+  composer.setPixelRatio(renderer.getPixelRatio());
+  composer.setSize(innerWidth, innerHeight);
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  const w = innerWidth * renderer.getPixelRatio(), h = innerHeight * renderer.getPixelRatio();
+  dof.uniforms.resolution.value.set(w, h);
+  grade.uniforms.aspect.value = innerWidth / innerHeight;
+}
+addEventListener('resize', resize);
+resize();
+
+function tick(now) {
+  const dt = Math.min(0.1, (now - last) / 1000);
+  last = now;
+  if (playing && frame) {
+    clock += dt * SPEEDS[speed].sps;
+    const want = Math.min(MAX_STEP, Math.floor(clock));
+    if (want > frame.step && !busy) send({ type: 'goto', step: want });
+    if (want >= MAX_STEP) pause();
+    if (clock > frame.step + 6) clock = frame.step + 6;      // don't run ahead of a slow build
+  }
+  turntable.rotation.y += (turnTarget - turntable.rotation.y) * Math.min(1, dt * 4);
+  if (camGoal) {
+    controls.target.lerp(camGoal.target, Math.min(1, dt * 5));
+    camera.position.lerp(camGoal.pos, Math.min(1, dt * 5));
+    if (camera.position.distanceTo(camGoal.pos) < 0.002) camGoal = null;
+  }
+  controls.update();
+  shared.uTime.value = now / 1000;
+  grade.uniforms.time.value = (now / 1000) % 10;
+  lightView.copy(key.position).sub(key.target.position).normalize().transformDirection(camera.matrixWorldInverse);
+  shared.uLightView.value.copy(lightView);
+  shared.uLightColor.value.copy(key.color).multiplyScalar(key.intensity * 0.35);
+  // depth of field focuses on the tree's centre
+  dof.uniforms.focus.value = camera.position.distanceTo(controls.target);
+  dof.uniforms.aperture.value = 0.0035 * look.aperture * (look.focal / 70);
+  dof.uniforms.near.value = camera.near; dof.uniforms.far.value = camera.far;
+  composer.render(dt);
+  requestAnimationFrame(tick);
+}
+
+/* ---------- start ---------- */
+await preloadSoil(texLoader);
+applyLook();
+const saved = (() => { try { return JSON.parse(store.get('project')); } catch { return null; } })();
+if (saved && saved.v === 1 && SPECIES[saved.species] && !params.has('species')) {
+  openSetup(false);
+  applyPot(saved.pot);
+  applySetting(saved.setting);
+  send({ type: 'load', project: saved });
+} else {
+  if (params.has('species') && SPECIES[params.get('species')]) setup.species = params.get('species');
+  if (params.has('pot') && POT[params.get('pot')]) setup.pot = params.get('pot');
+  if (params.has('setting') && SETTINGS[params.get('setting')]) setup.setting = params.get('setting');
+  if (params.has('seed')) setup.seed = +params.get('seed');
+  openSetup(!params.has('species'));
+  plantPreview();
+  if (params.has('age')) send({ type: 'goto', step: Math.max(START_STEP, Math.round((+params.get('age') - START_MONTH / 12) * STEPS_PER_YEAR)) });
+}
+setTool('select');
+requestAnimationFrame(tick);
+
+if (params.has('debug')) {
+  // test hooks; not part of the page
+  window.__bonsai = { get frame() { return frame; }, get meta() { return meta; }, get busy() { return busy || queue.length > 0 || !!latest; },
+    act, send, setTool, pick, camera, treeGroup, controls, play, pause, frameTree };
+}
+
+if (params.has('portrait')) {
+  import('./portrait.js').then(m => {
+    window.bonsaiPortrait = {
+      async capture(aspect = 'laptop') {
+        const shot = await m.capturePortrait({ renderer, scene, camera, composer, aspect: m.ASPECTS[aspect] });
+        for (const [name, blob] of [['image', shot.image], ['depth', shot.depth]]) {
+          const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: `bonsai-${name}.png` });
+          a.click();
+          URL.revokeObjectURL(a.href);
+        }
+        return shot;
+      },
+      prompt: m.portraitPrompt,
+    };
+  });
+}

@@ -35,6 +35,18 @@ const ELONGATION = 4;                               // steps for an internode to
 const GROW_FROM = 0.2, GROW_TO = 0.72;              // the thickening season, as fractions of a year
 const GROW_STEPS = (GROW_TO - GROW_FROM) * STEPS_PER_YEAR;
 const UP = [0, 1, 0];
+const WIRE_BITE = 0.45;              // the wire starts to cut in once the branch has swelled by this share of its gauge
+
+/* How close a wire is to biting: 0 when fresh, 1 when the bark starts to swell over it. */
+export function wireTightness(state, w) {
+  if (w.kind === 'guy') return 0;
+  let t = 0;
+  w.chain.forEach((id, i) => {
+    const n = state.nodes[id];
+    if (n) t = Math.max(t, (n.r - w.r0[i]) / (w.gauge * WIRE_BITE));
+  });
+  return Math.max(0, t);
+}
 
 /* ---------- small vector helpers on [x, y, z] arrays ---------- */
 const add = (a, b, s = 1) => [a[0] + b[0] * s, a[1] + b[1] * s, a[2] + b[2] * s];
@@ -242,7 +254,13 @@ function flush(state, sp, strength, rootId = 0, boostOnly = false) {
   const awake = (n, b) => b.s === 1 && (b.b > 1 || state.step - n.born < STEPS_PER_YEAR * 1.1);
 
   let top = 0.05;
-  for (let id = 0; id < state.nextId; id++) if (nodes[id]) top = Math.max(top, pos.tip[id * 3 + 1]);
+  const path = new Float32Array(state.nextId);         // distance water travels from the roots
+  for (let id = 0; id < state.nextId; id++) {
+    const n = nodes[id];
+    if (!n) continue;
+    top = Math.max(top, pos.tip[id * 3 + 1]);
+    path[id] = (n.p >= 0 ? path[n.p] : 0) + n.len;
+  }
 
   // basipetal: light gathered by each subtree (children always have higher ids than parents)
   const qAp = new Float32Array(state.nextId), qSub = new Float32Array(state.nextId);
@@ -259,7 +277,10 @@ function flush(state, sp, strength, rootId = 0, boostOnly = false) {
     // A bud's claim on the budget: steeply more for sunlit buds, for buds high in the crown, and
     // for buds on the main framework rather than far out on side twigs (acrotony). This is why
     // the top of a bonsai runs strong and the lower branches weaken unless you intervene.
-    const claim = Math.pow(q, CLAIM) * Math.exp(sp.acrotony * pos.tip[id * 3 + 1] / top) * Math.pow(0.82, Math.min(n.ord, 6));
+    // Far from the roots, water runs short: shoots out at the end of long paths get less. That
+    // is what keeps a potted tree from growing tall forever.
+    const claim = Math.pow(q, CLAIM) * Math.exp(sp.acrotony * pos.tip[id * 3 + 1] / top) * Math.pow(0.82, Math.min(n.ord, 6))
+      * Math.exp(-path[id] / sp.reach);
     n.claim = claim;
     if (n.ap === 1 && !mainChild(state, n)) qAp[id] = claim;
     let s = qAp[id];
@@ -309,6 +330,7 @@ function flush(state, sp, strength, rootId = 0, boostOnly = false) {
   // sometimes break and the expected growth matches the budget
   const spring = frac < 0.32;
   for (const e of events) {
+    e.v *= Math.exp(-path[e.n.id] / (sp.reach * 2));
     const count = Math.floor(e.v + rnd(state.seed, e.n.id, R.bud, state.step * 4 + e.bud + 1));
     if (count >= 1) growShoot(state, sp, e.n, e.bud, e.v, count, pos, light);
     else if (spring && e.bud < 0 && !e.n.lf && e.n.Q > 0.15) {
@@ -388,7 +410,7 @@ export function stepTree(state) {
       for (const c of n.c) if (!nodes[c].dead) s += Math.pow(target[c], p);
       target[id] = Math.pow(s, 1 / p);
       const age = (state.step - n.born) / STEPS_PER_YEAR;
-      const goal = target[id] * (1 + 0.035 * Math.min(40, age));
+      const goal = target[id] * (1 + 0.5 * Math.log(1 + age / 4));       // old wood keeps adding rings, ever more slowly
       if (goal > n.r) n.r += (goal - n.r) * 0.045;
     }
     const rt = state.roots;
@@ -397,7 +419,7 @@ export function stepTree(state) {
       w.set = Math.min(1, w.set + sp.wireSet / GROW_STEPS);
       w.chain.forEach((id, i) => {
         const n = nodes[id];
-        if (n && n.r > w.r0[i] + w.gauge * 0.45) n.scar = Math.min(1, n.scar + sp.wireBite / GROW_STEPS);
+        if (w.kind !== 'guy' && n && n.r > w.r0[i] + w.gauge * WIRE_BITE) n.scar = Math.min(1, n.scar + sp.wireBite / GROW_STEPS);
       });
     }
   }
@@ -437,7 +459,8 @@ function yearEnd(state, sp) {
     if (!n) continue;
     const age = (state.step - n.born) / STEPS_PER_YEAR;
     if (age > sp.budAge) n.lb.forEach(b => { if (b.s === 1) b.s = -1; });
-    if (sp.foliageYears && n.lf && age > sp.foliageYears) n.lf = 0;
+    // old foliage is shed only behind newer growth; a tip that hasn't grown keeps its leaves
+    if (sp.foliageYears && n.lf && age > sp.foliageYears && n.c.some(c => nodes[c])) n.lf = 0;
   }
   // shed side branches whose leaves and buds sit in deep shade, or that have none left at all
   const count = new Float32Array(state.nextId), q = new Float32Array(state.nextId);
@@ -455,6 +478,18 @@ function yearEnd(state, sp) {
     if (state.step - n.born < STEPS_PER_YEAR) continue;
     if (!count[id] || q[id] / count[id] < sp.shed) removeSubtree(state, id);
   }
+  // self-thinning: the roots in the pot can only keep so many leafy tips alive. Beyond that the
+  // shadiest tips die, and dieback below tidies the bare wood they leave.
+  const limit = Math.round(sp.tips * Math.sqrt(state.roots.cap));
+  const tips = [];
+  for (let id = 1; id < state.nextId; id++) {
+    const n = nodes[id];
+    if (n && !n.dead && !wired.has(id) && !n.c.some(c => nodes[c]) && (n.lf || n.ap === 1)) tips.push(n);
+  }
+  if (tips.length > limit) {
+    tips.sort((a, b) => (a.Q || 0) - (b.Q || 0) || a.id - b.id);
+    for (const n of tips.slice(0, tips.length - limit)) removeSubtree(state, n.id);
+  }
   // dieback: bare wood with no buds, leaves or growth beyond it dies back to the last live bud
   for (let id = state.nextId - 1; id > 0; id--) {
     const n = nodes[id];
@@ -462,8 +497,35 @@ function yearEnd(state, sp) {
     if (n.lf || n.ap === 1 || n.lb.some(b => b.s === 1)) continue;
     removeSubtree(state, id);
   }
+  consolidate(state, wired);
   state.stress *= 0.45;
   state.leafScale = Math.min(1, state.leafScale + 0.12);
+}
+
+/* Old wood is a smooth limb, not the dozens of short internodes it grew as. Merge a bare, old
+   segment with the one segment that continues it when they run nearly straight, so a long-lived
+   tree stays light enough to simulate for centuries. */
+function consolidate(state, wired) {
+  const nodes = state.nodes;
+  for (let id = 1; id < state.nextId; id++) {
+    const a = nodes[id];
+    if (!a || a.dead || wired.has(id) || a.c.length !== 1 || a.lf) continue;
+    const b = nodes[a.c[0]];
+    if (!b || !b.m || b.dead || wired.has(b.id)) continue;
+    if ((state.step - b.born) / STEPS_PER_YEAR < 8) continue;
+    if (a.lb.some(x => x.s === 1) || a.ap === 1) continue;
+    if (a.len + b.len > 0.045 || dot(a.d, b.d) < 0.93) continue;
+    const v = add(a.d.map(x => x * a.len), b.d, b.len);
+    a.len = a.tl = len3(v);
+    a.d = norm(v);
+    a.r = Math.max(a.r, b.r);
+    a.ap = b.ap; a.lb = b.lb; a.lf = b.lf; a.ls = b.ls; a.lborn = b.lborn; a.k = b.k;
+    a.scar = Math.max(a.scar, b.scar);
+    a.c = b.c;
+    for (const c of b.c) if (nodes[c]) nodes[c].p = a.id;
+    nodes[b.id] = null;
+    id--;                                                    // look at the merged segment again
+  }
 }
 
 /* ---------- interventions ---------- */
@@ -560,11 +622,15 @@ export function applyOp(state, op) {
       return true;
     }
     case 'unwire': {
-      const w = state.wires.find(x => x.id === op.wire);
-      if (!w) return false;
-      const back = -w.angle * (1 - w.set) / w.chain.length;
-      for (const id of w.chain) for (const t of subtree(state, id)) bendNode(t, w.axis, back);
-      state.wires = state.wires.filter(x => x !== w);
+      // one wire, a list of them, or all at once; each springs back by however much hasn't set
+      const ids = op.all ? state.wires.map(w => w.id) : op.ids || [op.wire];
+      const gone = state.wires.filter(w => ids.includes(w.id));
+      if (!gone.length) return false;
+      for (const w of gone) {
+        const back = -w.angle * (1 - w.set) / w.chain.length;
+        for (const id of w.chain) for (const t of subtree(state, id)) bendNode(t, w.axis, back);
+      }
+      state.wires = state.wires.filter(w => !gone.includes(w));
       return true;
     }
     case 'feed': state.env.feed = op.level; return true;

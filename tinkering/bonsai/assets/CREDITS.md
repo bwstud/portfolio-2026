@@ -13,5 +13,6 @@ All from [Poly Haven](https://polyhaven.com), released under CC0 (public domain)
 | `studio_small_08_1k.hdr` | [Studio Small 08](https://polyhaven.com/a/studio_small_08) | Sergej Majboroda |
 | `studio_kominka_03_1k.hdr` | [Studio Kominka 03](https://polyhaven.com/a/studio_kominka_03) | Grzegorz Wronkowski |
 | `misty_pines_1k.hdr` | [Misty Pines](https://polyhaven.com/a/misty_pines) | Greg Zaal |
+| `snowy_forest_path_01_1k.hdr` | [Snowy Forest Path 01](https://polyhaven.com/a/snowy_forest_path_01) | Oliksiy Yakovlyev |
 
 Leaf textures, pot glazes and the moss on the soil are painted procedurally in code.

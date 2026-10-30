@@ -5,7 +5,7 @@
    from there to its tip is [i, chainEnd[i]]. The page highlights either with one uniform, so
    hover previews for cut, pinch, wire and jin are free. */
 
-import { positions, perpFrame, yearFrac, rnd, STEPS_PER_YEAR, treeLight, treeStats } from './sim.js';
+import { positions, perpFrame, yearFrac, rnd, STEPS_PER_YEAR, treeLight, treeStats, wireTightness } from './sim.js';
 import { SPECIES } from './species.js';
 
 const TEX = 0.05;                                   // metres of bark per texture repeat
@@ -204,6 +204,7 @@ export function buildFrame(state) {
     wireList: state.wires.map(w => ({
       id: w.id, kind: w.kind, set: w.set, on: w.on,
       start: dfsOf[w.chain[0]], end: dfsOf[w.chain.at(-1)],
+      tight: wireTightness(state, w),
       biting: w.chain.some(id => nodes[id] && nodes[id].scar > 0.02),
     })),
     env: { ...state.env, light: treeLight(state) },
@@ -294,10 +295,14 @@ function buildWires(state, pos) {
   const pts = [];                                    // polylines: [{points, radius}]
   for (const w of state.wires) {
     const gauge = w.gauge;
+    // copper, warming to red as the branch swells against it
+    const tight = wireTightness(state, w);
+    const heat = Math.min(1, Math.max(0, (tight - 0.6) / 0.4));
+    const color = [0.52 + 0.48 * heat, 0.17 * (1 - heat) + 0.03, 0.06 * (1 - heat) + 0.02];
     if (w.kind === 'guy') {
       const at = w.chain[Math.min(w.chain.length - 1, Math.floor(w.chain.length * 0.6))];
       if (!nodes[at] || !w.anchor) continue;
-      pts.push({ points: [[pos.tip[at * 3], pos.tip[at * 3 + 1], pos.tip[at * 3 + 2]], w.anchor], radius: gauge * 0.35 });
+      pts.push({ points: [[pos.tip[at * 3], pos.tip[at * 3 + 1], pos.tip[at * 3 + 2]], w.anchor], radius: gauge * 0.35, color });
       continue;
     }
     const line = [];
@@ -321,15 +326,15 @@ function buildWires(state, pos) {
       }
       phase += (n.len / pitch) * Math.PI * 2;
     });
-    if (line.length > 1) pts.push({ points: line, radius: gauge * 0.5 });
+    if (line.length > 1) pts.push({ points: line, radius: gauge * 0.5, color });
   }
   // sweep a thin square-ish tube along each polyline
   const S = 5;
   let total = 0;
   for (const p of pts) total += p.points.length * (S + 1);
-  const P = new Float32Array(total * 3), Nn = new Float32Array(total * 3), idx = [];
+  const P = new Float32Array(total * 3), Nn = new Float32Array(total * 3), C = new Float32Array(total * 3), idx = [];
   let v = 0;
-  for (const { points, radius } of pts) {
+  for (const { points, radius, color } of pts) {
     const startV = v;
     for (let i = 0; i < points.length; i++) {
       const a = points[Math.max(0, i - 1)], b = points[Math.min(points.length - 1, i + 1)];
@@ -340,6 +345,7 @@ function buildWires(state, pos) {
         const nx = u[0] * ca + w[0] * sa, ny = u[1] * ca + w[1] * sa, nz = u[2] * ca + w[2] * sa;
         P[v * 3] = points[i][0] + nx * radius; P[v * 3 + 1] = points[i][1] + ny * radius; P[v * 3 + 2] = points[i][2] + nz * radius;
         Nn[v * 3] = nx; Nn[v * 3 + 1] = ny; Nn[v * 3 + 2] = nz;
+        C.set(color, v * 3);
         v++;
       }
     }
@@ -348,5 +354,5 @@ function buildWires(state, pos) {
       for (let j = 0; j < S; j++) idx.push(a0 + j, a0 + j + 1, a1 + j, a0 + j + 1, a1 + j + 1, a1 + j);
     }
   }
-  return { position: P, normal: Nn, index: v > 65535 ? new Uint32Array(idx) : new Uint16Array(idx) };
+  return { position: P, normal: Nn, color: C, index: v > 65535 ? new Uint32Array(idx) : new Uint16Array(idx) };
 }

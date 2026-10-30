@@ -17,6 +17,14 @@ let project = null;
 let state = null;
 const snaps = new Map();                          // branch id -> Map(step -> frozen state)
 
+// a snapshot every year for the first 20 years, then every 5, then every 10 past a century:
+// rewinding replays at most ten years, and five centuries of history stay small
+function snapDue(step) {
+  const y = (step - START_STEP) / STEPS_PER_YEAR;
+  if (!Number.isInteger(y)) return false;
+  return y < 20 || (y < 100 ? y % 5 === 0 : y % 10 === 0);
+}
+
 const branchOf = id => project.branches.find(b => b.id === id);
 const active = () => branchOf(project.active);
 const clone = s => structuredClone(s);
@@ -57,7 +65,7 @@ function goTo(target) {
   const map = snapshotsFor(b.id);
   while (state.step < target) {
     stepTree(state);
-    if ((state.step - START_STEP) % STEPS_PER_YEAR === 0 && !map.has(state.step)) map.set(state.step, clone(state));
+    if (snapDue(state.step) && !map.has(state.step)) map.set(state.step, clone(state));
     applyAt(state.step);
   }
   b.reach = Math.max(b.reach || START_STEP, state.step);
@@ -79,7 +87,7 @@ function post(extra = {}, preview = null) {
     frame.branch.position.buffer, frame.branch.normal.buffer, frame.branch.uv.buffer, frame.branch.info.buffer,
     frame.branch.dfs.buffer, frame.branch.index.buffer,
     frame.leaves.matrix.buffer, frame.leaves.color.buffer, frame.leaves.dfs.buffer,
-    frame.wires.position.buffer, frame.wires.normal.buffer, frame.wires.index.buffer,
+    frame.wires.position.buffer, frame.wires.normal.buffer, frame.wires.color.buffer, frame.wires.index.buffer,
   ];
   // subarrays share one buffer; only transfer each buffer once
   postMessage({ type: 'frame', frame, meta: meta(), preview: !!preview, ...extra }, [...new Set(transfer)]);

@@ -303,7 +303,7 @@ export function buildPot(def) {
 
   const lip = def.profile.reduce((m, p) => Math.max(m, p[1]), 0);
   return {
-    group, soilY: soilY + 0.012, rimY: raise + lip,
+    group, soil, soilY: soilY + 0.012, rimY: raise + lip,
     rim: t => { const [x, z] = superPoint(t, def.n, a * inner[0], b * inner[0]); return [x, raise + lip, z]; },
     width: def.w, depth: def.d,
   };

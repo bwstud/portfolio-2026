@@ -1,0 +1,316 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Rocket Chess · Brian Studwell</title>
+  <style>
+    @font-face {
+      font-family: "Geist";
+      font-weight: 100 900;
+      font-display: swap;
+      src: url("../../fonts/Geist-Variable.woff2") format("woff2");
+    }
+
+    :root {
+      --bg: #0c0d10;
+      --panel: rgba(16, 17, 21, 0.84);
+      --panel-solid: #15161b;
+      --line: rgba(255, 255, 255, 0.09);
+      --line-strong: rgba(255, 255, 255, 0.18);
+      --fg: #eef0f3;
+      --muted: #8d929c;
+      --faint: #5d626b;
+      --accent: #f2a541;
+      --accent-ink: #1a1206;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100%;
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--fg);
+      font: 13px/1.45 "Geist", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    button, input, select { font: inherit; color: inherit; }
+    button { cursor: pointer; background: none; border: 0; }
+    :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+    #scene {
+      position: fixed; inset: 0; display: block; width: 100%; height: 100%;
+      cursor: grab; touch-action: none;
+    }
+    #scene:active { cursor: grabbing; }
+
+    .panel {
+      position: fixed; z-index: 2;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    }
+
+    .label {
+      font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    /* ---------- header ---------- */
+    .top {
+      position: fixed; z-index: 3; top: 14px; left: 16px; right: 16px;
+      display: flex; align-items: center; gap: 14px; pointer-events: none;
+    }
+    .top > * { pointer-events: auto; }
+    .back { color: var(--muted); text-decoration: none; }
+    .back:hover { color: var(--fg); }
+    .brand { font-size: 15px; font-weight: 650; letter-spacing: 0.01em; }
+    .brand span { color: var(--muted); font-weight: 450; margin-left: 6px; }
+    .drawer-toggle {
+      display: none; margin-left: auto; padding: 6px 11px; border-radius: 8px;
+      border: 1px solid var(--line-strong); background: var(--panel);
+    }
+    .drawer-toggle + .drawer-toggle { margin-left: 0; }
+
+    /* ---------- library (left) ---------- */
+    .library {
+      top: 50px; left: 16px; bottom: 16px; width: 272px;
+      display: flex; flex-direction: column; overflow: hidden;
+    }
+    .library__scroll { overflow-y: auto; padding: 12px 10px 14px; }
+    .group + .group { margin-top: 14px; }
+    .group .label { padding: 0 8px 6px; }
+    .knot {
+      display: block; width: 100%; text-align: left;
+      padding: 8px 10px; border-radius: 8px; border: 1px solid transparent;
+    }
+    .knot:hover { background: rgba(255, 255, 255, 0.04); }
+    .knot[aria-pressed="true"] { background: rgba(242, 165, 65, 0.1); border-color: rgba(242, 165, 65, 0.35); }
+    .knot__name { display: block; font-weight: 560; }
+    .knot__sum { display: block; color: var(--muted); font-size: 12px; margin-top: 1px; }
+    .knot[aria-pressed="true"] .knot__name { color: var(--accent); }
+
+    .about { border-top: 1px solid var(--line); padding: 12px 18px 16px; max-height: 42%; overflow-y: auto; flex: none; }
+    .about__head { display: flex; align-items: baseline; gap: 8px; margin-bottom: 6px; }
+    .about__name { font-size: 14px; font-weight: 620; }
+    .about__abok { color: var(--faint); font-size: 11px; white-space: nowrap; }
+    .about p { color: #c4c8cf; }
+    .about p + p { margin-top: 7px; }
+    .about .caution { color: var(--muted); }
+    .about strong { color: var(--fg); font-weight: 560; }
+
+    /* ---------- options (right) ---------- */
+    .options {
+      top: 50px; right: 16px; width: 264px; max-height: calc(100% - 66px);
+      overflow-y: auto; padding: 14px 16px 16px;
+    }
+    .opt + .opt { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line); }
+    .opt .label { margin-bottom: 8px; display: flex; justify-content: space-between; }
+    .opt .label output { color: var(--fg); font-weight: 500; letter-spacing: 0; text-transform: none; font-size: 12px; }
+
+    .materials { display: grid; gap: 4px; }
+    .material {
+      display: flex; align-items: center; gap: 10px; text-align: left;
+      padding: 6px 8px; border-radius: 8px; border: 1px solid transparent;
+    }
+    .material:hover { background: rgba(255, 255, 255, 0.04); }
+    .material[aria-pressed="true"] { border-color: var(--line-strong); background: rgba(255, 255, 255, 0.05); }
+    .material canvas { width: 34px; height: 18px; border-radius: 9px; flex: none; }
+    .material b { display: block; font-weight: 540; }
+    .material small { display: block; color: var(--muted); font-size: 11.5px; line-height: 1.3; }
+
+    .swatches { display: flex; flex-wrap: wrap; gap: 7px; }
+    .swatch {
+      width: 24px; height: 24px; border-radius: 50%;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18);
+    }
+    .swatch[aria-pressed="true"] { outline: 2px solid var(--fg); outline-offset: 2px; }
+    .swatch--custom {
+      position: relative; overflow: hidden;
+      background: conic-gradient(#f55, #fd5, #5d5, #5df, #55f, #f5f, #f55);
+    }
+    .swatch--custom input { position: absolute; inset: -6px; opacity: 0; cursor: pointer; width: 40px; height: 40px; }
+    .sub { margin-top: 10px; color: var(--muted); font-size: 11.5px; margin-bottom: 6px; }
+    .is-dim { opacity: 0.45; }
+
+    input[type="range"] { width: 100%; accent-color: var(--accent); }
+    .range-ends { display: flex; justify-content: space-between; color: var(--faint); font-size: 11px; margin-top: 2px; }
+
+    .views { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+    .btn {
+      padding: 6px 4px; border-radius: 7px; border: 1px solid var(--line-strong);
+      background: rgba(255, 255, 255, 0.03); text-align: center; font-size: 12px;
+    }
+    .btn:hover { background: rgba(255, 255, 255, 0.08); }
+    .toggles { margin-top: 10px; display: grid; gap: 6px; }
+    .toggles label { display: flex; align-items: center; gap: 8px; cursor: pointer; color: #c4c8cf; }
+    .toggles input { accent-color: var(--accent); }
+    .toggles .dim { color: #7d828b; }
+    .hint { margin-top: 10px; color: var(--faint); font-size: 11.5px; }
+
+    /* ---------- step card and transport (bottom) ---------- */
+    .stage {
+      left: 50%; transform: translateX(-50%); bottom: 16px;
+      width: min(600px, calc(100% - 600px)); min-width: 380px;
+      padding: 14px 16px 12px;
+    }
+    .step__meta { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+    .step__count { color: var(--accent); font-size: 11px; font-weight: 650; letter-spacing: 0.06em; text-transform: uppercase; }
+    .step__time { color: var(--faint); font-size: 11px; font-variant-numeric: tabular-nums; }
+    .step__title { font-size: 16px; font-weight: 620; margin-top: 3px; }
+    .step__text { color: #c9ccd3; margin-top: 4px; min-height: 3em; }
+
+    .steps { display: flex; gap: 4px; margin: 12px 0 10px; }
+    .steps button {
+      flex: 1; height: 16px; padding: 6px 0; background-clip: content-box;
+      background-color: rgba(255, 255, 255, 0.12); border-radius: 0;
+      position: relative;
+    }
+    .steps button::after {
+      content: ""; position: absolute; left: 0; top: 6px; bottom: 6px;
+      width: var(--fill, 0%); background: var(--accent);
+    }
+    .steps button:hover { background-color: rgba(255, 255, 255, 0.22); }
+
+    .transport { display: flex; align-items: center; gap: 6px; }
+    .tbtn {
+      width: 34px; height: 34px; border-radius: 9px; display: grid; place-items: center;
+      border: 1px solid var(--line-strong); background: rgba(255, 255, 255, 0.03);
+    }
+    .tbtn:hover { background: rgba(255, 255, 255, 0.09); }
+    .tbtn svg { width: 16px; height: 16px; fill: currentColor; }
+    .tbtn--play { width: 44px; background: var(--accent); color: var(--accent-ink); border-color: transparent; }
+    .tbtn--play:hover { background: #f7b65e; }
+    .tbtn:disabled { opacity: 0.35; cursor: default; }
+    .speed { margin-left: auto; display: flex; align-items: center; gap: 8px; color: var(--muted); }
+    .speed .seg { display: flex; border: 1px solid var(--line-strong); border-radius: 8px; overflow: hidden; }
+    .speed .seg button { padding: 6px 8px; font-size: 12px; font-variant-numeric: tabular-nums; }
+    .speed .seg button + button { border-left: 1px solid var(--line); }
+    .speed .seg button[aria-pressed="true"] { background: rgba(255, 255, 255, 0.12); color: var(--fg); }
+    .busy { color: var(--accent); font-size: 12px; margin-left: 6px; }
+
+    .no-ui .panel, .no-ui .top { display: none !important; }
+
+    @media (max-width: 1100px) {
+      .stage { width: calc(100% - 600px); min-width: 0; }
+    }
+
+    @media (max-width: 900px) {
+      .drawer-toggle { display: inline-block; }
+      .library, .options {
+        top: 52px; bottom: auto; max-height: calc(100% - 290px);
+        width: min(300px, calc(100% - 32px)); display: none;
+      }
+      .library.is-open { display: flex; }
+      .options.is-open { display: block; }
+      .about { max-height: 160px; }
+      .stage { left: 16px; right: 16px; transform: none; width: auto; min-width: 0; }
+      .speed > span { display: none; }
+      .brand span { display: none; }
+      .top { gap: 10px; }
+      .transport { gap: 5px; }
+      .tbtn { width: 32px; height: 32px; }
+      .tbtn--play { width: 40px; }
+      .speed .seg button { padding: 6px 5px; font-size: 11px; }
+      .step__title { font-size: 15px; }
+      .step__text { min-height: 0; }
+    }
+
+    .piece { display:block; width:100%; text-align:left; padding:7px 10px; border-radius:8px; border:1px solid transparent; }
+    .piece:hover { background: rgba(255,255,255,0.04); }
+    .piece[aria-pressed="true"] { background: rgba(242,165,65,0.1); border-color: rgba(242,165,65,0.35); }
+    .piece__role { display:block; font-size:10.5px; letter-spacing:0.06em; text-transform:uppercase; color: var(--faint); }
+    .piece__name { display:block; font-weight:560; }
+    .piece__sum { display:block; color: var(--muted); font-size:12px; }
+    .piece[aria-pressed="true"] .piece__name { color: var(--accent); }
+    #pieces { margin-top: 14px; }
+    .about__flag { color: var(--faint); font-size: 11px; }
+    .specs { display:grid; grid-template-columns:auto 1fr; gap:2px 10px; margin:4px 0 8px; font-size:12px; }
+    .specs dt { color: var(--muted); } .specs dd { margin:0; font-variant-numeric: tabular-nums; }
+    .seg2 { display:grid; grid-template-columns:1fr 1fr; gap:4px; }
+    .seg2 .btn[aria-pressed="true"] { background: rgba(242,165,65,0.14); border-color: rgba(242,165,65,0.5); color: var(--accent); }
+    .btn:disabled { opacity: 0.4; cursor: default; }
+    #labels { position: fixed; inset: 0; pointer-events: none; z-index: 1; }
+    .tag { text-align:center; color: var(--fg); font-size:11.5px; line-height:1.3; white-space:nowrap; }
+    .tag b { display:block; font-weight:600; } .tag span { color: var(--muted); font-size:10.5px; }
+    .tick { color: var(--muted); font-size:10.5px; transform: translateX(-60%); white-space:nowrap; }
+    @media (max-width: 600px) {
+      .tag { width: 50px; font-size:10px; white-space:normal; } .tag span { font-size:9px; }
+      .tick { font-size:9px; }
+    }
+  </style>
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.min.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <canvas id="scene" aria-label="3D chess set made of scale-model spacecraft"></canvas>
+  <div id="labels"></div>
+  <header class="top">
+    <a class="back" href="../">← Tinkering</a>
+    <span class="brand">Rocket Chess <span>Real craft · 1:1250</span></span>
+    <button class="drawer-toggle" id="library-toggle" type="button">Pieces</button>
+    <button class="drawer-toggle" id="options-toggle" type="button">Options</button>
+  </header>
+
+  <aside class="panel library" id="library" aria-label="Pieces">
+    <div class="library__scroll">
+      <div class="group">
+        <div class="label">Set</div>
+        <div class="seg2">
+          <button class="btn" type="button" aria-pressed="true">Real craft</button>
+          <button class="btn" type="button" disabled title="Coming soon">Fictional · soon</button>
+        </div>
+      </div>
+      <div id="pieces"></div>
+    </div>
+    <div class="about" id="about"></div>
+  </aside>
+
+  <aside class="panel options" id="options" aria-label="View options">
+    <div class="opt">
+      <div class="label">View</div>
+      <div class="seg2">
+        <button class="btn" type="button" data-view="board">Board</button>
+        <button class="btn" type="button" data-view="lineup">Size lineup</button>
+      </div>
+    </div>
+    <div class="opt" id="scale-opt">
+      <div class="label">Scale</div>
+      <div class="seg2">
+        <button class="btn" type="button" data-scale="true">True 1:1250</button>
+        <button class="btn" type="button" data-scale="tournament">Tournament</button>
+      </div>
+      <p class="hint">True scale keeps every rocket's real height. Tournament stretches each one to standard Staunton heights.</p>
+    </div>
+    <div class="opt">
+      <div class="label">Finish</div>
+      <div class="seg2">
+        <button class="btn" type="button" data-finish="livery">Flight livery</button>
+        <button class="btn" type="button" data-finish="mono">Ivory / graphite</button>
+      </div>
+      <div class="toggles">
+        <label><input type="checkbox" id="spin"> Turntable</label>
+      </div>
+    </div>
+    <div class="opt">
+      <div class="label">Tools</div>
+      <div class="seg2">
+        <button class="btn" type="button" id="reset">Reset camera</button>
+        <button class="btn" type="button" id="stl">Export STL</button>
+      </div>
+      <p class="hint">Drag to orbit, scroll to zoom. Click any piece to inspect it.</p>
+    </div>
+  </aside>
+
+  <script type="module" src="rocketchess.js"></script>
+</body>
+</html>

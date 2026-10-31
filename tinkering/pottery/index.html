@@ -1,0 +1,657 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Pottery wheel · Brian Studwell</title>
+  <style>
+    @font-face {
+      font-family: "Geist";
+      font-weight: 100 900;
+      font-display: swap;
+      src: url("../../fonts/Geist-Variable.woff2") format("woff2");
+    }
+
+    :root {
+      --bg: #0f0d0c;
+      --panel: rgba(20, 17, 15, 0.84);
+      --panel-solid: #191513;
+      --line: rgba(255, 255, 255, 0.09);
+      --line-strong: rgba(255, 255, 255, 0.18);
+      --fg: #f0ebe5;
+      --muted: #a39a90;
+      --faint: #6f675f;
+      --accent: #e8a477;
+      --accent-ink: #24130a;
+      --warn: #f3c48a;
+      --danger: #ff7a62;
+      --safe: #9fd4a8;
+      --dock-h: 104px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    [hidden] { display: none !important; }
+    html, body {
+      height: 100%; overflow: hidden;
+      background: var(--bg); color: var(--fg);
+      font: 13px/1.45 "Geist", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    button, input, select { font: inherit; color: inherit; }
+    button { cursor: pointer; background: none; border: 0; }
+    :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+    #scene { position: fixed; inset: 0; display: block; width: 100%; height: 100%; touch-action: none; }
+    body[data-tool="look"] #scene { cursor: grab; }
+    body[data-tool="look"] #scene:active { cursor: grabbing; }
+    body:not([data-tool="look"]) #scene { cursor: crosshair; }
+    body.is-working #scene { cursor: none; }
+
+    .panel {
+      position: fixed; z-index: 2; user-select: none; -webkit-user-select: none;
+      background: var(--panel);
+      border: 1px solid var(--line); border-radius: 12px;
+      backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    }
+    .label { font-size: 12px; font-weight: 600; color: var(--muted); }
+
+    /* ---------- header ---------- */
+    .top {
+      position: fixed; z-index: 4; top: 14px; left: 16px; right: 16px;
+      display: flex; align-items: center; gap: 14px; pointer-events: none;
+    }
+    .top > * { pointer-events: auto; }
+    .back { color: var(--muted); text-decoration: none; }
+    .back:hover { color: var(--fg); }
+    .brand { font-size: 15px; font-weight: 650; letter-spacing: 0.01em; }
+    .brand span { color: var(--muted); font-weight: 450; margin-left: 6px; }
+    .top .spacer { flex: 1; }
+    .ghost {
+      padding: 6px 11px; border-radius: 8px; border: 1px solid var(--line-strong);
+      background: var(--panel); color: var(--fg); white-space: nowrap;
+    }
+    .ghost:hover { background: rgba(255, 255, 255, 0.08); }
+    .ghost[aria-pressed="false"] { color: var(--muted); }
+    .icon-btn { width: 32px; height: 32px; padding: 0; display: grid; place-items: center; }
+    .icon-btn svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+
+    .steps {
+      position: fixed; z-index: 4; top: 12px; left: 50%; transform: translateX(-50%);
+      display: flex; gap: 2px; padding: 3px; border-radius: 10px;
+    }
+    .steps button {
+      display: flex; align-items: center; gap: 7px; padding: 5px 12px 5px 8px; border-radius: 8px;
+      color: var(--muted); font-weight: 560;
+    }
+    .steps button i {
+      width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center; font-style: normal;
+      font-size: 11px; border: 1px solid var(--line-strong); font-variant-numeric: tabular-nums;
+    }
+    .steps button:hover:not(:disabled) { color: var(--fg); background: rgba(255, 255, 255, 0.05); }
+    .steps button[aria-current="step"] { color: var(--fg); background: rgba(232, 164, 119, 0.14); }
+    .steps button[aria-current="step"] i { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
+    .steps button.is-done i { background: rgba(255, 255, 255, 0.14); border-color: transparent; color: var(--fg); }
+    .steps button:disabled { opacity: 0.45; cursor: default; }
+
+    /* ---------- shared controls ---------- */
+    .choices { display: grid; gap: 6px; }
+    .choices--two { grid-template-columns: 1fr 1fr; }
+    .choice {
+      display: block; width: 100%; text-align: left; padding: 9px 11px;
+      border-radius: 9px; border: 1px solid var(--line); background: rgba(255, 255, 255, 0.02);
+    }
+    .choice:hover { background: rgba(255, 255, 255, 0.05); }
+    .choice[aria-pressed="true"] { border-color: rgba(232, 164, 119, 0.6); background: rgba(232, 164, 119, 0.1); }
+    .choice b { display: block; font-weight: 580; }
+    .choice small { display: block; color: #bdb4aa; font-size: 12px; margin-top: 3px; line-height: 1.4; }
+    .choice .swatch { display: flex; gap: 6px; align-items: center; margin-bottom: 6px; }
+    .choice .swatch span { width: 22px; height: 22px; border-radius: 50%; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.15); }
+    .choice .swatch em { font-style: normal; color: var(--faint); font-size: 11.5px; }
+    .choice .traits { display: flex; gap: 10px; margin-top: 6px; color: var(--muted); font-size: 11.5px; }
+    .choice .thumb { display: block; height: 54px; border-radius: 6px; margin-bottom: 7px; background-size: cover; background-position: center; }
+
+    .primary {
+      padding: 9px 14px; border-radius: 9px; background: var(--accent); color: var(--accent-ink);
+      font-weight: 620; white-space: nowrap;
+    }
+    .primary:hover { background: #f0b78f; }
+    .primary:disabled { opacity: 0.5; cursor: default; }
+    .btn {
+      padding: 6px 10px; border-radius: 8px; border: 1px solid var(--line-strong);
+      background: rgba(255, 255, 255, 0.03); font-size: 12.5px; white-space: nowrap;
+    }
+    .btn:hover { background: rgba(255, 255, 255, 0.08); }
+    .btn:disabled { opacity: 0.4; cursor: default; }
+    .btn--accent { border-color: rgba(232, 164, 119, 0.55); color: var(--accent); }
+    .seg { display: flex; border: 1px solid var(--line-strong); border-radius: 8px; overflow: hidden; }
+    .seg button { flex: 1; padding: 6px 8px; font-size: 12.5px; color: var(--muted); white-space: nowrap; }
+    .seg button + button { border-left: 1px solid var(--line); }
+    .seg button:hover { color: var(--fg); }
+    .seg button[aria-pressed="true"] { background: rgba(255, 255, 255, 0.12); color: var(--fg); }
+    .field { margin-top: 14px; }
+    .field > .label { display: flex; justify-content: space-between; margin-bottom: 6px; }
+    .field > .label output { color: var(--fg); font-weight: 500; font-variant-numeric: tabular-nums; }
+    input[type="range"] { width: 100%; accent-color: var(--accent); }
+    .row { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; align-items: center; }
+    .say { color: #c9c0b6; margin-top: 8px; font-size: 12.5px; }
+    .hint { color: var(--faint); font-size: 12px; margin-top: 6px; }
+
+    .tabs { display: flex; gap: 2px; padding: 8px 10px 0; border-bottom: 1px solid var(--line); background: transparent; flex: none; }
+    .tabs button { padding: 7px 10px 9px; color: var(--muted); border-bottom: 2px solid transparent; margin-bottom: -1px; font-weight: 560; }
+    .tabs button:hover { color: var(--fg); }
+    .tabs button[aria-selected="true"] { color: var(--fg); border-bottom-color: var(--accent); }
+    .scroll { overflow-y: auto; scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, 0.18) transparent; }
+
+    /* ---------- setup ---------- */
+    .setup {
+      top: 56px; right: 16px; bottom: 16px; width: 380px;
+      display: flex; flex-direction: column; overflow: hidden;
+    }
+    .setup__head { padding: 16px 16px 10px; flex: none; }
+    .setup h2 { font-size: 17px; font-weight: 640; }
+    .setup .lede { color: #cbc2b8; margin-top: 4px; }
+    .setup__summary { margin-top: 8px; color: var(--accent); font-size: 12.5px; }
+    .setup__body { padding: 14px 16px; flex: 1; }
+    .setup__foot { border-top: 1px solid var(--line); padding: 12px 16px 14px; flex: none; display: flex; gap: 10px; align-items: center; }
+    .setup__foot .hint { margin: 0; }
+    .amount { text-align: center; padding: 6px 0 2px; }
+    .amount b { font-size: 34px; font-weight: 640; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+    .amount span { display: block; color: var(--muted); margin-top: 2px; }
+    .presets { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; margin-top: 12px; }
+    .presets button { padding: 7px 2px; border-radius: 8px; border: 1px solid var(--line); font-size: 12px; color: var(--muted); }
+    .presets button svg { display: block; margin: 0 auto 4px; width: 28px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.4; }
+    .presets button[aria-pressed="true"] { border-color: rgba(232, 164, 119, 0.6); color: var(--fg); background: rgba(232, 164, 119, 0.1); }
+
+    /* ---------- tools ---------- */
+    .tools {
+      left: 16px; bottom: 16px;
+      display: flex; flex-direction: column; gap: 2px; padding: 5px;
+    }
+    .tool {
+      position: relative; width: 40px; height: 38px; border-radius: 9px; flex: none;
+      display: grid; place-items: center; color: #cdc4ba;
+    }
+    .tool svg { width: 21px; height: 21px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+    .tool:hover { background: rgba(255, 255, 255, 0.07); color: var(--fg); }
+    .tool[aria-pressed="true"] { background: rgba(232, 164, 119, 0.18); color: var(--accent); }
+    .tool:disabled { opacity: 0.3; cursor: default; }
+    .tool .tip {
+      position: absolute; left: 52px; top: 50%; transform: translateY(-50%);
+      white-space: nowrap; padding: 5px 9px; border-radius: 7px;
+      background: #1e1a17; border: 1px solid var(--line-strong); color: var(--fg);
+      font-size: 12px; pointer-events: none; opacity: 0; transition: opacity 0.12s;
+    }
+    .tool .tip kbd { color: var(--muted); font: inherit; margin-left: 6px; }
+    .tool:hover .tip, .tool:focus-visible .tip { opacity: 1; }
+    .tools hr { border: 0; border-top: 1px solid var(--line); margin: 2px 6px; flex: none; }
+    .tool--water { color: #9fc7e8; }
+
+    .toolhint {
+      position: fixed; z-index: 2; left: 76px; bottom: 16px;
+      width: 230px; padding: 11px 13px; pointer-events: none;
+      transition: opacity 0.2s;
+    }
+    .toolhint b { color: var(--fg); font-weight: 620; display: block; font-size: 13.5px; }
+    .toolhint p { color: #cbc2b8; font-size: 12.5px; margin-top: 4px; }
+    .toolhint .speed { color: var(--muted); font-size: 12px; margin-top: 6px; display: flex; gap: 6px; align-items: center; }
+    .toolhint .speed i { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); font-style: normal; }
+    .toolhint .warn { color: var(--warn); font-size: 12.5px; margin-top: 8px; display: block; }
+    .toolhint .warn:empty { display: none; }
+    .toolhint.is-quiet { opacity: 0.0; }
+
+    /* ---------- side panel ---------- */
+    .side {
+      top: 56px; right: 16px; width: 300px; bottom: calc(var(--dock-h) + 28px);
+      display: flex; flex-direction: column; overflow: hidden;
+    }
+    .side .scroll { flex: 1; }
+    .sec { padding: 12px 16px; }
+    .sec + .sec { border-top: 1px solid var(--line); }
+    .sec__head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 8px; }
+    .sec__head h3 { font-size: 13.5px; font-weight: 620; }
+    .sec__head .meta { color: var(--faint); font-size: 12px; }
+    .facts { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; }
+    .facts dt { color: var(--muted); }
+    .facts dd { text-align: right; font-variant-numeric: tabular-nums; }
+    .facts dd.warn { color: var(--warn); }
+    .facts dd.danger { color: var(--danger); }
+
+    .section-card { position: relative; border-radius: 10px; background: rgba(0, 0, 0, 0.28); border: 1px solid var(--line); touch-action: none; cursor: crosshair; }
+    .section-card svg { display: block; width: 100%; height: 210px; }
+    .section-card .cap { position: absolute; left: 10px; top: 8px; color: var(--faint); font-size: 11.5px; pointer-events: none; }
+    .section-card .dims { position: absolute; right: 10px; top: 8px; color: var(--muted); font-size: 11.5px; text-align: right; font-variant-numeric: tabular-nums; pointer-events: none; }
+
+    .meter { margin-top: 10px; }
+    .meter > div:first-child { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); margin-bottom: 5px; }
+    .meter > div:first-child output { color: var(--fg); }
+    .bar { position: relative; height: 6px; border-radius: 3px; background: rgba(255, 255, 255, 0.08); overflow: hidden; }
+    .bar span { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 3px; background: var(--accent); transition: width 0.2s; }
+    .bar--wet span { background: linear-gradient(90deg, #8c7a66, #7fb0d8); }
+    .bar .zone { position: absolute; top: 0; bottom: 0; background: rgba(159, 212, 168, 0.18); }
+
+    .versions { display: grid; gap: 6px; }
+    .version { display: grid; grid-template-columns: 44px 1fr auto; gap: 10px; align-items: center; padding: 7px 8px; border: 1px solid var(--line); border-radius: 9px; }
+    .version svg { width: 44px; height: 44px; display: block; }
+    .version b { font-weight: 580; display: block; }
+    .version small { color: var(--muted); font-size: 11.5px; }
+    .version .row { margin: 0; flex-wrap: nowrap; }
+    .version .btn { padding: 4px 8px; }
+    .empty { color: var(--faint); font-size: 12.5px; padding: 6px 0; }
+    .name-row { display: flex; gap: 6px; }
+    .name-row input {
+      flex: 1; min-width: 0; padding: 6px 9px; border-radius: 8px; border: 1px solid var(--line-strong);
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    /* ---------- dock: wheel and history ---------- */
+    .dock {
+      left: 50%; transform: translateX(-50%); bottom: 16px;
+      width: min(640px, calc(100% - 680px)); min-width: 500px; padding: 10px 14px 12px;
+    }
+    .dock__row { display: flex; align-items: center; gap: 10px; }
+    .dock__row + .dock__row { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); }
+    .spin {
+      width: 46px; height: 46px; border-radius: 50%; flex: none; display: grid; place-items: center;
+      background: var(--accent); color: var(--accent-ink);
+    }
+    .spin:hover { background: #f0b78f; }
+    .spin svg { width: 18px; height: 18px; fill: currentColor; }
+    .spin.is-stopped { background: rgba(255, 255, 255, 0.1); color: var(--fg); }
+    .rpm { min-width: 76px; }
+    .rpm b { display: block; font-size: 17px; font-weight: 640; font-variant-numeric: tabular-nums; }
+    .rpm span { color: var(--muted); font-size: 12px; }
+    .speed { position: relative; flex: 1; height: 30px; }
+    .speed input { position: absolute; inset: 0; width: 100%; height: 30px; margin: 0; opacity: 0.001; cursor: pointer; z-index: 2; }
+    .speed__track { position: absolute; left: 0; right: 0; top: 12px; height: 6px; border-radius: 3px; background: rgba(255, 255, 255, 0.1); }
+    .speed__fill { position: absolute; left: 0; top: 12px; height: 6px; border-radius: 3px; background: var(--accent); }
+    .speed__band { position: absolute; top: 9px; height: 12px; border-radius: 6px; background: rgba(159, 212, 168, 0.16); border: 1px solid rgba(159, 212, 168, 0.4); }
+    .speed__knob { position: absolute; top: 6px; width: 18px; height: 18px; margin-left: -9px; border-radius: 50%; background: var(--fg); box-shadow: 0 1px 6px rgba(0, 0, 0, 0.5); }
+    .speed__ticks { position: absolute; left: 0; right: 0; top: 22px; color: var(--faint); font-size: 10.5px; }
+    .speed__ticks span { position: absolute; transform: translateX(-50%); }
+    .speed input:focus-visible ~ .speed__knob { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .dir { width: 34px; height: 34px; margin-left: 8px; }
+    .auto[aria-pressed="true"] { color: var(--safe); border-color: rgba(159, 212, 168, 0.4); }
+    .hist { flex: 1; display: flex; align-items: center; gap: 10px; }
+    .hist input { flex: 1; }
+    .hist output { color: var(--muted); font-size: 12px; min-width: 128px; text-align: right; font-variant-numeric: tabular-nums; }
+    .hist output b { color: var(--fg); font-weight: 560; }
+
+    /* ---------- glaze ---------- */
+    .glaze { top: 56px; right: 16px; width: 330px; bottom: 16px; display: flex; flex-direction: column; overflow: hidden; }
+    .glaze .scroll { flex: 1; padding: 0 16px 12px; }
+    .glaze__head { padding: 16px 16px 4px; }
+    .glaze__head h2 { font-size: 17px; font-weight: 640; }
+    .glaze__head p { color: #cbc2b8; margin-top: 4px; }
+    .glazes { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+    .glazes button { padding: 6px; border-radius: 9px; border: 1px solid var(--line); text-align: left; }
+    .glazes button:hover { background: rgba(255, 255, 255, 0.05); }
+    .glazes button[aria-pressed="true"] { border-color: rgba(232, 164, 119, 0.65); background: rgba(232, 164, 119, 0.1); }
+    .glazes button span { display: block; height: 38px; border-radius: 6px; margin-bottom: 5px; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1); }
+    .glazes button b { font-weight: 560; font-size: 12px; display: block; line-height: 1.25; }
+    .glaze__note { color: #cbc2b8; margin-top: 8px; font-size: 12.5px; min-height: 2.9em; }
+    .glaze__foot { border-top: 1px solid var(--line); padding: 12px 16px 14px; display: flex; gap: 8px; align-items: center; }
+    .glaze__foot .primary { margin-left: auto; }
+
+    /* ---------- kiln ---------- */
+    .kiln {
+      position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; text-align: center;
+      background: radial-gradient(ellipse at 50% 60%, rgba(255, 170, 80, 0.95), rgba(190, 60, 20, 0.92) 40%, rgba(30, 8, 4, 0.98) 80%);
+      opacity: 0; pointer-events: none; transition: opacity 0.6s;
+    }
+    .kiln.is-on { opacity: 1; pointer-events: auto; }
+    .kiln b { display: block; font-size: 46px; font-weight: 640; font-variant-numeric: tabular-nums; color: #fff4e6; letter-spacing: -0.02em; text-shadow: 0 0 40px rgba(255, 210, 150, 0.8); }
+    .kiln span { color: rgba(255, 236, 214, 0.85); font-size: 14px; }
+    .kiln::after { content: ""; position: absolute; inset: 0; background: radial-gradient(circle at 50% 55%, rgba(255, 240, 200, 0.35), transparent 50%); animation: flicker 0.9s infinite alternate; }
+    @keyframes flicker { from { opacity: 0.5; } to { opacity: 1; } }
+
+    /* ---------- viewer ---------- */
+    .viewbar {
+      left: 50%; transform: translateX(-50%); bottom: 16px; padding: 10px 12px;
+      display: flex; gap: 10px; align-items: center; flex-wrap: wrap; justify-content: center;
+      max-width: calc(100% - 32px);
+    }
+    .viewbar .label { margin-right: -4px; }
+    .plaque {
+      left: 16px; bottom: 16px; width: 260px; padding: 14px 16px;
+      background: rgba(18, 15, 13, 0.7);
+    }
+    .plaque input { user-select: text; -webkit-user-select: text; width: 100%; font-size: 16px; font-weight: 640; background: none; border: 0; border-bottom: 1px dashed transparent; padding: 0 0 2px; }
+    .plaque input:hover, .plaque input:focus { border-bottom-color: var(--line-strong); outline: none; }
+    .plaque p { color: #cbc2b8; margin-top: 4px; font-size: 12.5px; }
+    .plaque dl { margin-top: 8px; }
+    .is-viewing .top .brand span, .is-viewing .notes { display: none; }
+
+    /* ---------- cursor, toast, coach ---------- */
+    .toast {
+      left: 50%; transform: translateX(-50%); top: 60px; z-index: 6;
+      padding: 9px 12px 9px 14px; display: flex; gap: 12px; align-items: center;
+      max-width: calc(100% - 32px);
+    }
+    .toast.is-bad { border-color: rgba(255, 122, 98, 0.5); background: rgba(48, 20, 15, 0.92); }
+    .coach {
+      left: 50%; top: 40%; transform: translate(-50%, -50%); z-index: 5; padding: 14px 16px; text-align: center; max-width: 280px;
+    }
+    .coach p + p { margin-top: 6px; color: var(--muted); }
+    .no-ui .panel, .no-ui .top, .no-ui .steps, .no-ui .toolhint, .no-ui .notes { display: none !important; }
+
+    /* ---------- smaller screens ---------- */
+    @media (max-width: 1180px) {
+      .toolhint { display: none; }
+      .dock { left: 76px; right: 332px; transform: none; width: auto; min-width: 0; }
+    }
+    @media (max-width: 1000px) {
+      .brand span { display: none; }
+    }
+    @media (max-width: 760px) {
+      :root { --dock-h: 98px; }
+      .top { top: 10px; left: 12px; right: 12px; gap: 8px; }
+      .brand { display: none; }
+      .steps { top: 50px; }
+      .steps button { padding: 4px 9px 4px 6px; }
+      .setup { left: 12px; right: 12px; width: auto; top: auto; height: 66%; bottom: 12px; }
+      .tools {
+        left: 12px; right: 12px; top: auto; bottom: calc(var(--dock-h) + 20px); transform: none;
+        flex-direction: row; overflow-x: auto; scrollbar-width: none; padding: 5px;
+      }
+      .tools::-webkit-scrollbar { display: none; }
+      .tools hr { border-top: 0; border-left: 1px solid var(--line); margin: 6px 3px; }
+      .tool { width: 46px; height: 46px; }
+      .tool .tip { display: none; }
+      .dock { left: 12px; right: 12px; bottom: 12px; padding: 8px 10px 10px; }
+      .dock__row + .dock__row { margin-top: 8px; padding-top: 8px; }
+      .rpm { min-width: 54px; }
+      .rpm span { display: none; }
+      .hist output { min-width: 0; }
+      .hist output span { display: none; }
+      .side, .glaze {
+        left: 0; right: 0; top: auto; bottom: 0; width: auto; height: 58%;
+        border-radius: 14px 14px 0 0; z-index: 7; transform: translateY(105%); transition: transform 0.25s ease;
+      }
+      .side.is-open, .glaze.is-open { transform: none; }
+      .sheet-grip { display: block !important; }
+      .notes { top: 92px !important; }
+      .plaque { display: none; }
+      .viewbar { left: 12px; right: 12px; transform: none; bottom: 12px; max-width: none; }
+    }
+    .sheet-grip { display: none; width: 100%; padding: 8px 0 2px; }
+    .sheet-grip span { display: block; margin: 0 auto; width: 40px; height: 4px; border-radius: 2px; background: var(--line-strong); }
+    .only-mobile { display: none; }
+    @media (max-width: 760px) { .only-mobile { display: inline-grid; } .only-desktop { display: none !important; } }
+  </style>
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.min.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body data-tool="center" data-phase="setup">
+  <canvas id="scene" aria-label="3D view of a potter's wheel and the clay on it"></canvas>
+
+  <header class="top">
+    <a class="back" href="../">← Tinkering</a>
+    <div class="brand">Pottery wheel<span>throw it, trim it, glaze it, fire it</span></div>
+    <span class="spacer"></span>
+    <button class="ghost icon-btn" id="sound" type="button" aria-pressed="true" aria-label="Sound" title="Sound">
+      <svg viewBox="0 0 16 16"><path d="M2.5 6v4h2.5l3.5 3V3L5 6z"/><path d="M11 5.5a3.5 3.5 0 0 1 0 5M12.8 3.8a6 6 0 0 1 0 8.4" class="waves"/></svg>
+    </button>
+    <button class="ghost only-mobile" id="sheet-toggle" type="button" aria-expanded="false" aria-controls="side">Piece</button>
+    <button class="ghost" id="new-piece" type="button" hidden>New piece</button>
+  </header>
+
+  <nav class="panel steps" id="steps" aria-label="Stages" hidden>
+    <button type="button" data-step="throw"><i>1</i>Throw</button>
+    <button type="button" data-step="glaze"><i>2</i>Glaze</button>
+    <button type="button" data-step="view"><i>3</i>Fire</button>
+  </nav>
+
+  <!-- setup: clay, amount, setting -->
+  <aside class="panel setup" id="setup" aria-label="Start a piece" hidden>
+    <div class="setup__head">
+      <h2>Start a piece</h2>
+      <p class="lede">Wedge a ball of clay, choose where you're working, and slap it on the wheel.</p>
+      <p class="setup__summary" id="setup-summary" aria-live="polite"></p>
+    </div>
+    <div class="tabs" role="tablist" aria-label="Choices">
+      <button type="button" role="tab" data-setup-tab="clay" aria-selected="true">Clay</button>
+      <button type="button" role="tab" data-setup-tab="amount" aria-selected="false">Amount</button>
+      <button type="button" role="tab" data-setup-tab="setting" aria-selected="false">Setting</button>
+    </div>
+    <div class="setup__body scroll">
+      <div class="choices" id="body-list" role="tabpanel" data-setup-panel="clay"></div>
+      <div role="tabpanel" data-setup-panel="amount" hidden>
+        <div class="amount"><b id="kg-out">1.25 kg</b><span id="kg-makes">A good size for a mug or a small bowl</span></div>
+        <input type="range" id="kg" min="0.5" max="4" step="0.25" value="1.25" aria-label="Clay, kilograms" style="margin-top:14px">
+        <div class="presets" id="presets"></div>
+        <p class="hint" style="margin-top:12px">More clay is harder to centre, but lets you throw taller and wider.</p>
+      </div>
+      <div class="choices choices--two" id="setting-list" role="tabpanel" data-setup-panel="setting" hidden></div>
+    </div>
+    <div class="setup__foot">
+      <button class="primary" id="begin" type="button">Place it on the wheel</button>
+      <span class="hint" id="setup-hint">Tab through the choices, or just begin.</span>
+    </div>
+  </aside>
+
+  <!-- tools -->
+  <nav class="panel tools" id="tools" aria-label="Tools" hidden></nav>
+  <div class="panel toolhint" id="toolhint" aria-live="polite" hidden>
+    <b id="th-name"></b><p id="th-how"></p>
+    <div class="speed" id="th-speed"></div>
+    <span class="warn" id="th-warn"></span>
+  </div>
+
+  <!-- piece, tool, versions, scene -->
+  <aside class="panel side" id="side" aria-label="Piece and settings" hidden>
+    <button class="sheet-grip" type="button" data-close-sheet aria-label="Close panel"><span></span></button>
+    <div class="tabs" role="tablist" aria-label="Panels">
+      <button type="button" role="tab" data-tab="piece" aria-selected="true">Piece</button>
+      <button type="button" role="tab" data-tab="tool" aria-selected="false">Tool</button>
+      <button type="button" role="tab" data-tab="versions" aria-selected="false">Versions</button>
+      <button type="button" role="tab" data-tab="scene" aria-selected="false">Scene</button>
+    </div>
+    <div class="scroll">
+      <div data-panel="piece" role="tabpanel">
+        <section class="sec">
+          <div class="section-card" id="section-card" aria-label="Cross-section. Drag here to work the clay precisely.">
+            <span class="cap">Cross-section · drag to work</span>
+            <span class="dims" id="dims"></span>
+            <svg id="section" viewBox="0 0 268 210" preserveAspectRatio="xMidYMid meet" aria-hidden="true"></svg>
+          </div>
+          <div class="meter">
+            <div><span>Wetness</span><output id="wet-out"></output></div>
+            <div class="bar bar--wet"><div class="zone" style="left:20%;width:50%"></div><span id="wet-bar"></span></div>
+          </div>
+          <div class="meter">
+            <div><span>Centring</span><output id="center-out"></output></div>
+            <div class="bar"><span id="center-bar"></span></div>
+          </div>
+          <div class="row">
+            <button class="btn" id="water" type="button">Add water <span class="hint" style="margin:0">W</span></button>
+            <button class="btn" id="frame" type="button">Frame <span class="hint" style="margin:0">F</span></button>
+          </div>
+        </section>
+        <section class="sec">
+          <div class="sec__head"><h3>Measurements</h3><span class="meta" id="body-name"></span></div>
+          <dl class="facts" id="facts"></dl>
+        </section>
+      </div>
+
+      <div data-panel="tool" role="tabpanel" hidden>
+        <section class="sec">
+          <div class="sec__head"><h3 id="tool-name">Tool</h3><span class="meta" id="tool-key"></span></div>
+          <p class="say" id="tool-how" style="margin-top:0"></p>
+          <div class="field">
+            <div class="label">Pressure <output id="pressure-out">Firm</output></div>
+            <input type="range" id="pressure" min="0.25" max="1.5" step="0.05" value="1" aria-label="Pressure">
+            <p class="hint">On a tablet with a pen, pen pressure adds to this.</p>
+          </div>
+          <div class="field">
+            <div class="label">Reach <output id="size-out">1×</output></div>
+            <input type="range" id="size" min="0.5" max="2.5" step="0.1" value="1" aria-label="Reach">
+            <p class="hint">How much of the wall one touch moves. Small for detail, big for broad shaping.</p>
+          </div>
+        </section>
+        <section class="sec">
+          <div class="sec__head"><h3>Pedal</h3></div>
+          <div class="row" style="margin-top:0">
+            <button class="btn auto" id="auto" type="button" aria-pressed="true">Auto pedal</button>
+          </div>
+          <p class="say">With auto pedal on, picking a tool brings the wheel to the speed that tool wants. The green band on the speed bar shows it either way.</p>
+        </section>
+        <section class="sec">
+          <div class="sec__head"><h3>Keys</h3></div>
+          <dl class="facts" style="grid-template-columns:auto 1fr">
+            <dt>Space</dt><dd>Start or stop the wheel</dd>
+            <dt>↑ ↓</dt><dd>Speed up or slow down</dd>
+            <dt>⌘Z  ⇧⌘Z</dt><dd>Undo, redo</dd>
+            <dt>⌘S</dt><dd>Save a version</dd>
+            <dt>Right drag</dt><dd>Look around</dd>
+            <dt>Two fingers</dt><dd>Look around, pinch to zoom</dd>
+          </dl>
+        </section>
+      </div>
+
+      <div data-panel="versions" role="tabpanel" hidden>
+        <section class="sec">
+          <div class="sec__head"><h3>Save this version</h3><span class="meta">⌘S</span></div>
+          <div class="name-row"><input id="version-name" type="text" aria-label="Version name" maxlength="40"><button class="btn btn--accent" id="save-version" type="button">Save</button></div>
+          <p class="hint">Versions keep the whole piece, with its glaze if it has one. They're stored in this browser.</p>
+        </section>
+        <section class="sec">
+          <div class="versions" id="versions"></div>
+        </section>
+      </div>
+
+      <div data-panel="scene" role="tabpanel" hidden>
+        <section class="sec">
+          <div class="sec__head"><h3>Camera</h3><span class="meta">keys 1–4</span></div>
+          <div class="seg" id="views" role="group" aria-label="Camera views">
+            <button type="button" data-view="seat">Seat</button>
+            <button type="button" data-view="side">Side</button>
+            <button type="button" data-view="above">Above</button>
+            <button type="button" data-view="low">Low</button>
+          </div>
+        </section>
+        <section class="sec">
+          <div class="sec__head"><h3>Setting</h3></div>
+          <div class="choices choices--two" id="place"></div>
+        </section>
+      </div>
+    </div>
+  </aside>
+
+  <!-- the wheel and the history of the piece -->
+  <section class="panel dock" id="dock" aria-label="Wheel and history" hidden>
+    <div class="dock__row">
+      <button class="spin" id="spin" type="button" aria-label="Stop the wheel" title="Start or stop (space)">
+        <svg viewBox="0 0 16 16" id="spin-icon"><rect x="4" y="3" width="3" height="10" rx="1"/><rect x="9" y="3" width="3" height="10" rx="1"/></svg>
+      </button>
+      <div class="rpm"><b id="rpm">0</b><span>rpm</span></div>
+      <div class="speed" id="speed">
+        <input type="range" id="speed-in" min="0" max="240" step="5" value="0" aria-label="Wheel speed, rpm">
+        <div class="speed__track"></div>
+        <div class="speed__band" id="speed-band"></div>
+        <div class="speed__fill" id="speed-fill"></div>
+        <div class="speed__knob" id="speed-knob"></div>
+        <div class="speed__ticks" id="speed-ticks"></div>
+      </div>
+      <button class="btn dir" id="dir" type="button" aria-label="Turning anticlockwise" title="Direction">↺</button>
+    </div>
+    <div class="dock__row">
+      <button class="btn" id="undo" type="button" title="Undo (⌘Z)" aria-label="Undo">↶</button>
+      <button class="btn" id="redo" type="button" title="Redo (⇧⌘Z)" aria-label="Redo">↷</button>
+      <div class="hist">
+        <input type="range" id="history" min="0" max="0" step="1" value="0" aria-label="History: drag to rewind">
+        <output id="hist-out"></output>
+      </div>
+      <button class="primary only-desktop" id="to-glaze" type="button">Finish and glaze →</button>
+    </div>
+  </section>
+
+  <!-- glazing -->
+  <aside class="panel glaze" id="glaze" aria-label="Glaze" hidden>
+    <button class="sheet-grip" type="button" data-close-sheet aria-label="Close panel"><span></span></button>
+    <div class="glaze__head">
+      <h2>Trim and glaze</h2>
+      <p>Cut free and leather-hard. What you see is a preview of how it will come out of the kiln.</p>
+    </div>
+    <div class="scroll">
+      <div class="field">
+        <div class="label">Foot</div>
+        <div class="seg" id="foot" role="group" aria-label="Foot">
+          <button type="button" data-foot="flat">Flat base</button>
+          <button type="button" data-foot="ring">Trimmed foot ring</button>
+        </div>
+      </div>
+      <div class="field">
+        <div class="label">Glaze</div>
+        <div class="glazes" id="glazes"></div>
+        <p class="glaze__note" id="glaze-note"></p>
+      </div>
+      <div class="field">
+        <div class="label">Inside</div>
+        <div class="seg" id="inside" role="group" aria-label="Inside">
+          <button type="button" data-inside="same">Same glaze</button>
+          <button type="button" data-inside="liner">White liner</button>
+          <button type="button" data-inside="bare">Bare</button>
+        </div>
+      </div>
+      <div class="field">
+        <div class="label">Dipped to <output id="dip-out">85%</output></div>
+        <input type="range" id="dip" min="0.1" max="1" step="0.01" value="0.85" aria-label="How far up the outside the glaze goes">
+        <p class="hint">Dipped rim-first: this is how far down the outside the glaze reaches. The foot is waxed, so it stays bare.</p>
+      </div>
+      <div class="field">
+        <div class="label">Thickness <output id="thick-out">Medium</output></div>
+        <input type="range" id="thick" min="0" max="1" step="0.01" value="0.5" aria-label="Glaze thickness">
+        <p class="hint">Thin glaze breaks to the clay on rims and ridges. Thick glaze pools and runs.</p>
+      </div>
+    </div>
+    <div class="glaze__foot">
+      <button class="btn" id="back-to-wheel" type="button">← Back to the wheel</button>
+      <button class="primary" id="fire" type="button">Fire it</button>
+    </div>
+  </aside>
+
+  <div class="kiln" id="kiln" aria-live="polite"><div><b id="kiln-temp">20 °C</b><span id="kiln-say">Firing</span></div></div>
+
+  <!-- the finished piece -->
+  <div class="panel plaque" id="plaque" hidden>
+    <input id="piece-name" type="text" aria-label="Name this piece" maxlength="48">
+    <p id="plaque-say"></p>
+    <dl class="facts" id="plaque-facts"></dl>
+  </div>
+  <section class="panel viewbar" id="viewbar" aria-label="Viewer" hidden>
+    <span class="label">Light</span>
+    <div class="seg" id="looks" role="group" aria-label="Lighting"></div>
+    <div class="seg" id="shots" role="group" aria-label="Camera">
+      <button type="button" data-shot="hero">Hero</button>
+      <button type="button" data-shot="eye">Eye level</button>
+      <button type="button" data-shot="above">Above</button>
+      <button type="button" data-shot="detail">Detail</button>
+    </div>
+    <button class="btn" id="turntable" type="button" aria-pressed="true">Turntable</button>
+    <button class="btn" id="snap" type="button">Save image</button>
+    <button class="btn" id="reglaze" type="button">Reglaze</button>
+    <button class="btn btn--accent" id="view-save" type="button">Save version</button>
+  </section>
+
+  <div class="panel toast" id="toast" role="status" hidden><span id="toast-text"></span><button class="btn" id="toast-act" type="button" hidden></button></div>
+  <div class="panel coach" id="coach" hidden>
+    <p><b>One finger shapes the clay.</b></p>
+    <p>Two fingers look around and pinch to zoom.</p>
+    <div class="row" style="justify-content:center"><button class="btn btn--accent" type="button" id="coach-ok">Got it</button></div>
+  </div>
+
+  <aside class="notes">
+    <p>A potter's wheel you can actually throw on. The clay is a stack of thin rings, and every tool conserves its volume: thin the wall and the clay rises, push it out and it gets thinner. Too wet, too thin or too much overhang and it slumps.</p>
+    <p>Every touch is a step you can undo or scrub back to. Save versions as you go, then cut it free, glaze it and fire it.</p>
+  </aside>
+
+  <script type="module" src="pottery.js"></script>
+  <script src="../notes.js"></script>
+</body>
+</html>

@@ -1,0 +1,342 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Chladni plate · Brian Studwell</title>
+  <style>
+    @font-face {
+      font-family: "Geist";
+      font-weight: 100 900;
+      font-display: swap;
+      src: url("../../fonts/Geist-Variable.woff2") format("woff2");
+    }
+
+    :root {
+      --bg: #030405;
+      --panel: rgba(14, 15, 17, 0.8);
+      --line: rgba(255, 255, 255, 0.08);
+      --line-strong: rgba(255, 255, 255, 0.16);
+      --fg: #eceae6;
+      --muted: #9b978f;
+      --faint: #5f5c57;
+      --accent: #f0b25e;
+      --accent-glow: rgba(240, 178, 94, 0.55);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    [hidden] { display: none !important; }
+    html, body {
+      height: 100%; overflow: hidden;
+      background: var(--bg); color: var(--fg);
+      font: 13px/1.45 "Geist", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    button { font: inherit; color: inherit; cursor: pointer; background: none; border: 0; }
+    :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+    #scene { position: fixed; inset: 0; display: block; width: 100%; height: 100%; touch-action: none; cursor: grab; }
+    #scene:active { cursor: grabbing; }
+
+    /* ---------- header ---------- */
+    .top {
+      position: fixed; z-index: 4; top: 14px; left: 16px; right: 16px;
+      display: flex; align-items: center; gap: 14px; pointer-events: none;
+    }
+    .top > * { pointer-events: auto; }
+    .back { color: var(--muted); text-decoration: none; }
+    .back:hover { color: var(--fg); }
+    .brand { font-size: 15px; font-weight: 650; letter-spacing: 0.01em; }
+    .brand span { color: var(--muted); font-weight: 450; margin-left: 6px; }
+    .top .spacer { flex: 1; }
+    .ghost {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 6px 11px; border-radius: 8px; border: 1px solid var(--line-strong);
+      background: var(--panel); color: var(--fg); white-space: nowrap;
+      backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    }
+    .ghost:hover { background: rgba(255, 255, 255, 0.08); }
+    .ghost svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+
+    /* ---------- material panel ---------- */
+    .side {
+      position: fixed; z-index: 3; top: 56px; right: 16px; width: 264px;
+      max-height: calc(100vh - 56px - 72px); overflow-y: auto; overscroll-behavior: contain;
+      padding: 12px 12px 14px; border-radius: 14px;
+      background: var(--panel); border: 1px solid var(--line);
+      backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+      scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+    }
+    .side__title { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
+    .side__title + .side__group .side__sub { margin-top: 8px; }
+    .side__sub { font-size: 11.5px; color: var(--faint); margin: 10px 0 6px; }
+    .side__sep { height: 1px; background: var(--line); margin: 12px -12px 10px; }
+    .swatches { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px 2px; }
+    .swatch { display: grid; justify-items: center; gap: 5px; padding: 0; border-radius: 10px; }
+    .swatch__chip {
+      width: 32px; height: 32px; border-radius: 50%;
+      box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12), 0 4px 10px rgba(0, 0, 0, 0.45);
+      transition: box-shadow 0.18s, transform 0.18s;
+    }
+    .swatch__name { font-size: 11px; line-height: 1.2; color: var(--muted); text-align: center; transition: color 0.18s; }
+    .swatch:hover .swatch__chip { transform: translateY(-1px); box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.3), 0 6px 14px rgba(0, 0, 0, 0.5); }
+    .swatch:hover .swatch__name { color: var(--fg); }
+    .swatch[aria-pressed="true"] .swatch__chip { box-shadow: 0 0 0 2px var(--bg), 0 0 0 3.5px var(--accent), 0 6px 14px rgba(0, 0, 0, 0.5); }
+    .swatch[aria-pressed="true"] .swatch__name { color: var(--fg); font-weight: 550; }
+    .about { margin-top: 10px; color: var(--muted); font-size: 12px; line-height: 1.45; min-height: 35px; }
+    .seg { display: flex; gap: 2px; padding: 2px; border-radius: 9px; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--line); }
+    .seg button { flex: 1; height: 28px; border-radius: 7px; font-size: 12px; color: var(--muted); }
+    .seg button:hover { color: var(--fg); }
+    .seg button[aria-pressed="true"] { background: rgba(255, 255, 255, 0.12); color: var(--fg); }
+    .mat-toggle { display: none; }
+    .mat-toggle i { width: 14px; height: 14px; border-radius: 50%; box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.2); }
+
+    /* ---------- dock ---------- */
+    .dock {
+      position: fixed; z-index: 3; left: 50%; bottom: calc(22px + env(safe-area-inset-bottom));
+      transform: translateX(-50%);
+      display: flex; align-items: center; gap: 26px;
+      padding: 14px 26px 14px 22px;
+      border-radius: 22px;
+      background: linear-gradient(180deg, rgba(30, 31, 34, 0.82), rgba(12, 13, 15, 0.86));
+      border: 1px solid var(--line);
+      box-shadow: 0 1px 0 rgba(255, 255, 255, 0.06) inset, 0 24px 60px rgba(0, 0, 0, 0.55);
+      backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+      user-select: none; -webkit-user-select: none;
+    }
+    .dock__sep { width: 1px; align-self: stretch; background: var(--line); }
+    .cap { font-size: 11px; font-weight: 550; color: var(--muted); letter-spacing: 0.02em; }
+
+    /* the toggle: a bat lever on a steel plate */
+    .switch { display: grid; grid-template-columns: auto auto; align-items: center; column-gap: 12px; }
+    .toggle {
+      position: relative; width: 46px; height: 74px; border-radius: 12px;
+      background:
+        radial-gradient(120% 70% at 50% 0%, rgba(255, 255, 255, 0.16), transparent 60%),
+        linear-gradient(180deg, #3a3b3f, #1d1e21);
+      box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6), 0 1px 0 rgba(255, 255, 255, 0.12) inset, 0 8px 18px rgba(0, 0, 0, 0.5);
+      touch-action: manipulation;
+    }
+    .toggle::before, .toggle::after {           /* the plate's screws */
+      content: ""; position: absolute; left: 50%; width: 5px; height: 5px; margin-left: -2.5px; border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #8b8d92, #2a2b2e);
+    }
+    .toggle::before { top: 6px; } .toggle::after { bottom: 6px; }
+    .toggle__collar { z-index: 1;
+      position: absolute; left: 50%; top: 50%; width: 20px; height: 20px; margin: -10px 0 0 -10px; border-radius: 50%;
+      background: radial-gradient(circle at 40% 35%, #d9dbe0, #6c6f75 55%, #303236);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.6);
+    }
+    .toggle__lever {
+      position: absolute; left: 50%; top: calc(50% - 28px); width: 9px; height: 28px; margin-left: -4.5px;
+      transform-origin: 50% 100%; transform: scaleY(-0.9);
+      border-radius: 5px 5px 3px 3px;
+      background: linear-gradient(90deg, #6f7278, #f2f3f5 45%, #9a9da3 70%, #4b4d52);
+      box-shadow: 0 3px 5px rgba(0, 0, 0, 0.45);
+      transition: transform 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .toggle__lever::after {                       /* the ball tip */
+      content: ""; position: absolute; left: 50%; top: -3px; width: 12px; height: 12px; margin-left: -6px; border-radius: 50%;
+      background: radial-gradient(circle at 38% 32%, #ffffff, #b9bcc2 45%, #5d6066);
+    }
+    .toggle[aria-checked="true"] .toggle__lever { transform: scaleY(0.9); }
+    .switch__side { display: flex; flex-direction: column; justify-content: space-between; height: 74px; padding: 4px 0; }
+    .switch__side .cap { transition: color 0.2s; }
+    .switch__side .cap.is-on { color: var(--fg); }
+    .lamp {
+      width: 9px; height: 9px; border-radius: 50%; margin: 1px 0;
+      background: radial-gradient(circle at 40% 35%, #6a4a22, #2a1d0e);
+      box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.7);
+      transition: background 0.2s, box-shadow 0.2s;
+    }
+    .is-sounding .lamp {
+      background: radial-gradient(circle at 40% 35%, #fff2d6, #f0b25e 50%, #b8661c);
+      box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.5), 0 0 10px 2px var(--accent-glow), 0 0 22px 6px rgba(240, 178, 94, calc(0.15 + var(--res, 0) * 0.35));
+    }
+
+    /* the knob */
+    .knob-wrap { position: relative; width: 116px; height: 116px; margin: -6px 0; }
+    .dial { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+    .dial .track { fill: none; stroke: rgba(255, 255, 255, 0.08); stroke-width: 2; stroke-linecap: round; }
+    .dial .value { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linecap: round; opacity: 0.85; }
+    .dial .tick { fill: rgba(255, 255, 255, 0.22); transition: fill 0.2s; }
+    .dial .tick.is-near { fill: var(--accent); }
+    .dial .pos { fill: #fff; filter: drop-shadow(0 0 4px var(--accent-glow)); }
+    .knob {
+      position: absolute; left: 50%; top: 50%; width: 76px; height: 76px; margin: -38px 0 0 -38px; border-radius: 50%;
+      cursor: grab; touch-action: none;
+      background: repeating-conic-gradient(from 0deg, #2b2c30 0deg 3deg, #4a4c51 3deg 6deg);
+      box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.8), 0 10px 22px rgba(0, 0, 0, 0.6), 0 2px 3px rgba(0, 0, 0, 0.5);
+    }
+    .knob:active { cursor: grabbing; }
+    .knob__face {
+      position: absolute; inset: 6px; border-radius: 50%;
+      background:
+        radial-gradient(circle at 50% 50%, transparent 0 46%, rgba(0, 0, 0, 0.25) 47% 48%, transparent 49%),
+        conic-gradient(from 20deg, #c9ccd1, #7c7f85, #e9ebee, #73767c, #c4c7cc, #84878d, #e2e4e7, #7a7d83, #c9ccd1);
+      box-shadow: 0 1px 0 rgba(255, 255, 255, 0.4) inset, 0 -2px 4px rgba(0, 0, 0, 0.35) inset;
+    }
+    .knob__grip { position: absolute; inset: 0; border-radius: 50%; will-change: transform; }
+    .knob__mark {
+      position: absolute; left: 50%; top: 9px; width: 3px; height: 15px; margin-left: -1.5px; border-radius: 2px;
+      background: #1b1c1f; box-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
+    }
+    .is-sounding .knob__mark { background: var(--accent); box-shadow: 0 0 6px var(--accent-glow); }
+
+    /* the readout */
+    .readout { width: 152px; display: grid; gap: 6px; }
+    .freq { display: flex; align-items: baseline; gap: 5px; font-variant-numeric: tabular-nums; }
+    .freq b { font-size: 30px; font-weight: 500; letter-spacing: -0.02em; line-height: 1; }
+    .freq small { font-size: 13px; color: var(--muted); }
+    .mode { font-size: 12px; color: var(--muted); height: 17px; white-space: nowrap; }
+    .mode.is-locked { color: var(--fg); }
+    .meter { position: relative; height: 3px; border-radius: 2px; background: rgba(255, 255, 255, 0.08); overflow: hidden; }
+    .meter i { position: absolute; inset: 0 auto 0 0; width: 0; border-radius: 2px; background: linear-gradient(90deg, #8a6a3c, var(--accent)); }
+    .hops { display: flex; gap: 6px; margin-top: 2px; }
+    .hop {
+      flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 4px;
+      height: 26px; border-radius: 7px; border: 1px solid var(--line-strong);
+      font-size: 12px; color: var(--muted);
+    }
+    .hop:hover { color: var(--fg); background: rgba(255, 255, 255, 0.06); }
+    .hop svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+
+    /* first-run hint */
+    .hint {
+      position: fixed; z-index: 3; left: 50%; bottom: calc(176px + env(safe-area-inset-bottom));
+      transform: translateX(-50%);
+      padding: 7px 13px; border-radius: 999px;
+      background: rgba(14, 15, 17, 0.7); border: 1px solid var(--line);
+      color: var(--muted); white-space: nowrap; pointer-events: none;
+      transition: opacity 0.6s, transform 0.6s;
+    }
+    .hint.is-gone { opacity: 0; transform: translate(-50%, 6px); }
+
+    .keys { position: fixed; z-index: 2; left: 16px; bottom: calc(22px + env(safe-area-inset-bottom)); color: var(--faint); font-size: 11.5px; line-height: 1.7; }
+    .keys kbd { font: inherit; color: var(--muted); padding: 0 5px; border: 1px solid var(--line); border-radius: 4px; }
+
+    @media (max-width: 1100px) { .keys { display: none; } }
+    @media (max-width: 900px) and (min-width: 601px) { .notes { display: none; } }
+    @media (max-width: 600px) {
+      .brand span, .back__label { display: none; }
+      .top { gap: 10px; }
+      .brand { white-space: nowrap; }
+      body.sheet-open .hint { opacity: 0; }
+      .dock { left: 12px; right: 12px; transform: none; gap: 14px; padding: 12px 14px; justify-content: space-between; bottom: calc(12px + env(safe-area-inset-bottom)); }
+      .dock__sep { display: none; }
+      .switch { column-gap: 8px; }
+      .readout { width: auto; flex: 1; min-width: 0; }
+      .freq b { font-size: 26px; }
+      .hint { bottom: calc(150px + env(safe-area-inset-bottom)); font-size: 12px; }
+      .scatter-label { display: none; }
+      .mat-toggle { display: inline-flex; }
+      .side {
+        top: auto; left: 12px; right: 12px; width: auto;
+        bottom: calc(154px + env(safe-area-inset-bottom)); max-height: 58vh;
+        transform: translateY(12px); opacity: 0; visibility: hidden;
+        transition: transform 0.25s, opacity 0.25s, visibility 0s 0.25s;
+      }
+      .side.is-open { transform: none; opacity: 1; visibility: visible; transition: transform 0.25s, opacity 0.25s; }
+      .swatches { grid-template-columns: repeat(5, 1fr); }
+    }
+    @media (max-width: 370px) { .switch__side { display: none; } }
+    @media (prefers-reduced-motion: reduce) { .toggle__lever, .hint { transition: none; } }
+  </style>
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.min.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <canvas id="scene" aria-label="A metal plate covered in sand, floating in darkness"></canvas>
+
+  <header class="top">
+    <a class="back" href="../" aria-label="Back to Tinkering">←<span class="back__label"> Tinkering</span></a>
+    <div class="brand">Chladni plate<span>sound you can see</span></div>
+    <span class="spacer"></span>
+    <button class="ghost mat-toggle" id="mat-toggle" type="button" aria-expanded="false" aria-controls="side"><i id="mat-chip"></i><span id="mat-name">Sand</span></button>
+    <button class="ghost" id="scatter" type="button" title="Pour again (S)">
+      <svg viewBox="0 0 16 16"><circle cx="4" cy="5" r="0.9"/><circle cx="8" cy="3.5" r="0.9"/><circle cx="12" cy="5.5" r="0.9"/><circle cx="6" cy="9" r="0.9"/><circle cx="10.5" cy="9.5" r="0.9"/><circle cx="3.5" cy="12.5" r="0.9"/><circle cx="8.5" cy="13" r="0.9"/><circle cx="12.5" cy="12.5" r="0.9"/></svg>
+      <span class="scatter-label" id="scatter-label">Pour again</span>
+    </button>
+  </header>
+
+  <aside class="side" id="side" aria-label="Materials">
+    <div class="side__title">Material</div>
+    <div id="media"></div>
+    <p class="about" id="about"></p>
+    <div class="side__sep"></div>
+    <div class="side__sub" id="amount-label">Amount</div>
+    <div class="seg" id="amounts" role="group" aria-label="Amount"></div>
+    <div class="side__sep"></div>
+    <div class="side__title">Plate</div>
+    <div class="swatches" id="plates" style="margin-top: 10px"></div>
+  </aside>
+
+  <div class="hint" id="hint">Flip the switch, then turn the knob slowly</div>
+
+  <section class="dock" aria-label="Signal generator">
+    <div class="switch">
+      <button class="toggle" id="power" type="button" role="switch" aria-checked="false" aria-label="Sound">
+        <span class="toggle__collar"></span>
+        <span class="toggle__lever"></span>
+      </button>
+      <div class="switch__side" aria-hidden="true">
+        <span class="cap" id="cap-on">On</span>
+        <span class="lamp"></span>
+        <span class="cap is-on" id="cap-off">Off</span>
+      </div>
+    </div>
+
+    <span class="dock__sep"></span>
+
+    <div class="knob-wrap">
+      <svg class="dial" id="dial" viewBox="0 0 116 116" aria-hidden="true">
+        <path class="track" id="dial-track"/>
+        <path class="value" id="dial-value"/>
+        <g id="dial-ticks"></g>
+        <circle class="pos" id="dial-pos" r="2.6"/>
+      </svg>
+      <div class="knob" id="knob" role="slider" tabindex="0" aria-label="Frequency"
+           aria-valuemin="60" aria-valuemax="4800" aria-valuenow="369" aria-valuetext="369 hertz">
+        <div class="knob__grip" id="grip">
+          <span class="knob__face"></span>
+          <span class="knob__mark"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="readout">
+      <div class="freq"><b id="hz">369</b><small>Hz</small></div>
+      <div class="mode" id="mode" aria-live="polite">Between resonances</div>
+      <div class="meter" title="How close you are to a resonance"><i id="meter"></i></div>
+      <div class="hops">
+        <button class="hop" id="prev" type="button" title="Glide to the previous resonance ([)" aria-label="Previous resonance">
+          <svg viewBox="0 0 12 12"><path d="M7.5 2.5 4 6l3.5 3.5"/></svg>
+        </button>
+        <button class="hop" id="next" type="button" title="Glide to the next resonance (])" aria-label="Next resonance">
+          <svg viewBox="0 0 12 12"><path d="M4.5 2.5 8 6 4.5 9.5"/></svg>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <div class="keys" aria-hidden="true">
+    <kbd>Space</kbd> sound · <kbd>←</kbd> <kbd>→</kbd> tune, <kbd>Shift</kbd> for bigger steps<br>
+    <kbd>[</kbd> <kbd>]</kbd> next resonance · <kbd>S</kbd> pour again · drag to look around
+  </div>
+
+  <aside class="notes">
+    <p>In 1787 Ernst Chladni bowed the edge of a sand-covered brass plate and watched the sand gather into lines. The plate was ringing in one of its natural shapes. Where it moved, the sand was thrown off; where it held still, the sand stayed.</p>
+    <p>This plate is driven from the centre by a sine wave. Most frequencies only make it buzz. Near one of its resonances it rings, and the sand draws that resonance's still lines. Higher notes draw finer figures.</p>
+    <p>Try other materials. Liquids show the same wave in their surface, slowed down so you can see it; the flame table burns tallest where the plate moves most.</p>
+  </aside>
+
+  <script type="module" src="app.js"></script>
+  <script src="../notes.js"></script>
+</body>
+</html>

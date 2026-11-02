@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Split-flap: HTML version (comparison)</title>
+  <link rel="stylesheet" href="../styles.css">
+  <style>
+    /* The earlier DOM build of the split-flap name, kept for comparison with the
+       canvas version on the home page. Not deployed (lab/ is outside .vercelignore). */
+    .lab-note { color: var(--muted); font-size: 14px; margin-bottom: 32px; }
+    .lab-note a { text-decoration: underline; }
+
+    .sf {
+      container-type: inline-size;
+      perspective: 400px;
+      color: var(--fg);
+      font-weight: 800;
+      line-height: 1;
+    }
+
+    .sf__half {
+      position: absolute;
+      left: 0;
+      right: 0;
+      height: 50%;
+      overflow: hidden;
+      background: #1c1c1e;
+      backface-visibility: hidden;
+    }
+
+    .sf__half--top {
+      top: 0;
+      border-radius: 6px 6px 0 0;
+      background: linear-gradient(#242427, #1c1c1e);
+      transform-origin: 50% 100%;
+    }
+
+    .sf__half--bottom {
+      bottom: 0;
+      border-radius: 0 0 6px 6px;
+      transform-origin: 50% 0;
+    }
+
+    .sf__half > span {
+      position: absolute;
+      left: 0;
+      right: 0;
+      height: 200%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 92cqw;
+    }
+
+    .sf__half--top > span { top: 0; }
+    .sf__half--bottom > span { bottom: 0; }
+    .sf__leaf { z-index: 1; }
+
+    .sf::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 50%;
+      z-index: 2;
+      height: 2px;
+      background: var(--bg);
+      transform: translateY(-50%);
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="cover">
+      <div class="cover__text">
+        <p class="lab-note">HTML version, for comparison · <a href="../">canvas version</a> · reload to replay</p>
+        <h1 class="cover__name">Brian Studwell</h1>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const FLAP_LINES = ['BRIAN', 'STUDWELL'];
+    const FLAP_CHARS = ' ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const FLIP_MS = 55;
+    const START_MS = 150, STAGGER_MS = 125;
+    const MIN_FLIPS = 14, MAX_FLIPS = 20;
+    // motion blur: vertical ghosts above and below the glyph (same shape so they interpolate)
+    const smear = (dy, a) => `0 ${dy}em ${dy / 2}em rgb(242 240 236 / ${a}), 0 -${dy}em ${dy / 2}em rgb(242 240 236 / ${a})`;
+    const BLUR_NONE = smear(0, 0);
+    const BLUR_SPIN = smear(0.07, 0.35);
+    const BLUR_FLIP = smear(0.12, 0.4);
+
+    function flapHalf(pos) {
+      const half = document.createElement('span');
+      half.className = 'sf__half sf__half--' + pos;
+      half.appendChild(document.createElement('span'));
+      return half;
+    }
+
+    function makeFlap() {
+      const el = document.createElement('span');
+      el.className = 'sf';
+      const top = flapHalf('top'), bottom = flapHalf('bottom');
+      const leafTop = flapHalf('top'), leafBottom = flapHalf('bottom');
+      leafTop.classList.add('sf__leaf');
+      leafBottom.classList.add('sf__leaf');
+      leafBottom.style.transform = 'rotateX(90deg)';
+      el.append(top, bottom, leafTop, leafBottom);
+
+      const halves = [top, bottom, leafTop, leafBottom];
+      const put = (half, ch) => { half.firstChild.textContent = ch; };
+      let current = ' ';
+
+      return {
+        el,
+        show(ch) { halves.forEach(h => put(h, ch)); current = ch; },
+        async flip(next, blur) {
+          put(top, next); put(bottom, current); put(leafTop, current); put(leafBottom, next);
+          el.style.textShadow = blur;
+          const opts = { duration: FLIP_MS / 2, fill: 'forwards' };
+          await leafTop.animate([
+            { transform: 'rotateX(0deg)', filter: 'brightness(1)', textShadow: blur },
+            { transform: 'rotateX(-90deg)', filter: 'brightness(0.55)', textShadow: BLUR_FLIP }
+          ], { ...opts, easing: 'ease-in' }).finished;
+          await leafBottom.animate([
+            { transform: 'rotateX(90deg)', filter: 'brightness(1.4)', textShadow: BLUR_FLIP },
+            { transform: 'rotateX(0deg)', filter: 'brightness(1)', textShadow: blur }
+          ], { ...opts, easing: 'ease-out' }).finished;
+          halves.forEach(h => put(h, next));
+          [leafTop, leafBottom].forEach(h => h.getAnimations().forEach(a => a.cancel()));
+          current = next;
+        }
+      };
+    }
+
+    function flapName() {
+      const heading = document.querySelector('.cover__name');
+      const board = document.createElement('span');
+      board.className = 'sf-board';
+      board.setAttribute('aria-hidden', 'true');
+      board.style.setProperty('--cols', Math.max(...FLAP_LINES.map(l => l.length)));
+      const flaps = [];
+      FLAP_LINES.forEach(line => {
+        const row = document.createElement('span');
+        row.className = 'sf-row';
+        [...line].forEach(ch => {
+          const f = makeFlap();
+          f.target = ch;
+          row.appendChild(f.el); flaps.push(f);
+        });
+        board.appendChild(row);
+      });
+      heading.appendChild(board);
+      heading.classList.add('is-flap');
+
+      // same schedule as the canvas version: open on an earlier letter, spin forward to the target
+      const spinTo = (f, flips) => {
+        const end = FLAP_CHARS.indexOf(f.target), len = FLAP_CHARS.length;
+        if (FLAP_CHARS[(end - flips + len * 2) % len] === ' ') flips++;
+        f.seq = Array.from({ length: flips + 1 }, (_, i) => FLAP_CHARS[(end - flips + i + len * 2) % len]);
+        f.show(f.seq[0]);
+      };
+      const last = flaps[flaps.length - 1], rest = flaps.slice(0, -1);
+      rest.forEach(f => spinTo(f, MIN_FLIPS + Math.floor(Math.random() * (MAX_FLIPS - MIN_FLIPS + 1))));
+      spinTo(last, Math.max(...rest.map(f => f.seq.length - 1)) + 3);
+
+      const spin = (f, waitFor) => new Promise(r => setTimeout(r, START_MS + Math.random() * STAGGER_MS)).then(async () => {
+        for (let c = 1; c < f.seq.length; c++) {
+          const final = c === f.seq.length - 1;
+          if (final && waitFor) await waitFor;   // the last module always lands last
+          await f.flip(f.seq[c], final ? BLUR_NONE : BLUR_SPIN);
+        }
+      });
+      spin(last, Promise.all(rest.map(f => spin(f))));
+    }
+
+    flapName();
+  </script>
+</body>
+</html>

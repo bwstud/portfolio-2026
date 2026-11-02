@@ -8,7 +8,10 @@
 </head>
 <body>
   <header class="nav">
-    <a class="nav__brand" href="#top">BS</a>
+    <div class="nav__start">
+      <a class="nav__brand" href="#top">BS</a>
+      <a class="button" href="#agents">Brian for Agents</a>
+    </div>
     <nav class="nav__links">
       <div class="dropdown">
         <button class="dropdown__toggle" aria-expanded="false" aria-controls="work-menu">
@@ -39,7 +42,6 @@
           Designer with 11 years of experience building high-stakes enterprise products.
           I design how people configure, oversee, and trust AI in regulated work.
         </p>
-        <a class="button" href="#agents">Brian for Agents</a>
       </div>
 
       <figure class="cover__image placeholder" aria-label="Image placeholder">
@@ -49,7 +51,10 @@
 
     <section class="project" id="groom-lake">
       <div class="project__head">
-        <h2 class="project__title">Groom Lake</h2>
+        <div class="project__title-row">
+          <h2 class="project__title">Groom Lake</h2>
+          <a class="button" href="#">Try it yourself</a>
+        </div>
         <div>
           <p class="project__desc">Redesigning a flagship product for the modern world</p>
           <ul class="project__tags" aria-label="Project focus">
@@ -70,7 +75,10 @@
 
     <section class="project" id="blackbird">
       <div class="project__head">
-        <h2 class="project__title">Blackbird</h2>
+        <div class="project__title-row">
+          <h2 class="project__title">Blackbird</h2>
+          <a class="button" href="#">Try it yourself</a>
+        </div>
         <p class="project__desc">
           Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod
           tempor incididunt ut labore et dolore magna aliqua.
@@ -86,7 +94,10 @@
 
     <section class="project" id="concierge-dashboarding">
       <div class="project__head">
-        <h2 class="project__title">Concierge Dashboarding</h2>
+        <div class="project__title-row">
+          <h2 class="project__title">Concierge Dashboarding</h2>
+          <a class="button" href="#">Try it yourself</a>
+        </div>
         <p class="project__desc">
           Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod
           tempor incididunt ut labore et dolore magna aliqua.
@@ -97,7 +108,10 @@
 
     <section class="project" id="qr-codes">
       <div class="project__head">
-        <h2 class="project__title">QR Codes</h2>
+        <div class="project__title-row">
+          <h2 class="project__title">QR Codes</h2>
+          <a class="button" href="#">Try it yourself</a>
+        </div>
         <p class="project__desc">
           Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod
           tempor incididunt ut labore et dolore magna aliqua.
@@ -108,7 +122,10 @@
 
     <section class="project" id="forge-harness">
       <div class="project__head">
-        <h2 class="project__title">Forge Harness</h2>
+        <div class="project__title-row">
+          <h2 class="project__title">Forge Harness</h2>
+          <a class="button" href="#">Try it yourself</a>
+        </div>
         <p class="project__desc">
           Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod
           tempor incididunt ut labore et dolore magna aliqua.
@@ -119,7 +136,10 @@
 
     <section class="project" id="casper">
       <div class="project__head">
-        <h2 class="project__title">Casper</h2>
+        <div class="project__title-row">
+          <h2 class="project__title">Casper</h2>
+          <a class="button" href="#">Try it yourself</a>
+        </div>
         <p class="project__desc">
           Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod
           tempor incididunt ut labore et dolore magna aliqua.
@@ -130,7 +150,10 @@
 
     <section class="project" id="mazlan-builder">
       <div class="project__head">
-        <h2 class="project__title">Mazlan Builder</h2>
+        <div class="project__title-row">
+          <h2 class="project__title">Mazlan Builder</h2>
+          <a class="button" href="#">Try it yourself</a>
+        </div>
         <p class="project__desc">
           Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod
           tempor incididunt ut labore et dolore magna aliqua.
@@ -142,88 +165,179 @@
 
   <script src="nav.js"></script>
   <script>
-    /* ---- Split-flap board → name (ported from Showcase July 2026) ---- */
-    const FLAP_OFF = '#1a1a1a';     // unlit tile
-    const FLAP_ON = '#ffffff';      // lit tile
-    const FLAP_COLORS = ['#000000', '#3a3a3a', '#6b6b6b', '#9e9e9e', '#cfcfcf', '#ffffff'];
-    const NOISE_MS = 1250, SETTLE_MS = 850;
-    const GLYPHS = {   // 5×7 pixel font, one string per row
-      A: ['01110','10001','10001','11111','10001','10001','10001'],
-      B: ['11110','10001','10001','11110','10001','10001','11110'],
-      D: ['11110','10001','10001','10001','10001','10001','11110'],
-      E: ['11111','10000','10000','11110','10000','10000','11111'],
-      I: ['11111','00100','00100','00100','00100','00100','11111'],
-      L: ['10000','10000','10000','10000','10000','10000','11111'],
-      N: ['10001','11001','10101','10011','10001','10001','10001'],
-      R: ['11110','10001','10001','11110','10100','10010','10001'],
-      S: ['01111','10000','10000','01110','00001','00001','11110'],
-      T: ['11111','00100','00100','00100','00100','00100','00100'],
-      U: ['10001','10001','10001','10001','10001','10001','01110'],
-      W: ['10001','10001','10001','10101','10101','10101','01010']
-    };
+    /* ---- Split-flap name: one canvas module per letter, flipping through the alphabet.
+       Each frame is drawn at several instants across a simulated camera shutter and
+       averaged, so fast flaps smear and neighbouring letters overlap like on film. ---- */
     const FLAP_LINES = ['BRIAN', 'STUDWELL'];
+    const FLAP_CHARS = ' ABCDEFGHIJKLMNOPQRSTUVWXYZ';   // the order every module flips through
+    const FLIP_MS = 55;                                // one full flip: top leaf falls, bottom leaf lands
+    const START_MS = 150, STAGGER_MS = 125;
+    const MIN_FLIPS = 14, MAX_FLIPS = 20;              // every module spins this long; the last one longer
+    const SHUTTER_MS = 33, SAMPLES = 10;               // simulated exposure per frame
+    const BOUNCE_MS = 90, BOUNCE_DEG = 12;             // the final leaf rebounds as it lands
+    const OVERHANG = 0.12;                             // canvas spills past the tile so leaves can swing out
+    const SLICES = 16;                                 // strips per leaf for the perspective warp
 
-    function flipCell(cell, dur) {
-      cell.style.transition = 'none'; cell.style.transform = 'rotateX(-90deg)';
-      requestAnimationFrame(() => {
-        cell.style.transition = 'transform ' + dur + 'ms ease-out';
-        cell.style.transform = 'rotateX(0deg)';
-      });
+    // What a module shows at time t (ms since the animation began)
+    function flapState(m, t) {
+      const n = m.seq.length - 1, local = t - m.start;
+      if (local < 0 || n === 0) return { top: m.seq[0], bottom: m.seq[0] };
+      const i = Math.floor(local / FLIP_MS);
+      if (i >= n) {
+        const u = (local - n * FLIP_MS) / BOUNCE_MS;
+        if (u >= 1) return { top: m.seq[n], bottom: m.seq[n] };
+        return { top: m.seq[n], bottom: m.seq[n - 1],
+                 leaf: { half: 'bottom', ch: m.seq[n], deg: BOUNCE_DEG * Math.sin(Math.PI * u) } };
+      }
+      const from = m.seq[i], to = m.seq[i + 1], p = local / FLIP_MS - i;
+      // gravity: the leaf speeds up as it falls and carries that speed through the hinge
+      if (p < 0.5) return { top: to, bottom: from, leaf: { half: 'top', ch: from, deg: 90 * (p * 2) ** 2 } };
+      return { top: to, bottom: from, leaf: { half: 'bottom', ch: to, deg: 90 * (2 - p * 2) ** 2 } };
     }
 
-    function buildNameBitmap(lines) {
-      const cols = Math.max(...lines.map(l => l.length * 6 - 1));
-      const rows = [];
-      lines.forEach((line, li) => {
-        if (li) rows.push('0'.repeat(cols), '0'.repeat(cols));   // 2-row gap between lines
-        for (let r = 0; r < 7; r++) {
-          rows.push([...line].map(ch => GLYPHS[ch][r]).join('0').padEnd(cols, '0'));
-        }
-      });
-      return rows;
-    }
+    const flapEnd = m => m.start + (m.seq.length - 1) * FLIP_MS + BOUNCE_MS;
 
     function flapName() {
       const heading = document.querySelector('.cover__name');
-      const bitmap = buildNameBitmap(FLAP_LINES);
       const board = document.createElement('span');
       board.className = 'sf-board';
       board.setAttribute('aria-hidden', 'true');
-      board.style.setProperty('--cols', bitmap[0].length);
+      board.style.setProperty('--cols', Math.max(...FLAP_LINES.map(l => l.length)));
 
-      const cells = [];
-      bitmap.forEach(row => [...row].forEach(bit => {
-        const cell = document.createElement('span');
-        cell.className = 'sf-cell';
-        cell._target = bit === '1' ? FLAP_ON : FLAP_OFF;
-        cell.style.background = FLAP_OFF;
-        board.appendChild(cell); cells.push(cell);
-      }));
+      const mods = [];
+      FLAP_LINES.forEach(line => {
+        const row = document.createElement('span');
+        row.className = 'sf-row';
+        [...line].forEach(ch => {
+          const el = document.createElement('span');
+          el.className = 'sf';
+          const canvas = document.createElement('canvas');
+          el.appendChild(canvas); row.appendChild(el);
+          mods.push({ el, canvas, ctx: canvas.getContext('2d'), target: ch });
+        });
+        board.appendChild(row);
+      });
       heading.appendChild(board);
       heading.classList.add('is-flap');
 
-      if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
-        cells.forEach(cell => { cell.style.background = cell._target; });
-        return;
+      // schedule: every module opens on some earlier letter and spins forward around the drum
+      // to its target, so all of them flip; the last one gets enough extra flips to land last
+      const spinTo = (m, flips) => {
+        const end = FLAP_CHARS.indexOf(m.target), len = FLAP_CHARS.length;
+        if (FLAP_CHARS[(end - flips + len * 2) % len] === ' ') flips++;   // never open on a blank
+        m.seq = Array.from({ length: flips + 1 }, (_, i) => FLAP_CHARS[(end - flips + i + len * 2) % len]);
+      };
+      const rest = mods.slice(0, -1), last = mods[mods.length - 1];
+      mods.forEach(m => { m.start = START_MS + Math.random() * STAGGER_MS; });
+      rest.forEach(m => spinTo(m, MIN_FLIPS + Math.floor(Math.random() * (MAX_FLIPS - MIN_FLIPS + 1))));
+      const restEnd = Math.max(...rest.map(flapEnd));
+      spinTo(last, Math.ceil((restEnd - BOUNCE_MS / 2 - last.start) / FLIP_MS) + 1);
+      const endAt = flapEnd(last) + SHUTTER_MS;
+
+      // geometry in device pixels; tiles (background + glyph) are cached per character
+      let tw, th, pad, tiles = {}, fontReady = false;
+      const scratch = document.createElement('canvas'), sctx = scratch.getContext('2d');
+
+      function layout() {
+        const dpr = window.devicePixelRatio || 1;
+        tw = Math.round(mods[0].el.clientWidth * dpr);
+        th = Math.round(tw * 7 / 5);
+        pad = Math.round(tw * OVERHANG);
+        tiles = {};
+        [...mods.map(m => m.canvas), scratch].forEach(c => { c.width = tw + pad * 2; c.height = th; });
+        if (fontReady) [...FLAP_CHARS].forEach(tile);   // build every tile up front, not mid-spin
       }
 
-      // noisy churn, then resolve every cell to its target
-      let noising = true;
-      cells.forEach(cell => {
-        const tick = () => {
-          if (!noising) return;
-          cell.style.background = FLAP_COLORS[(Math.random() * FLAP_COLORS.length) | 0];
-          flipCell(cell, 110);
-          setTimeout(tick, 90 + Math.random() * 140);
-        };
-        setTimeout(tick, Math.random() * 260);
+      function tile(ch) {
+        if (tiles[ch]) return tiles[ch];
+        const c = document.createElement('canvas'); c.width = tw; c.height = th;
+        const g = c.getContext('2d'), r = tw * 0.07;
+        const grad = g.createLinearGradient(0, 0, 0, th / 2);
+        grad.addColorStop(0, '#242427'); grad.addColorStop(1, '#1c1c1e');
+        g.fillStyle = grad;
+        g.beginPath(); g.roundRect(0, 0, tw, th / 2, [r, r, 0, 0]); g.fill();
+        g.fillStyle = '#1c1c1e';
+        g.beginPath(); g.roundRect(0, th / 2, tw, th / 2, [0, 0, r, r]); g.fill();
+        if (!fontReady) return (tiles[ch] = c);   // plain tile until Geist arrives
+        // every glyph shares one baseline, with capitals centred on the hinge
+        g.font = '800 ' + Math.round(tw * 0.92) + 'px Geist, sans-serif';
+        g.textAlign = 'center';
+        g.fillStyle = '#f2f0ec';
+        g.fillText(ch, tw / 2, th / 2 + g.measureText('H').actualBoundingBoxAscent / 2);
+        return (tiles[ch] = c);
+      }
+
+      // a leaf rotating about the hinge, drawn in strips so its free edge swings toward the viewer
+      function drawLeaf(g, leaf) {
+        const img = tile(leaf.ch), h = th / 2, hinge = th / 2, cx = pad + tw / 2;
+        const a = leaf.deg * Math.PI / 180, cos = Math.cos(a), sin = Math.sin(a);
+        const eye = th * 2.2, dir = leaf.half === 'top' ? -1 : 1;
+        const proj = d => { const sc = eye / (eye - d * sin); return { y: hinge + dir * d * cos * sc, sc }; };
+        // shading: the falling top leaf turns away from the light, the landing bottom leaf faces it
+        g.fillStyle = leaf.half === 'top' ? `rgba(0, 0, 0, ${0.5 * sin})` : `rgba(255, 255, 255, ${0.08 * sin})`;
+        for (let k = 0; k < SLICES; k++) {
+          const d0 = k / SLICES * h, d1 = (k + 1) / SLICES * h;
+          const p0 = proj(d0), p1 = proj(d1), w = tw * (p0.sc + p1.sc) / 2;
+          const sy = leaf.half === 'top' ? h - d1 : h + d0;
+          const x = cx - w / 2, y = Math.min(p0.y, p1.y), sh = Math.abs(p1.y - p0.y) + 1;
+          g.drawImage(img, 0, sy, tw, h / SLICES, x, y, w, sh);
+          g.fillRect(x, y, w, sh);
+        }
+        if (leaf.deg > 3) {   // light catching the leaf's free edge
+          const e = proj(h);
+          g.fillStyle = `rgba(255, 255, 255, ${0.25 * sin})`;
+          g.fillRect(cx - tw * e.sc / 2, e.y - (dir < 0 ? 0 : 1), tw * e.sc, Math.max(1, th * 0.006));
+        }
+      }
+
+      function drawState(g, st) {
+        g.clearRect(0, 0, tw + pad * 2, th);
+        g.drawImage(tile(st.top), 0, 0, tw, th / 2, pad, 0, tw, th / 2);
+        g.drawImage(tile(st.bottom), 0, th / 2, tw, th / 2, pad, th / 2, tw, th / 2);
+        if (st.leaf) drawLeaf(g, st.leaf);
+        g.fillStyle = '#0e0e0f';   // the slot between the halves
+        g.fillRect(pad, th / 2 - th * 0.008, tw, th * 0.016);
+      }
+
+      function drawModule(m, t) {
+        const moving = t > m.start - SHUTTER_MS && t < flapEnd(m) + SHUTTER_MS;
+        if (!moving) {
+          const st = flapState(m, t), key = st.top + st.bottom;
+          if (m.drawn !== key) { drawState(m.ctx, st); m.drawn = key; }
+          return;
+        }
+        // running average of SAMPLES exposures: sample j is laid over the mean of the ones before it
+        m.drawn = null;
+        for (let j = 0; j < SAMPLES; j++) {
+          drawState(sctx, flapState(m, t - SHUTTER_MS * (1 - j / (SAMPLES - 1))));
+          if (j === 0) m.ctx.clearRect(0, 0, tw + pad * 2, th);
+          m.ctx.globalAlpha = 1 / (j + 1);
+          m.ctx.drawImage(scratch, 0, 0);
+        }
+        m.ctx.globalAlpha = 1;
+      }
+
+      const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+      let t0 = null, done = still;
+      const clock = () => done ? endAt + 1e4 : t0 === null ? 0 : performance.now() - t0;
+      const redraw = () => mods.forEach(m => { m.drawn = null; drawModule(m, clock()); });
+
+      // resizing a canvas clears it, so every layout change redraws straight away
+      new ResizeObserver(() => { layout(); redraw(); }).observe(board);
+      layout();
+      redraw();   // blank tiles while the font loads, or the name if motion is reduced
+
+      if (still) return;
+      document.fonts.load('800 64px Geist').finally(() => {
+        fontReady = true; tiles = {};
+        [...FLAP_CHARS].forEach(tile);
+        t0 = performance.now();
+        (function frame() {
+          const t = clock();
+          mods.forEach(m => drawModule(m, t));
+          if (t < endAt) requestAnimationFrame(frame); else { done = true; redraw(); }
+        })();
       });
-      setTimeout(() => {
-        noising = false;
-        cells.forEach(cell => setTimeout(() => {
-          cell.style.background = cell._target; flipCell(cell, 230);
-        }, Math.random() * SETTLE_MS));
-      }, NOISE_MS);
     }
 
     flapName();

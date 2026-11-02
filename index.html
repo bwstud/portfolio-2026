@@ -172,6 +172,7 @@
     const FLAP_CHARS = ' ABCDEFGHIJKLMNOPQRSTUVWXYZ';   // the order every module flips through
     const FLIP_MS = 55;                                // one full flip: top leaf falls, bottom leaf lands
     const START_MS = 150, STAGGER_MS = 125;
+    const MIN_FLIPS = 14, MAX_FLIPS = 20;              // every module spins this long; the last one longer
     const SHUTTER_MS = 33, SAMPLES = 10;               // simulated exposure per frame
     const BOUNCE_MS = 90, BOUNCE_DEG = 12;             // the final leaf rebounds as it lands
     const OVERHANG = 0.12;                             // canvas spills past the tile so leaves can swing out
@@ -212,25 +213,29 @@
           el.className = 'sf';
           const canvas = document.createElement('canvas');
           el.appendChild(canvas); row.appendChild(el);
-          mods.push({ el, canvas, ctx: canvas.getContext('2d'),
-                      seq: [...FLAP_CHARS.slice(0, FLAP_CHARS.indexOf(ch) + 1)] });
+          mods.push({ el, canvas, ctx: canvas.getContext('2d'), target: ch });
         });
         board.appendChild(row);
       });
       heading.appendChild(board);
       heading.classList.add('is-flap');
 
-      // schedule: modules start staggered; the last one starts late enough that its
-      // final flip begins only after every other module has landed
+      // schedule: every module opens on some earlier letter and spins forward around the drum
+      // to its target, so all of them flip; the last one gets enough extra flips to land last
+      const spinTo = (m, flips) => {
+        const end = FLAP_CHARS.indexOf(m.target), len = FLAP_CHARS.length;
+        if (FLAP_CHARS[(end - flips + len * 2) % len] === ' ') flips++;   // never open on a blank
+        m.seq = Array.from({ length: flips + 1 }, (_, i) => FLAP_CHARS[(end - flips + i + len * 2) % len]);
+      };
       const rest = mods.slice(0, -1), last = mods[mods.length - 1];
-      rest.forEach(m => { m.start = START_MS + Math.random() * STAGGER_MS; });
+      mods.forEach(m => { m.start = START_MS + Math.random() * STAGGER_MS; });
+      rest.forEach(m => spinTo(m, MIN_FLIPS + Math.floor(Math.random() * (MAX_FLIPS - MIN_FLIPS + 1))));
       const restEnd = Math.max(...rest.map(flapEnd));
-      last.start = Math.max(START_MS + STAGGER_MS,
-                            restEnd - BOUNCE_MS / 2 - (last.seq.length - 2) * FLIP_MS);
+      spinTo(last, Math.ceil((restEnd - BOUNCE_MS / 2 - last.start) / FLIP_MS) + 1);
       const endAt = flapEnd(last) + SHUTTER_MS;
 
       // geometry in device pixels; tiles (background + glyph) are cached per character
-      let tw, th, pad, tiles = {};
+      let tw, th, pad, tiles = {}, fontReady = false;
       const scratch = document.createElement('canvas'), sctx = scratch.getContext('2d');
 
       function layout() {
@@ -240,6 +245,7 @@
         pad = Math.round(tw * OVERHANG);
         tiles = {};
         [...mods.map(m => m.canvas), scratch].forEach(c => { c.width = tw + pad * 2; c.height = th; });
+        if (fontReady) [...FLAP_CHARS].forEach(tile);   // build every tile up front, not mid-spin
       }
 
       function tile(ch) {
@@ -252,6 +258,7 @@
         g.beginPath(); g.roundRect(0, 0, tw, th / 2, [r, r, 0, 0]); g.fill();
         g.fillStyle = '#1c1c1e';
         g.beginPath(); g.roundRect(0, th / 2, tw, th / 2, [0, 0, r, r]); g.fill();
+        if (!fontReady) return (tiles[ch] = c);   // plain tile until Geist arrives
         // every glyph shares one baseline, with capitals centred on the hinge
         g.font = '800 ' + Math.round(tw * 0.92) + 'px Geist, sans-serif';
         g.textAlign = 'center';
@@ -266,14 +273,16 @@
         const a = leaf.deg * Math.PI / 180, cos = Math.cos(a), sin = Math.sin(a);
         const eye = th * 2.2, dir = leaf.half === 'top' ? -1 : 1;
         const proj = d => { const sc = eye / (eye - d * sin); return { y: hinge + dir * d * cos * sc, sc }; };
-        g.filter = leaf.half === 'top' ? `brightness(${1 - 0.5 * sin})` : `brightness(${1 + 0.25 * sin})`;
+        // shading: the falling top leaf turns away from the light, the landing bottom leaf faces it
+        g.fillStyle = leaf.half === 'top' ? `rgba(0, 0, 0, ${0.5 * sin})` : `rgba(255, 255, 255, ${0.08 * sin})`;
         for (let k = 0; k < SLICES; k++) {
           const d0 = k / SLICES * h, d1 = (k + 1) / SLICES * h;
           const p0 = proj(d0), p1 = proj(d1), w = tw * (p0.sc + p1.sc) / 2;
           const sy = leaf.half === 'top' ? h - d1 : h + d0;
-          g.drawImage(img, 0, sy, tw, h / SLICES, cx - w / 2, Math.min(p0.y, p1.y), w, Math.abs(p1.y - p0.y) + 1);
+          const x = cx - w / 2, y = Math.min(p0.y, p1.y), sh = Math.abs(p1.y - p0.y) + 1;
+          g.drawImage(img, 0, sy, tw, h / SLICES, x, y, w, sh);
+          g.fillRect(x, y, w, sh);
         }
-        g.filter = 'none';
         if (leaf.deg > 3) {   // light catching the leaf's free edge
           const e = proj(h);
           g.fillStyle = `rgba(255, 255, 255, ${0.25 * sin})`;
@@ -320,6 +329,8 @@
 
       if (still) return;
       document.fonts.load('800 64px Geist').finally(() => {
+        fontReady = true; tiles = {};
+        [...FLAP_CHARS].forEach(tile);
         t0 = performance.now();
         (function frame() {
           const t = clock();

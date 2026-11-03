@@ -1,0 +1,327 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>The Horse in Motion · Brian Studwell</title>
+  <style>
+    @font-face {
+      font-family: "Geist";
+      font-weight: 100 900;
+      font-display: swap;
+      src: url("../../fonts/Geist-Variable.woff2") format("woff2");
+    }
+
+    :root {
+      --bg: #0b0907;
+      --panel: rgba(22, 19, 16, 0.82);
+      --line: rgba(255, 240, 220, 0.08);
+      --line-strong: rgba(255, 240, 220, 0.16);
+      --fg: #efe8dd;
+      --muted: #a39887;
+      --faint: #6b6255;
+      --accent: #e3b46a;
+      --glow: rgba(240, 200, 140, 0.16);
+      --side-w: 0px;
+      --dock-h: 168px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    [hidden] { display: none !important; }
+    html, body {
+      height: 100%; overflow: hidden;
+      background: var(--bg); color: var(--fg);
+      font: 13px/1.45 "Geist", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    body {
+      background:
+        radial-gradient(70% 60% at 50% 42%, rgba(120, 90, 50, 0.16), transparent 70%),
+        var(--bg);
+    }
+    button { font: inherit; color: inherit; cursor: pointer; background: none; border: 0; }
+    :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+    /* ---------- header ---------- */
+    .top {
+      position: fixed; z-index: 4; top: 14px; left: 16px; right: 16px;
+      display: flex; align-items: center; gap: 14px;
+    }
+    .back { color: var(--muted); text-decoration: none; }
+    .back:hover { color: var(--fg); }
+    .brand { font-size: 15px; font-weight: 650; letter-spacing: 0.01em; white-space: nowrap; }
+    .brand span { color: var(--muted); font-weight: 450; margin-left: 6px; }
+    .top .spacer { flex: 1; }
+    .ghost {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 6px 11px; border-radius: 8px; border: 1px solid var(--line-strong);
+      background: var(--panel); color: var(--fg); white-space: nowrap;
+      backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    }
+    .ghost:hover { background: rgba(255, 255, 255, 0.08); }
+    .ghost svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+    .view-toggle { display: none; }
+
+    /* ---------- stage ---------- */
+    .stage {
+      position: fixed; z-index: 1; top: 56px; left: 16px; right: calc(16px + var(--side-w));
+      bottom: var(--dock-h);
+      display: grid; place-items: center; align-content: center; gap: 12px;
+    }
+    .screen {
+      position: relative; display: block;
+      border-radius: 4px; overflow: hidden;
+      box-shadow:
+        0 0 0 1px rgba(0, 0, 0, 0.8),
+        0 0 0 7px #17130f,
+        0 0 0 8px rgba(255, 240, 220, 0.06),
+        0 0 90px 20px var(--glow),
+        0 30px 80px rgba(0, 0, 0, 0.6);
+      touch-action: pan-y; cursor: ew-resize;
+    }
+    #screen { display: block; width: 100%; height: 100%; transition: filter 0.4s; }
+    .badge {
+      position: absolute; top: 12px; right: 12px;
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 5px 10px 5px 8px; border-radius: 999px;
+      background: rgba(20, 16, 12, 0.82); color: #f6ead6; font-size: 12px; font-weight: 550;
+      backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+      opacity: 0; transform: translateY(-4px); transition: opacity 0.15s, transform 0.15s;
+      pointer-events: none;
+    }
+    .badge i { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+    .badge.is-on { opacity: 1; transform: none; }
+    .loading { position: absolute; inset: 0; display: grid; place-items: center; color: #4a4036; background: #d9d2c4; font-size: 13px; }
+    .caption { max-width: 620px; text-align: center; color: var(--muted); font-size: 12px; line-height: 1.5; padding: 0 8px; }
+    .caption em { color: var(--fg); font-style: normal; font-weight: 550; }
+
+    /* tone, applied to the screen and the strip alike */
+    body[data-tone="albumen"] .toned { filter: sepia(0.62) saturate(1.15) contrast(1.04) brightness(0.98); }
+    body[data-tone="silver"] .toned { filter: grayscale(1) contrast(1.08); }
+    body[data-tone="cyan"] .toned { filter: sepia(1) hue-rotate(168deg) saturate(1.6) brightness(0.92) contrast(1.05); }
+
+    /* ---------- side panel ---------- */
+    .side {
+      position: fixed; z-index: 3; top: 56px; right: 16px; width: 248px;
+      max-height: calc(100vh - 56px - var(--dock-h) - 8px); overflow-y: auto; overscroll-behavior: contain;
+      padding: 12px 12px 14px; border-radius: 14px;
+      background: var(--panel); border: 1px solid var(--line);
+      backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+      scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+    }
+    .side__sub { font-size: 12px; font-weight: 600; color: var(--fg); margin: 14px 0 6px; }
+    .side__sub:first-child { margin-top: 0; }
+    .seg { display: flex; gap: 2px; padding: 2px; border-radius: 9px; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--line); }
+    .seg button { flex: 1; min-width: 0; height: 28px; padding: 0 6px; border-radius: 7px; font-size: 12px; color: var(--muted); white-space: nowrap; }
+    .seg button:hover { color: var(--fg); }
+    .seg button[aria-pressed="true"] { background: rgba(255, 255, 255, 0.12); color: var(--fg); }
+    .about { margin-top: 7px; color: var(--muted); font-size: 12px; line-height: 1.45; }
+
+    /* ---------- dock ---------- */
+    .dock {
+      position: fixed; z-index: 3; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom));
+      transform: translateX(-50%); width: min(860px, calc(100vw - 32px));
+      display: grid; gap: 10px;
+      padding: 12px 14px 12px;
+      border-radius: 18px;
+      background: linear-gradient(180deg, rgba(34, 29, 24, 0.86), rgba(16, 13, 11, 0.9));
+      border: 1px solid var(--line);
+      box-shadow: 0 1px 0 rgba(255, 255, 255, 0.05) inset, 0 24px 60px rgba(0, 0, 0, 0.55);
+      backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+      user-select: none; -webkit-user-select: none;
+    }
+    .strip {
+      display: grid; grid-template-columns: repeat(11, minmax(0, 1fr)); gap: 5px;
+    }
+    .cell {
+      position: relative; display: block; aspect-ratio: 1000 / 643; border-radius: 4px; overflow: hidden;
+      box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.7);
+      opacity: 0.55; transition: opacity 0.12s, box-shadow 0.12s;
+    }
+    .cell img { display: block; width: 100%; height: 100%; object-fit: cover; }
+    .cell:hover { opacity: 0.85; }
+    .cell[aria-current="true"] { opacity: 1; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.7), 0 0 0 2.5px var(--accent); }
+    .cell__n {
+      position: absolute; left: 4px; bottom: 2px; font-size: 10.5px; font-weight: 650; color: #fff;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9), 0 0 6px rgba(0, 0, 0, 0.7);
+    }
+    .cell__air { position: absolute; right: 4px; top: 4px; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6); }
+
+    .controls { display: flex; align-items: center; gap: 14px; }
+    .transport { display: flex; align-items: center; gap: 4px; }
+    .icon {
+      display: grid; place-items: center; width: 34px; height: 34px; border-radius: 10px; color: var(--muted);
+    }
+    .icon:hover { color: var(--fg); background: rgba(255, 255, 255, 0.06); }
+    .icon svg { width: 16px; height: 16px; fill: currentColor; }
+    .play {
+      width: 44px; height: 44px; border-radius: 50%; color: #1a140d;
+      background: radial-gradient(circle at 40% 30%, #f6d79e, var(--accent) 60%, #b98a45);
+      box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6), 0 6px 16px rgba(0, 0, 0, 0.45), 0 0 22px rgba(227, 180, 106, 0.25);
+    }
+    .play:hover { color: #1a140d; background: radial-gradient(circle at 40% 30%, #fbe3b6, #ebbf78 60%, #c29350); }
+    .play svg { width: 18px; height: 18px; }
+    .readout { flex: 1; min-width: 0; display: grid; gap: 1px; }
+    .readout b { font-size: 15px; font-weight: 650; font-variant-numeric: tabular-nums; }
+    .readout span { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .speed { display: grid; gap: 4px; justify-items: end; }
+    .speed .seg { width: 300px; }
+    .cap { font-size: 11px; font-weight: 550; color: var(--muted); }
+
+    /* ---------- card dialog ---------- */
+    dialog.card {
+      margin: auto; padding: 0; border: 0; border-radius: 12px; overflow: visible;
+      width: min(1100px, calc(100vw - 32px)); background: transparent; color: var(--fg);
+    }
+    dialog.card::backdrop { background: rgba(6, 5, 4, 0.82); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
+    .card__head { display: flex; align-items: baseline; gap: 12px; margin-bottom: 10px; }
+    .card__head h2 { font-size: 15px; font-weight: 650; }
+    .card__head p { color: var(--muted); font-size: 12px; flex: 1; }
+    .card__close { color: var(--muted); padding: 4px 8px; border-radius: 6px; }
+    .card__close:hover { color: var(--fg); background: rgba(255, 255, 255, 0.08); }
+    .card__img { position: relative; border-radius: 6px; overflow: hidden; box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6); }
+    .card__img img { display: block; width: 100%; height: auto; }
+    .hit { position: absolute; border-radius: 2px; }
+    .hit:hover { box-shadow: inset 0 0 0 2px rgba(227, 180, 106, 0.6); background: rgba(227, 180, 106, 0.08); }
+    .hit[aria-current="true"] { box-shadow: inset 0 0 0 3px var(--accent), 0 0 24px rgba(227, 180, 106, 0.5); }
+    .hit--still { cursor: help; }
+    .card__foot { margin-top: 10px; color: var(--muted); font-size: 12px; }
+
+    .keys { position: fixed; z-index: 2; left: 16px; bottom: calc(22px + env(safe-area-inset-bottom)); color: var(--faint); font-size: 11.5px; line-height: 1.7; }
+    .keys kbd { font: inherit; color: var(--muted); padding: 0 5px; border: 1px solid var(--line); border-radius: 4px; }
+
+    @media (min-width: 1001px) {
+      :root { --side-w: 264px; }
+      body:has(.notes.is-open) .stage { left: 332px; }
+    }
+    @media (max-width: 1500px) { .keys { display: none; } }
+    @media (max-width: 1000px) {
+      .view-toggle { display: inline-flex; }
+      .side {
+        top: auto; left: 12px; right: 12px; width: auto; max-width: 420px; margin-left: auto;
+        bottom: calc(var(--dock-h) + 4px); max-height: 60vh;
+        transform: translateY(12px); opacity: 0; visibility: hidden;
+        transition: transform 0.25s, opacity 0.25s, visibility 0s 0.25s;
+        box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6);
+      }
+      .side.is-open { transform: none; opacity: 1; visibility: visible; transition: transform 0.25s, opacity 0.25s; }
+    }
+    @media (max-width: 1000px) and (min-width: 601px) { .notes { display: none; } }
+    @media (max-width: 700px) {
+      :root { --dock-h: 196px; }
+      .controls { flex-wrap: wrap; row-gap: 8px; }
+      .speed { order: 3; width: 100%; justify-items: stretch; grid-template-columns: auto 1fr; align-items: center; column-gap: 10px; }
+      .speed .seg { width: auto; }
+    }
+    @media (max-width: 600px) {
+      .brand span, .back__label, .ghost .lbl { display: none; }
+      .ghost { padding: 6px 9px; }
+      .top { gap: 10px; }
+      .dock { width: auto; left: 12px; right: 12px; transform: none; bottom: calc(12px + env(safe-area-inset-bottom)); padding: 10px; }
+      .strip { gap: 3px; }
+      .cell__n { font-size: 9px; left: 2px; }
+      .stage { left: 12px; right: 12px; }
+      .caption { display: none; }
+    }
+    @media (prefers-reduced-motion: reduce) { .badge, #screen, .side { transition: none; } }
+  </style>
+</head>
+<body data-tone="albumen">
+  <header class="top">
+    <a class="back" href="../" aria-label="Back to Tinkering">←<span class="back__label"> Tinkering</span></a>
+    <div class="brand">The Horse in Motion<span>Muybridge, 1878</span></div>
+    <span class="spacer"></span>
+    <button class="ghost view-toggle" id="view-toggle" type="button" aria-label="Projection settings" aria-expanded="false" aria-controls="side">
+      <svg viewBox="0 0 16 16"><path d="M2 4.5h12M2 8h12M2 11.5h12"/><circle cx="5" cy="4.5" r="1.4" fill="currentColor"/><circle cx="11" cy="8" r="1.4" fill="currentColor"/><circle cx="7" cy="11.5" r="1.4" fill="currentColor"/></svg>
+      <span class="lbl">Projection</span>
+    </button>
+    <button class="ghost" id="card-open" type="button" aria-label="Original card">
+      <svg viewBox="0 0 16 16"><rect x="1.5" y="3" width="13" height="10" rx="1"/><path d="M1.5 6.5h13M1.5 9.8h13M5.8 3v10M10.2 3v10"/></svg>
+      <span class="lbl">Original card</span>
+    </button>
+  </header>
+
+  <main class="stage" id="stage">
+    <div class="screen" id="screen-wrap" aria-label="Animated photographs of a galloping horse. Drag sideways to scrub through the frames." role="img">
+      <canvas id="screen" class="toned"></canvas>
+      <div class="badge" id="badge"><i></i>All four hooves off the ground</div>
+      <div class="loading" id="loading">Developing the plates…</div>
+    </div>
+    <p class="caption"><em>Sallie Gardner</em>, owned by Leland Stanford, running at a 1:40 gait over the Palo Alto track, 19 June 1878. Twelve cameras, one every 27 inches, each fired as the mare broke its thread.</p>
+  </main>
+
+  <aside class="side" id="side" aria-label="Projection settings">
+    <div class="side__sub">Framing</div>
+    <div class="seg" id="seg-frame" role="group" aria-label="Framing">
+      <button type="button" data-v="follow">Follow the horse</button>
+      <button type="button" data-v="raw">As printed</button>
+    </div>
+    <p class="about" id="about-frame"></p>
+
+    <div class="side__sub">Ghosts</div>
+    <div class="seg" id="seg-ghost" role="group" aria-label="Ghosts">
+      <button type="button" data-v="off">Off</button>
+      <button type="button" data-v="trail">Trail</button>
+      <button type="button" data-v="all">Stack</button>
+    </div>
+    <p class="about" id="about-ghost"></p>
+
+    <div class="side__sub">Print</div>
+    <div class="seg" id="seg-tone" role="group" aria-label="Print tone">
+      <button type="button" data-v="albumen">Albumen</button>
+      <button type="button" data-v="silver">Silver</button>
+      <button type="button" data-v="cyan">Cyanotype</button>
+    </div>
+  </aside>
+
+  <section class="dock" aria-label="Playback">
+    <div class="strip" id="strip" role="group" aria-label="Frames"></div>
+    <div class="controls">
+      <div class="transport">
+        <button class="icon" id="prev" type="button" aria-label="Previous frame"><svg viewBox="0 0 16 16"><path d="M4 3h1.6v10H4zM13 3.2v9.6L6.4 8z"/></svg></button>
+        <button class="icon play" id="play" type="button" aria-label="Pause"><svg viewBox="0 0 16 16" id="play-icon"></svg></button>
+        <button class="icon" id="next" type="button" aria-label="Next frame"><svg viewBox="0 0 16 16"><path d="M10.4 3H12v10h-1.6zM3 3.2v9.6L9.6 8z"/></svg></button>
+      </div>
+      <div class="readout" aria-live="off">
+        <b id="r-frame">Frame 1 of 11</b>
+        <span id="r-detail">0.00 s · 0 in down the track</span>
+      </div>
+      <div class="speed">
+        <span class="cap">Speed</span>
+        <div class="seg" id="seg-speed" role="group" aria-label="Speed">
+          <button type="button" data-v="0.125">⅛×</button>
+          <button type="button" data-v="0.25">¼×</button>
+          <button type="button" data-v="0.5">½×</button>
+          <button type="button" data-v="1">Real speed</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <dialog class="card" id="card" aria-label="The original card">
+    <div class="card__head">
+      <h2>The Horse in Motion</h2>
+      <p>Cabinet card, Morse's Gallery, San Francisco, 1878. Pick a frame to jump to it.</p>
+      <button class="card__close" id="card-close" type="button" aria-label="Close">Close</button>
+    </div>
+    <div class="card__img" id="card-img">
+      <img src="card.jpg" alt="Muybridge's 1878 card: twelve silhouettes of a horse and rider in a four by three grid, with the printed title and caption below." width="2400" height="1479">
+    </div>
+    <p class="card__foot">Frames 1 to 11 are one stride, start to finish. Frame 12 is the mare standing still, for comparison, so it isn't in the loop.</p>
+  </dialog>
+
+  <div class="keys" aria-hidden="true">
+    <kbd>Space</kbd> play · <kbd>←</kbd> <kbd>→</kbd> step<br>
+    <kbd>1</kbd>–<kbd>4</kbd> speed · <kbd>C</kbd> card · drag the picture to scrub
+  </div>
+
+  <aside class="notes">
+    <p>In 1878 Leland Stanford wanted to settle an argument: does a galloping horse ever have all four hooves off the ground at once? It moves too fast for the eye to tell. Eadweard Muybridge set twelve cameras in a row beside the Palo Alto track, each fired by a thread the horse broke as it ran past.</p>
+    <p>The answer is in frames 2 and 3. The hooves do leave the ground, but with the legs tucked up under the belly, not stretched out fore and aft as painters had shown it for centuries.</p>
+    <p>These are the eleven gallop frames from the public-domain scan of the card on Wikimedia Commons, cropped and lined up on the rider and the track lines. The frames were about a twenty-fifth of a second apart, so real speed is 25 frames a second.</p>
+  </aside>
+
+  <script type="module" src="app.js"></script>
+  <script src="../notes.js"></script>
+</body>
+</html>

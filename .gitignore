@@ -8,3 +8,7 @@ Work/
 
 # Local screen recordings of tinkering projects
 tinkering/*/v1.0 Recording/
+.superpowers/
+
+# Taxidermy raw scans and the purchased reference model: local only
+tinkering/taxidermy/source/

@@ -180,7 +180,7 @@
   </script>
 </head>
 <body>
-  <canvas id="scene" aria-label="A giraffe skeleton, mounted"></canvas>
+  <canvas id="scene" aria-label="A skeleton, mounted"></canvas>
 
   <header class="top">
     <a class="back" href="../" aria-label="Back to Tinkering">←<span class="back__label"> Tinkering</span></a>
@@ -197,7 +197,7 @@
     <div class="side__title">Specimen</div>
     <select class="field" id="animal" aria-label="Animal">
       <option value="giraffe">Northern giraffe, adult male</option>
-      <option disabled>More animals to come</option>
+      <option value="moa">Little bush moa</option>
     </select>
 
     <div class="side__sep"></div>
@@ -239,7 +239,7 @@
       <kbd>⌘Z</kbd> undo · <kbd>⇧⌘Z</kbd> redo · <kbd>/</kbd> type a command
     </p>
     <div class="side__sep"></div>
-    <p class="credit">Skeleton: <a href="https://data.public.lu/en/datasets/photogrammetric-3d-scan-of-a-giraffe-skeleton/" target="_blank" rel="noopener">photogrammetric scan of a giraffe skeleton</a> (MNHNL 132557), Musée national d’histoire naturelle Luxembourg, CC BY 4.0. Bones simplified and articulated for this page.</p>
+    <p class="credit" id="credit"></p>
   </aside>
 
   <section class="bench" aria-label="Selected bone">

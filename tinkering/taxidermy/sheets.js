@@ -56,7 +56,7 @@ export function createSheets(list, { skeleton, onPick }) {
         hw = Math.max(hw, Math.abs(c.dot(right))); hh = Math.max(hh, Math.abs(c.dot(up)));
       }
       const aspect = W / (H - 26);
-      const k = Math.max(hw / aspect, hh) * 1.12;
+      const k = Math.max(hw / aspect, hh) * 1.18;
       cam.left = -k * aspect; cam.right = k * aspect; cam.top = k; cam.bottom = -k - (26 / (H - 26)) * k * 2;
       cam.updateProjectionMatrix();
       cam.position.copy(mid).addScaledVector(d, 30); cam.up.set(...v.up); cam.lookAt(mid);
@@ -75,11 +75,14 @@ export function createSheets(list, { skeleton, onPick }) {
 
   function scaleBar(ctx, pxPerM, dpr) {
     const x = 10 * dpr, y = (H - 34) * dpr;
+    // the longest round length that still fits in the corner
+    const len = [1, 0.5, 0.25, 0.1].find(l => pxPerM * l <= 64 * dpr) ?? 0.1, px = pxPerM * len;
     ctx.fillStyle = INK; ctx.strokeStyle = INK; ctx.lineWidth = dpr;
     for (let i = 0; i < 2; i++) {
-      ctx[i ? 'strokeRect' : 'fillRect'](x + i * pxPerM * 0.5, y, pxPerM * 0.5, 3 * dpr);
+      ctx[i ? 'strokeRect' : 'fillRect'](x + i * px * 0.5, y, px * 0.5, 3 * dpr);
     }
-    ctx.font = `${9 * dpr}px Geist, sans-serif`; ctx.fillText('0', x - 2 * dpr, y - 3 * dpr); ctx.fillText('1 m', x + pxPerM - 6 * dpr, y - 3 * dpr);
+    ctx.font = `${9 * dpr}px Geist, sans-serif`; ctx.fillText('0', x - 2 * dpr, y - 3 * dpr);
+    ctx.fillText(len >= 1 ? `${len} m` : `${len * 100} cm`, x + px - 6 * dpr, y - 3 * dpr);
   }
 
   let timer = 0;

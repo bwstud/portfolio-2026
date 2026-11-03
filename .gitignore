@@ -5,3 +5,6 @@
 Work/
 .vercel
 .env*
+
+# Local screen recordings of tinkering projects
+tinkering/*/v1.0 Recording/

@@ -62,22 +62,32 @@ const glass = () => new THREE.MeshPhysicalMaterial({
 
 const steel = new THREE.MeshStandardMaterial({ color: '#2a2b2e', metalness: 0.9, roughness: 0.35 });
 
-/* the rod a mounted skeleton stands on: from the base up into the chest */
-export function buildRod(top, belly) {
+/* the rod a mounted skeleton stands on: from the base up into the chest; k scales its gauge */
+export function buildRod(top, belly, k = 1) {
   const g = new THREE.Group();
   const h = belly.y - top;
-  const post = new THREE.Mesh(new THREE.CylinderGeometry(0.016, 0.016, h, 16), steel);
+  const post = new THREE.Mesh(new THREE.CylinderGeometry(0.016 * k, 0.016 * k, h, 16), steel);
   post.position.set(belly.x, top + h / 2, belly.z); post.castShadow = true;
-  const foot = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.09, 0.012, 32), steel);
-  foot.position.set(belly.x, top + 0.006, belly.z); foot.castShadow = foot.receiveShadow = true;
-  const cradle = new THREE.Mesh(new THREE.TorusGeometry(0.06, 0.008, 8, 24, Math.PI), steel);
+  const foot = new THREE.Mesh(new THREE.CylinderGeometry(0.08 * k, 0.09 * k, 0.012 * k, 32), steel);
+  foot.position.set(belly.x, top + 0.006 * k, belly.z); foot.castShadow = foot.receiveShadow = true;
+  const cradle = new THREE.Mesh(new THREE.TorusGeometry(0.06 * k, 0.008 * k, 8, 24, Math.PI), steel);
   cradle.position.set(belly.x, belly.y, belly.z); cradle.rotation.set(0, Math.PI / 2, Math.PI);
   g.add(post, foot, cradle);
   return g;
 }
 
-/* foot: the skeleton's floor print {minX,maxX,minZ,maxZ}; height: its top */
-export function buildSetting(id, { foot, height }) {
+/* foot: the skeleton's floor print {minX,maxX,minZ,maxZ}; height: its top. The settings are
+   drawn at the size that suits a giraffe; k shrinks the whole thing (slab, glass, moss) for
+   smaller animals, so a moa gets a proportionate plinth rather than a giraffe's. */
+export function buildSetting(id, { foot, height, k = 1 }) {
+  const s = buildAtScale(id, {
+    foot: { minX: foot.minX / k, maxX: foot.maxX / k, minZ: foot.minZ / k, maxZ: foot.maxZ / k }, height: height / k,
+  });
+  s.group.scale.setScalar(k);
+  return { ...s, top: s.top * k };
+}
+
+function buildAtScale(id, { foot, height }) {
   const g = new THREE.Group();
   const cx = (foot.minX + foot.maxX) / 2, cz = (foot.minZ + foot.maxZ) / 2;
   const w = foot.maxX - foot.minX + 0.9, d = foot.maxZ - foot.minZ + 0.9;

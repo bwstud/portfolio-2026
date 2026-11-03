@@ -12,7 +12,26 @@ import { exportSkeleton } from './export.js';
 
 const $ = (id) => document.getElementById(id);
 const DEG = Math.PI / 180;
-const ANIMAL = 'giraffe';
+// each specimen: its model, rig, the bone the mounting rod meets, and its caption and credit
+const SPECIMENS = {
+  giraffe: {
+    name: 'Northern giraffe, adult male', rodBone: 'Sternum_IV',
+    caption: (h, l) => `Northern giraffe, adult male. ${h} m to the top of the horns, ${l} m nose to tail.`,
+    credit: 'Skeleton: <a href="https://data.public.lu/en/datasets/photogrammetric-3d-scan-of-a-giraffe-skeleton/" target="_blank" rel="noopener">photogrammetric scan of a giraffe skeleton</a> (MNHNL 132557), Musée national d’histoire naturelle Luxembourg, CC BY 4.0. Bones simplified and articulated for this page.',
+  },
+  moa: {
+    name: 'Little bush moa', rodBone: 'Sternum',
+    caption: (h, l) => `Little bush moa, extinct since the 1400s. ${h} m at the head, ${l} m beak to toe in this stride.`,
+    credit: 'Skeleton: <a href="https://sketchfab.com/3d-models/little-bush-moa-skeleton-b658205efa2a4d16abc9bb40bc96cdc8" target="_blank" rel="noopener">little bush moa</a> scanned bone by bone from Auckland War Memorial Museum specimens 5511 and 5512 by Daniel Thomas, Massey University, CC BY 4.0. Windpipe rings are a digital reconstruction. Simplified, recoloured from the scan’s texture, and articulated for this page.',
+  },
+};
+const asked = new URLSearchParams(location.search).get('animal');
+const ANIMAL = SPECIMENS[asked] ? asked : 'giraffe';
+const SPEC = SPECIMENS[ANIMAL];
+$('animal').value = ANIMAL;
+$('animal').addEventListener('change', e => { location.search = `?animal=${e.target.value}`; });
+$('credit').innerHTML = SPEC.credit;
+$('scene').setAttribute('aria-label', `A ${SPEC.name.toLowerCase()} skeleton, mounted`);
 
 // ---------- renderer, camera, light ----------
 const canvas = $('scene');
@@ -80,10 +99,10 @@ resize();
 
 // ---------- load ----------
 const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
-const gltf = await loader.loadAsync('assets/giraffe.glb', e => {
+const gltf = await loader.loadAsync(`assets/${ANIMAL}.glb`, e => {
   if (e.total) $('loading-bar').style.width = `${(100 * e.loaded) / e.total}%`;
 });
-const rig = await loadRig(gltf, 'assets/giraffe-rig.json');
+const rig = await loadRig(gltf, `assets/${ANIMAL}-rig.json`);
 $('loading').classList.add('is-done');
 
 const stand = new THREE.Group();          // lifts the skeleton onto the setting's top
@@ -93,16 +112,22 @@ const rest = rig.pose();
 const restBox = rig.bounds();
 const meshes = Object.values(rig.bones).map(b => b.mesh);
 
-// frame the whole animal: back off until its height fills the clear space
-const home = { target: new THREE.Vector3(0.05, 2.3, 0.05), dir: new THREE.Vector3(7.4, 1.0, 6.2).normalize() };
+// settings, rod and shadows are sized for a giraffe; smaller animals get them in proportion
+const K = Math.min(1, Math.max(0.3, (restBox.max.y - restBox.min.y) / 4.6));
+controls.minDistance = 0.4 * K;
+
+// frame the whole animal: back off until it fills the clear space
+const home = { target: restBox.getCenter(new THREE.Vector3()), dir: new THREE.Vector3(7.4, 1.0, 6.2).normalize() };
 {
-  const share = resize(), tall = (restBox.max.y - restBox.min.y) * 1.08 + 0.3;
+  // tall animals fill the height; long low ones (the moa) need room for their length
+  const size = restBox.getSize(new THREE.Vector3());
+  const share = resize(), tall = Math.max(size.y * 1.08 + 0.3 * K, Math.max(size.x, size.z) * 0.95);
   const dist = tall / share / 2 / Math.tan((camera.fov * DEG) / 2);
   camera.position.copy(home.target).addScaledVector(home.dir, dist);
   controls.target.copy(home.target); controls.update();
 }
-key.shadow.camera.left = key.shadow.camera.bottom = -3.4;
-key.shadow.camera.right = key.shadow.camera.top = 3.4;
+key.shadow.camera.left = key.shadow.camera.bottom = -3.4 * K;
+key.shadow.camera.right = key.shadow.camera.top = 3.4 * K;
 key.shadow.camera.far = 30;
 
 // ---------- settings ----------
@@ -118,8 +143,8 @@ let setting = null, settingId = 'stone', rodOn = true, rod = null;
 function placeRod() {
   if (rod) { scene.remove(rod); rod.traverse(o => o.geometry?.dispose()); rod = null; }
   if (!rodOn || !setting.floor) return;
-  const p = rig.centreOf('Sternum_IV');
-  rod = buildRod(setting.top, new THREE.Vector3(p.x, p.y - 0.07, p.z));
+  const p = rig.centreOf(SPEC.rodBone);
+  rod = buildRod(setting.top, new THREE.Vector3(p.x, p.y - 0.07 * K, p.z), K);
   scene.add(rod);
 }
 function setSetting(id) {
@@ -128,9 +153,9 @@ function setSetting(id) {
   stand.position.y = 0; stand.updateMatrixWorld(true);
   const box = rig.bounds();
   const foot = { minX: box.min.x, maxX: box.max.x, minZ: box.min.z, maxZ: box.max.z };
-  setting = buildSetting(id, { foot, height: box.max.y });
+  setting = buildSetting(id, { foot, height: box.max.y, k: K });
   scene.add(setting.group);
-  stand.position.y = setting.floor ? setting.top : 0.35;
+  stand.position.y = setting.floor ? setting.top : 0.35 * K;
   stand.updateMatrixWorld(true);
   catcher.visible = setting.floor;
   placeRod();
@@ -155,13 +180,13 @@ sheets = createSheets($('sheet-list'), {
   skeleton: rig.root,
   onPick: v => flyTo(new THREE.Vector3(...v.dir).normalize()),
 });
-$('sheet-foot').textContent = `Northern giraffe, adult male. ${(restBox.max.y - restBox.min.y).toFixed(2)} m to the top of the horns, ${(restBox.max.z - restBox.min.z).toFixed(2)} m nose to tail.`;
+$('sheet-foot').textContent = SPEC.caption((restBox.max.y - restBox.min.y).toFixed(2), (restBox.max.z - restBox.min.z).toFixed(2));
 
 let flight = null;
 function flyTo(dir) {
   const box = rig.bounds(), mid = box.getCenter(new THREE.Vector3());
   const dist = camera.position.distanceTo(controls.target);
-  flight = { t: 0, p0: camera.position.clone(), c0: controls.target.clone(), c1: mid, p1: mid.clone().addScaledVector(dir, Math.max(dist, 9)) };
+  flight = { t: 0, p0: camera.position.clone(), c0: controls.target.clone(), c1: mid, p1: mid.clone().addScaledVector(dir, Math.max(dist, 9 * K)) };
 }
 
 // ---------- picking and the gizmo ----------
@@ -250,7 +275,7 @@ function step(from, to) {
 }
 $('undo').addEventListener('click', () => step(undo, redo));
 $('redo').addEventListener('click', () => step(redo, undo));
-$('reset').addEventListener('click', () => { const p = rig.pose(); rig.setPose(rest); commit(p); say('Back to the standing pose'); });
+$('reset').addEventListener('click', () => { const p = rig.pose(); rig.setPose(rest); commit(p); say('Back to the mounted pose'); });
 
 // ---------- the bench: numbers, nudges, commands ----------
 const euler = new THREE.Euler();

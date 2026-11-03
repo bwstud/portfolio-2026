@@ -38,7 +38,7 @@ export async function loadRig(gltf, rigUrl) {
     src.updateMatrix();
     const mesh = new THREE.Mesh(src.geometry, src.material.clone());
     const m = mesh.material;
-    if (!m.map) m.color.set('#d8ccb4');           // a few scans came without a texture
+    if (!m.map && !m.vertexColors) m.color.set('#d8ccb4');   // a few scans came without a texture
     m.roughness = 0.82; m.metalness = 0;
     // scan coords -> world rest pose -> relative to this joint (the node matrix undoes quantization)
     mesh.matrix.makeTranslation(-b.pivot[0], -b.pivot[1], -b.pivot[2])
@@ -49,7 +49,7 @@ export async function loadRig(gltf, rigUrl) {
     mesh.userData.bone = name;
     joint.add(mesh);
     joints[name] = joint;
-    bones[name] = { ...b, kind: kind(name, b.group), mesh, joint };
+    bones[name] = { ...b, kind: b.kind || kind(name, b.group), mesh, joint };
   }
   root.updateMatrixWorld(true);
   for (const b of Object.values(bones)) {           // each bone's middle, in its joint's frame

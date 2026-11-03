@@ -17,6 +17,11 @@ function plain(geo, matrix) {
     for (let i = 0; i < uv.count; i++) { t[i * 2] = uv.getX(i); t[i * 2 + 1] = uv.getY(i); }
     out.setAttribute('uv', new THREE.BufferAttribute(t, 2));
   }
+  if (geo.attributes.color) {                    // bones coloured per vertex (the moa) keep it
+    const col = geo.attributes.color, c = new Float32Array(col.count * 3);
+    for (let i = 0; i < col.count; i++) { c[i * 3] = col.getX(i); c[i * 3 + 1] = col.getY(i); c[i * 3 + 2] = col.getZ(i); }
+    out.setAttribute('color', new THREE.BufferAttribute(c, 3));
+  }
   let index = geo.index ? Uint32Array.from(geo.index.array) : null;
   if (matrix && matrix.determinant() < 0) {
     if (!index) index = Uint32Array.from({ length: n }, (_, i) => i);

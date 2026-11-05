@@ -117,6 +117,16 @@ a { color: inherit; text-decoration: none; }
 
 .dropdown__menu a:hover { background: #222225; color: var(--fg); }
 
+/* Controls: a utility menu at the far left, kept apart from the real nav */
+.dropdown--controls .dropdown__toggle {
+  padding: 8px 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-size: 14px;
+}
+
+.dropdown--controls .dropdown__menu { left: 0; right: auto; z-index: 1; }
+
 /* Shared */
 .placeholder {
   border: 1px dashed var(--line);
@@ -160,29 +170,29 @@ a { color: inherit; text-decoration: none; }
 .sf-board {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--sf-gap, 6px);
   width: 100%;
-  max-width: 560px;
+  max-width: var(--sf-width, 560px);
 }
 
 /* Every row shares the longest line's columns, so modules match in size */
 .sf-row {
   display: grid;
   grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
-  gap: 6px;
+  gap: var(--sf-gap, 6px);
 }
 
 /* One module: a canvas that spills past the tile so flaps can swing toward the viewer */
 .sf {
   position: relative;
-  aspect-ratio: 5 / 7;
+  aspect-ratio: 1 / var(--sf-ratio, 1.4);
 }
 
 .sf canvas {
   position: absolute;
   top: 0;
-  left: -12%;
-  width: 124%;
+  left: calc(var(--sf-overhang, 0.12) * -100%);
+  width: calc(100% + var(--sf-overhang, 0.12) * 200%);
   height: 100%;
 }
 

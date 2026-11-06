@@ -3,8 +3,9 @@
    so fast flaps smear and neighbouring letters overlap like on film.
 
    Used by the home page and by the Split-Flap Lab (tinkering/split-flap-lab/).
-   DEFAULTS is the live home page configuration: the lab's "Copy config" output is a set of
-   overrides for it, passed as the second argument to SplitFlap.mount(). */
+   DEFAULTS is the base configuration. A config is a set of overrides for it, passed as the
+   second argument to SplitFlap.mount(). The site runs the version marked active in
+   split-flap-versions.js, which the lab writes. */
 (function () {
   const DEFAULTS = {
     // Message
@@ -30,11 +31,28 @@
     // Board
     boardWidth: 560,            // px
     gap: 6,                     // px between modules
+    padX: 0,                    // empty modules left and right of the text
+    padY: 0,                    // empty rows above and below the text
+    fillRows: false,            // short lines get empty modules out to the full width
+    blankFlips: true,           // empty modules spin with the rest and land blank
+
+    // Frame: a plate with one recessed window per module
+    frame: false,
+    frameColor: '#1b1f26',
+    wellColor: '#07080a',       // the dark behind the tile
+    framePad: 28,               // px of plate around the grid
+    frameGap: 12,               // px of plate between windows, replacing gap
+    frameInset: 0.05,           // space between tile and window, fraction of window size
+    frameDepth: 0.7,            // strength of the shadow the plate casts into each window
+    frameLip: 0.1,              // light catching each window's lower edge
+    frameSheen: 0.05,           // side light across the plate
 
     // Tile
     tileRatio: 1.4,             // height / width
     radius: 0.07,               // corner radius, fraction of tile width
     slotSize: 0.016,            // gap between the halves, fraction of tile height
+    grain: 0,                   // film grain strength on the leaf surfaces
+    grainSize: 1,               // grain size, CSS px
 
     // Glyph
     glyphSize: 0.92,            // fraction of tile width
@@ -99,6 +117,23 @@
     };
   }
 
+  // Tileable noise: white and black specks of random strength, centred on no change
+  let noise = null;
+  function noiseTexture() {
+    if (noise) return noise;
+    const size = 256, random = seeded(7);
+    noise = document.createElement('canvas');
+    noise.width = noise.height = size;
+    const g = noise.getContext('2d'), img = g.createImageData(size, size);
+    for (let i = 0; i < img.data.length; i += 4) {
+      const v = (random() + random() + random()) / 1.5 - 1;
+      img.data[i] = img.data[i + 1] = img.data[i + 2] = v > 0 ? 255 : 0;
+      img.data[i + 3] = Math.abs(v) * 255;
+    }
+    g.putImageData(img, 0, 0);
+    return noise;
+  }
+
   // What a module shows at time t (ms since the animation began)
   function flapState(m, t, cfg, flipEase, spinEase) {
     const n = m.seq.length - 1, local = t - m.start, spinMs = n * cfg.flipMs;
@@ -128,7 +163,7 @@
     host.appendChild(board);
 
     const scratch = document.createElement('canvas'), sctx = scratch.getContext('2d');
-    let cfg, mods, flipEase, spinEase, duration;
+    let cfg, mods, grid, flipEase, spinEase, duration;
     // geometry in device pixels; tiles (background + glyph) are cached per character
     let tw, th, pad, tiles = {}, fontReady = false, time = 0;
 
@@ -139,18 +174,37 @@
       const lines = cfg.lines.some(l => l.length) ? cfg.lines : [' '];
       const chars = cfg.chars || ' ';
 
-      board.style.setProperty('--cols', Math.max(...lines.map(l => [...l].length)));
+      // the text sits inside a margin of empty modules
+      const blanks = count => Array(count).fill(' ');
+      const cols = Math.max(...lines.map(l => [...l].length)) + cfg.padX * 2;
+      const textRows = lines.map(l => {
+        const cells = [...blanks(cfg.padX), ...l];
+        return cfg.fillRows ? [...cells, ...blanks(cols - cells.length)] : cells;
+      });
+      const margin = Array.from({ length: cfg.padY }, () => blanks(cols));
+      const rows = [...margin, ...textRows, ...margin];
+      grid = { cols, rows: rows.length };
+
+      board.style.setProperty('--cols', cols);
       board.style.setProperty('--sf-width', cfg.boardWidth + 'px');
-      board.style.setProperty('--sf-gap', cfg.gap + 'px');
+      board.style.setProperty('--sf-gap', (cfg.frame ? cfg.frameGap : cfg.gap) + 'px');
+      board.classList.toggle('is-framed', cfg.frame);
+      board.style.setProperty('--sf-inset', cfg.frame ? cfg.frameInset : 0);
+      board.style.setProperty('--sf-frame-color', cfg.frameColor);
+      board.style.setProperty('--sf-well-color', cfg.wellColor);
+      board.style.setProperty('--sf-frame-pad', cfg.framePad + 'px');
+      board.style.setProperty('--sf-frame-depth', cfg.frameDepth);
+      board.style.setProperty('--sf-frame-lip', cfg.frameLip);
+      board.style.setProperty('--sf-frame-sheen', cfg.frameSheen);
       board.style.setProperty('--sf-ratio', cfg.tileRatio);
       board.style.setProperty('--sf-overhang', cfg.overhang);
 
       board.textContent = '';
       mods = [];
-      lines.forEach(line => {
+      rows.forEach(cells => {
         const row = document.createElement('span');
         row.className = 'sf-row';
-        [...line].forEach(ch => {
+        cells.forEach(ch => {
           const el = document.createElement('span');
           el.className = 'sf';
           const canvas = document.createElement('canvas');
@@ -170,8 +224,9 @@
         m.seq = Array.from({ length: flips + 1 }, (_, i) => at(end - flips + i));
       };
       const minFlips = Math.min(cfg.minFlips, cfg.maxFlips), maxFlips = Math.max(cfg.minFlips, cfg.maxFlips);
-      const rest = mods.slice(0, -1), last = mods[mods.length - 1];
-      mods.forEach(m => { m.start = cfg.startMs + random() * cfg.staggerMs; });
+      const last = mods.findLast(m => m.target !== ' ') || mods[mods.length - 1];
+      const rest = mods.filter(m => m !== last && (cfg.blankFlips || m.target !== ' '));
+      mods.forEach(m => { m.start = cfg.startMs + random() * cfg.staggerMs; m.seq = [m.target]; });
       rest.forEach(m => spinTo(m, minFlips + Math.floor(random() * (maxFlips - minFlips + 1))));
       const restEnd = rest.length ? Math.max(...rest.map(m => flapEnd(m, cfg))) : 0;
       spinTo(last, Math.max(Math.ceil((restEnd - cfg.bounceMs / 2 - last.start) / cfg.flipMs) + 1, minFlips, 1));
@@ -183,7 +238,9 @@
 
     function layout() {
       const dpr = window.devicePixelRatio || 1;
-      tw = Math.round(mods[0].el.clientWidth * dpr);
+      const cell = mods[0].el.clientWidth;
+      board.style.setProperty('--sf-cell', cell + 'px');
+      tw = Math.round(cell * dpr * (1 - 2 * (cfg.frame ? cfg.frameInset : 0)));
       th = Math.round(tw * cfg.tileRatio);
       pad = Math.round(tw * cfg.overhang);
       tiles = {};
@@ -201,13 +258,28 @@
       g.beginPath(); g.roundRect(0, 0, tw, th / 2, [r, r, 0, 0]); g.fill();
       g.fillStyle = cfg.tileBottom;
       g.beginPath(); g.roundRect(0, th / 2, tw, th / 2, [0, 0, r, r]); g.fill();
-      if (!fontReady) return (tiles[ch] = c);   // plain tile until Geist arrives
+      if (!fontReady) { addGrain(g, ch); return (tiles[ch] = c); }   // plain tile until Geist arrives
       // every glyph shares one baseline, with capitals centred on the hinge
       g.font = cfg.fontWeight + ' ' + Math.round(tw * cfg.glyphSize) + 'px Geist, sans-serif';
       g.textAlign = 'center';
       g.fillStyle = cfg.glyphColor;
       g.fillText(ch, tw / 2, th / 2 + g.measureText('H').actualBoundingBoxAscent / 2);
+      addGrain(g, ch);
       return (tiles[ch] = c);
+    }
+
+    // baked into the tile, over the glyph, so the grain travels with the leaf as it swings
+    function addGrain(g, ch) {
+      if (!cfg.grain) return;
+      const pattern = g.createPattern(noiseTexture(), 'repeat'), code = ch.codePointAt(0);
+      const scale = cfg.grainSize * (window.devicePixelRatio || 1);
+      pattern.setTransform(new DOMMatrix().scale(scale).translate(code * 37, code * 61));
+      g.globalCompositeOperation = 'source-atop';
+      g.globalAlpha = cfg.grain;
+      g.fillStyle = pattern;
+      g.fillRect(0, 0, tw, th);
+      g.globalAlpha = 1;
+      g.globalCompositeOperation = 'source-over';
     }
 
     // a leaf rotating about the hinge, drawn in strips so its free edge swings toward the viewer
@@ -283,13 +355,21 @@
       ready,
       update: build,                  // rebuild from a new set of overrides, keeping the playhead
       get duration() { return duration; },
+      get grid() { return grid; },
       // the schedule, for drawing a timeline
       get tracks() {
-        return mods.map(m => ({ ch: m.target, start: m.start, flips: m.seq.length - 1,
+        return mods.map(m => ({ ch: m.target, blank: m.target === ' ', start: m.start, flips: m.seq.length - 1,
                                 spinMs: (m.seq.length - 1) * cfg.flipMs, end: flapEnd(m, cfg) }));
       },
     };
   }
 
-  window.SplitFlap = { DEFAULTS, EASES, resolveEase, flapState, flapEnd, mount };
+  // the overrides the site should run, from split-flap-versions.js
+  function activeConfig() {
+    const store = window.SPLIT_FLAP_VERSIONS;
+    const version = store && store.versions.find(v => v.id === store.active);
+    return version ? version.config : {};
+  }
+
+  window.SplitFlap = { DEFAULTS, EASES, resolveEase, flapState, flapEnd, mount, activeConfig };
 })();

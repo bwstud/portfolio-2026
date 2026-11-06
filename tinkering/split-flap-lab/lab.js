@@ -3,12 +3,14 @@
 (function () {
   const { DEFAULTS, resolveEase } = SplitFlap;
   const STORE = 'split-flap-lab/v1';
-  const LAB_DEFAULTS = { seed: 1, stageColor: '#0e0e0f' };   // lab only, never copied to the site
+  const LAB_ONLY = { seed: 1, stageColor: '#0e0e0f' };   // never part of a site config
+  // where the lab starts: the padded board, which reaches the site only through a saved version
+  const LAB_START = { padX: 2, padY: 1, fillRows: true, boardWidth: 840, grain: 0.08, frame: true };
   const $ = id => document.getElementById(id);
   const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
   const clamp = (v, lo, hi) => Math.min(Math.max(v, lo), hi);
 
-  const base = { ...DEFAULTS, ...LAB_DEFAULTS };
+  const base = { ...DEFAULTS, ...LAB_ONLY, ...LAB_START };
   let saved = {};
   try { saved = JSON.parse(localStorage.getItem(STORE)) || {}; } catch (e) { /* start clean */ }
   const cfg = { ...base, ...saved };
@@ -16,6 +18,7 @@
   /* ---- Parameter definitions ---- */
   const n = (key, label, min, max, step, unit, hint) => ({ key, label, min, max, step, unit, hint, type: 'number' });
   const c = (key, label, hint) => ({ key, label, hint, type: 'color' });
+  const b = (key, label, hint) => ({ key, label, hint, type: 'toggle' });
   const GROUPS = [
     ['Message', [
       { key: 'lines', label: 'Text', type: 'lines', hint: 'What the board spells, one row per line.' },
@@ -39,13 +42,29 @@
     ]],
     ['Board', [
       n('boardWidth', 'Width', 200, 1200, 10, 'px', 'Widest the board may grow.'),
-      n('gap', 'Gap', 0, 24, 1, 'px', 'Space between modules.'),
+      n('gap', 'Gap', 0, 24, 1, 'px', 'Space between modules when flat.'),
+      n('padX', 'Side cells', 0, 8, 1, '', 'Empty modules left and right of the text.'),
+      n('padY', 'Top and bottom cells', 0, 6, 1, '', 'Empty rows above and below the text.'),
+      b('fillRows', 'Fill short lines', 'Empty modules out to the full width, such as beside the first name.'),
+      b('blankFlips', 'Empty cells flip', 'Empty modules spin with the rest and land blank.'),
       c('stageColor', 'Stage', 'Lab backdrop. Not part of the config.'),
+    ]],
+    ['Frame', [
+      c('frameColor', 'Plate colour', 'The faceplate around the windows.'),
+      c('wellColor', 'Window colour', 'The dark visible around each tile.'),
+      n('framePad', 'Border', 0, 80, 1, 'px', 'Plate around the whole grid.'),
+      n('frameGap', 'Window spacing', 0, 40, 1, 'px', 'Plate between windows. Replaces Gap when framed.'),
+      n('frameInset', 'Tile inset', 0, 0.2, 0.005, '× window', 'Space between tile and window edge.'),
+      n('frameDepth', 'Recess depth', 0, 1, 0.01, '', 'Shadow the plate casts into each window.'),
+      n('frameLip', 'Lip light', 0, 0.5, 0.01, '', 'Light catching each window’s lower edge.'),
+      n('frameSheen', 'Plate sheen', 0, 0.3, 0.01, '', 'Side light falling across the plate.'),
     ]],
     ['Tile', [
       n('tileRatio', 'Height', 1, 2, 0.01, '× width', 'Tile height against its width.'),
       n('radius', 'Corners', 0, 0.3, 0.005, '× width', 'Outer corner radius.'),
       n('slotSize', 'Slot', 0, 0.06, 0.001, '× height', 'Dark gap between the two halves.'),
+      n('grain', 'Film grain', 0, 1, 0.01, '', 'Grain on the leaf surfaces. It moves with the leaf.'),
+      n('grainSize', 'Grain size', 0.5, 4, 0.1, 'px', 'Size of each speck.'),
       c('tileTop', 'Top colour', 'Top edge, fading down to the bottom colour at the hinge.'),
       c('tileBottom', 'Bottom colour', 'Lower half, and the end of the top half’s fade.'),
       c('slotColor', 'Slot colour', 'The gap between the halves.'),
@@ -75,8 +94,17 @@
     return rest;
   };
   const stage = $('stage');
-  const flap = SplitFlap.mount(stage, engineConfig());
+  const flap = SplitFlap.mount($('fit'), engineConfig());
   const applyStage = () => { stage.style.background = cfg.stageColor; };
+
+  // shrink the board when it would be taller than the stage
+  function fitBoard() {
+    const { cols, rows } = flap.grid, style = getComputedStyle(stage);
+    const room = stage.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom);
+    const gap = cfg.frame ? cfg.frameGap : cfg.gap, plate = cfg.frame ? cfg.framePad * 2 : 0;
+    const tile = (room - plate - (rows - 1) * gap) / (rows * cfg.tileRatio);
+    $('fit').style.maxWidth = Math.max(cols * tile + (cols - 1) * gap + plate, 120) + 'px';
+  }
 
   let queued = false;
   function changed() {
@@ -86,6 +114,7 @@
       queued = false;
       flap.update(engineConfig());
       applyStage();
+      fitBoard();
       if (time > flap.duration) time = flap.duration;
       flap.seek(time);
       drawTracks();
@@ -126,6 +155,12 @@
         if (box.value !== '') set(clamp(+box.value, p.min, p.max)); else sync();
       });
       sync = () => { box.value = range.value = cfg[p.key]; };
+    } else if (p.type === 'toggle') {
+      const box = document.createElement('input');
+      box.type = 'checkbox'; box.id = id;
+      value.append(box);
+      box.addEventListener('change', () => set(box.checked));
+      sync = () => { box.checked = cfg[p.key]; };
     } else if (p.type === 'color') {
       const box = document.createElement('input');
       box.type = 'color'; box.id = id;
@@ -179,6 +214,19 @@
     $('params').append(group);
   });
 
+  // Flat or Framed, in the header so it's one click from anywhere in the panel
+  const frameButtons = [...document.querySelectorAll('#frame-switch button')];
+  const syncFrame = () => frameButtons.forEach(button => {
+    button.setAttribute('aria-pressed', button.dataset.frame === String(cfg.frame));
+  });
+  frameButtons.forEach(button => button.addEventListener('click', () => {
+    cfg.frame = button.dataset.frame === 'true';
+    syncFrame();
+    changed();
+  }));
+  rows.push({ p: { key: 'frame' }, sync: syncFrame });
+  syncFrame();
+
   function checkDrum() {
     const row = rows.find(r => r.p.key === 'lines');
     const missing = [...new Set([...cfg.lines.join('')])].filter(ch => !cfg.chars.includes(ch));
@@ -188,15 +236,19 @@
       : row.p.hint;
   }
 
-  function diffFromSite() {
+  const SITE_KEYS = Object.keys(DEFAULTS).filter(k => k !== 'seed');
+
+  // what a site config needs to reproduce the current settings
+  function overrides() {
     const diff = {};
-    Object.keys(DEFAULTS).forEach(k => { if (k !== 'seed' && !same(cfg[k], DEFAULTS[k])) diff[k] = cfg[k]; });
+    SITE_KEYS.forEach(k => { if (!same(cfg[k], DEFAULTS[k])) diff[k] = cfg[k]; });
     return diff;
   }
 
   function refreshCount() {
-    const count = Object.keys(diffFromSite()).length;
-    $('count').textContent = count ? `${count} change${count > 1 ? 's' : ''} from site` : 'Matches site';
+    const active = { ...DEFAULTS, ...activeVersion().config };
+    const count = SITE_KEYS.filter(k => !same(cfg[k], active[k])).length;
+    $('count').textContent = count ? `${count} from active` : 'Matches active';
   }
 
   $('reset').addEventListener('click', () => {
@@ -208,12 +260,166 @@
   });
 
   $('copy').addEventListener('click', async () => {
-    const button = $('copy'), diff = diffFromSite();
-    const text = `SplitFlap.mount(heading, ${JSON.stringify(diff, null, 2)});`;
+    const button = $('copy');
+    const text = `SplitFlap.mount(heading, ${JSON.stringify(overrides(), null, 2)});`;
     let label = 'Copied';
     try { await navigator.clipboard.writeText(text); } catch (e) { label = 'Copy failed'; console.log(text); }
     button.textContent = label;
     setTimeout(() => { button.textContent = 'Copy config'; }, 1200);
+  });
+
+  /* ---- Versions: kept in split-flap-versions.js, which the site reads. The browser writes
+     that file directly, so it has to be connected once: there is nothing server-side. ---- */
+  const FILE = 'split-flap-versions.js';
+  const FILE_URL = '../../' + FILE;
+  const HEADER = '/* Written by the Split-Flap Lab. The home page runs the version named by "active". */\n';
+  let store = { active: 'original', versions: [{ id: 'original', name: 'Original', savedAt: null, config: {} }] };
+  let fileHandle = null;
+
+  const activeVersion = () => store.versions.find(v => v.id === store.active) || { config: {} };
+  const parseStore = text => JSON.parse(text.slice(text.indexOf('{'), text.lastIndexOf('}') + 1));
+  const serialize = data => `${HEADER}window.SPLIT_FLAP_VERSIONS = ${JSON.stringify(data, null, 2)};\n`;
+  const status = text => { $('version-status').textContent = text; };
+
+  // the file handle survives reloads in IndexedDB, so the picker only appears once
+  function handleStore(mode, run) {
+    return new Promise((resolve, reject) => {
+      const open = indexedDB.open('split-flap-lab', 1);
+      open.onupgradeneeded = () => open.result.createObjectStore('handles');
+      open.onerror = () => reject(open.error);
+      open.onsuccess = () => {
+        try {
+          const request = run(open.result.transaction('handles', mode).objectStore('handles'));
+          request.onsuccess = () => resolve(request.result);
+          request.onerror = () => reject(request.error);
+        } catch (e) {
+          reject(e);
+        }
+      };
+    });
+  }
+
+  async function connectFile() {
+    if (!fileHandle) fileHandle = await handleStore('readonly', s => s.get('versions')).catch(() => null);
+    if (!fileHandle) {
+      [fileHandle] = await window.showOpenFilePicker({
+        id: 'split-flap-versions',
+        types: [{ description: 'Split-flap versions', accept: { 'text/javascript': ['.js'] } }],
+      });
+      if (fileHandle.name !== FILE) {
+        fileHandle = null;
+        throw new Error(`Pick ${FILE} from the top of the repo.`);
+      }
+      await handleStore('readwrite', s => s.put(fileHandle, 'versions')).catch(() => {});
+    }
+    if (await fileHandle.queryPermission({ mode: 'readwrite' }) !== 'granted'
+      && await fileHandle.requestPermission({ mode: 'readwrite' }) !== 'granted') {
+      throw new Error('The lab needs permission to write the file.');
+    }
+    store = parseStore(await (await fileHandle.getFile()).text());   // the file wins over this tab
+  }
+
+  // change() edits a copy of the store; nothing shows as saved until the file has it
+  async function commit(change, done) {
+    try {
+      const canWrite = 'showOpenFilePicker' in window;
+      if (canWrite) await connectFile();
+      const next = JSON.parse(JSON.stringify(store));
+      change(next);
+      const text = serialize(next);
+      if (canWrite) {
+        const writable = await fileHandle.createWritable();
+        await writable.write(text);
+        await writable.close();
+      } else {
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(new Blob([text], { type: 'text/javascript' }));
+        link.download = FILE;
+        link.click();
+        URL.revokeObjectURL(link.href);
+      }
+      store = next;
+      renderVersions();
+      refreshCount();
+      status(canWrite ? done : `${done} Downloaded: replace ${FILE} in the repo with it.`);
+    } catch (e) {
+      status(e.name === 'AbortError' ? 'Not saved: no file picked.' : `Not saved. ${e.message}`);
+    }
+  }
+
+  function loadVersion(version) {
+    Object.keys(cfg).forEach(k => { delete cfg[k]; });
+    Object.assign(cfg, DEFAULTS, LAB_ONLY, version.lab, version.config);
+    rows.forEach(r => r.sync());
+    checkDrum();
+    refreshEase();
+    changed();
+    $('version-name').value = version.name;
+    refreshSaveLabel();
+    status(`Loaded ${version.name}.`);
+  }
+
+  const dateLabel = iso => iso
+    ? new Date(iso).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+    : '';
+  const chip = (text, onClick) => {
+    const button = Object.assign(document.createElement('button'), { type: 'button', className: 'chip', textContent: text });
+    button.addEventListener('click', onClick);
+    return button;
+  };
+
+  function renderVersions() {
+    $('version-list').replaceChildren(...store.versions.map(version => {
+      const item = document.createElement('li');
+      item.className = 'version';
+      const isActive = version.id === store.active;
+      const actions = document.createElement('div');
+      actions.className = 'version__actions';
+      actions.append(chip('Load', () => loadVersion(version)));
+      if (isActive) {
+        actions.append(Object.assign(document.createElement('span'), { className: 'version__badge', textContent: 'Active' }));
+      } else {
+        actions.append(chip('Set active', () => commit(
+          next => { next.active = version.id; },
+          `${version.name} is active. Commit and deploy to put it on the live site.`,
+        )));
+        const remove = Object.assign(document.createElement('button'), { type: 'button', className: 'version__delete', textContent: 'Delete' });
+        remove.setAttribute('aria-label', `Delete ${version.name}`);
+        remove.addEventListener('click', () => {
+          if (confirm(`Delete ${version.name}?`)) {
+            commit(next => { next.versions = next.versions.filter(v => v.id !== version.id); }, `Deleted ${version.name}.`);
+          }
+        });
+        actions.append(remove);
+      }
+      item.append(
+        Object.assign(document.createElement('span'), { className: 'version__name', textContent: version.name }),
+        Object.assign(document.createElement('span'), { className: 'version__date', textContent: dateLabel(version.savedAt) }),
+        actions,
+      );
+      return item;
+    }));
+    refreshSaveLabel();
+  }
+
+  function refreshSaveLabel() {
+    const name = $('version-name').value.trim();
+    $('version-save').textContent = store.versions.some(v => v.name === name) ? 'Replace' : 'Save';
+  }
+
+  $('version-name').addEventListener('input', refreshSaveLabel);
+  $('version-form').addEventListener('submit', e => {
+    e.preventDefault();
+    const name = $('version-name').value.trim();
+    if (!name) return status('Name the version first.');
+    commit(next => {
+      const entry = {
+        id: Date.now().toString(36), name, savedAt: new Date().toISOString(), config: overrides(),
+        lab: { seed: cfg.seed, stageColor: cfg.stageColor },
+      };
+      const i = next.versions.findIndex(v => v.name === name);
+      if (i < 0) next.versions.push(entry); else next.versions[i] = { ...entry, id: next.versions[i].id };
+    }, `Saved ${name}.`);
   });
 
   /* ---- Easing editor ---- */
@@ -327,7 +533,7 @@
   function moveProbe() {
     const probe = $('probe');
     if (!probe) return;
-    const track = flap.tracks[flap.tracks.length - 1];
+    const track = textTracks().at(-1);
     const u = (time - track.start) / track.spinMs;
     if (!(u > 0 && u < 1)) return probe.setAttribute('visibility', 'hidden');
     const spun = resolveEase(cfg.spinEase)(u);
@@ -340,6 +546,11 @@
   /* ---- Timeline ---- */
   const tracksEl = $('tracks'), canvas = $('tracks-canvas'), head = $('head');
   const LABEL_W = 18, RULER_H = 16, RIGHT = 6;
+  // empty cells would swamp the view, so the timeline follows the letters
+  const textTracks = () => {
+    const letters = flap.tracks.filter(m => !m.blank);
+    return letters.length ? letters : flap.tracks;
+  };
   const timeX = t => LABEL_W + t / flap.duration * (tracksEl.clientWidth - LABEL_W - RIGHT);
 
   function drawTracks() {
@@ -359,7 +570,7 @@
       if (timeX(t) + 40 < w) g.fillText((t / 1000).toFixed(stepMs < 1000 ? 2 : 0) + 's', timeX(t) + 4, 7);
     }
 
-    const tracks = flap.tracks, ease = resolveEase(cfg.spinEase);
+    const tracks = textTracks(), ease = resolveEase(cfg.spinEase);
     const rowH = (h - RULER_H) / tracks.length, barH = Math.max(3, Math.min(rowH - 2, 10));
     tracks.forEach((m, i) => {
       const y = RULER_H + i * rowH + (rowH - barH) / 2;
@@ -451,11 +662,17 @@
   tracksEl.addEventListener('pointermove', e => { if (scrubbing) scrubTo(e); });
   ['pointerup', 'pointercancel'].forEach(type => tracksEl.addEventListener(type, () => { scrubbing = false; }));
 
+  // Space drives the timeline wherever focus is, unless you're typing. Capture runs first, and
+  // the keyup is swallowed too, or a focused button would also click.
+  const typing = el => el.matches('textarea, input[type="text"]');
   document.addEventListener('keydown', e => {
-    if (e.target.closest('input, textarea, select') || e.metaKey || e.ctrlKey || e.altKey) return;
-    if (e.key === ' ' && !e.target.closest('button')) {
+    if (typing(e.target) || e.metaKey || e.ctrlKey || e.altKey) return;
+    if (e.key === ' ') {
       e.preventDefault();
-      direction ? pause() : play();
+      e.stopPropagation();
+      if (!e.repeat) direction ? pause() : play();
+    } else if (e.target.closest('input, select')) {
+      return;
     } else if (e.key === 'r' || e.key === 'R') {
       restart();
     } else if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
@@ -463,15 +680,26 @@
       pause();
       moveTo(time + (e.key === 'ArrowLeft' ? -1 : 1) * 1000 / 60);
     }
-  });
+  }, true);
+  document.addEventListener('keyup', e => {
+    if (e.key === ' ' && !typing(e.target)) e.preventDefault();
+  }, true);
 
   new ResizeObserver(() => { drawTracks(); showTime(); }).observe(tracksEl);
+  new ResizeObserver(fitBoard).observe(stage);
 
   /* ---- Start ---- */
   applyStage();
+  fitBoard();
   checkDrum();
   refreshEase();
+  renderVersions();
   refreshCount();
+  fetch(FILE_URL, { cache: 'no-store' }).then(r => r.text()).then(text => {
+    store = parseStore(text);
+    renderVersions();
+    refreshCount();
+  }).catch(() => status(`Couldn't read ${FILE}.`));
   drawTracks();
   showTime();
   setDirection(0);

@@ -190,10 +190,41 @@ a { color: inherit; text-decoration: none; }
 
 .sf canvas {
   position: absolute;
-  top: 0;
-  left: calc(var(--sf-overhang, 0.12) * -100%);
-  width: calc(100% + var(--sf-overhang, 0.12) * 200%);
-  height: 100%;
+  top: calc(var(--sf-inset, 0) * 100%);
+  left: calc((var(--sf-inset, 0) - (1 - 2 * var(--sf-inset, 0)) * var(--sf-overhang, 0.12)) * 100%);
+  width: calc((1 - 2 * var(--sf-inset, 0)) * (1 + 2 * var(--sf-overhang, 0.12)) * 100%);
+  height: calc((1 - 2 * var(--sf-inset, 0)) * 100%);
+}
+
+/* Framed: a plate with a recessed window per module. Leaves swing behind the plate, so the
+   window clips them, and the shading sits above the canvas as shadow cast by the plate. */
+.sf-board.is-framed {
+  padding: var(--sf-frame-pad);
+  border-radius: 6px;
+  background:
+    linear-gradient(100deg, rgba(255, 255, 255, var(--sf-frame-sheen)), transparent 60%),
+    var(--sf-frame-color);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 24px 60px rgba(0, 0, 0, 0.45);
+}
+
+.is-framed .sf {
+  overflow: hidden;
+  border-radius: 3px;
+  background: var(--sf-well-color);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, var(--sf-frame-lip)),
+    0 -1px 0 rgba(0, 0, 0, 0.45);
+}
+
+.is-framed .sf::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow:
+    inset 0 calc(var(--sf-cell) * 0.14 * var(--sf-frame-depth)) calc(var(--sf-cell) * 0.12 * var(--sf-frame-depth)) rgba(0, 0, 0, calc(0.95 * var(--sf-frame-depth))),
+    inset 0 0 calc(var(--sf-cell) * 0.08 * var(--sf-frame-depth)) rgba(0, 0, 0, calc(0.8 * var(--sf-frame-depth)));
 }
 
 .cover__tag {

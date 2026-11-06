@@ -173,12 +173,13 @@
 
   <script src="nav.js"></script>
   <script src="split-flap.js"></script>
+  <script src="split-flap-versions.js"></script>
   <script>
     /* ---- Split-flap name: the board lives in split-flap.js, this runs its clock ---- */
     (function () {
       const heading = document.querySelector('.cover__name');
       heading.classList.add('is-flap');
-      const flap = SplitFlap.mount(heading);
+      const flap = SplitFlap.mount(heading, SplitFlap.activeConfig());
       const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
       flap.ready.then(() => {
         if (still) return flap.seek(Infinity);

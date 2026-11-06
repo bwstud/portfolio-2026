@@ -26,8 +26,11 @@
     .head a:hover { color: var(--fg); }
     .head h1 { font-size: 15px; font-weight: 600; }
 
+    .head__frame { width: 148px; }
+
     /* Stage */
     .stage { grid-area: stage; display: flex; align-items: center; justify-content: center; min-width: 0; padding: 24px 48px; overflow: hidden; }
+    .stage__fit { display: flex; justify-content: center; width: 100%; }
 
     /* Parameter panel */
     .panel { grid-area: panel; display: flex; flex-direction: column; min-height: 0; border-left: 1px solid var(--line); background: var(--surface); }
@@ -51,6 +54,21 @@
     .row textarea, .row input[type="text"] { grid-column: 1 / -1; width: 100%; padding: 5px 7px; resize: none; background: var(--bg); border: 1px solid var(--line); border-radius: 4px; font-variant-numeric: tabular-nums; }
     .row__hint { grid-column: 1 / -1; color: var(--muted); font-size: 12px; }
     .row__hint.is-warning { color: var(--accent); }
+    .row__value input[type="checkbox"] { accent-color: var(--accent); }
+
+    /* Versions */
+    .save { display: flex; gap: 6px; }
+    .save input { flex: 1; min-width: 0; padding: 5px 7px; background: var(--bg); border: 1px solid var(--line); border-radius: 4px; }
+    .versions { list-style: none; margin-top: 8px; }
+    .version { display: grid; grid-template-columns: 1fr auto; gap: 6px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+    .version__name { min-width: 0; font-weight: 500; overflow-wrap: anywhere; }
+    .version__date { color: var(--muted); font-size: 12px; white-space: nowrap; }
+    .version__actions { grid-column: 1 / -1; display: flex; align-items: center; gap: 6px; }
+    .version__actions .chip { padding: 2px 9px; font-size: 12px; }
+    .version__badge { padding: 2px 9px; border-radius: 999px; background: var(--accent); color: var(--bg); font-size: 12px; font-weight: 600; }
+    .version__delete { margin-left: auto; color: var(--muted); font-size: 12px; }
+    .version__delete:hover { color: var(--fg); }
+    #version-status { display: block; margin-top: 8px; }
 
     /* Dock: easing curve and timeline */
     .dock { grid-area: dock; display: grid; grid-template-columns: 500px minmax(0, 1fr); min-height: 0; border-top: 1px solid var(--line); background: var(--surface); }
@@ -101,9 +119,13 @@
   <header class="head">
     <a href="../../">← Site</a>
     <h1>Split-Flap Lab</h1>
+    <div class="seg head__frame" id="frame-switch" role="group" aria-label="Board style">
+      <button type="button" data-frame="false" aria-pressed="false">Flat</button>
+      <button type="button" data-frame="true" aria-pressed="true">Framed</button>
+    </div>
   </header>
 
-  <main class="stage" id="stage"></main>
+  <main class="stage" id="stage"><div class="stage__fit" id="fit"></div></main>
 
   <aside class="panel" aria-label="Parameters">
     <div class="panel__top">
@@ -111,7 +133,17 @@
       <button class="chip" id="copy" type="button">Copy config</button>
       <button class="chip" id="reset" type="button">Reset</button>
     </div>
-    <div class="panel__list" id="params"></div>
+    <div class="panel__list" id="params">
+      <section class="group">
+        <h2>Versions</h2>
+        <form class="save" id="version-form">
+          <input id="version-name" type="text" placeholder="Name this version" aria-label="Version name" autocomplete="off">
+          <button class="chip" id="version-save" type="submit">Save</button>
+        </form>
+        <ul class="versions" id="version-list"></ul>
+        <small class="row__hint" id="version-status" aria-live="polite"></small>
+      </section>
+    </div>
   </aside>
 
   <section class="dock" aria-label="Easing and timeline">

@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Split-Flap Lab · Brian Studwell</title>
+  <meta name="robots" content="noindex">
+  <link rel="stylesheet" href="../../styles.css">
+  <style>
+    :root { color-scheme: dark; --accent: #f0b25e; --dock-h: 248px; --panel-w: 320px; }
+    html, body { height: 100%; overflow: hidden; }
+    body {
+      display: grid;
+      grid-template: "head panel" 56px "stage panel" minmax(0, 1fr) "dock dock" var(--dock-h) / minmax(0, 1fr) var(--panel-w);
+      font-size: 13px;
+      line-height: 1.4;
+    }
+    button, input, select, textarea { font: inherit; color: inherit; }
+    button { cursor: pointer; background: none; border: 0; }
+    :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .num { font-variant-numeric: tabular-nums; }
+
+    /* Header */
+    .head { grid-area: head; display: flex; align-items: center; gap: 16px; padding: 0 20px; }
+    .head a { color: var(--muted); transition: color 0.15s; }
+    .head a:hover { color: var(--fg); }
+    .head h1 { font-size: 15px; font-weight: 600; }
+
+    .head__frame { width: 148px; }
+
+    /* Stage */
+    .stage { grid-area: stage; display: flex; align-items: center; justify-content: center; min-width: 0; padding: 24px 48px; overflow: hidden; }
+    .stage__fit { display: flex; justify-content: center; width: 100%; }
+
+    /* Parameter panel */
+    .panel { grid-area: panel; display: flex; flex-direction: column; min-height: 0; border-left: 1px solid var(--line); background: var(--surface); }
+    .panel__top { display: flex; align-items: center; gap: 8px; padding: 12px 16px; border-bottom: 1px solid var(--line); }
+    .panel__count { flex: 1; color: var(--muted); }
+    .panel__list { flex: 1; overflow-y: auto; padding: 0 16px 24px; }
+    .chip { padding: 5px 10px; border: 1px solid var(--line); border-radius: 999px; white-space: nowrap; transition: border-color 0.15s; }
+    .chip:hover { border-color: var(--muted); }
+
+    .group h2 { position: sticky; top: 0; z-index: 1; padding: 16px 0 8px; background: var(--surface); font-size: 12px; font-weight: 600; color: var(--muted); }
+    .row { display: grid; grid-template-columns: 1fr auto 20px; align-items: center; gap: 2px 6px; padding: 7px 0; }
+    .row__name { font-weight: 500; }
+    .row__value { display: flex; align-items: center; gap: 4px; color: var(--muted); }
+    .row__value input[type="number"] { width: 60px; padding: 2px 4px; text-align: right; background: var(--bg); border: 1px solid var(--line); border-radius: 4px; color: var(--fg); }
+    .row__value input[type="color"] { width: 28px; height: 22px; padding: 0; background: none; border: 1px solid var(--line); border-radius: 4px; }
+    .row__reset { width: 20px; height: 20px; border-radius: 4px; color: var(--muted); visibility: hidden; }
+    .row__reset:hover { color: var(--fg); background: #222225; }
+    .row.is-changed .row__reset { visibility: visible; }
+    .row.is-changed .row__name { color: var(--accent); }
+    .row input[type="range"] { grid-column: 1 / -1; width: 100%; accent-color: var(--accent); }
+    .row textarea, .row input[type="text"] { grid-column: 1 / -1; width: 100%; padding: 5px 7px; resize: none; background: var(--bg); border: 1px solid var(--line); border-radius: 4px; font-variant-numeric: tabular-nums; }
+    .row__hint { grid-column: 1 / -1; color: var(--muted); font-size: 12px; }
+    .row__hint.is-warning { color: var(--accent); }
+    .row__value input[type="checkbox"] { accent-color: var(--accent); }
+
+    /* Versions */
+    .save { display: flex; gap: 6px; }
+    .save input { flex: 1; min-width: 0; padding: 5px 7px; background: var(--bg); border: 1px solid var(--line); border-radius: 4px; }
+    .versions { list-style: none; margin-top: 8px; }
+    .version { display: grid; grid-template-columns: 1fr auto; gap: 6px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+    .version__name { min-width: 0; font-weight: 500; overflow-wrap: anywhere; }
+    .version__date { color: var(--muted); font-size: 12px; white-space: nowrap; }
+    .version__actions { grid-column: 1 / -1; display: flex; align-items: center; gap: 6px; }
+    .version__actions .chip { padding: 2px 9px; font-size: 12px; }
+    .version__badge { padding: 2px 9px; border-radius: 999px; background: var(--accent); color: var(--bg); font-size: 12px; font-weight: 600; }
+    .version__delete { margin-left: auto; color: var(--muted); font-size: 12px; }
+    .version__delete:hover { color: var(--fg); }
+    #version-status { display: block; margin-top: 8px; }
+
+    /* Dock: easing curve and timeline */
+    .dock { grid-area: dock; display: grid; grid-template-columns: 500px minmax(0, 1fr); min-height: 0; border-top: 1px solid var(--line); background: var(--surface); }
+    .dock h2 { font-size: 12px; font-weight: 600; color: var(--muted); }
+    select { padding: 4px 6px; background: var(--bg); border: 1px solid var(--line); border-radius: 4px; }
+
+    .ease { display: grid; grid-template-columns: 250px 1fr; gap: 16px; padding: 14px 16px; border-right: 1px solid var(--line); min-height: 0; }
+    .ease__plot { width: 100%; height: 100%; min-height: 0; touch-action: none; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; }
+    .ease__side { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+    .seg { display: flex; padding: 2px; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; }
+    .seg button { flex: 1; padding: 3px 0; border-radius: 4px; color: var(--muted); }
+    .seg button[aria-pressed="true"] { background: #2a2a2c; color: var(--fg); }
+    .ease__about { color: var(--muted); font-size: 12px; min-height: 34px; }
+    .ease select { width: 100%; }
+    .bez { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .bez label { display: flex; align-items: center; justify-content: space-between; gap: 4px; color: var(--muted); }
+    .bez input { width: 54px; padding: 2px 4px; text-align: right; background: var(--bg); border: 1px solid var(--line); border-radius: 4px; color: var(--fg); }
+    .bez input:disabled { opacity: 0.5; }
+
+    .time { display: flex; flex-direction: column; gap: 10px; padding: 14px 16px; min-width: 0; min-height: 0; }
+    .transport { display: flex; align-items: center; gap: 4px; }
+    .transport__btn { display: grid; place-items: center; width: 34px; height: 30px; border: 1px solid var(--line); border-radius: 6px; transition: border-color 0.15s, background 0.15s; }
+    .transport__btn:hover { border-color: var(--muted); }
+    .transport__btn[aria-pressed="true"] { background: var(--fg); border-color: var(--fg); color: var(--bg); }
+    .transport__btn svg { width: 14px; height: 14px; fill: currentColor; }
+    .transport__clock { margin: 0 auto 0 12px; }
+    .transport__clock span { color: var(--muted); }
+    .transport label { display: flex; align-items: center; gap: 6px; margin-left: 12px; color: var(--muted); }
+    .transport input[type="checkbox"] { accent-color: var(--accent); }
+
+    .tracks { position: relative; flex: 1; min-height: 0; cursor: ew-resize; touch-action: none; border-radius: 4px; }
+    .tracks canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+    .tracks__head { position: absolute; top: 0; bottom: 0; left: 0; width: 1px; background: var(--accent); pointer-events: none; }
+
+    @media (max-width: 1100px) {
+      html, body { height: auto; overflow: auto; }
+      body { display: block; }
+      .stage { padding: 24px 16px; min-height: 45vh; }
+      .panel { border-left: 0; border-top: 1px solid var(--line); }
+      .panel__list { overflow: visible; }
+      .dock { grid-template-columns: 1fr; }
+      .ease { height: 240px; border-right: 0; border-bottom: 1px solid var(--line); }
+      .time { height: 260px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="head">
+    <a href="../../">← Site</a>
+    <h1>Split-Flap Lab</h1>
+    <div class="seg head__frame" id="frame-switch" role="group" aria-label="Board style">
+      <button type="button" data-frame="false" aria-pressed="false">Flat</button>
+      <button type="button" data-frame="true" aria-pressed="true">Framed</button>
+    </div>
+  </header>
+
+  <main class="stage" id="stage"><div class="stage__fit" id="fit"></div></main>
+
+  <aside class="panel" aria-label="Parameters">
+    <div class="panel__top">
+      <span class="panel__count" id="count" aria-live="polite"></span>
+      <button class="chip" id="copy" type="button">Copy config</button>
+      <button class="chip" id="reset" type="button">Reset</button>
+    </div>
+    <div class="panel__list" id="params">
+      <section class="group">
+        <h2>Versions</h2>
+        <form class="save" id="version-form">
+          <input id="version-name" type="text" placeholder="Name this version" aria-label="Version name" autocomplete="off">
+          <button class="chip" id="version-save" type="submit">Save</button>
+        </form>
+        <ul class="versions" id="version-list"></ul>
+        <small class="row__hint" id="version-status" aria-live="polite"></small>
+      </section>
+    </div>
+  </aside>
+
+  <section class="dock" aria-label="Easing and timeline">
+    <div class="ease">
+      <svg class="ease__plot" id="plot" viewBox="0 0 250 200" preserveAspectRatio="none" role="img" aria-label="Easing curve. Drag the two handles, or use the number fields."></svg>
+      <div class="ease__side">
+        <h2>Easing</h2>
+        <div class="seg" id="target">
+          <button type="button" data-target="spinEase" aria-pressed="true">Spin</button>
+          <button type="button" data-target="flipEase" aria-pressed="false">Leaf</button>
+        </div>
+        <p class="ease__about" id="about"></p>
+        <select id="preset" aria-label="Easing preset"></select>
+        <div class="bez" id="bez"></div>
+      </div>
+    </div>
+
+    <div class="time">
+      <div class="transport">
+        <button class="transport__btn" id="restart" type="button" aria-label="Restart" title="Restart (R)"><svg viewBox="0 0 16 16"><path d="M2 2h2v12H2zM14 2v12L5 8z"/></svg></button>
+        <button class="transport__btn" id="rewind" type="button" aria-label="Rewind" aria-pressed="false" title="Rewind: play backward"><svg viewBox="0 0 16 16"><path d="M8 2v12L1 8zM15 2v12L8 8z"/></svg></button>
+        <button class="transport__btn" id="pause" type="button" aria-label="Pause" aria-pressed="false" title="Pause (Space)"><svg viewBox="0 0 16 16"><path d="M3 2h4v12H3zM9 2h4v12H9z"/></svg></button>
+        <button class="transport__btn" id="play" type="button" aria-label="Play" aria-pressed="false" title="Play (Space)"><svg viewBox="0 0 16 16"><path d="M3 2v12l11-6z"/></svg></button>
+        <div class="transport__clock num"><b id="now">0.000</b> <span>/ <span id="total">0.000</span> s</span></div>
+        <label>Speed
+          <select id="speed">
+            <option value="1">1×</option>
+            <option value="0.5">0.5×</option>
+            <option value="0.25">0.25×</option>
+            <option value="0.1">0.1×</option>
+            <option value="0.03">0.03×</option>
+          </select>
+        </label>
+        <label><input type="checkbox" id="loop"> Loop</label>
+      </div>
+      <div class="tracks" id="tracks" role="slider" tabindex="0" aria-label="Timeline. Left and right arrows step one frame." aria-valuemin="0">
+        <canvas id="tracks-canvas"></canvas>
+        <div class="tracks__head" id="head"></div>
+      </div>
+    </div>
+  </section>
+
+  <script src="../../split-flap.js"></script>
+  <script src="lab.js"></script>
+</body>
+</html>

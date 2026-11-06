@@ -245,10 +245,17 @@
     return diff;
   }
 
+  // how many site settings on the panel differ from a version
+  function differences(version) {
+    const config = { ...DEFAULTS, ...version.config };
+    return SITE_KEYS.filter(k => !same(cfg[k], config[k])).length;
+  }
+
   function refreshCount() {
-    const active = { ...DEFAULTS, ...activeVersion().config };
-    const count = SITE_KEYS.filter(k => !same(cfg[k], active[k])).length;
+    const count = differences(activeVersion());
     $('count').textContent = count ? `${count} from active` : 'Matches active';
+    $('version-use').disabled = !count;
+    $('version-use').textContent = count ? 'Use on landing page' : 'On landing page';
   }
 
   $('reset').addEventListener('click', () => {
@@ -268,83 +275,62 @@
     setTimeout(() => { button.textContent = 'Copy config'; }, 1200);
   });
 
-  /* ---- Versions: kept in split-flap-versions.js, which the site reads. The browser writes
-     that file directly, so it has to be connected once: there is nothing server-side. ---- */
+  /* ---- Versions: kept in split-flap-versions.js, which the site reads. The local server
+     (tools/lab-server.mjs, started by `dvs`) writes that file. Deployed, the lab can only read it. ---- */
   const FILE = 'split-flap-versions.js';
   const FILE_URL = '../../' + FILE;
-  const HEADER = '/* Written by the Split-Flap Lab. The home page runs the version named by "active". */\n';
-  let store = { active: 'original', versions: [{ id: 'original', name: 'Original', savedAt: null, config: {} }] };
-  let fileHandle = null;
+  const API = '/__lab/versions';
+  const ORIGINAL = 'original';   // the site's baseline: it can go active, but never be replaced
+  const PUBLISH = `Push ${FILE} to publish.`;
+  let store = { active: ORIGINAL, versions: [{ id: ORIGINAL, name: 'Original', savedAt: null, config: {} }] };
+  let canWrite = false;
 
   const activeVersion = () => store.versions.find(v => v.id === store.active) || { config: {} };
   const parseStore = text => JSON.parse(text.slice(text.indexOf('{'), text.lastIndexOf('}') + 1));
-  const serialize = data => `${HEADER}window.SPLIT_FLAP_VERSIONS = ${JSON.stringify(data, null, 2)};\n`;
   const status = text => { $('version-status').textContent = text; };
 
-  // the file handle survives reloads in IndexedDB, so the picker only appears once
-  function handleStore(mode, run) {
-    return new Promise((resolve, reject) => {
-      const open = indexedDB.open('split-flap-lab', 1);
-      open.onupgradeneeded = () => open.result.createObjectStore('handles');
-      open.onerror = () => reject(open.error);
-      open.onsuccess = () => {
-        try {
-          const request = run(open.result.transaction('handles', mode).objectStore('handles'));
-          request.onsuccess = () => resolve(request.result);
-          request.onerror = () => reject(request.error);
-        } catch (e) {
-          reject(e);
-        }
-      };
-    });
+  async function readStore() {
+    const response = await fetch(API, { cache: 'no-store' });
+    if (!response.ok) throw new Error(`The server answered ${response.status}.`);
+    return response.json();
   }
 
-  async function connectFile() {
-    if (!fileHandle) fileHandle = await handleStore('readonly', s => s.get('versions')).catch(() => null);
-    if (!fileHandle) {
-      [fileHandle] = await window.showOpenFilePicker({
-        id: 'split-flap-versions',
-        types: [{ description: 'Split-flap versions', accept: { 'text/javascript': ['.js'] } }],
-      });
-      if (fileHandle.name !== FILE) {
-        fileHandle = null;
-        throw new Error(`Pick ${FILE} from the top of the repo.`);
-      }
-      await handleStore('readwrite', s => s.put(fileHandle, 'versions')).catch(() => {});
-    }
-    if (await fileHandle.queryPermission({ mode: 'readwrite' }) !== 'granted'
-      && await fileHandle.requestPermission({ mode: 'readwrite' }) !== 'granted') {
-      throw new Error('The lab needs permission to write the file.');
-    }
-    store = parseStore(await (await fileHandle.getFile()).text());   // the file wins over this tab
-  }
-
-  // change() edits a copy of the store; nothing shows as saved until the file has it
+  // change() edits a fresh copy of the file; nothing shows as saved until the file has it
   async function commit(change, done) {
     try {
-      const canWrite = 'showOpenFilePicker' in window;
-      if (canWrite) await connectFile();
-      const next = JSON.parse(JSON.stringify(store));
+      const next = await readStore();
       change(next);
-      const text = serialize(next);
-      if (canWrite) {
-        const writable = await fileHandle.createWritable();
-        await writable.write(text);
-        await writable.close();
-      } else {
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(new Blob([text], { type: 'text/javascript' }));
-        link.download = FILE;
-        link.click();
-        URL.revokeObjectURL(link.href);
-      }
+      const response = await fetch(API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(next),
+      });
+      if (!response.ok) throw new Error(await response.text());
       store = next;
       renderVersions();
       refreshCount();
-      status(canWrite ? done : `${done} Downloaded: replace ${FILE} in the repo with it.`);
+      status(done);
     } catch (e) {
-      status(e.name === 'AbortError' ? 'Not saved: no file picked.' : `Not saved. ${e.message}`);
+      status(`Not saved. ${e instanceof TypeError ? 'The local server has stopped: run dvs.' : e.message}`);
     }
+  }
+
+  function saveBoard(name, makeActive, done) {
+    if (store.versions.some(v => v.id === ORIGINAL && v.name === name)) {
+      status('Original stays as it is. Give this board a new name.');
+      $('version-name').focus();
+      return;
+    }
+    commit(next => {
+      const i = next.versions.findIndex(v => v.name === name);
+      const entry = {
+        id: i < 0 ? Date.now().toString(36) : next.versions[i].id,
+        name, savedAt: new Date().toISOString(), config: overrides(),
+        lab: { seed: cfg.seed, stageColor: cfg.stageColor },
+      };
+      if (i < 0) next.versions.push(entry); else next.versions[i] = entry;
+      if (makeActive) next.active = entry.id;
+    }, done);
   }
 
   function loadVersion(version) {
@@ -378,19 +364,21 @@
       actions.append(chip('Load', () => loadVersion(version)));
       if (isActive) {
         actions.append(Object.assign(document.createElement('span'), { className: 'version__badge', textContent: 'Active' }));
-      } else {
+      } else if (canWrite) {
         actions.append(chip('Set active', () => commit(
           next => { next.active = version.id; },
-          `${version.name} is active. Commit and deploy to put it on the live site.`,
+          `${version.name} is on the local landing page. ${PUBLISH}`,
         )));
-        const remove = Object.assign(document.createElement('button'), { type: 'button', className: 'version__delete', textContent: 'Delete' });
-        remove.setAttribute('aria-label', `Delete ${version.name}`);
-        remove.addEventListener('click', () => {
-          if (confirm(`Delete ${version.name}?`)) {
-            commit(next => { next.versions = next.versions.filter(v => v.id !== version.id); }, `Deleted ${version.name}.`);
-          }
-        });
-        actions.append(remove);
+        if (version.id !== ORIGINAL) {
+          const remove = Object.assign(document.createElement('button'), { type: 'button', className: 'version__delete', textContent: 'Delete' });
+          remove.setAttribute('aria-label', `Delete ${version.name}`);
+          remove.addEventListener('click', () => {
+            if (confirm(`Delete ${version.name}?`)) {
+              commit(next => { next.versions = next.versions.filter(v => v.id !== version.id); }, `Deleted ${version.name}.`);
+            }
+          });
+          actions.append(remove);
+        }
       }
       item.append(
         Object.assign(document.createElement('span'), { className: 'version__name', textContent: version.name }),
@@ -412,14 +400,21 @@
     e.preventDefault();
     const name = $('version-name').value.trim();
     if (!name) return status('Name the version first.');
-    commit(next => {
-      const entry = {
-        id: Date.now().toString(36), name, savedAt: new Date().toISOString(), config: overrides(),
-        lab: { seed: cfg.seed, stageColor: cfg.stageColor },
-      };
-      const i = next.versions.findIndex(v => v.name === name);
-      if (i < 0) next.versions.push(entry); else next.versions[i] = { ...entry, id: next.versions[i].id };
-    }, `Saved ${name}.`);
+    saveBoard(name, false, `Saved ${name}.`);
+  });
+
+  // one step from the panel to the landing page: a board that's already saved just goes active
+  $('version-use').addEventListener('click', () => {
+    const name = $('version-name').value.trim();
+    const match = store.versions.find(v => differences(v) === 0);
+    if (match) {
+      commit(next => { next.active = match.id; }, `${match.name} is on the local landing page. ${PUBLISH}`);
+    } else if (name) {
+      saveBoard(name, true, `Saved ${name}. It's on the local landing page. ${PUBLISH}`);
+    } else {
+      status('Name this board first.');
+      $('version-name').focus();
+    }
   });
 
   /* ---- Easing editor ---- */
@@ -695,8 +690,15 @@
   refreshEase();
   renderVersions();
   refreshCount();
-  fetch(FILE_URL, { cache: 'no-store' }).then(r => r.text()).then(text => {
-    store = parseStore(text);
+  readStore().then(data => {
+    canWrite = true;
+    $('version-tools').hidden = false;
+    return data;
+  }).catch(async () => {
+    status('Read only here. Run the lab locally with dvs to save versions.');
+    return parseStore(await (await fetch(FILE_URL, { cache: 'no-store' })).text());
+  }).then(data => {
+    store = data;
     renderVersions();
     refreshCount();
   }).catch(() => status(`Couldn't read ${FILE}.`));

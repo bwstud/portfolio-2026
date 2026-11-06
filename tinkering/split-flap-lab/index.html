@@ -59,6 +59,9 @@
     /* Versions */
     .save { display: flex; gap: 6px; }
     .save input { flex: 1; min-width: 0; padding: 5px 7px; background: var(--bg); border: 1px solid var(--line); border-radius: 4px; }
+    .version-use { display: block; width: 100%; margin-top: 8px; border-color: var(--accent); color: var(--accent); }
+    .version-use:hover { border-color: var(--accent); }
+    .version-use:disabled { border-color: var(--line); color: var(--muted); }
     .versions { list-style: none; margin-top: 8px; }
     .version { display: grid; grid-template-columns: 1fr auto; gap: 6px; padding: 8px 0; border-bottom: 1px solid var(--line); }
     .version__name { min-width: 0; font-weight: 500; overflow-wrap: anywhere; }
@@ -136,10 +139,13 @@
     <div class="panel__list" id="params">
       <section class="group">
         <h2>Versions</h2>
-        <form class="save" id="version-form">
-          <input id="version-name" type="text" placeholder="Name this version" aria-label="Version name" autocomplete="off">
-          <button class="chip" id="version-save" type="submit">Save</button>
-        </form>
+        <div id="version-tools" hidden>
+          <form class="save" id="version-form">
+            <input id="version-name" type="text" placeholder="Name this version" aria-label="Version name" autocomplete="off">
+            <button class="chip" id="version-save" type="submit">Save</button>
+          </form>
+          <button class="chip version-use" id="version-use" type="button">Use on landing page</button>
+        </div>
         <ul class="versions" id="version-list"></ul>
         <small class="row__hint" id="version-status" aria-live="polite"></small>
       </section>

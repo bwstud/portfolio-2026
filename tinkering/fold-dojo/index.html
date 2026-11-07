@@ -1,0 +1,423 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Fold Dojo · Brian Studwell</title>
+  <meta name="description" content="Five origami models folded step by step in simulated paper. Watch each fold, or fold it yourself with hints.">
+  <style>
+    @font-face {
+      font-family: "Geist";
+      font-weight: 100 900;
+      font-display: swap;
+      src: url("../../fonts/Geist-Variable.woff2") format("woff2");
+    }
+
+    :root {
+      --bg: #0c0d10;
+      --panel: rgba(16, 17, 21, 0.84);
+      --line: rgba(255, 255, 255, 0.09);
+      --line-strong: rgba(255, 255, 255, 0.18);
+      --fg: #eef0f3;
+      --soft: #c4c8cf;
+      --muted: #8d929c;
+      --faint: #5d626b;
+      --accent: #f2a541;
+      --accent-ink: #1a1206;
+      --mountain: #7fb4ff;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      height: 100%; overflow: hidden;
+      background: var(--bg); color: var(--fg);
+      font: 13px/1.45 "Geist", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    button, input, select { font: inherit; color: inherit; }
+    button { cursor: pointer; background: none; border: 0; }
+    button:disabled { cursor: default; }
+    :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    [hidden] { display: none !important; }
+
+    #scene { position: fixed; inset: 0; display: block; width: 100%; height: 100%; touch-action: none; }
+
+    .panel {
+      position: fixed; z-index: 2;
+      background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+      backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    }
+    .label { font-size: 12px; font-weight: 620; color: var(--soft); }
+
+    /* ---------- header ---------- */
+    .top {
+      position: fixed; z-index: 3; top: 14px; left: 16px; right: 16px;
+      display: flex; align-items: center; gap: 14px; pointer-events: none;
+    }
+    .top > * { pointer-events: auto; }
+    .back { color: var(--muted); text-decoration: none; }
+    .back:hover { color: var(--fg); }
+    .brand { font-size: 15px; font-weight: 650; }
+    .brand span { color: var(--muted); font-weight: 450; margin-left: 6px; }
+    .modes {
+      position: absolute; left: 50%; transform: translateX(-50%);
+      display: flex; padding: 3px; border-radius: 10px; background: var(--panel); border: 1px solid var(--line);
+      backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    }
+    .modes button { padding: 5px 12px; border-radius: 7px; color: var(--muted); font-weight: 540; }
+    .modes button:hover { color: var(--fg); }
+    .modes button[aria-pressed="true"] { background: rgba(255, 255, 255, 0.12); color: var(--fg); }
+    .short { display: none; }
+    .modes button, .back, .drawer-toggle { white-space: nowrap; }
+    .drawer-toggle {
+      display: none; padding: 6px 11px; border-radius: 8px;
+      border: 1px solid var(--line-strong); background: var(--panel);
+    }
+    .drawer-toggle:first-of-type { margin-left: auto; }
+
+    /* ---------- library (left) ---------- */
+    .library {
+      top: 50px; left: 16px; bottom: 16px; width: 272px;
+      display: flex; flex-direction: column; overflow: hidden;
+    }
+    .tabs { display: flex; gap: 2px; padding: 8px 8px 0; flex: none; }
+    .tabs button { flex: 1; padding: 6px 8px; border-radius: 7px; color: var(--muted); font-weight: 560; }
+    .tabs button[aria-selected="true"] { color: var(--fg); background: rgba(255, 255, 255, 0.07); }
+    .tabs .count { color: var(--accent); margin-left: 4px; font-weight: 600; }
+    .pane { overflow-y: auto; padding: 8px 10px 12px; flex: 1; min-height: 0; }
+    .item {
+      display: block; width: 100%; text-align: left;
+      padding: 8px 10px; border-radius: 8px; border: 1px solid transparent;
+    }
+    .item + .item { margin-top: 2px; }
+    .item:hover { background: rgba(255, 255, 255, 0.04); }
+    .item[aria-pressed="true"] { background: rgba(242, 165, 65, 0.1); border-color: rgba(242, 165, 65, 0.35); }
+    .item__name { display: block; font-weight: 580; }
+    .item[aria-pressed="true"] .item__name { color: var(--accent); }
+    .item__sum { display: block; color: var(--soft); font-size: 12px; margin-top: 1px; }
+    .item__meta { display: block; color: var(--faint); font-size: 11.5px; margin-top: 2px; }
+    .about { border-top: 1px solid var(--line); padding: 12px 18px 16px; max-height: 40%; overflow-y: auto; flex: none; }
+    .about__name { font-size: 14px; font-weight: 620; margin-bottom: 6px; }
+    .about p { color: var(--soft); }
+    .about p + p { margin-top: 7px; }
+    .empty { color: var(--muted); padding: 10px 8px; }
+    .piece { display: flex; align-items: stretch; gap: 4px; border-radius: 9px; }
+    .piece + .piece { margin-top: 6px; }
+    .piece__open { flex: 1; display: flex; gap: 10px; text-align: left; padding: 6px; border-radius: 9px; min-width: 0; }
+    .piece__open:hover { background: rgba(255, 255, 255, 0.05); }
+    .piece img { width: 76px; height: 52px; object-fit: cover; border-radius: 6px; flex: none; background: #1b1c20; }
+    .piece b { display: block; font-weight: 570; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .piece small { display: block; color: var(--muted); font-size: 11.5px; line-height: 1.35; }
+    .piece__del { width: 26px; color: var(--faint); font-size: 16px; border-radius: 7px; }
+    .piece__del:hover { color: var(--fg); background: rgba(255, 255, 255, 0.06); }
+
+    /* ---------- options (right) ---------- */
+    .options {
+      top: 50px; right: 16px; width: 272px; max-height: calc(100% - 66px);
+      overflow-y: auto; padding: 14px 16px 16px;
+    }
+    .opt + .opt { margin-top: 14px; padding-top: 13px; border-top: 1px solid var(--line); }
+    .opt .label { margin-bottom: 8px; display: flex; justify-content: space-between; gap: 8px; }
+    .opt .label output { color: var(--muted); font-weight: 450; }
+    .sub { margin: 10px 0 6px; color: var(--muted); font-size: 12px; }
+    .patterns { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
+    .pat { aspect-ratio: 1; border-radius: 6px; overflow: hidden; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14); }
+    .pat canvas { width: 100%; height: 100%; display: block; }
+    .pat[aria-pressed="true"] { outline: 2px solid var(--fg); outline-offset: 1px; }
+    .swatches { display: grid; grid-template-columns: repeat(9, 1fr); gap: 6px; }
+    .swatch { aspect-ratio: 1; border-radius: 50%; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.2); }
+    .swatch[aria-pressed="true"] { outline: 2px solid var(--fg); outline-offset: 2px; }
+    .is-dim { opacity: 0.4; }
+    .seg { display: flex; border: 1px solid var(--line-strong); border-radius: 8px; overflow: hidden; }
+    .seg button { flex: 1; padding: 6px 4px; font-size: 12px; color: var(--soft); }
+    .seg button + button { border-left: 1px solid var(--line); }
+    .seg button[aria-pressed="true"] { background: rgba(255, 255, 255, 0.12); color: var(--fg); }
+    .note { color: var(--faint); font-size: 11.5px; margin-top: 6px; }
+    .rows { display: grid; gap: 2px; }
+    .row { display: block; text-align: left; padding: 6px 8px; border-radius: 8px; border: 1px solid transparent; }
+    .row:hover { background: rgba(255, 255, 255, 0.04); }
+    .row[aria-pressed="true"] { border-color: var(--line-strong); background: rgba(255, 255, 255, 0.05); }
+    .row b { display: block; font-weight: 550; }
+    .row b span { color: var(--muted); font-weight: 450; margin-left: 4px; }
+    .row small { display: block; color: var(--muted); font-size: 11.5px; line-height: 1.3; }
+    .row--swatch { display: flex; align-items: center; gap: 10px; }
+    .row--swatch canvas { width: 34px; height: 18px; border-radius: 4px; flex: none; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12); }
+    .views { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+    .btn {
+      padding: 6px 4px; border-radius: 7px; border: 1px solid var(--line-strong);
+      background: rgba(255, 255, 255, 0.03); text-align: center; font-size: 12px;
+    }
+    .btn:hover { background: rgba(255, 255, 255, 0.08); }
+    .zoomrow { display: flex; align-items: center; gap: 10px; margin-top: 10px; color: var(--muted); font-size: 12px; }
+    .zoomrow input { flex: 1; }
+    input[type="range"] { width: 100%; accent-color: var(--accent); }
+    .toggles { margin-top: 10px; display: grid; gap: 6px; }
+    .toggles label { display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--soft); }
+    .toggles input { accent-color: var(--accent); }
+    .toggles .dim { color: #7d828b; }
+    .hint-text { margin-top: 10px; color: var(--faint); font-size: 11.5px; }
+    .chips { display: flex; flex-wrap: wrap; gap: 5px; }
+    .chip { padding: 5px 10px; border-radius: 999px; border: 1px solid var(--line-strong); font-size: 12px; color: var(--soft); }
+    .chip:hover { background: rgba(255, 255, 255, 0.06); }
+    .chip[aria-pressed="true"] { background: rgba(255, 255, 255, 0.13); color: var(--fg); border-color: transparent; }
+
+    .viewer-opts { display: none; }
+    .is-viewer .folding-opts { display: none; }
+    .is-viewer .viewer-opts { display: block; }
+
+    /* ---------- step card (bottom) ---------- */
+    .stage {
+      left: 50%; transform: translateX(-50%); bottom: 16px;
+      width: min(600px, calc(100% - 600px)); min-width: 380px;
+      padding: 14px 16px 12px;
+    }
+    .step__meta { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+    .step__count { color: var(--accent); font-size: 12px; font-weight: 620; }
+    .step__time { color: var(--faint); font-size: 11px; font-variant-numeric: tabular-nums; }
+    .step__title { font-size: 16px; font-weight: 620; margin-top: 3px; }
+    .step__text { color: #c9ccd3; margin-top: 4px; min-height: 3em; }
+    .feedback { color: var(--accent); margin-top: 6px; font-size: 12.5px; min-height: 1.4em; }
+    .feedback:empty { display: none; }
+    .steps { display: flex; gap: 3px; margin: 12px 0 10px; }
+    .steps button {
+      flex: 1; height: 16px; padding: 6px 0; background-clip: content-box;
+      background-color: rgba(255, 255, 255, 0.12); position: relative;
+    }
+    .steps button::after { content: ""; position: absolute; left: 0; top: 6px; bottom: 6px; width: var(--fill, 0%); background: var(--accent); }
+    .steps button:hover { background-color: rgba(255, 255, 255, 0.22); }
+    .transport { display: flex; align-items: center; gap: 6px; }
+    .tbtn {
+      width: 34px; height: 34px; border-radius: 9px; display: grid; place-items: center;
+      border: 1px solid var(--line-strong); background: rgba(255, 255, 255, 0.03);
+    }
+    .tbtn:hover { background: rgba(255, 255, 255, 0.09); }
+    .tbtn svg { width: 16px; height: 16px; fill: currentColor; }
+    .tbtn--play { width: 44px; background: var(--accent); color: var(--accent-ink); border-color: transparent; }
+    .tbtn--play:hover { background: #f7b65e; }
+    .tbtn:disabled { opacity: 0.35; }
+    .speed { margin-left: auto; display: flex; align-items: center; gap: 8px; color: var(--muted); }
+    .speed .seg button { padding: 6px 8px; font-variant-numeric: tabular-nums; }
+    .pill {
+      padding: 7px 13px; border-radius: 9px; border: 1px solid var(--line-strong);
+      background: rgba(255, 255, 255, 0.03); font-weight: 540;
+    }
+    .pill:hover { background: rgba(255, 255, 255, 0.09); }
+    .pill:disabled { opacity: 0.35; }
+    .pill--go { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
+    .pill--go:hover { background: #f7b65e; }
+    .fold-controls, .done-controls { display: none; gap: 6px; align-items: center; flex-wrap: wrap; }
+    .is-fold .watch-controls { display: none; }
+    .is-fold .fold-controls { display: flex; }
+    .is-done .watch-controls, .is-done .fold-controls { display: none; }
+    .is-done .done-controls { display: flex; }
+    .is-done .steps { opacity: 0.6; }
+    .fold-controls .spacer { flex: 1; }
+
+    .viewer-card { display: none; }
+    .is-viewer .stage:not(.viewer-card) { display: none; }
+    .is-viewer .viewer-card { display: block; }
+    .viewer-card h2 { font-size: 16px; font-weight: 620; }
+    .viewer-card p { color: var(--muted); margin-top: 2px; }
+    .save { display: flex; gap: 6px; margin-top: 12px; }
+    .save input {
+      flex: 1; min-width: 0; padding: 7px 10px; border-radius: 9px; border: 1px solid var(--line-strong);
+      background: rgba(0, 0, 0, 0.25);
+    }
+    .save input::placeholder { color: var(--faint); }
+    .viewer-actions { display: flex; gap: 6px; margin-top: 8px; }
+
+    .toast {
+      position: fixed; z-index: 5; left: 50%; top: 58px; transform: translateX(-50%);
+      background: #1d1f24; border: 1px solid var(--line-strong); border-radius: 9px; padding: 8px 14px;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+    }
+
+    .no-ui .panel, .no-ui .top, .no-ui .toast { display: none !important; }
+
+    @media (max-width: 1100px) {
+      .stage, .viewer-card { width: calc(100% - 600px); min-width: 0; }
+    }
+    @media (max-width: 900px) {
+      .drawer-toggle { display: inline-block; }
+      .modes { position: static; transform: none; }
+      .brand span { display: none; }
+      .library, .options {
+        top: 52px; bottom: auto; max-height: calc(100% - 300px);
+        width: min(300px, calc(100% - 32px)); display: none;
+      }
+      .library.is-open { display: flex; }
+      .options.is-open { display: block; }
+      .options { right: 16px; }
+      .about { max-height: 150px; }
+      .stage, .viewer-card { left: 16px; right: 16px; transform: none; width: auto; min-width: 0; }
+      .speed > span { display: none; }
+      .tbtn { width: 32px; height: 32px; }
+      .speed .seg button { padding: 6px 5px; font-size: 11px; }
+      .step__title { font-size: 15px; }
+      .step__text { min-height: 0; }
+    }
+    @media (max-width: 560px) {
+      .brand { display: none; }
+      .long { display: none; }
+      .short { display: inline; }
+      .top { gap: 8px; }
+      .modes button { padding: 5px 9px; }
+    }
+  </style>
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.min.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <canvas id="scene" aria-label="3D view of a sheet of paper being folded on a table"></canvas>
+
+  <header class="top">
+    <a class="back" href="../" aria-label="Back to Tinkering">←<span class="long"> Tinkering</span></a>
+    <div class="brand">Fold Dojo<span>origami, one fold at a time</span></div>
+    <div class="modes" role="group" aria-label="Mode">
+      <button data-mode="watch" aria-pressed="true">Watch</button>
+      <button data-mode="fold" aria-pressed="false"><span class="long">Fold it yourself</span><span class="short">Fold</span></button>
+    </div>
+    <button class="drawer-toggle" data-drawer="library" aria-expanded="false">Designs</button>
+    <button class="drawer-toggle" data-drawer="options" aria-expanded="false">Paper</button>
+  </header>
+
+  <aside class="panel library" id="library" aria-label="Designs and saved pieces">
+    <div class="tabs" role="tablist">
+      <button role="tab" data-tab="designs" aria-selected="true">Designs</button>
+      <button role="tab" data-tab="saved" aria-selected="false">Saved<span class="count" id="saved-count"></span></button>
+    </div>
+    <div class="pane" data-pane="designs" id="design-list"></div>
+    <div class="pane" data-pane="saved" id="saved-list" hidden></div>
+    <div class="about" id="about" aria-live="polite"></div>
+  </aside>
+
+  <aside class="panel options" id="options" aria-label="Paper, surface and camera">
+    <div class="folding-opts">
+      <section class="opt">
+        <div class="label">Pattern <output id="pattern-name"></output></div>
+        <div class="patterns" id="patterns"></div>
+        <div id="colors-wrap">
+          <div class="sub">Colour</div>
+          <div class="swatches" id="colors"></div>
+        </div>
+        <div class="sub">Other side</div>
+        <div class="seg" id="back" role="group" aria-label="Other side of the paper"></div>
+        <div id="color2-wrap" hidden>
+          <div class="sub">Second colour</div>
+          <div class="swatches" id="colors2"></div>
+        </div>
+      </section>
+      <section class="opt">
+        <div class="label">Size</div>
+        <div class="seg" id="sizes" role="group" aria-label="Paper size"></div>
+        <p class="note" id="size-note"></p>
+      </section>
+      <section class="opt">
+        <div class="label">Weight</div>
+        <div class="rows" id="weights"></div>
+      </section>
+      <section class="opt">
+        <div class="label">Surface</div>
+        <div class="rows" id="surfaces"></div>
+      </section>
+    </div>
+
+    <div class="viewer-opts">
+      <section class="opt">
+        <div class="label">Setting</div>
+        <div class="chips" id="envs"></div>
+      </section>
+      <section class="opt">
+        <div class="label">Display</div>
+        <div class="seg" id="displays" role="group" aria-label="How the piece is displayed"></div>
+        <div class="toggles">
+          <label><input type="checkbox" id="turntable"> Turntable</label>
+        </div>
+      </section>
+      <section class="opt">
+        <div class="label">Background blur</div>
+        <input type="range" id="blur" min="0" max="0.6" step="0.01" aria-label="Background blur">
+      </section>
+    </div>
+
+    <section class="opt">
+      <div class="label">Camera</div>
+      <div class="views">
+        <button class="btn" data-view="front">Front</button>
+        <button class="btn" data-view="top">Top</button>
+        <button class="btn" data-view="side">Side</button>
+        <button class="btn" data-view="low">Low</button>
+      </div>
+      <div class="zoomrow"><span>Zoom</span><input class="zoom" type="range" min="0.35" max="2" step="0.01" value="1" aria-label="Zoom (lower is closer)"></div>
+      <div class="toggles folding-opts">
+        <label><input type="checkbox" id="follow"> Follow the paper</label>
+        <label><input type="checkbox" id="lines"> Show fold lines</label>
+        <label><input type="checkbox" id="orbit"> Slowly orbit</label>
+        <label><input type="checkbox" id="show-ao"> Contact shadows <span class="dim">(slower)</span></label>
+      </div>
+      <p class="hint-text">Drag to orbit. Right-drag or two fingers to pan. Scroll or pinch to zoom.</p>
+    </section>
+  </aside>
+
+  <section class="panel stage" aria-label="Step by step">
+    <div class="step__meta">
+      <span class="step__count" id="step-count"></span>
+      <span class="step__time" id="step-time"></span>
+    </div>
+    <h2 class="step__title" id="step-title"></h2>
+    <p class="step__text" id="step-text" aria-live="polite"></p>
+    <p class="feedback" id="feedback" aria-live="polite"></p>
+    <div class="steps" id="steps"></div>
+    <div class="transport watch-controls">
+      <button class="tbtn" id="restart" title="Restart (R)" aria-label="Restart">
+        <svg viewBox="0 0 16 16"><path d="M8 3a5 5 0 1 1-4.6 3h1.7A3.5 3.5 0 1 0 8 4.5V7L4.5 3.75 8 .5z"/></svg>
+      </button>
+      <button class="tbtn" id="prev" title="Previous step (←)" aria-label="Previous step">
+        <svg viewBox="0 0 16 16"><path d="M3 3h2v10H3zM14 3v10L6 8z"/></svg>
+      </button>
+      <button class="tbtn tbtn--play" id="play" title="Play or pause (space)" aria-label="Play">
+        <svg viewBox="0 0 16 16" id="play-icon"><path d="M4 2.5v11L13.5 8z"/></svg>
+      </button>
+      <button class="tbtn" id="next" title="Next step (→)" aria-label="Next step">
+        <svg viewBox="0 0 16 16"><path d="M11 3h2v10h-2zM2 3v10l8-5z"/></svg>
+      </button>
+      <div class="speed">
+        <span>Speed</span>
+        <div class="seg" id="speeds" role="group" aria-label="Playback speed"></div>
+      </div>
+    </div>
+    <div class="fold-controls">
+      <button class="pill" id="undo">Undo</button>
+      <span class="spacer"></span>
+      <button class="pill" id="hint">Hint</button>
+      <button class="pill pill--go" id="showme">Show me</button>
+    </div>
+    <div class="done-controls">
+      <button class="pill pill--go" id="view-finished">Open in the viewer</button>
+      <button class="pill" id="fold-again">Fold it again</button>
+    </div>
+  </section>
+
+  <section class="panel stage viewer-card" aria-label="Finished piece">
+    <h2 id="viewer-title"></h2>
+    <p id="viewer-sub"></p>
+    <form class="save" id="save-form">
+      <input id="save-name" maxlength="40" aria-label="Name for this piece">
+      <button class="pill pill--go" type="submit">Save piece</button>
+    </form>
+    <div class="viewer-actions">
+      <button class="pill" id="back-to-folding">Back to folding</button>
+    </div>
+  </section>
+
+  <div class="toast" id="toast" role="status" hidden></div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>

@@ -1,8 +1,9 @@
-/* Local server for the site. It serves exactly what .vercelignore ships, and lets the
-   Split-Flap Lab write split-flap-versions.js. Never deployed. Start it with `dvs`. */
+/* Local server for the site. It serves exactly what .vercelignore ships, lets the
+   Split-Flap Lab write split-flap-versions.js, and lets Domino Run save runs, elements and
+   lab settings into tinkering/domino-run/. Never deployed. Start it with `dvs`. */
 import { spawn } from 'node:child_process';
 import { createReadStream } from 'node:fs';
-import { readFile, realpath, rename, rm, stat, writeFile } from 'node:fs/promises';
+import { mkdir, readdir, readFile, realpath, rename, rm, stat, writeFile } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -125,12 +126,12 @@ async function writeVersions(store) {
   }
 }
 
-async function readBody(req) {
+async function readBody(req, max = MAX_BODY) {
   const chunks = [];
   let size = 0;
   for await (const chunk of req) {
     size += chunk.length;
-    if (size > MAX_BODY) throw new Error('Request too large.');
+    if (size > max) throw new Error('Request too large.');
     chunks.push(chunk);
   }
   return Buffer.concat(chunks).toString('utf8');
@@ -157,6 +158,100 @@ async function versionsApi(req, res) {
   send(res, 200, 'Saved.');
 }
 
+/* ---- Domino Run: saved runs, elements and lab settings ---- */
+const DOMINO = '/__domino';
+const DOMINO_DIR = path.join(ROOT, 'tinkering', 'domino-run');
+const DOMINO_KINDS = { states: path.join(DOMINO_DIR, 'saves', 'states'), elements: path.join(DOMINO_DIR, 'saves', 'elements') };
+const DOMINO_MAX = 12 * 1024 * 1024;
+const ID = /^[a-z0-9][a-z0-9-]{0,99}$/;
+
+async function writeAtomic(file, data) {
+  const temp = `${file}.${process.pid}.${Date.now()}.tmp`;
+  try {
+    await writeFile(temp, data);
+    await rename(temp, file);
+  } finally {
+    await rm(temp, { force: true });
+  }
+}
+
+async function dominoApi(req, res, pathname) {
+  const parts = pathname.slice(DOMINO.length + 1).split('/');
+  const [kind, file] = parts;
+  if (kind === 'ping' && req.method === 'GET') return send(res, 200, JSON.stringify({ ok: true }), 'application/json');
+
+  const writes = req.method === 'POST' || req.method === 'DELETE';
+  if (writes) {
+    if (req.headers.origin !== `http://${req.headers.host}`) return send(res, 403, 'Only Domino Run can save here.');
+    if (req.method === 'POST' && !(req.headers['content-type'] ?? '').startsWith('application/json')) return send(res, 415, 'Send JSON.');
+  }
+
+  if (kind === 'params') {
+    if (req.method !== 'POST') return send(res, 405, 'Method not allowed');
+    let values;
+    try { values = JSON.parse(await readBody(req)); } catch (e) { return send(res, 400, e.message); }
+    if (!values || typeof values !== 'object' || Array.isArray(values)) return send(res, 400, 'Send an object of settings.');
+    await writeAtomic(path.join(DOMINO_DIR, 'params.json'), `${JSON.stringify(values, null, 2)}\n`);
+    return send(res, 200, JSON.stringify({ ok: true }), 'application/json');
+  }
+
+  const dir = DOMINO_KINDS[kind];
+  if (!dir || parts.length > 2) return send(res, 404, 'Not found');
+
+  if (!file) {
+    if (req.method === 'GET') {
+      let names = [];
+      try { names = (await readdir(dir)).filter(n => n.endsWith('.json')); } catch {}
+      const items = [];
+      for (const n of names) {
+        try {
+          const { id, name, savedAt, count, thumb } = JSON.parse(await readFile(path.join(dir, n), 'utf8'));
+          items.push({ id, name, savedAt, count, thumb: thumb ? `${DOMINO}/${kind}/${id}.jpg` : null });
+        } catch {}
+      }
+      items.sort((a, b) => String(b.savedAt).localeCompare(String(a.savedAt)));
+      return send(res, 200, JSON.stringify(items), 'application/json');
+    }
+    if (req.method !== 'POST') return send(res, 405, 'Method not allowed');
+    let body;
+    try { body = JSON.parse(await readBody(req, DOMINO_MAX)); } catch (e) { return send(res, 400, e.message); }
+    const { id, name, savedAt, data, thumb } = body ?? {};
+    if (typeof id !== 'string' || !ID.test(id)) return send(res, 400, 'Bad id.');
+    if (typeof name !== 'string' || !name.trim() || name.length > 120) return send(res, 400, 'Give it a name.');
+    if (!data || !Array.isArray(data.dominoes)) return send(res, 400, 'Nothing to save.');
+    await mkdir(dir, { recursive: true });
+    let hasThumb = false;
+    if (typeof thumb === 'string' && thumb.startsWith('data:image/jpeg;base64,')) {
+      await writeAtomic(path.join(dir, `${id}.jpg`), Buffer.from(thumb.slice(23), 'base64'));
+      hasThumb = true;
+    }
+    const record = { id, name: name.trim(), savedAt: savedAt ?? new Date().toISOString(), count: data.dominoes.length, thumb: hasThumb, data };
+    await writeAtomic(path.join(dir, `${id}.json`), `${JSON.stringify(record, null, 1)}\n`);
+    return send(res, 200, JSON.stringify({ id }), 'application/json');
+  }
+
+  const jpg = file.endsWith('.jpg');
+  const id = jpg ? file.slice(0, -4) : file;
+  if (!ID.test(id)) return send(res, 400, 'Bad id.');
+  if (req.method === 'GET') {
+    try {
+      if (jpg) {
+        const buf = await readFile(path.join(dir, `${id}.jpg`));
+        res.writeHead(200, { 'Content-Type': 'image/jpeg', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' });
+        return res.end(buf);
+      }
+      const record = JSON.parse(await readFile(path.join(dir, `${id}.json`), 'utf8'));
+      return send(res, 200, JSON.stringify(record.data), 'application/json');
+    } catch { return send(res, 404, 'Not found'); }
+  }
+  if (req.method === 'DELETE' && !jpg) {
+    await rm(path.join(dir, `${id}.json`), { force: true });
+    await rm(path.join(dir, `${id}.jpg`), { force: true });
+    return send(res, 200, JSON.stringify({ ok: true }), 'application/json');
+  }
+  return send(res, 405, 'Method not allowed');
+}
+
 /* ---- Server ---- */
 const server = createServer(async (req, res) => {
   try {
@@ -166,6 +261,7 @@ const server = createServer(async (req, res) => {
 
     const { pathname } = new URL(req.url, 'http://local');
     if (pathname === API) await versionsApi(req, res);
+    else if (pathname === DOMINO || pathname.startsWith(`${DOMINO}/`)) await dominoApi(req, res, pathname);
     else await serveFile(req, res, pathname);
   } catch (e) {
     console.error(e);
@@ -187,7 +283,7 @@ server.on('error', e => {
 
 server.on('listening', () => {
   const url = `http://127.0.0.1:${server.address().port}/`;
-  console.log(`Site:  ${url}\nLab:   ${url}tinkering/split-flap-lab/`);
+  console.log(`Site:  ${url}\nLab:   ${url}tinkering/split-flap-lab/\nDominoes: ${url}tinkering/domino-run/`);
   if (process.argv.includes('--open')) spawn('open', [url], { stdio: 'ignore' }).on('error', () => {});
 });
 

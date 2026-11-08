@@ -14,3 +14,6 @@
 
 # Domino Run saves are written by the local server and only mean anything on this machine
 /tinkering/domino-run/saves
+
+# Font order downloads include the invoice: never deploy
+/fonts/Klim-Order-*

@@ -12,3 +12,6 @@ tinkering/*/v1.0 Recording/
 
 # Taxidermy raw scans and the purchased reference model: local only
 tinkering/taxidermy/source/
+
+# Font order downloads (invoice, duplicate files): local only
+fonts/Klim-Order-*/

@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Halftone Lab · Brian Studwell</title>
+  <meta name="robots" content="noindex">
+  <link rel="stylesheet" href="../../styles.css">
+  <style>
+    :root { color-scheme: dark; --accent: #f0b25e; --panel-w: 320px; }
+    html, body { height: 100%; overflow: hidden; }
+    body {
+      display: grid;
+      grid-template: "head panel" 56px "stage panel" minmax(0, 1fr) / minmax(0, 1fr) var(--panel-w);
+      font-size: 13px;
+      line-height: 1.4;
+    }
+    button, input, select { font: inherit; color: inherit; }
+    button { cursor: pointer; background: none; border: 0; }
+    :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    select { padding: 4px 6px; background: var(--bg); border: 1px solid var(--line); border-radius: 4px; }
+
+    /* Header */
+    .head { grid-area: head; display: flex; align-items: center; gap: 16px; padding: 0 20px; border-bottom: 1px solid var(--line); }
+    .head a { color: var(--muted); transition: color 0.15s; }
+    .head a:hover { color: var(--fg); }
+    .head h1 { font-size: 15px; font-weight: 600; margin-right: auto; }
+    .head label { display: flex; align-items: center; gap: 6px; color: var(--muted); }
+    .head input[type="checkbox"] { accent-color: var(--accent); }
+    .seg { display: flex; padding: 2px; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; }
+    .seg button { padding: 3px 10px; border-radius: 4px; color: var(--muted); }
+    .seg button[aria-pressed="true"] { background: #2a2a2c; color: var(--fg); }
+    .head__time { color: var(--muted); font-variant-numeric: tabular-nums; min-width: 64px; text-align: right; }
+
+    /* Stage: solid blocks and bands, stacked like the home page */
+    .stage { grid-area: stage; overflow-y: auto; min-width: 0; }
+    .preview { display: flex; flex-direction: column; }
+    .preview__solid { position: relative; height: 120px; }
+    .preview__solid span { position: absolute; left: 16px; bottom: 10px; font-size: 12px; opacity: 0.7; }
+    .preview__seam { position: relative; z-index: 1; height: 0; }
+    .preview__seam canvas { position: absolute; left: 0; display: block; width: 100%; }
+    .preview__edge { position: absolute; left: 0; right: 0; top: 0; border-top: 1px dashed rgba(255, 255, 255, 0.55); mix-blend-mode: difference; }
+
+    /* Parameter panel */
+    .panel { grid-area: panel; display: flex; flex-direction: column; min-height: 0; border-left: 1px solid var(--line); background: var(--surface); }
+    .panel__top { display: flex; align-items: center; gap: 8px; padding: 12px 16px; border-bottom: 1px solid var(--line); }
+    .panel__count { flex: 1; color: var(--muted); }
+    .panel__list { flex: 1; overflow-y: auto; padding: 0 16px 24px; }
+    .chip { padding: 5px 10px; border: 1px solid var(--line); border-radius: 999px; white-space: nowrap; transition: border-color 0.15s; }
+    .chip:hover { border-color: var(--muted); }
+
+    .group h2 { position: sticky; top: 0; z-index: 1; display: flex; justify-content: space-between; align-items: center; padding: 16px 0 8px; background: var(--surface); font-size: 12px; font-weight: 600; color: var(--muted); }
+    .group h2 .chip { padding: 1px 8px; font-weight: 400; }
+    .row { display: grid; grid-template-columns: 1fr auto 20px; align-items: center; gap: 2px 6px; padding: 7px 0; }
+    .row__name { font-weight: 500; }
+    .row__value { display: flex; align-items: center; gap: 4px; color: var(--muted); }
+    .row__value input[type="number"] { width: 64px; padding: 2px 4px; text-align: right; background: var(--bg); border: 1px solid var(--line); border-radius: 4px; color: var(--fg); }
+    .row__value input[type="checkbox"] { accent-color: var(--accent); }
+    .row__reset { width: 20px; height: 20px; border-radius: 4px; color: var(--muted); visibility: hidden; }
+    .row__reset:hover { color: var(--fg); background: #222225; }
+    .row.is-changed .row__reset { visibility: visible; }
+    .row.is-changed .row__name { color: var(--accent); }
+    .row input[type="range"] { grid-column: 1 / -1; width: 100%; accent-color: var(--accent); }
+    .row__hint { grid-column: 1 / -1; color: var(--muted); font-size: 12px; }
+
+    /* Versions */
+    .save { display: flex; gap: 6px; }
+    .save input { flex: 1; min-width: 0; padding: 5px 7px; background: var(--bg); border: 1px solid var(--line); border-radius: 4px; }
+    .version-use { display: block; width: 100%; margin-top: 8px; border-color: var(--accent); color: var(--accent); }
+    .version-use:hover { border-color: var(--accent); }
+    .version-use:disabled { border-color: var(--line); color: var(--muted); }
+    .versions { list-style: none; margin-top: 8px; }
+    .version { display: grid; grid-template-columns: 1fr auto; gap: 6px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+    .version__name { min-width: 0; font-weight: 500; overflow-wrap: anywhere; }
+    .version__date { color: var(--muted); font-size: 12px; white-space: nowrap; }
+    .version__actions { grid-column: 1 / -1; display: flex; align-items: center; gap: 6px; }
+    .version__actions .chip { padding: 2px 9px; font-size: 12px; }
+    .version__badge { padding: 2px 9px; border-radius: 999px; background: var(--accent); color: var(--bg); font-size: 12px; font-weight: 600; }
+    .version__delete { margin-left: auto; color: var(--muted); font-size: 12px; }
+    .version__delete:hover { color: var(--fg); }
+    #version-status { display: block; margin-top: 8px; }
+
+    @media (max-width: 900px) {
+      html, body { height: auto; overflow: auto; }
+      body { display: block; }
+      .head { flex-wrap: wrap; height: auto; padding: 12px 16px; }
+      .stage { overflow: visible; }
+      .panel { border-left: 0; border-top: 1px solid var(--line); }
+      .panel__list { overflow: visible; }
+    }
+  </style>
+</head>
+<body>
+  <header class="head">
+    <a href="../../">← Site</a>
+    <h1>Halftone Lab</h1>
+    <label>Preview
+      <select id="pair" aria-label="Which transition to preview"></select>
+    </label>
+    <div class="seg" id="zoom" role="group" aria-label="Zoom">
+      <button type="button" data-zoom="1" aria-pressed="true">1×</button>
+      <button type="button" data-zoom="2" aria-pressed="false">2×</button>
+      <button type="button" data-zoom="4" aria-pressed="false">4×</button>
+    </div>
+    <label><input type="checkbox" id="edge"> Section edge</label>
+    <span class="head__time" id="time" aria-live="off"></span>
+  </header>
+
+  <main class="stage" id="stage"><div class="preview" id="preview"></div></main>
+
+  <aside class="panel" aria-label="Parameters">
+    <div class="panel__top">
+      <span class="panel__count" id="count" aria-live="polite"></span>
+      <button class="chip" id="copy" type="button">Copy config</button>
+      <button class="chip" id="reset" type="button">Reset</button>
+    </div>
+    <div class="panel__list" id="params">
+      <section class="group">
+        <h2>Versions</h2>
+        <div id="version-tools" hidden>
+          <form class="save" id="version-form">
+            <input id="version-name" type="text" placeholder="Name this version" aria-label="Version name" autocomplete="off">
+            <button class="chip" id="version-save" type="submit">Save</button>
+          </form>
+          <button class="chip version-use" id="version-use" type="button">Use on landing page</button>
+        </div>
+        <ul class="versions" id="version-list"></ul>
+        <small class="row__hint" id="version-status" aria-live="polite"></small>
+      </section>
+    </div>
+  </aside>
+
+  <script src="../../halftone.js"></script>
+  <script src="lab.js"></script>
+</body>
+</html>

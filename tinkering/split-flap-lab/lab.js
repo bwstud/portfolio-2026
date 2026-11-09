@@ -3,7 +3,7 @@
 (function () {
   const { DEFAULTS, resolveEase } = SplitFlap;
   const STORE = 'split-flap-lab/v1';
-  const LAB_ONLY = { seed: 1, stageColor: '#0e0e0f' };   // never part of a site config
+  const LAB_ONLY = { seed: 1 };   // never part of a site config
   // where the lab starts: the padded board, which reaches the site only through a saved version
   const LAB_START = { padX: 2, padY: 1, fillRows: true, boardWidth: 840, grain: 0.08, frame: true };
   const $ = id => document.getElementById(id);
@@ -47,7 +47,6 @@
       n('padY', 'Top and bottom cells', 0, 6, 1, '', 'Empty rows above and below the text.'),
       b('fillRows', 'Fill short lines', 'Empty modules out to the full width, such as beside the first name.'),
       b('blankFlips', 'Empty cells flip', 'Empty modules spin with the rest and land blank.'),
-      c('stageColor', 'Stage', 'Lab backdrop. Not part of the config.'),
     ]],
     ['Frame', [
       c('frameColor', 'Plate colour', 'The faceplate around the windows.'),
@@ -89,13 +88,14 @@
   ];
 
   /* ---- Board ---- */
+  // the stage shows the site's page background (--bg in styles.css), so the lab always
+  // matches the home page; stageColor is stripped in case an older version still carries it
   const engineConfig = () => {
     const { stageColor, ...rest } = cfg;
     return rest;
   };
   const stage = $('stage');
   const flap = SplitFlap.mount($('fit'), engineConfig());
-  const applyStage = () => { stage.style.background = cfg.stageColor; };
 
   // shrink the board when it would be taller than the stage
   function fitBoard() {
@@ -113,7 +113,6 @@
     requestAnimationFrame(() => {
       queued = false;
       flap.update(engineConfig());
-      applyStage();
       fitBoard();
       if (time > flap.duration) time = flap.duration;
       flap.seek(time);
@@ -326,7 +325,7 @@
       const entry = {
         id: i < 0 ? Date.now().toString(36) : next.versions[i].id,
         name, savedAt: new Date().toISOString(), config: overrides(),
-        lab: { seed: cfg.seed, stageColor: cfg.stageColor },
+        lab: { seed: cfg.seed },
       };
       if (i < 0) next.versions.push(entry); else next.versions[i] = entry;
       if (makeActive) next.active = entry.id;
@@ -684,7 +683,6 @@
   new ResizeObserver(fitBoard).observe(stage);
 
   /* ---- Start ---- */
-  applyStage();
   fitBoard();
   checkDrum();
   refreshEase();

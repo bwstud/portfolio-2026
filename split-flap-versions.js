@@ -1,6 +1,6 @@
 /* Written by the Split-Flap Lab. The home page runs the version named by "active". */
 window.SPLIT_FLAP_VERSIONS = {
-  "active": "mw5bi2i3",
+  "active": "mw8pp8m6",
   "versions": [
     {
       "id": "original",
@@ -71,6 +71,33 @@ window.SPLIT_FLAP_VERSIONS = {
       "lab": {
         "seed": 1,
         "stageColor": "#0e0e0f"
+      }
+    },
+    {
+      "id": "mw8pp8m6",
+      "name": "Deep Blue",
+      "savedAt": "2026-11-09T03:41:15.557Z",
+      "config": {
+        "staggerMs": 35,
+        "minFlips": 25,
+        "maxFlips": 50,
+        "bounceDeg": 30,
+        "shutterMs": 84,
+        "boardWidth": 840,
+        "padX": 2,
+        "fillRows": true,
+        "frame": true,
+        "frameColor": "#0a0f19",
+        "wellColor": "#080d17",
+        "frameGap": 6,
+        "frameSheen": 0.02,
+        "grain": 0.08,
+        "grainSize": 0.6,
+        "tileTop": "#10202d",
+        "tileBottom": "#0a161f"
+      },
+      "lab": {
+        "seed": 1
       }
     }
   ]

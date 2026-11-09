@@ -76,7 +76,7 @@ window.SPLIT_FLAP_VERSIONS = {
     {
       "id": "mw8pp8m6",
       "name": "Deep Blue",
-      "savedAt": "2026-11-09T21:48:27.294Z",
+      "savedAt": "2026-11-09T21:56:32.080Z",
       "config": {
         "flipMs": 50,
         "startMs": 0,
@@ -92,7 +92,6 @@ window.SPLIT_FLAP_VERSIONS = {
           1
         ],
         "shutterMs": 80,
-        "samples": 8,
         "boardWidth": 840,
         "padX": 2,
         "fillRows": true,

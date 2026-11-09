@@ -1,6 +1,7 @@
 /* Local server for the site. It serves exactly what .vercelignore ships, lets the
    Split-Flap Lab write split-flap-versions.js, and lets Domino Run save runs, elements and
-   lab settings into tinkering/domino-run/. Never deployed. Start it with `dvs`. */
+   lab settings into tinkering/domino-run/, and lets the Kaleidoscope Lab write
+   tinkering/kaleidoscopes/configs.json. Never deployed. Start it with `dvs`. */
 import { spawn } from 'node:child_process';
 import { createReadStream } from 'node:fs';
 import { mkdir, readdir, readFile, realpath, rename, rm, stat, writeFile } from 'node:fs/promises';
@@ -252,6 +253,39 @@ async function dominoApi(req, res, pathname) {
   return send(res, 405, 'Method not allowed');
 }
 
+/* ---- Kaleidoscopes: configurations made in the Kaleidoscope Lab ---- */
+const KALEIDO = '/__kaleido';
+const KALEIDO_FILE = path.join(ROOT, 'tinkering', 'kaleidoscopes', 'configs.json');
+const COLOUR = /^#[0-9a-f]{6}$/i;
+
+async function kaleidoApi(req, res, pathname) {
+  const route = pathname.slice(KALEIDO.length + 1);
+  if (route === 'ping' && req.method === 'GET') return send(res, 200, JSON.stringify({ ok: true }), 'application/json');
+  if (route !== 'configs') return send(res, 404, 'Not found');
+  if (req.method !== 'POST') return send(res, 405, 'Method not allowed');
+  if (req.headers.origin !== `http://${req.headers.host}`) return send(res, 403, 'Only the Kaleidoscope Lab can save here.');
+  if (!(req.headers['content-type'] ?? '').startsWith('application/json')) return send(res, 415, 'Send JSON.');
+
+  let list;
+  try { list = JSON.parse(await readBody(req)); } catch (e) { return send(res, 400, e.message); }
+  if (!Array.isArray(list) || list.length > 500) return send(res, 400, 'Send a list of configurations.');
+  const seen = new Set();
+  for (const c of list) {
+    if (!c || typeof c !== 'object') return send(res, 400, 'Each configuration must be an object.');
+    if (typeof c.id !== 'string' || !ID.test(c.id) || seen.has(c.id)) return send(res, 400, 'Bad or repeated id.');
+    seen.add(c.id);
+    if (typeof c.name !== 'string' || !c.name.trim() || c.name.length > 120) return send(res, 400, 'Give each one a name.');
+    if (c.about != null && (typeof c.about !== 'string' || c.about.length > 400)) return send(res, 400, 'Description too long.');
+    if (!c.params || typeof c.params !== 'object' || Array.isArray(c.params)) return send(res, 400, 'Missing settings.');
+    for (const v of Object.values(c.params)) {
+      const ok = (typeof v === 'number' && Number.isFinite(v)) || (typeof v === 'string' && (COLOUR.test(v) || /^[a-z0-9]{1,16}$/.test(v)));
+      if (!ok) return send(res, 400, 'Settings must be numbers, colours or names.');
+    }
+  }
+  await writeAtomic(KALEIDO_FILE, `${JSON.stringify(list, null, 2)}\n`);
+  return send(res, 200, JSON.stringify({ ok: true }), 'application/json');
+}
+
 /* ---- Server ---- */
 const server = createServer(async (req, res) => {
   try {
@@ -262,6 +296,7 @@ const server = createServer(async (req, res) => {
     const { pathname } = new URL(req.url, 'http://local');
     if (pathname === API) await versionsApi(req, res);
     else if (pathname === DOMINO || pathname.startsWith(`${DOMINO}/`)) await dominoApi(req, res, pathname);
+    else if (pathname.startsWith(`${KALEIDO}/`)) await kaleidoApi(req, res, pathname);
     else await serveFile(req, res, pathname);
   } catch (e) {
     console.error(e);
@@ -283,7 +318,7 @@ server.on('error', e => {
 
 server.on('listening', () => {
   const url = `http://127.0.0.1:${server.address().port}/`;
-  console.log(`Site:  ${url}\nLab:   ${url}tinkering/split-flap-lab/\nDominoes: ${url}tinkering/domino-run/`);
+  console.log(`Site:  ${url}\nLab:   ${url}tinkering/split-flap-lab/\nDominoes: ${url}tinkering/domino-run/\nKaleidoscopes: ${url}tinkering/kaleidoscopes/`);
   if (process.argv.includes('--open')) spawn('open', [url], { stdio: 'ignore' }).on('error', () => {});
 });
 

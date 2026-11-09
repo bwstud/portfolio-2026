@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kaleidoscopes · Brian Studwell</title>
+  <meta name="description" content="Look at a photo or video through ten kaleidoscopes, from a classic three-mirror toy to a sixteen-fold mandala. Make your own in the lab.">
+  <style>
+    @font-face {
+      font-family: "Geist";
+      font-weight: 100 900;
+      font-display: swap;
+      src: url("../../fonts/Geist-Variable.woff2") format("woff2");
+    }
+
+    :root {
+      --bg: #08080a;
+      --panel: rgba(14, 14, 18, 0.82);
+      --line: rgba(255, 255, 255, 0.09);
+      --line-strong: rgba(255, 255, 255, 0.18);
+      --fg: #f0eef0;
+      --soft: #c9c6cc;
+      --muted: #8f8b95;
+      --accent: #e7b75a;
+      --accent-ink: #1b1305;
+      --bad: #ff7a6b;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      height: 100%; overflow: hidden;
+      background: var(--bg); color: var(--fg);
+      font: 13px/1.45 "Geist", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    button, input { font: inherit; color: inherit; }
+    button { cursor: pointer; background: none; border: 0; }
+    button:disabled { cursor: default; opacity: 0.4; }
+    :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    [hidden] { display: none !important; }
+    a { color: inherit; }
+
+    #scope { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; cursor: grab; }
+    #scope.is-dragging { cursor: grabbing; }
+
+    .panel {
+      background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+      backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    }
+
+    /* ---------- header ---------- */
+    .top {
+      position: fixed; z-index: 3; top: 14px; left: 16px; right: 16px;
+      display: flex; align-items: center; gap: 12px; pointer-events: none;
+    }
+    .top > * { pointer-events: auto; }
+    .back { color: var(--muted); text-decoration: none; white-space: nowrap; }
+    .back:hover { color: var(--fg); }
+    .brand { font-size: 15px; font-weight: 650; white-space: nowrap; }
+    .current { color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+    .top__end { margin-left: auto; display: flex; gap: 6px; align-items: center; }
+    .hbtn {
+      display: flex; align-items: center; gap: 6px; padding: 6px 11px; border-radius: 8px; white-space: nowrap;
+      border: 1px solid var(--line-strong); background: var(--panel); text-decoration: none;
+      backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    }
+    .hbtn:hover { border-color: rgba(255, 255, 255, 0.32); }
+    .hbtn.is-on { background: var(--bad); border-color: var(--bad); color: #1b0805; font-weight: 600; }
+    .hbtn svg { width: 14px; height: 14px; }
+
+    /* ---------- dock ---------- */
+    .dock {
+      position: fixed; z-index: 2; left: 16px; right: 16px; bottom: 16px;
+      padding: 10px 12px 12px; display: grid; gap: 8px;
+      max-width: 1180px; margin: 0 auto;
+    }
+    .dock__row { display: grid; grid-template-columns: 92px 1fr; gap: 10px; align-items: center; }
+    .dock__label { font-size: 12px; font-weight: 620; color: var(--soft); }
+    .dock__label small { display: block; font-weight: 400; color: var(--muted); font-size: 11px; }
+    .strip {
+      display: flex; gap: 8px; overflow-x: auto; padding: 3px 2px 5px; scroll-snap-type: x proximity;
+      scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+    }
+    .tile {
+      flex: 0 0 auto; scroll-snap-align: start; position: relative;
+      display: grid; justify-items: center; gap: 4px; width: 78px; padding: 4px; border-radius: 10px;
+      border: 1px solid transparent; color: var(--muted); font-size: 11px; line-height: 1.25; text-align: center;
+    }
+    .tile:hover { color: var(--fg); background: rgba(255, 255, 255, 0.04); }
+    .tile[aria-pressed="true"] { border-color: var(--accent); color: var(--fg); background: rgba(231, 183, 90, 0.08); }
+    .tile canvas, .tile img, .tile__add {
+      width: 64px; height: 64px; border-radius: 50%; display: block; object-fit: cover; background: #15151a;
+    }
+    .tile--pic img { border-radius: 8px; }
+    .tile__add {
+      border-radius: 8px; border: 1px dashed var(--line-strong); display: grid; place-items: center; color: var(--soft);
+    }
+    .tile__add svg { width: 22px; height: 22px; }
+    .tile__name { max-width: 72px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+    .tile__badge {
+      position: absolute; top: 2px; right: 6px; padding: 1px 5px; border-radius: 999px; font-size: 9.5px;
+      background: rgba(10, 10, 12, 0.85); border: 1px solid var(--line-strong); color: var(--soft);
+    }
+
+    .dock__foot { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-top: 2px; border-top: 1px solid var(--line); padding-top: 8px; }
+    .chip {
+      display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border-radius: 999px;
+      border: 1px solid var(--line-strong); color: var(--soft); white-space: nowrap;
+    }
+    .chip:hover { color: var(--fg); border-color: rgba(255, 255, 255, 0.32); }
+    .chip[aria-pressed="true"] { color: var(--accent-ink); background: var(--accent); border-color: var(--accent); font-weight: 600; }
+    .chip svg { width: 12px; height: 12px; }
+    .credit { margin-left: auto; color: var(--muted); font-size: 11.5px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 52%; }
+    .credit a { color: var(--soft); text-underline-offset: 2px; }
+    .hint { color: var(--muted); font-size: 11.5px; }
+
+    .show-ui {
+      position: fixed; z-index: 3; right: 16px; bottom: 16px;
+    }
+    body.ui-hidden .top, body.ui-hidden .dock, body.ui-hidden .notes, body.ui-hidden .toast { display: none; }
+
+    /* ---------- messages ---------- */
+    .toast {
+      position: fixed; z-index: 4; left: 50%; top: 58px; transform: translateX(-50%);
+      padding: 8px 14px; border-radius: 10px; max-width: min(520px, calc(100vw - 32px));
+      background: var(--panel); border: 1px solid var(--line-strong); color: var(--soft); text-align: center;
+      backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+      opacity: 0; transition: opacity 0.2s; pointer-events: none;
+    }
+    .toast.is-shown { opacity: 1; }
+    .toast.is-bad { color: var(--bad); }
+
+    .drop {
+      position: fixed; inset: 0; z-index: 5; display: grid; place-items: center;
+      background: rgba(8, 8, 10, 0.72); border: 2px dashed var(--accent); border-radius: 18px; margin: 10px;
+      font-size: 18px; font-weight: 600; color: var(--fg); pointer-events: none;
+    }
+
+    .fatal { position: fixed; inset: 0; display: grid; place-items: center; padding: 24px; text-align: center; color: var(--soft); }
+
+    @media (max-width: 720px) {
+      .dock { left: 8px; right: 8px; bottom: 8px; padding: 8px; }
+      .dock__row { grid-template-columns: 1fr; gap: 2px; }
+      .dock__label small { display: none; }
+      .credit { max-width: 100%; margin-left: 0; order: 9; width: 100%; }
+      .hint { display: none; }
+      .top { left: 8px; right: 8px; top: 10px; gap: 8px; }
+      .current, .hbtn__text, .back__text { display: none; }
+      .brand { font-size: 14px; }
+      .top__end { gap: 4px; }
+      .hbtn { padding: 6px 8px; }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="scope" aria-label="Kaleidoscope view. Drag to move the picture under the mirrors."></canvas>
+
+  <header class="top">
+    <a class="back" href="../" aria-label="Back to Tinkering">← <span class="back__text">Tinkering</span></a>
+    <span class="brand">Kaleidoscopes</span>
+    <span class="current" id="current"></span>
+    <div class="top__end">
+      <a class="hbtn" href="lab/" id="lab-link" title="Make your own kaleidoscope">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M6 1.5h4M7 1.5v4.2L2.8 13a1.2 1.2 0 0 0 1 1.8h8.4a1.2 1.2 0 0 0 1-1.8L9 5.7V1.5"/><path d="M4.6 10h6.8"/></svg>
+        <span class="hbtn__text">Lab</span>
+      </a>
+      <button class="hbtn" id="snap" type="button" title="Save a picture (S)">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="1.5" y="4" width="13" height="9.5" rx="2"/><circle cx="8" cy="8.7" r="2.6"/><path d="M5.5 4l1-2h3l1 2"/></svg>
+        <span class="hbtn__text">Snapshot</span>
+      </button>
+      <button class="hbtn" id="record" type="button" title="Record a clip (R)">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="5" fill="currentColor"/></svg>
+        <span class="hbtn__text" id="record-text">Record</span>
+      </button>
+      <button class="hbtn" id="full" type="button" title="Full screen (F)">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M2 6V2h4M14 6V2h-4M2 10v4h4M14 10v4h-4"/></svg>
+      </button>
+      <button class="hbtn" id="hide" type="button" title="Hide the controls (H)">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M1.5 8s2.4-4.5 6.5-4.5S14.5 8 14.5 8 12.1 12.5 8 12.5 1.5 8 1.5 8z"/><circle cx="8" cy="8" r="2"/><path d="M2.5 13.5l11-11"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <aside class="notes" aria-label="Notes">
+    <p>A kaleidoscope is two or three mirrors in a tube, reflecting whatever sits at the far end. Here the far end is a picture, and every pixel is folded back through the mirrors in a shader until it lands on the part of the picture the mirrors can see.</p>
+    <p>Drag to slide the picture under the mirrors, shift-drag to turn it, and scroll to magnify. Images reflected many times come out a little darker, as they do in real mirrors.</p>
+    <p>Photos and videos you add stay in your browser. Make new kaleidoscopes in the <a href="lab/">lab</a>.</p>
+  </aside>
+
+  <section class="dock panel" aria-label="Controls">
+    <div class="dock__row">
+      <div class="dock__label">Kaleidoscope<small>← → to step</small></div>
+      <div class="strip" id="scopes" role="group" aria-label="Kaleidoscopes"></div>
+    </div>
+    <div class="dock__row">
+      <div class="dock__label">Picture<small>or drop a file</small></div>
+      <div class="strip" id="pictures" role="group" aria-label="Pictures">
+        <button class="tile tile--pic" type="button" id="add" title="Use your own photo or video">
+          <span class="tile__add"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></span>
+          <span class="tile__name">Your photo or video</span>
+        </button>
+      </div>
+      <input type="file" id="file" accept="image/*,video/*" hidden>
+    </div>
+    <div class="dock__foot">
+      <button class="chip" id="turning" type="button" aria-pressed="true" title="Space">
+        <svg viewBox="0 0 12 12" aria-hidden="true"><path id="turning-icon" d="M3 2h2v8H3zM7 2h2v8H7z" fill="currentColor"/></svg>
+        <span id="turning-text">Turning</span>
+      </button>
+      <button class="chip" id="reset" type="button" title="Double-click the view also resets it">Reset view</button>
+      <button class="chip" id="video-play" type="button" hidden>Pause video</button>
+      <button class="chip" id="video-sound" type="button" aria-pressed="false" hidden>Sound off</button>
+      <span class="hint">Drag to slide, shift-drag to turn, scroll to magnify</span>
+      <span class="credit" id="credit"></span>
+    </div>
+  </section>
+
+  <button class="hbtn show-ui" id="show" type="button" hidden>Show controls</button>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <div class="drop" id="drop" hidden>Drop a photo or video</div>
+
+  <script src="../notes.js"></script>
+  <script type="module" src="app.js"></script>
+</body>
+</html>

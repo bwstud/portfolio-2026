@@ -1,0 +1,331 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Oscilloscope · Brian Studwell</title>
+  <meta name="description" content="A simulated two-channel oscilloscope. Feed it signals, set the timebase and trigger, style the phosphor, and pause or rewind what the beam drew.">
+  <style>
+    @font-face {
+      font-family: "Geist";
+      font-weight: 100 900;
+      font-display: swap;
+      src: url("../../fonts/Geist-Variable.woff2") format("woff2");
+    }
+    @font-face {
+      font-family: "Söhne Mono";
+      font-weight: 400;
+      font-display: swap;
+      src: url("../../fonts/soehne-mono-buch.woff2") format("woff2");
+    }
+
+    :root {
+      --bg: #0c0d0e;
+      --rack: #131517;
+      --panel: rgba(22, 24, 27, 0.92);
+      --line: rgba(255, 255, 255, 0.08);
+      --line-strong: rgba(255, 255, 255, 0.17);
+      --fg: #eef0ee;
+      --soft: #c3c8c5;
+      --muted: #8a918d;
+      --accent: #63f59a;
+      --accent-ink: #04150a;
+      --ch1: #ffd84a;
+      --ch2: #4ae0ff;
+      --math: #ff73d2;
+      --live: #ff6b5e;
+      --mono: "Söhne Mono", ui-monospace, "SF Mono", Menlo, monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      height: 100%; overflow: hidden;
+      background: var(--bg); color: var(--fg);
+      font: 13px/1.45 "Geist", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    button, input, select { font: inherit; color: inherit; }
+    button { cursor: pointer; background: none; border: 0; }
+    button:disabled { cursor: default; opacity: 0.38; }
+    :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    [hidden] { display: none !important; }
+    a { color: inherit; }
+    .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+    /* ---------- header ---------- */
+    .top {
+      position: fixed; z-index: 3; top: 0; left: 0; right: 0; height: 52px; padding: 0 16px;
+      display: flex; align-items: center; gap: 12px;
+    }
+    .back { color: var(--muted); text-decoration: none; white-space: nowrap; }
+    .back:hover { color: var(--fg); }
+    .brand { font-size: 15px; font-weight: 650; white-space: nowrap; }
+    .top__end { margin-left: auto; display: flex; gap: 6px; align-items: center; }
+    .hbtn {
+      display: flex; align-items: center; gap: 6px; padding: 6px 11px; border-radius: 8px; white-space: nowrap;
+      border: 1px solid var(--line-strong); background: var(--panel);
+    }
+    .hbtn:hover { border-color: rgba(255, 255, 255, 0.32); }
+    .hbtn svg { width: 14px; height: 14px; flex: none; }
+
+    /* ---------- layout ---------- */
+    .app {
+      position: fixed; top: 52px; left: 0; right: 0; bottom: 0;
+      display: grid; grid-template-columns: minmax(0, 1fr) 344px;
+    }
+    body.ui-hidden .app { grid-template-columns: minmax(0, 1fr); }
+    body.ui-hidden .rack { display: none; }
+
+    .viewer { display: flex; flex-direction: column; min-width: 0; min-height: 0; padding: 4px 16px 16px; gap: 12px; }
+    .stage { flex: 1; min-height: 0; display: grid; place-items: center; }
+
+    .bezel {
+      position: relative; padding: 16px 16px 10px; border-radius: 22px;
+      background: linear-gradient(160deg, #2a2d30, #1b1d20 45%, #151719);
+      box-shadow: 0 1px 0 rgba(255, 255, 255, 0.08) inset, 0 -1px 0 rgba(0, 0, 0, 0.6) inset, 0 24px 60px rgba(0, 0, 0, 0.55);
+    }
+    .screen {
+      position: relative; border-radius: 14px; overflow: hidden; background: #020303;
+      box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.9), 0 0 0 3px #0d0e0f, inset 0 0 24px rgba(0, 0, 0, 0.9);
+    }
+    #crt { display: block; width: 100%; height: 100%; }
+    .markers { position: absolute; inset: 0; pointer-events: none; }
+    .marker {
+      position: absolute; font: 600 10px/1 var(--mono); color: var(--c, var(--accent));
+      transform: translateY(-50%); display: flex; align-items: center; gap: 1px;
+      text-shadow: 0 0 6px rgba(0, 0, 0, 0.9);
+    }
+    .marker--left { left: 3px; }
+    .marker--left::after { content: ""; border: 4px solid transparent; border-left: 5px solid currentColor; border-right: 0; }
+    .marker--right { right: 3px; flex-direction: row-reverse; }
+    .marker--right::after { content: ""; border: 4px solid transparent; border-right: 5px solid currentColor; border-left: 0; }
+    .marker--top { top: 3px; transform: translateX(-50%); flex-direction: column; }
+    .marker--top::after { content: ""; border: 4px solid transparent; border-top: 5px solid currentColor; border-bottom: 0; }
+    .marker.is-off { opacity: 0; }
+
+    .readout {
+      display: flex; align-items: center; gap: 4px 14px; flex-wrap: wrap; padding: 8px 4px 0;
+      font: 11.5px/1.3 var(--mono); color: var(--soft); min-height: 26px;
+    }
+    .readout b { font-weight: 400; color: var(--c, var(--soft)); }
+    .readout .gap { margin-left: auto; }
+    .lamp { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); }
+    .lamp::before {
+      content: ""; width: 7px; height: 7px; border-radius: 50%; background: #3a3f3c;
+      box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.5);
+    }
+    .lamp.is-on { color: var(--soft); }
+    .lamp.is-on::before { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+
+    /* ---------- transport ---------- */
+    .transport {
+      display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 12px;
+      background: var(--panel); border: 1px solid var(--line);
+    }
+    .tbtn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 32px; min-width: 32px;
+      padding: 0 9px; border-radius: 8px; border: 1px solid var(--line-strong); white-space: nowrap; color: var(--soft);
+    }
+    .tbtn:hover:not(:disabled) { color: var(--fg); border-color: rgba(255, 255, 255, 0.32); }
+    .tbtn svg { width: 14px; height: 14px; flex: none; }
+    .tbtn--main { min-width: 40px; background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+    .tbtn--main:hover:not(:disabled) { color: var(--accent-ink); filter: brightness(1.08); }
+    .tbtn[aria-pressed="true"] { background: rgba(255, 255, 255, 0.1); border-color: rgba(255, 255, 255, 0.4); color: var(--fg); }
+    .tbtn--live[aria-pressed="true"] { background: transparent; border-color: var(--live); color: var(--fg); }
+    .tbtn--live::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: #555; }
+    .tbtn--live[aria-pressed="true"]::before { background: var(--live); box-shadow: 0 0 8px var(--live); }
+    .speed select {
+      height: 32px; padding: 0 8px; border-radius: 8px; border: 1px solid var(--line-strong);
+      background: var(--rack); color: var(--soft);
+    }
+    .timeline { flex: 1; min-width: 80px; display: grid; gap: 2px; }
+    .timeline__meta { display: flex; justify-content: space-between; font: 11px/1.2 var(--mono); color: var(--muted); }
+    .timeline__meta #tnow { color: var(--soft); }
+
+    /* ---------- rack ---------- */
+    .rack {
+      min-height: 0; overflow-y: auto; background: var(--rack); border-left: 1px solid var(--line);
+      padding: 12px 14px 24px; display: flex; flex-direction: column; gap: 12px;
+      scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+    }
+    .rack .notes { position: static; width: auto; flex: none; background: rgba(255, 255, 255, 0.03); }
+
+    .tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; padding: 3px; border-radius: 10px; background: rgba(0, 0, 0, 0.35); flex: none; }
+    .tab { padding: 6px 8px; border-radius: 7px; color: var(--muted); font-weight: 560; }
+    .tab:hover { color: var(--fg); }
+    .tab[aria-selected="true"] { background: rgba(255, 255, 255, 0.1); color: var(--fg); }
+    .tabpanel { display: grid; gap: 14px; }
+
+    .group { display: grid; gap: 10px; padding-bottom: 14px; border-bottom: 1px solid var(--line); }
+    .group:last-child { border-bottom: 0; }
+    .group__head { display: flex; align-items: center; gap: 8px; }
+    .group__title { font-size: 13px; font-weight: 640; }
+    .group__title .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 7px; background: var(--c); vertical-align: 1px; }
+    .group__end { margin-left: auto; display: flex; gap: 6px; align-items: center; }
+    .hint { color: var(--muted); font-size: 12px; }
+
+    .field { display: grid; gap: 4px; }
+    .field__top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+    .field__label { color: var(--soft); }
+    .field__value { font: 12px/1.2 var(--mono); color: var(--fg); white-space: nowrap; }
+
+    input[type="range"] { -webkit-appearance: none; appearance: none; width: 100%; height: 20px; background: none; cursor: pointer; }
+    input[type="range"]::-webkit-slider-runnable-track { height: 4px; border-radius: 2px; background: linear-gradient(to right, var(--accent) var(--p, 50%), rgba(255, 255, 255, 0.14) var(--p, 50%)); }
+    input[type="range"]::-moz-range-track { height: 4px; border-radius: 2px; background: rgba(255, 255, 255, 0.14); }
+    input[type="range"]::-moz-range-progress { height: 4px; border-radius: 2px; background: var(--accent); }
+    input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; margin-top: -5px; border-radius: 50%; background: #f4f6f4; border: 0; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.6); }
+    input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius: 50%; background: #f4f6f4; border: 0; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.6); }
+    input[type="range"]:disabled { opacity: 0.4; cursor: default; }
+
+    .seg { display: flex; padding: 2px; gap: 2px; border-radius: 8px; background: rgba(0, 0, 0, 0.35); }
+    .seg button { flex: 1; padding: 5px 6px; border-radius: 6px; color: var(--muted); white-space: nowrap; }
+    .seg button:hover { color: var(--fg); }
+    .seg button[aria-pressed="true"] { background: rgba(255, 255, 255, 0.12); color: var(--fg); font-weight: 560; }
+
+    .waves { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; }
+    .wave {
+      display: grid; justify-items: center; gap: 2px; padding: 6px 2px 5px; border-radius: 8px;
+      border: 1px solid var(--line); color: var(--muted); font-size: 11px; line-height: 1.2;
+    }
+    .wave svg { width: 30px; height: 16px; }
+    .wave:hover { color: var(--fg); border-color: var(--line-strong); }
+    .wave[aria-pressed="true"] { border-color: var(--accent); color: var(--fg); background: color-mix(in srgb, var(--accent) 9%, transparent); }
+
+    .switch { display: inline-flex; align-items: center; gap: 8px; color: var(--soft); }
+    .switch__track { width: 30px; height: 18px; border-radius: 9px; background: rgba(255, 255, 255, 0.16); position: relative; transition: background 0.15s; }
+    .switch__track::after { content: ""; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: #f4f6f4; transition: transform 0.15s; }
+    .switch[aria-checked="true"] .switch__track { background: var(--accent); }
+    .switch[aria-checked="true"] .switch__track::after { transform: translateX(12px); }
+
+    .swatches { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+    .swatch {
+      display: grid; justify-items: center; gap: 4px; padding: 6px 2px; border-radius: 8px; border: 1px solid var(--line);
+      color: var(--muted); font-size: 11px; line-height: 1.2; text-align: center;
+    }
+    .swatch:hover { color: var(--fg); border-color: var(--line-strong); }
+    .swatch[aria-pressed="true"] { border-color: var(--accent); color: var(--fg); }
+    .swatch__chip { width: 22px; height: 22px; border-radius: 50%; background: var(--c); box-shadow: 0 0 10px var(--c); }
+    .swatch input[type="color"] { width: 22px; height: 22px; border: 0; padding: 0; border-radius: 50%; background: none; cursor: pointer; }
+    .swatch input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+    .swatch input[type="color"]::-webkit-color-swatch { border: 0; border-radius: 50%; }
+    .swatch input[type="color"]::-moz-color-swatch { border: 0; border-radius: 50%; }
+
+    .presets { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+    .preset { text-align: left; padding: 6px 9px; border-radius: 8px; border: 1px solid var(--line); color: var(--soft); }
+    .preset:hover { color: var(--fg); border-color: var(--line-strong); }
+
+    .toast {
+      position: fixed; z-index: 4; left: 50%; top: 60px; transform: translateX(-50%);
+      padding: 8px 14px; border-radius: 10px; max-width: min(520px, calc(100vw - 32px));
+      background: var(--panel); border: 1px solid var(--line-strong); color: var(--soft); text-align: center;
+      opacity: 0; transition: opacity 0.2s; pointer-events: none;
+    }
+    .toast.is-shown { opacity: 1; }
+    .fatal { position: fixed; inset: 0; display: grid; place-items: center; padding: 24px; text-align: center; color: var(--soft); }
+
+    @media (max-width: 860px) {
+      html, body { overflow: auto; height: auto; }
+      .top { position: sticky; background: var(--bg); }
+      .app { position: static; display: block; }
+      .viewer { padding: 0 10px 12px; }
+      .stage { flex: none; height: min(72vh, calc((100vw - 40px) * 0.81 + 96px)); }
+      .rack { border-left: 0; border-top: 1px solid var(--line); overflow: visible; }
+      .bezel { padding: 10px 10px 6px; border-radius: 16px; }
+      .screen { border-radius: 10px; }
+      .readout { font-size: 10.5px; gap: 2px 10px; }
+      .hbtn__text, .back__text, .tbtn__text { display: none; }
+      .hbtn { padding: 6px 8px; }
+      .transport { flex-wrap: wrap; gap: 6px; padding: 8px; }
+      .timeline { order: 9; flex-basis: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <header class="top">
+    <a class="back" href="../" aria-label="Back to Tinkering">← <span class="back__text">Tinkering</span></a>
+    <span class="brand">Oscilloscope</span>
+    <div class="top__end">
+      <button class="hbtn" id="snap" type="button" title="Save a picture of the screen (S)">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="1.5" y="4" width="13" height="9.5" rx="2"/><circle cx="8" cy="8.7" r="2.6"/><path d="M5.5 4l1-2h3l1 2"/></svg>
+        <span class="hbtn__text">Snapshot</span>
+      </button>
+      <button class="hbtn" id="full" type="button" title="Full screen (F)">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M2 6V2h4M14 6V2h-4M2 10v4h4M14 10v4h-4"/></svg>
+        <span class="hbtn__text">Full screen</span>
+      </button>
+      <button class="hbtn" id="hide" type="button" title="Hide or show the controls (H)" aria-controls="rack" aria-expanded="true">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="1.5" y="2.5" width="13" height="11" rx="2"/><path d="M10 2.5v11"/></svg>
+        <span class="hbtn__text" id="hide-text">Hide controls</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="app">
+    <section class="viewer" aria-label="Oscilloscope">
+      <div class="stage" id="stage">
+        <div class="bezel" id="bezel">
+          <div class="screen" id="screen">
+            <canvas id="crt" role="img" aria-label="Oscilloscope screen showing the signal traces"></canvas>
+            <div class="markers" id="markers" aria-hidden="true"></div>
+          </div>
+          <div class="readout" id="readout"></div>
+        </div>
+      </div>
+
+      <div class="transport" role="group" aria-label="Playback">
+        <button class="tbtn" id="rew" type="button" aria-pressed="false" title="Play backwards (R)">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3L1.5 8 8 13zM14.5 3L8 8l6.5 5z" fill="currentColor"/></svg>
+          <span class="tbtn__text">Rewind</span>
+        </button>
+        <button class="tbtn tbtn--main" id="play" type="button" title="Pause (Space)" aria-label="Pause">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><path id="play-icon" d="M4 3h3v10H4zM9 3h3v10H9z" fill="currentColor"/></svg>
+        </button>
+        <button class="tbtn" id="stepb" type="button" title="Step back one frame (←)" aria-label="Step back">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 3h2v10H3zM13 3L6 8l7 5z" fill="currentColor"/></svg>
+        </button>
+        <button class="tbtn" id="stepf" type="button" title="Step forward one frame (→)" aria-label="Step forward">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M11 3h2v10h-2zM3 3l7 5-7 5z" fill="currentColor"/></svg>
+        </button>
+        <label class="speed" title="Playback speed">
+          <span class="sr">Playback speed</span>
+          <select id="speed">
+            <option value="4">4×</option>
+            <option value="2">2×</option>
+            <option value="1" selected>1×</option>
+            <option value="0.5">½×</option>
+            <option value="0.25">¼×</option>
+            <option value="0.1">1/10×</option>
+            <option value="0.01">1/100×</option>
+          </select>
+        </label>
+        <div class="timeline">
+          <input type="range" id="scrub" min="0" max="1000" step="1" value="1000" aria-label="Recorded time">
+          <div class="timeline__meta"><span id="tstart"></span><span id="tnow"></span></div>
+        </div>
+        <button class="tbtn tbtn--live" id="live" type="button" aria-pressed="true" title="Jump to live (L)">Live</button>
+      </div>
+    </section>
+
+    <aside class="rack" id="rack" aria-label="Controls">
+      <aside class="notes" aria-label="Notes">
+        <p>A simulated two-channel oscilloscope. The generators feed the inputs, and the scope draws what a beam would trace across the phosphor, dim where it moves fast and bright where it lingers.</p>
+        <p>Everything is recorded for the last five minutes, so you can pause, rewind and step through it frame by frame. Changing the timebase or trigger while rewound shows the same moment measured a different way. Changing a generator while rewound starts a new recording from that point.</p>
+      </aside>
+
+      <div class="tabs" role="tablist" aria-label="Control groups">
+        <button class="tab" role="tab" id="tab-inputs" aria-controls="panel-inputs" aria-selected="true">Inputs</button>
+        <button class="tab" role="tab" id="tab-scope" aria-controls="panel-scope" aria-selected="false" tabindex="-1">Scope</button>
+        <button class="tab" role="tab" id="tab-display" aria-controls="panel-display" aria-selected="false" tabindex="-1">Display</button>
+      </div>
+      <section class="tabpanel" role="tabpanel" id="panel-inputs" aria-labelledby="tab-inputs"></section>
+      <section class="tabpanel" role="tabpanel" id="panel-scope" aria-labelledby="tab-scope" hidden></section>
+      <section class="tabpanel" role="tabpanel" id="panel-display" aria-labelledby="tab-display" hidden></section>
+    </aside>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="../notes.js"></script>
+  <script type="module" src="app.js"></script>
+</body>
+</html>

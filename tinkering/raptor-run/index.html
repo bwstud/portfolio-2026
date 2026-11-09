@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Raptor Run · Brian Studwell</title>
+  <meta name="description" content="An overhead view of a jungle clearing. People sprint across it at random, each with a velociraptor close behind.">
+  <style>
+    @font-face {
+      font-family: "Geist";
+      font-weight: 100 900;
+      font-display: swap;
+      src: url("../../fonts/Geist-Variable.woff2") format("woff2");
+    }
+
+    :root {
+      --bg: #2c3418;
+      --panel: rgba(12, 14, 9, 0.78);
+      --line: rgba(255, 255, 255, 0.1);
+      --line-strong: rgba(255, 255, 255, 0.2);
+      --fg: #f1efe6;
+      --soft: #cfcbbb;
+      --muted: #9b9785;
+      --accent: #e9b95c;
+      --accent-ink: #1d1406;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      height: 100%; overflow: hidden;
+      background: var(--bg); color: var(--fg);
+      font: 13px/1.45 "Geist", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    button { font: inherit; color: inherit; cursor: pointer; background: none; border: 0; }
+    :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    [hidden] { display: none !important; }
+    a { color: inherit; }
+
+    .layer { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+    #canopy { pointer-events: none; }
+
+    .top {
+      position: fixed; z-index: 3; top: 14px; left: 16px; right: 16px;
+      display: flex; align-items: center; gap: 12px; pointer-events: none;
+    }
+    .top > * { pointer-events: auto; }
+    .back { color: var(--soft); text-decoration: none; white-space: nowrap; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6); }
+    .back:hover { color: var(--fg); }
+    .brand { font-size: 15px; font-weight: 650; white-space: nowrap; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6); }
+    .top__end { margin-left: auto; display: flex; gap: 6px; align-items: center; }
+    .hbtn {
+      display: flex; align-items: center; gap: 6px; padding: 6px 11px; border-radius: 8px; white-space: nowrap;
+      border: 1px solid var(--line-strong); background: var(--panel);
+      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    }
+    .hbtn:hover { border-color: rgba(255, 255, 255, 0.34); }
+    .hbtn[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
+    .hbtn svg { width: 14px; height: 14px; }
+
+    .status {
+      position: fixed; z-index: 3; left: 16px; bottom: 16px; max-width: calc(100vw - 32px);
+      padding: 8px 12px; border-radius: 10px; border: 1px solid var(--line);
+      background: var(--panel); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap;
+    }
+    .status__now { font-weight: 560; }
+    .status__count { color: var(--muted); font-size: 12px; }
+
+    .show-ui { position: fixed; z-index: 3; right: 16px; bottom: 16px; }
+    body.ui-hidden .top, body.ui-hidden .status, body.ui-hidden .notes { display: none; }
+
+    @media (max-width: 640px) {
+      .hbtn__text { display: none; }
+      .hbtn { padding: 6px 8px; }
+      .back__text { display: none; }
+      .top { gap: 8px; }
+    }
+  </style>
+</head>
+<body>
+  <canvas class="layer" id="ground" aria-hidden="true"></canvas>
+  <canvas class="layer" id="stage" aria-label="Overhead view of a jungle clearing. People run across it, each chased by a velociraptor."></canvas>
+  <canvas class="layer" id="canopy" aria-hidden="true"></canvas>
+
+  <header class="top">
+    <a class="back" href="../" aria-label="Back to Tinkering">← <span class="back__text">Tinkering</span></a>
+    <span class="brand">Raptor Run</span>
+    <div class="top__end">
+      <button class="hbtn" id="pause" type="button" title="Pause (Space)">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path id="pause-icon" d="M4 3h3v10H4zM9 3h3v10H9z" fill="currentColor"/></svg>
+        <span class="hbtn__text" id="pause-text">Pause</span>
+      </button>
+      <button class="hbtn" id="next" type="button" title="Start the next chase now (N)">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M3 3l6 5-6 5zM12 3v10"/></svg>
+        <span class="hbtn__text">Next chase</span>
+      </button>
+      <button class="hbtn" id="slow" type="button" aria-pressed="false" title="Slow motion (M)">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path d="M8 4.5V8l2.5 1.5"/></svg>
+        <span class="hbtn__text">Slow motion</span>
+      </button>
+      <button class="hbtn" id="full" type="button" title="Full screen (F)">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M2 6V2h4M14 6V2h-4M2 10v4h4M14 10v4h-4"/></svg>
+      </button>
+      <button class="hbtn" id="hide" type="button" title="Hide the controls (H)">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M1.5 8s2.4-4.5 6.5-4.5S14.5 8 14.5 8 12.1 12.5 8 12.5 1.5 8 1.5 8z"/><circle cx="8" cy="8" r="2"/><path d="M2.5 13.5l11-11"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <aside class="notes" aria-label="Notes">
+    <p>The overhead koi pond is a familiar idea. This is the same camera looking down at a jungle clearing, where nobody is swimming gracefully.</p>
+    <p>People arrive from any edge at random, one at a time, each with a velociraptor close behind. The speeds are set so the catch always happens just past the edge of the screen.</p>
+    <p>Everything is drawn in code each frame. The raptor's spine follows the person's path, and its feet plant and push off with a short airborne moment in each stride. The tracks fade after it's gone.</p>
+  </aside>
+
+  <div class="status" id="status" role="status" aria-live="polite">
+    <span class="status__now" id="now">The clearing is quiet</span>
+    <span class="status__count" id="count"></span>
+  </div>
+  <button class="hbtn show-ui" id="show" type="button" hidden>Show controls</button>
+
+  <script src="../notes.js"></script>
+  <script type="module" src="raptors.js"></script>
+</body>
+</html>

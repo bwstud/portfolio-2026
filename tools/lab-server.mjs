@@ -1,7 +1,7 @@
 /* Local server for the site. It serves exactly what .vercelignore ships, lets the
-   Split-Flap Lab write split-flap-versions.js, and lets Domino Run save runs, elements and
-   lab settings into tinkering/domino-run/, and lets the Kaleidoscope Lab write
-   tinkering/kaleidoscopes/configs.json. Never deployed. Start it with `dvs`. */
+   Split-Flap Lab write split-flap-versions.js and the Halftone Lab write halftone-versions.js,
+   lets Domino Run save runs, elements and lab settings into tinkering/domino-run/, and lets
+   the Kaleidoscope Lab write tinkering/kaleidoscopes/configs.json. Never deployed. Start it with `dvs`. */
 import { spawn } from 'node:child_process';
 import { createReadStream } from 'node:fs';
 import { mkdir, readdir, readFile, realpath, rename, rm, stat, writeFile } from 'node:fs/promises';
@@ -12,9 +12,19 @@ import { fileURLToPath } from 'node:url';
 const ROOT = await realpath(path.join(path.dirname(fileURLToPath(import.meta.url)), '..'));
 const FIRST_PORT = Number(process.env.PORT) || 8080;
 const LAST_PORT = FIRST_PORT + 10;
-const API = '/__lab/versions';
-const VERSIONS_FILE = path.join(ROOT, 'split-flap-versions.js');
-const HEADER = '/* Written by the Split-Flap Lab. The home page runs the version named by "active". */\n';
+// each lab keeps its saved versions in a script the home page loads
+const STORES = {
+  '/__lab/versions': {
+    file: path.join(ROOT, 'split-flap-versions.js'),
+    global: 'SPLIT_FLAP_VERSIONS',
+    header: '/* Written by the Split-Flap Lab. The home page runs the version named by "active". */\n',
+  },
+  '/__lab/halftone': {
+    file: path.join(ROOT, 'halftone-versions.js'),
+    global: 'HALFTONE_VERSIONS',
+    header: '/* Written by the Halftone Lab. The home page draws the version named by "active". */\n',
+  },
+};
 const MAX_BODY = 256 * 1024;
 
 const TYPES = {
@@ -98,8 +108,8 @@ async function serveFile(req, res, pathname) {
 }
 
 /* ---- Versions ---- */
-async function readVersions() {
-  const text = await readFile(VERSIONS_FILE, 'utf8');
+async function readVersions({ file }) {
+  const text = await readFile(file, 'utf8');
   return JSON.parse(text.slice(text.indexOf('{'), text.lastIndexOf('}') + 1));
 }
 
@@ -116,12 +126,12 @@ function problemWith(store) {
   return null;
 }
 
-async function writeVersions(store) {
-  const text = `${HEADER}window.SPLIT_FLAP_VERSIONS = ${JSON.stringify(store, null, 2)};\n`;
-  const temp = `${VERSIONS_FILE}.${process.pid}.${Date.now()}.tmp`;
+async function writeVersions({ file, global, header }, store) {
+  const text = `${header}window.${global} = ${JSON.stringify(store, null, 2)};\n`;
+  const temp = `${file}.${process.pid}.${Date.now()}.tmp`;
   try {
     await writeFile(temp, text);
-    await rename(temp, VERSIONS_FILE);   // a reader sees the old file or the new one, never half
+    await rename(temp, file);   // a reader sees the old file or the new one, never half
   } finally {
     await rm(temp, { force: true });
   }
@@ -138,8 +148,8 @@ async function readBody(req, max = MAX_BODY) {
   return Buffer.concat(chunks).toString('utf8');
 }
 
-async function versionsApi(req, res) {
-  if (req.method === 'GET') return send(res, 200, JSON.stringify(await readVersions()), 'application/json');
+async function versionsApi(req, res, target) {
+  if (req.method === 'GET') return send(res, 200, JSON.stringify(await readVersions(target)), 'application/json');
   if (req.method !== 'POST') return send(res, 405, 'Method not allowed');
 
   // other sites in the same browser can reach this port: only the page itself may write.
@@ -155,7 +165,7 @@ async function versionsApi(req, res) {
   }
   const problem = problemWith(store);
   if (problem) return send(res, 400, problem);
-  await writeVersions({ active: store.active, versions: store.versions });
+  await writeVersions(target, { active: store.active, versions: store.versions });
   send(res, 200, 'Saved.');
 }
 
@@ -294,7 +304,7 @@ const server = createServer(async (req, res) => {
     if (![`127.0.0.1:${port}`, `localhost:${port}`].includes(req.headers.host)) return send(res, 403, 'Wrong host.');
 
     const { pathname } = new URL(req.url, 'http://local');
-    if (pathname === API) await versionsApi(req, res);
+    if (Object.hasOwn(STORES, pathname)) await versionsApi(req, res, STORES[pathname]);
     else if (pathname === DOMINO || pathname.startsWith(`${DOMINO}/`)) await dominoApi(req, res, pathname);
     else if (pathname.startsWith(`${KALEIDO}/`)) await kaleidoApi(req, res, pathname);
     else await serveFile(req, res, pathname);
@@ -318,7 +328,7 @@ server.on('error', e => {
 
 server.on('listening', () => {
   const url = `http://127.0.0.1:${server.address().port}/`;
-  console.log(`Site:  ${url}\nLab:   ${url}tinkering/split-flap-lab/\nDominoes: ${url}tinkering/domino-run/\nKaleidoscopes: ${url}tinkering/kaleidoscopes/`);
+  console.log(`Site:  ${url}\nLab:   ${url}tinkering/split-flap-lab/\nHalftone: ${url}tinkering/halftone-lab/\nDominoes: ${url}tinkering/domino-run/\nKaleidoscopes: ${url}tinkering/kaleidoscopes/`);
   if (process.argv.includes('--open')) spawn('open', [url], { stdio: 'ignore' }).on('error', () => {});
 });
 

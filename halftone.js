@@ -25,13 +25,14 @@
     raggedAmp: 0, raggedScale: 90,            // noise along the transition line, px
     mottleAmp: 0, mottleScale: 60,            // patchy noise through the coverage
     // animation
-    animate: false,     // mottle strength wanders at random between these limits
+    animate: false,     // mottle strength wanders between these limits, differently along the band
     mottleMin: 0, mottleMax: 0.4,
     flow: 0,            // px per second the whole band travels sideways (positive: left to right)
     heaveAmp: 0,        // px the band rises and falls, locally, as it travels
     heaveLen: 400,      // px between swells
     rise: 0,            // px per second the mottle drifts upward, like steam off the solid
     morph: 0,           // how fast the mottle changes shape: new shapes per second
+    chaos: 0.6,         // randomness: the clock speeds up and slows down, and shapes keep shifting
     animPeriod: 4,      // seconds for a typical swing or swell
     shift: 0, time: 0,  // set by the animation for each frame; leave at 0
     animFps: 60,        // frames drawn per second (most screens top out at 60)
@@ -169,12 +170,18 @@
     const edgeAt = lerpAt(edge), heaveAt = lerpAt(heave);
     const G = 4, mw = Math.ceil((width + pad * 2) / G) + 2, mh = Math.ceil((H + (B + pad) * 2) / G) + 2;
     let mott = null;
-    if (cfg.mottleAmp) {
+    // animated mottle: strength varies along the band as well as over time, so the whole band
+    // never goes flat at once
+    const clamp01 = v => (v < 0 ? 0 : v > 1 ? 1 : v);
+    const ampAt = xs => (cfg.animate
+      ? cfg.mottleMin + (cfg.mottleMax - cfg.mottleMin) * clamp01(0.55 + 0.5 * fbm2(xs / (cfg.mottleScale * 2.5), tp, cfg.seed + 101))
+      : cfg.mottleAmp);
+    if (cfg.mottleAmp || cfg.animate) {
       mott = new Float32Array(mw * mh);
       for (let j = 0; j < mh; j++) for (let i = 0; i < mw; i++) {
         // scaled about the middle of the band, so changing the scale doesn't slide it sideways
         // rise: sample from further down as time passes, so the pattern drifts up
-        mott[j * mw + i] = cfg.mottleAmp * steam((i * G - pad - cfg.shift - width / 2) / cfg.mottleScale,
+        mott[j * mw + i] = ampAt(i * G - pad - cfg.shift) * steam((i * G - pad - cfg.shift - width / 2) / cfg.mottleScale,
           (j * G - pad - B - H / 2 + cfg.rise * cfg.time) / cfg.mottleScale, cfg.seed + 5, cfg.time * cfg.morph);
       }
     }
@@ -191,7 +198,8 @@
     const ang = cfg.angle * Math.PI / 180, ca = Math.cos(ang), sa = Math.sin(ang), mid = width / 2;
     const sT = cfg.cell * cfg.sizeTop, sB = cfg.cell * cfg.sizeBottom, slope = (sB - sT) / H, flat = Math.abs(slope) < 1e-6;
     const stretch = Math.max(0.05, cfg.stretch), jit = cfg.jitter, seed = cfg.seed | 0;
-    const margin = (sMax * 2 + Math.abs(cfg.warpAmp)) / span + Math.abs(cfg.mottleAmp) + 0.02;
+    const mottleMost = cfg.animate ? Math.max(Math.abs(cfg.mottleMin), Math.abs(cfg.mottleMax)) : Math.abs(cfg.mottleAmp);
+    const margin = (sMax * 2 + Math.abs(cfg.warpAmp)) / span + mottleMost + 0.02;
     const sharp = dpr / Math.max(0.05, cfg.softness);
     const perDot = cfg.perDot, shape = cfg.shape;
 
@@ -277,17 +285,17 @@
   /* ---- Animation ---- */
   const moves = cfg => !!(cfg.animate || cfg.flow || cfg.heaveAmp || (cfg.mottleAmp || cfg.animate) && (cfg.rise || cfg.morph));
 
-  // the settings for one moment: the band travels by flow, swells heave, and the mottle's
-  // strength follows a smooth random curve. Its scale stays put, so nothing stretches sideways.
+  // the settings for one moment. Flow moves the band at a steady speed. Randomness wobbles the
+  // clock that drives heave, rise and mottle (always forward, never backward) and keeps the mottle
+  // slowly changing shape, so the motion doesn't settle into a visible rhythm.
   function at(input, seconds) {
     const cfg = { ...DEFAULTS, ...input };
     if (!moves(cfg)) return cfg;
+    const P = Math.max(0.1, cfg.animPeriod), seed = cfg.seed | 0;
     cfg.shift += cfg.flow * seconds;
-    cfg.time += seconds;
-    if (cfg.animate) {
-      const k = n => Math.min(1, Math.max(0, (n + 1) / 2 * 1.4 - 0.2));   // stretched so the limits get reached
-      cfg.mottleAmp = cfg.mottleMin + (cfg.mottleMax - cfg.mottleMin) * k(fbm1(seconds / Math.max(0.1, cfg.animPeriod), (cfg.seed | 0) + 101));
-    }
+    const wobble = fbm1(seconds / (P * 2.9), seed + 303) * 0.6 + fbm1(seconds / (P * 7.3), seed + 307) * 0.4;
+    cfg.time += seconds + cfg.chaos * 0.18 * P * wobble;
+    cfg.morph += cfg.chaos * 0.3 / P;
     return cfg;
   }
 
@@ -315,7 +323,8 @@ uniform vec2 uRes;
 uniform float uDpr, uB, uH, uY0, uSpan, uMid, uMargin, uSharp, uRmax, uDotSize;
 uniform float uST, uSlope, uFlat, uStretch, uCa, uSa, uRp, uOff, uJit;
 uniform float uWarpAmp, uWarpLen, uWaveAmp, uWaveLen, uWavePhase, uRagAmp, uRagScale;
-uniform float uMotAmp, uMotScale, uHeaveAmp, uHeaveLen, uTp, uShift, uRiseT, uTm;
+uniform float uMotAmp, uMotScale, uHeaveAmp, uHeaveLen, uTp, uShift, uRiseT, uTm, uMotMin, uMotMax;
+uniform int uAnim;
 uniform int uSeed, uShape, uPerDot;
 uniform vec3 uFrom, uTo;
 uniform sampler2D uLut;
@@ -371,7 +380,8 @@ float coverage(float x, float y) {
   float e = uWaveAmp * sin(TAU * xs / uWaveLen + uWavePhase) + hv;
   if (uRagAmp != 0.0) e += uRagAmp * fbm1(xs / uRagScale, uSeed);
   float c = (y - e - uY0) / uSpan;
-  if (uMotAmp != 0.0) c += uMotAmp * steam((xs - uMid) / uMotScale, (y - hv - uH * 0.5 + uRiseT) / uMotScale, uSeed + 5, uTm);
+  float amp = uAnim == 1 ? mix(uMotMin, uMotMax, clamp(0.55 + 0.5 * fbm2(xs / (uMotScale * 2.5), uTp, uSeed + 101), 0.0, 1.0)) : uMotAmp;
+  if (amp != 0.0) c += amp * steam((xs - uMid) / uMotScale, (y - hv - uH * 0.5 + uRiseT) / uMotScale, uSeed + 5, uTm);
   return c;
 }
 
@@ -473,7 +483,8 @@ void main() { vec2 p = vec2((gl_VertexID << 1) & 2, gl_VertexID & 2); gl_Positio
         const f = (name, v) => gl.uniform1f(U(name), v);
         gl.uniform2f(U('uRes'), w, h);
         f('uDpr', dpr); f('uB', B); f('uH', H); f('uY0', cfg.start * H); f('uSpan', span); f('uMid', width / 2);
-        f('uMargin', (sMax * 2 + Math.abs(cfg.warpAmp)) / span + Math.abs(cfg.mottleAmp) + 0.02);
+        const mottleMost = cfg.animate ? Math.max(Math.abs(cfg.mottleMin), Math.abs(cfg.mottleMax)) : Math.abs(cfg.mottleAmp);
+        f('uMargin', (sMax * 2 + Math.abs(cfg.warpAmp)) / span + mottleMost + 0.02);
         f('uSharp', dpr / Math.max(0.05, cfg.softness)); f('uRmax', table[N - 1]); f('uDotSize', cfg.dotSize);
         f('uST', sT); f('uSlope', slope); f('uFlat', Math.abs(slope) < 1e-6 ? 1 : 0); f('uStretch', Math.max(0.05, cfg.stretch));
         f('uCa', Math.cos(ang)); f('uSa', Math.sin(ang)); f('uRp', rp); f('uOff', off); f('uJit', cfg.jitter);
@@ -482,6 +493,7 @@ void main() { vec2 p = vec2((gl_VertexID << 1) & 2, gl_VertexID & 2); gl_Positio
         f('uMotAmp', cfg.mottleAmp); f('uMotScale', cfg.mottleScale); f('uHeaveAmp', cfg.heaveAmp); f('uHeaveLen', cfg.heaveLen);
         f('uTp', cfg.time / Math.max(0.1, cfg.animPeriod)); f('uShift', cfg.shift);
         f('uRiseT', cfg.rise * cfg.time); f('uTm', cfg.time * cfg.morph);
+        f('uMotMin', cfg.mottleMin); f('uMotMax', cfg.mottleMax); gl.uniform1i(U('uAnim'), cfg.animate ? 1 : 0);
         gl.uniform1i(U('uSeed'), cfg.seed | 0); gl.uniform1i(U('uShape'), SHAPES[cfg.shape] || 0); gl.uniform1i(U('uPerDot'), cfg.perDot ? 1 : 0);
         gl.uniform3f(U('uFrom'), from[0], from[1], from[2]); gl.uniform3f(U('uTo'), to[0], to[1], to[2]);
         gl.drawArrays(gl.TRIANGLES, 0, 3);
@@ -503,12 +515,17 @@ void main() { vec2 p = vec2((gl_VertexID << 1) & 2, gl_VertexID & 2); gl_Positio
   }
 
   /* ---- Site: one canvas per band, spanning the window, redrawn when the width changes ---- */
-  function mount(sections, config) {
+  // options.autostart: false holds the animation until start() is called (the home page waits
+  // for the split-flap board to settle, so the two don't compete for frames)
+  function mount(sections, config, options = {}) {
     const cfg = { ...DEFAULTS, ...config };
     const root = document.documentElement;
     // how far the canvas reaches either side of the section edge; styles.css spaces content by it
     const reach = cfg.height / 2 + bleed(cfg);
     root.style.setProperty('--halftone-reach', reach + 'px');
+    // where the transition starts above the section edge and finishes below it, before distortion
+    root.style.setProperty('--halftone-above', Math.max(0, (0.5 - cfg.start) * cfg.height) + 'px');
+    root.style.setProperty('--halftone-below', Math.max(0, (cfg.end - 0.5) * cfg.height) + 'px');
     const items = [...sections].map(section => {
       const canvas = document.createElement('canvas');
       canvas.className = 'halftone';
@@ -540,17 +557,23 @@ void main() { vec2 p = vec2((gl_VertexID << 1) & 2, gl_VertexID & 2); gl_Positio
         canvas.style.top = -reach + 'px';
         canvas.style.left = -section.getBoundingClientRect().left + 'px';
       });
-      if (anim) anim.stop();
+      run();
+    }
+    let started = options.autostart !== false;
+    function run() {
+      if (anim) { anim.stop(); anim = null; }
       // animation needs WebGL: without it the band stays still
-      if (moves(cfg) && !still && items.every(item => item.r.gpu)) {
-        anim = animate(cfg, frame => {
-          items.forEach(item => { if (!io || visible.has(item.canvas)) item.r.draw(frame, W, dpr(), item.from, item.to); });
-        }, () => !document.hidden && (!io || visible.size > 0));
-      }
+      if (!started || !moves(cfg) || still || !items.every(item => item.r.gpu)) return;
+      anim = animate(cfg, frame => {
+        items.forEach(item => { if (!io || visible.has(item.canvas)) item.r.draw(frame, W, dpr(), item.from, item.to); });
+      }, () => !document.hidden && (!io || visible.size > 0));
     }
     draw();
     addEventListener('resize', () => { clearTimeout(timer); timer = setTimeout(draw, 120); });
-    return { redraw() { W = 0; draw(); } };
+    return {
+      redraw() { W = 0; draw(); },
+      start() { if (!started) { started = true; run(); } },
+    };
   }
 
   (typeof window !== 'undefined' ? window : self).Halftone = { DEFAULTS, bleed, mask, paint, rgb, activeConfig, mount, at, animate, moves, renderer };

@@ -63,6 +63,8 @@
   /* Roles */
   --bg: var(--c-night);
   --halftone-reach: 84px;   /* how far the halftone reaches either side of a section edge; halftone.js sets it */
+  --halftone-above: 72px;   /* section edge up to where the transition starts; halftone.js sets it */
+  --halftone-below: 72px;   /* section edge down to where it finishes */
   --fg: var(--c-mist);
   --muted: #9a9894;
   --line: #2a2a2c;
@@ -204,8 +206,11 @@ a { color: inherit; text-decoration: none; }
   max-width: var(--max);
   margin: 0 auto;
   /* first screen = this cover plus the Rust halftone band, so the band ends right at the fold */
-  min-height: calc(100svh - var(--nav-h) - var(--halftone-reach));
-  padding: 48px 32px calc(var(--halftone-reach) + 24px);
+  min-height: calc(100svh - var(--nav-h) - var(--halftone-below));
+  /* "Recent Work" sits just above where the transition starts; dots that drift higher pass behind it */
+  padding: 48px 32px calc(var(--halftone-above) + 40px);
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -215,7 +220,7 @@ a { color: inherit; text-decoration: none; }
 
 .cover__work {
   font-family: var(--font-display);
-  font-size: clamp(24px, 3vw, 36px);
+  font-size: clamp(36px, 4.7vw, 68px);
   font-weight: 600;
   line-height: 1.1;
   letter-spacing: -0.01em;
@@ -233,6 +238,11 @@ a { color: inherit; text-decoration: none; }
 /* the board takes the free space and centres in it; "Recent Work" sits at the bottom */
 .cover__text { width: 100%; min-width: 0; flex: 1; display: flex; flex-direction: column; justify-content: center; }
 .cover__name .sf-board { margin: 0 auto; }
+.cover__text { position: relative; }
+/* invisible button over the board's bottom-right window once it shows the restart icon */
+.cover__replay { position: absolute; border-radius: 4px; cursor: pointer; background: transparent; border: 0; padding: 0; }
+.cover__replay:hover { background: rgba(255, 255, 255, 0.06); }
+.cover__replay:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
 
 .cover__name.is-flap {
   font-size: 0;
@@ -335,6 +345,10 @@ a { color: inherit; text-decoration: none; }
 .project.project--band {
   padding-top: calc(var(--halftone-reach) + 72px);
   padding-bottom: max(96px, calc(var(--halftone-reach) + 40px));
+  /* tall enough that a whole screen of solid colour fits between the two transitions: the band
+     at each edge reaches --halftone-reach into the section, plus a little extra at either end */
+  min-height: calc(100svh + 2 * var(--halftone-reach) + 48px);
+  align-content: center;
 }
 
 .project--band::after {
@@ -348,6 +362,17 @@ a { color: inherit; text-decoration: none; }
 
 /* halftone.js draws the transition on a canvas centred on the edge with the section above,
    reaching --halftone-reach either side of it */
+/* resting point for the guided scroll in index.html: one screen (below the nav) of solid colour
+   in the middle of each project, so the page settles with neither transition showing */
+.project__snap {
+  position: absolute;
+  left: 0;
+  width: 1px;
+  top: calc(50% - (100svh - var(--nav-h)) / 2);
+  height: calc(100svh - var(--nav-h));
+  pointer-events: none;
+}
+
 .project--band > .halftone {
   position: absolute;
   z-index: -1;
@@ -622,7 +647,7 @@ a.card:hover .card__thumb img { transform: scale(1.03); }
   .dropdown__menu { left: auto; right: -16px; }
   .cover {
     gap: 40px;
-    padding: 32px 16px calc(var(--halftone-reach) + 24px);
+    padding: 32px 16px calc(var(--halftone-above) + 32px);
   }
   .project { padding: 64px 16px; }
   .tinkering { padding: 32px 16px 80px; }

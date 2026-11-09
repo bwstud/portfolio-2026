@@ -48,7 +48,7 @@
     { key: 'jitter', name: 'Jitter', min: 0, max: 1, step: 0.01 },
     { key: 'seed', name: 'Seed', min: 1, max: 999, step: 1, shuffle: true },
     { group: 'Animate' },
-    { key: 'animate', name: 'Animate mottle', bool: true, hint: 'Mottle strength wanders at random between the limits below' },
+    { key: 'animate', name: 'Animate mottle', bool: true, hint: 'Mottle strength wanders between the limits below, differently along the band' },
     { key: 'mottleMin', name: 'Mottle low', min: 0, max: 1, step: 0.01 },
     { key: 'mottleMax', name: 'Mottle high', min: 0, max: 1, step: 0.01 },
     { key: 'flow', name: 'Flow', min: -400, max: 400, step: 1, unit: 'px/s', hint: 'Moves the whole band sideways: dots, mottle and edge travel together. Positive is left to right' },
@@ -56,6 +56,7 @@
     { key: 'heaveLen', name: 'Heave length', min: 40, max: 2000, step: 10, unit: 'px' },
     { key: 'rise', name: 'Rise', min: 0, max: 200, step: 1, unit: 'px/s', hint: 'Mottle drifts upward, like steam lifting off the solid. Needs some mottle' },
     { key: 'morph', name: 'Morph', min: 0, max: 3, step: 0.01, unit: '/s', hint: 'How fast the mottle changes shape as it goes' },
+    { key: 'chaos', name: 'Randomness', min: 0, max: 1, step: 0.01, hint: 'Speeds up and slows down the heave, rise and mottle at random, and keeps the mottle changing shape' },
     { key: 'animPeriod', name: 'Swing time', min: 0.5, max: 20, step: 0.1, unit: 's', hint: 'Roughly how long one swing or swell takes' },
     { key: 'animFps', name: 'Frame rate', min: 4, max: 60, step: 1, unit: 'fps' },
   ];

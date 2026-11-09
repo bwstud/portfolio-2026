@@ -10,6 +10,7 @@
   const DEFAULTS = {
     // Message
     lines: ['BRIAN', 'STUDWELL'],
+    sequence: [],               // later messages for spinTo(); the board is sized to fit them all
     chars: ' ABCDEFGHIJKLMNOPQRSTUVWXYZ',   // the order every module flips through
 
     // Timing
@@ -26,7 +27,7 @@
 
     // Motion blur
     shutterMs: 33,              // simulated exposure per frame
-    samples: 10,
+    samples: 4,
 
     // Board
     boardWidth: 560,            // px
@@ -57,10 +58,14 @@
     // Glyph
     glyphSize: 0.92,            // fraction of tile width
     fontWeight: 800,
+    icons: {},                  // character → SVG path data on a 24-unit grid, stroked like a Lucide icon
+    iconSize: 0.62,             // fraction of tile width
+    iconStroke: 2.75,           // stroke width on the 24-unit grid
 
     // Leaf
     overhang: 0.12,             // canvas spills past the tile so leaves can swing out
     slices: 16,                 // strips per leaf for the perspective warp
+    blurSlices: 4,              // strips for the faint motion-blur copies behind the sharp one
     eye: 2.2,                   // viewer distance, in tile heights
 
     // Light
@@ -136,7 +141,7 @@
 
   // What a module shows at time t (ms since the animation began)
   function flapState(m, t, cfg, flipEase, spinEase) {
-    const n = m.seq.length - 1, local = t - m.start, spinMs = n * cfg.flipMs;
+    const n = m.seq.length - 1, local = t - m.start, spinMs = n * (m.flipMs || cfg.flipMs);
     if (local < 0 || n === 0) return { top: m.seq[0], bottom: m.seq[0] };
     if (local >= spinMs) {
       const u = (local - spinMs) / cfg.bounceMs;
@@ -153,7 +158,7 @@
     return { top: to, bottom: from, leaf: { half: 'bottom', ch: to, deg: Math.abs(180 - deg) } };
   }
 
-  const flapEnd = (m, cfg) => m.start + (m.seq.length - 1) * cfg.flipMs + cfg.bounceMs;
+  const flapEnd = (m, cfg) => m.start + (m.seq.length - 1) * (m.flipMs || cfg.flipMs) + cfg.bounceMs;
 
   // host gets the board appended to it. Nothing animates by itself: call seek(t) with a clock.
   function mount(host, options) {
@@ -163,7 +168,8 @@
     host.appendChild(board);
 
     const scratch = document.createElement('canvas'), sctx = scratch.getContext('2d');
-    let cfg, mods, grid, flipEase, spinEase, duration;
+    let cfg, mods, grid, flipEase, spinEase, duration, layoutMessage;
+    const blanks = count => Array(count).fill(' ');
     // geometry in device pixels; tiles (background + glyph) are cached per character
     let tw, th, pad, tiles = {}, fontReady = false, time = 0;
 
@@ -172,17 +178,25 @@
       flipEase = resolveEase(cfg.flipEase);
       spinEase = resolveEase(cfg.spinEase);
       const lines = cfg.lines.some(l => l.length) ? cfg.lines : [' '];
-      const chars = cfg.chars || ' ';
+      const messages = [lines, ...cfg.sequence];
+      // any character a message uses joins the end of the drum
+      let chars = cfg.chars || ' ';
+      messages.flat().forEach(l => [...l].forEach(c => { if (!chars.includes(c)) chars += c; }));
+      cfg.chars = chars;
 
-      // the text sits inside a margin of empty modules
-      const blanks = count => Array(count).fill(' ');
-      const cols = Math.max(...lines.map(l => [...l].length)) + cfg.padX * 2;
-      const textRows = lines.map(l => {
-        const cells = [...blanks(cfg.padX), ...l];
-        return cfg.fillRows ? [...cells, ...blanks(cols - cells.length)] : cells;
-      });
+      // the text sits inside a margin of empty modules; a block narrower than the board centres
+      const width = msg => Math.max(...msg.map(l => [...l].length));
+      const cols = Math.max(...messages.map(width)) + cfg.padX * 2;
+      const height = Math.max(...messages.map(m => m.length));
+      layoutMessage = msg => {
+        const left = Math.floor((cols - width(msg)) / 2);
+        return Array.from({ length: height }, (_, r) => {
+          const cells = [...blanks(left), ...(msg[r] || '')];
+          return cfg.fillRows || messages.length > 1 ? [...cells, ...blanks(cols - cells.length)] : cells;
+        });
+      };
       const margin = Array.from({ length: cfg.padY }, () => blanks(cols));
-      const rows = [...margin, ...textRows, ...margin];
+      const rows = [...margin, ...layoutMessage(lines), ...margin];
       grid = { cols, rows: rows.length };
 
       board.style.setProperty('--cols', cols);
@@ -259,6 +273,7 @@
       g.fillStyle = cfg.tileBottom;
       g.beginPath(); g.roundRect(0, th / 2, tw, th / 2, [0, 0, r, r]); g.fill();
       if (!fontReady) { addGrain(g, ch); return (tiles[ch] = c); }   // plain tile until Geist arrives
+      if (cfg.icons[ch]) { drawIcon(g, cfg.icons[ch]); addGrain(g, ch); return (tiles[ch] = c); }
       // every glyph shares one baseline, with capitals centred on the hinge
       g.font = cfg.fontWeight + ' ' + Math.round(tw * cfg.glyphSize) + 'px Geist, sans-serif';
       g.textAlign = 'center';
@@ -266,6 +281,19 @@
       g.fillText(ch, tw / 2, th / 2 + g.measureText('H').actualBoundingBoxAscent / 2);
       addGrain(g, ch);
       return (tiles[ch] = c);
+    }
+
+    // an icon centred on the hinge, in the glyph colour
+    function drawIcon(g, paths) {
+      const size = tw * cfg.iconSize, s = size / 24;
+      g.save();
+      g.translate((tw - size) / 2, (th - size) / 2);
+      g.scale(s, s);
+      g.strokeStyle = cfg.glyphColor;
+      g.lineWidth = cfg.iconStroke;
+      g.lineCap = 'round'; g.lineJoin = 'round';
+      [].concat(paths).forEach(d => g.stroke(new Path2D(d)));
+      g.restore();
     }
 
     // baked into the tile, over the glyph, so the grain travels with the leaf as it swings
@@ -283,8 +311,8 @@
     }
 
     // a leaf rotating about the hinge, drawn in strips so its free edge swings toward the viewer
-    function drawLeaf(g, leaf) {
-      const img = tile(leaf.ch), h = th / 2, hinge = th / 2, cx = pad + tw / 2, slices = cfg.slices;
+    function drawLeaf(g, leaf, slices = cfg.slices) {
+      const img = tile(leaf.ch), h = th / 2, hinge = th / 2, cx = pad + tw / 2;
       const a = leaf.deg * Math.PI / 180, cos = Math.cos(a), sin = Math.sin(a);
       const eye = th * cfg.eye, dir = leaf.half === 'top' ? -1 : 1;
       const proj = d => { const sc = eye / (eye - d * sin); return { y: hinge + dir * d * cos * sc, sc }; };
@@ -305,11 +333,11 @@
       }
     }
 
-    function drawState(g, st) {
+    function drawState(g, st, slices) {
       g.clearRect(0, 0, tw + pad * 2, th);
       g.drawImage(tile(st.top), 0, 0, tw, th / 2, pad, 0, tw, th / 2);
       g.drawImage(tile(st.bottom), 0, th / 2, tw, th / 2, pad, th / 2, tw, th / 2);
-      if (st.leaf) drawLeaf(g, st.leaf);
+      if (st.leaf) drawLeaf(g, st.leaf, slices);
       g.fillStyle = cfg.slotColor;   // the slot between the halves
       g.fillRect(pad, th / 2 - th * cfg.slotSize / 2, tw, th * cfg.slotSize);
     }
@@ -328,7 +356,8 @@
       const samples = cfg.samples;
       for (let j = 0; j < samples; j++) {
         const behind = samples > 1 ? 1 - j / (samples - 1) : 0;
-        drawState(sctx, stateAt(m, t - cfg.shutterMs * behind));
+        // only the newest, sharpest sample needs every strip; the faint ones behind it blur anyway
+        drawState(sctx, stateAt(m, t - cfg.shutterMs * behind), j === samples - 1 ? cfg.slices : cfg.blurSlices);
         if (j === 0) m.ctx.clearRect(0, 0, tw + pad * 2, th);
         m.ctx.globalAlpha = 1 / (j + 1);
         m.ctx.drawImage(scratch, 0, 0);
@@ -337,6 +366,36 @@
     }
 
     function seek(t) { time = t; mods.forEach(m => drawModule(m, t)); }
+
+    // spin from whatever the board shows now to a new message, starting at time t0. Every module
+    // runs forward around the drum to its new letter, so the board keeps its size. speed 2 flips
+    // twice as fast.
+    function spinTo(lines, t0, options) {
+      const margin = Array.from({ length: cfg.padY }, () => blanks(grid.cols));
+      const targets = [...margin, ...layoutMessage(lines), ...margin].flat();
+      mods.forEach((m, i) => spinModule(m, targets[i], t0, options));
+      duration = Math.max(...mods.map(m => flapEnd(m, cfg))) + cfg.shutterMs;
+    }
+
+    // spin one module (counted left to right, top to bottom; negative counts from the end)
+    function spinCell(index, ch, t0, options) {
+      spinModule(mods.at(index), ch, t0, options);
+      duration = Math.max(...mods.map(m => flapEnd(m, cfg))) + cfg.shutterMs;
+    }
+
+    function spinModule(m, target, t0, { speed = 1 } = {}) {
+      const chars = cfg.chars, len = chars.length, random = Math.random;
+      const minFlips = Math.min(cfg.minFlips, cfg.maxFlips), maxFlips = Math.max(cfg.minFlips, cfg.maxFlips);
+      const to = Math.max(chars.indexOf(target), 0);
+      // the first flip lands on a random letter and the spin runs on from there, so neighbours
+      // that showed the same thing don't march through the drum together
+      const flips = minFlips + Math.floor(random() * (maxFlips - minFlips + 1));
+      const at = i => chars[(i % len + len) % len];
+      m.seq = [m.target, ...Array.from({ length: flips }, (_, k) => at(to - flips + 1 + k))];
+      m.target = target;
+      m.flipMs = cfg.flipMs / speed * (0.8 + random() * 0.4);   // each module keeps its own pace
+      m.start = t0 + (cfg.startMs + random() * cfg.staggerMs) / speed;
+    }
     function redraw() { mods.forEach(m => { m.drawn = null; }); seek(time); }
 
     build(options);
@@ -352,6 +411,10 @@
 
     return {
       seek,
+      spinTo,
+      spinCell,
+      cell: index => mods.at(index).el,   // a module's element, for placing things over it
+      states: t => mods.map(m => stateAt(m, t)),   // what every module shows at time t
       ready,
       update: build,                  // rebuild from a new set of overrides, keeping the playhead
       get duration() { return duration; },

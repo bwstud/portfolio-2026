@@ -1,7 +1,7 @@
 /* Split-Flap Lab: every setting in split-flap.js as a control, plus an easing editor and a
    transport. The board on the stage is the same code the home page runs. */
 (function () {
-  const { DEFAULTS, resolveEase } = SplitFlap;
+  const { DEFAULTS, STYLE_KEYS, resolveEase, resolveConfig } = SplitFlap;
   const STORE = 'split-flap-lab/v1';
   const LAB_ONLY = { seed: 1 };   // never part of a site config
   // where the lab starts: the padded board, which reaches the site only through a saved version
@@ -244,15 +244,19 @@
     return diff;
   }
 
-  // how many site settings on the panel differ from a version
-  function differences(version) {
-    const config = { ...DEFAULTS, ...version.config };
-    return SITE_KEYS.filter(k => !same(cfg[k], config[k])).length;
-  }
+  // light boards only set the look, so in light mode only those settings count
+  const keysFor = m => m === 'light' ? STYLE_KEYS : SITE_KEYS;
+  const modeOf = version => version.mode === 'light' ? 'light' : 'dark';
+
+  // how many settings on the panel differ from what a config would show, in the current mode
+  const differences = config => {
+    const full = { ...DEFAULTS, ...config };
+    return keysFor(mode).filter(k => !same(cfg[k], full[k])).length;
+  };
 
   function refreshCount() {
-    const count = differences(activeVersion());
-    $('count').textContent = count ? `${count} from active` : 'Matches active';
+    const count = differences(resolveConfig(store, mode));
+    $('count').textContent = count ? `${count} from ${mode} active` : `Matches ${mode} active`;
     $('version-use').disabled = !count;
     $('version-use').textContent = count ? 'Use on landing page' : 'On landing page';
   }
@@ -283,8 +287,13 @@
   const PUBLISH = `Push ${FILE} to publish.`;
   let store = { active: ORIGINAL, versions: [{ id: ORIGINAL, name: 'Original', savedAt: null, config: {} }] };
   let canWrite = false;
+  let mode = 'dark';   // which landing-page board the lab is working on; see setMode()
+  try { if (localStorage.getItem('split-flap-lab/mode') === 'light') mode = 'light'; } catch (e) { /* private mode */ }
 
-  const activeVersion = () => store.versions.find(v => v.id === store.active) || { config: {} };
+  // each mode has its own active version: store.active is dark, store.activeLight is light
+  const activeId = m => m === 'light' ? store.activeLight : store.active;
+  const setActive = (next, id, m) => { if (m === 'light') next.activeLight = id; else next.active = id; };
+  const onPage = (m, name) => `${name} is the ${m} board on the local landing page. ${PUBLISH}`;
   const parseStore = text => JSON.parse(text.slice(text.indexOf('{'), text.lastIndexOf('}') + 1));
   const status = text => { $('version-status').textContent = text; };
 
@@ -320,19 +329,28 @@
       $('version-name').focus();
       return;
     }
+    // a board on the page in the other mode can't be replaced by this one
+    const existing = store.versions.find(v => v.name === name);
+    const other = mode === 'light' ? 'dark' : 'light';
+    if (existing && existing.id === activeId(other)) {
+      status(`${name} is the ${other} board on the landing page. Save this ${mode} board under a new name.`);
+      $('version-name').focus();
+      return;
+    }
     commit(next => {
       const i = next.versions.findIndex(v => v.name === name);
       const entry = {
         id: i < 0 ? Date.now().toString(36) : next.versions[i].id,
-        name, savedAt: new Date().toISOString(), config: overrides(),
+        name, mode, savedAt: new Date().toISOString(), config: overrides(),
         lab: { seed: cfg.seed },
       };
       if (i < 0) next.versions.push(entry); else next.versions[i] = entry;
-      if (makeActive) next.active = entry.id;
+      if (makeActive) setActive(next, entry.id, mode);
     }, done);
   }
 
   function loadVersion(version) {
+    if (modeOf(version) !== mode) setMode(modeOf(version), false);
     Object.keys(cfg).forEach(k => { delete cfg[k]; });
     Object.assign(cfg, DEFAULTS, LAB_ONLY, version.lab, version.config);
     rows.forEach(r => r.sync());
@@ -357,7 +375,8 @@
     $('version-list').replaceChildren(...store.versions.map(version => {
       const item = document.createElement('li');
       item.className = 'version';
-      const isActive = version.id === store.active;
+      const isActive = version.id === activeId(modeOf(version));
+      const inUse = version.id === store.active || version.id === store.activeLight;
       const actions = document.createElement('div');
       actions.className = 'version__actions';
       actions.append(chip('Load', () => loadVersion(version)));
@@ -365,10 +384,10 @@
         actions.append(Object.assign(document.createElement('span'), { className: 'version__badge', textContent: 'Active' }));
       } else if (canWrite) {
         actions.append(chip('Set active', () => commit(
-          next => { next.active = version.id; },
-          `${version.name} is on the local landing page. ${PUBLISH}`,
+          next => setActive(next, version.id, modeOf(version)),
+          onPage(modeOf(version), version.name),
         )));
-        if (version.id !== ORIGINAL) {
+        if (version.id !== ORIGINAL && !inUse) {
           const remove = Object.assign(document.createElement('button'), { type: 'button', className: 'version__delete', textContent: 'Delete' });
           remove.setAttribute('aria-label', `Delete ${version.name}`);
           remove.addEventListener('click', () => {
@@ -379,8 +398,10 @@
           actions.append(remove);
         }
       }
+      const label = Object.assign(document.createElement('span'), { className: 'version__name', textContent: version.name });
+      label.append(Object.assign(document.createElement('span'), { className: 'version__mode', textContent: modeOf(version) === 'light' ? 'Light' : 'Dark' }));
       item.append(
-        Object.assign(document.createElement('span'), { className: 'version__name', textContent: version.name }),
+        label,
         Object.assign(document.createElement('span'), { className: 'version__date', textContent: dateLabel(version.savedAt) }),
         actions,
       );
@@ -399,21 +420,45 @@
     e.preventDefault();
     const name = $('version-name').value.trim();
     if (!name) return status('Name the version first.');
-    saveBoard(name, false, `Saved ${name}.`);
+    saveBoard(name, false, `Saved ${name} as a ${mode} board.`);
   });
 
   // one step from the panel to the landing page: a board that's already saved just goes active
   $('version-use').addEventListener('click', () => {
     const name = $('version-name').value.trim();
-    const match = store.versions.find(v => differences(v) === 0);
+    const match = store.versions.find(v => modeOf(v) === mode && differences(v.config) === 0);
     if (match) {
-      commit(next => { next.active = match.id; }, `${match.name} is on the local landing page. ${PUBLISH}`);
+      commit(next => setActive(next, match.id, mode), onPage(mode, match.name));
     } else if (name) {
-      saveBoard(name, true, `Saved ${name}. It's on the local landing page. ${PUBLISH}`);
+      saveBoard(name, true, `Saved ${name}. ${onPage(mode, name)}`);
     } else {
       status('Name this board first.');
       $('version-name').focus();
     }
+  });
+
+  /* ---- Light and dark: the lab page takes the mode, and the board takes that mode's active look ---- */
+  const MODE_STORE = 'split-flap-lab/mode';
+  function setMode(next, takeLook = true) {
+    mode = next;
+    if (mode === 'light') document.documentElement.dataset.theme = 'light';
+    else delete document.documentElement.dataset.theme;
+    try { localStorage.setItem(MODE_STORE, mode); } catch (e) { /* private mode */ }
+    $('mode-switch').querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', b.dataset.mode === mode));
+    if (takeLook) {
+      Object.assign(cfg, SplitFlap.activeStyle(mode, store));
+      rows.forEach(r => r.sync());
+      changed();
+      status(`Showing the ${mode} board's colours and lighting.`);
+    }
+    drawPlot();
+    drawTracks();
+    renderVersions();
+    refreshCount();
+  }
+  $('mode-switch').addEventListener('click', e => {
+    const button = e.target.closest('button[data-mode]');
+    if (button && button.dataset.mode !== mode) setMode(button.dataset.mode);
   });
 
   /* ---- Easing editor ---- */
@@ -493,13 +538,13 @@
     let d = '';
     for (let i = 0; i <= 160; i++) d += `${i ? 'L' : 'M'}${px(i / 160).toFixed(1)} ${py(ease(i / 160)).toFixed(1)}`;
     const handle = (x, y, ax, ay, i) => `
-      <line x1="${px(ax)}" y1="${py(ay)}" x2="${px(x)}" y2="${py(y)}" stroke="#f0b25e" stroke-opacity=".5" vector-effect="non-scaling-stroke"/>
-      <circle data-handle="${i}" cx="${px(x)}" cy="${py(y)}" r="6" fill="#f0b25e" style="cursor:grab"/>`;
+      <line x1="${px(ax)}" y1="${py(ay)}" x2="${px(x)}" y2="${py(y)}" style="stroke: var(--fg)" stroke-opacity=".5" vector-effect="non-scaling-stroke"/>
+      <circle data-handle="${i}" cx="${px(x)}" cy="${py(y)}" r="6" style="fill: var(--fg); cursor: grab"/>`;
     plot.innerHTML = `
-      <rect x="${px(0)}" y="${py(1)}" width="${px(1) - px(0)}" height="${py(0) - py(1)}" fill="#161618" stroke="#2a2a2c"/>
-      <path d="${d}" fill="none" stroke="#f2f0ec" stroke-width="2" stroke-linejoin="round"/>
+      <rect x="${px(0)}" y="${py(1)}" width="${px(1) - px(0)}" height="${py(0) - py(1)}" style="fill: var(--surface); stroke: var(--line-strong)"/>
+      <path d="${d}" fill="none" style="stroke: var(--fg)" stroke-width="2" stroke-linejoin="round"/>
       ${h ? handle(h[0], h[1], 0, 0, 0) + handle(h[2], h[3], 1, 1, 1) : ''}
-      <circle id="probe" r="4" fill="#f2f0ec" visibility="hidden"/>`;
+      <circle id="probe" r="4" style="fill: var(--fg)" visibility="hidden"/>`;
   }
 
   let dragging = null;
@@ -555,10 +600,13 @@
     g.scale(dpr, dpr);
     g.font = '10px Geist, sans-serif';
     g.textBaseline = 'middle';
+    // the page's own colours, so the timeline flips with light/dark
+    const css = getComputedStyle(document.body), token = name => css.getPropertyValue(name).trim();
+    const fg = token('--fg') || css.color, muted = token('--muted') || fg, line = token('--line-strong') || muted;
 
     // ruler
     const stepMs = [50, 100, 250, 500, 1000, 2000, 5000].find(s => timeX(s) - timeX(0) > 56) || 10000;
-    g.fillStyle = '#9a9894'; g.textAlign = 'left';
+    g.fillStyle = muted; g.textAlign = 'left';
     for (let t = 0; t <= flap.duration; t += stepMs) {
       g.fillRect(timeX(t), 2, 1, RULER_H - 6);
       if (timeX(t) + 40 < w) g.fillText((t / 1000).toFixed(stepMs < 1000 ? 2 : 0) + 's', timeX(t) + 4, 7);
@@ -568,13 +616,13 @@
     const rowH = (h - RULER_H) / tracks.length, barH = Math.max(3, Math.min(rowH - 2, 10));
     tracks.forEach((m, i) => {
       const y = RULER_H + i * rowH + (rowH - barH) / 2;
-      g.fillStyle = '#9a9894'; g.textAlign = 'center';
+      g.fillStyle = muted; g.textAlign = 'center';
       if (rowH >= 8) g.fillText(m.ch, LABEL_W / 2 - 2, y + barH / 2);
       const x0 = timeX(m.start), x1 = timeX(m.start + m.spinMs), x2 = timeX(m.end);
-      g.fillStyle = '#2a2a2c'; g.fillRect(x0, y, x1 - x0, barH);
-      g.fillStyle = 'rgba(240, 178, 94, 0.7)'; g.fillRect(x1, y, Math.max(x2 - x1, 1), barH);
+      g.fillStyle = line; g.fillRect(x0, y, x1 - x0, barH);
+      g.globalAlpha = 0.8; g.fillStyle = fg; g.fillRect(x1, y, Math.max(x2 - x1, 1), barH); g.globalAlpha = 1;
       // a tick at every character change, so the spin curve shows up as their spacing
-      g.fillStyle = '#6d6b67';
+      g.fillStyle = muted;
       let seen = 0;
       for (let k = 0; k <= 400; k++) {
         const f = Math.floor(clamp(ease(k / 400), 0, 1) * m.flips);
@@ -683,6 +731,7 @@
   new ResizeObserver(fitBoard).observe(stage);
 
   /* ---- Start ---- */
+  setMode(mode, false);
   fitBoard();
   checkDrum();
   refreshEase();

@@ -61,11 +61,14 @@
   --c-teal: #418A8B;
   --c-ochre: #DFC06C;
 
-  /* Roles */
-  --bg: var(--c-night);
+  /* Roles. --ground is the page colour and --pine-band the Pine section; light mode swaps both */
+  --ground: var(--c-night);
+  --pine-band: var(--c-pine);
+  --bg: var(--ground);
   --halftone-reach: 84px;   /* how far the halftone reaches either side of a section edge; halftone.js sets it */
   --halftone-above: 72px;   /* section edge up to where the transition starts; halftone.js sets it */
   --halftone-below: 72px;   /* section edge down to where it finishes */
+  --halftone-peak: 84px;    /* how high the dots realistically climb above a section edge; halftone.js sets it */
   --fg: var(--c-mist);
   /* neutrals mixed from Mist over Night, so they sit in the palette's cool cast.
      --muted keeps ≥4.5:1 on Night, Navy and Pine. */
@@ -77,6 +80,23 @@
   --max: 1200px;
   --nav-h: 80px;
 }
+
+/* Light mode: a light page colour (--ground) replaces Night, and Pine's section turns to a pale Pine-tinted
+   Mist with dark text. Rust, Navy and Ochre keep their colours. The neutrals mix Night over Mist. */
+:root[data-theme="light"] {
+  color-scheme: light;
+  /* trying page colours: a warm off-white now; Mist, then white, were earlier passes */
+  --ground: #F5F3ED;
+  --pine-band: color-mix(in srgb, var(--c-pine) 18%, var(--c-mist));
+  --fg: var(--c-night);
+  /* neutrals mix Night over whatever the page colour is */
+  --muted: color-mix(in srgb, var(--c-night) 72%, var(--ground));
+  --line: color-mix(in srgb, var(--c-night) 16%, var(--ground));
+  --surface: color-mix(in srgb, var(--c-night) 5%, var(--ground));
+  --hover: color-mix(in srgb, var(--c-night) 10%, var(--ground));
+  --line-strong: color-mix(in srgb, var(--c-night) 26%, var(--ground));
+}
+:root { color-scheme: dark; }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -129,6 +149,27 @@ a { color: inherit; text-decoration: none; }
   font-size: 15px;
   transition: color 0.15s;
 }
+
+/* light/dark switch: an icon button at the end of the links */
+.theme-toggle {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  margin: -4px -8px -4px 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition: color 0.15s, background-color 0.15s;
+}
+.theme-toggle:hover { color: var(--fg); background: var(--hover); }
+.theme-toggle svg { width: 18px; height: 18px; }
+/* show the mode you'd switch to: a moon in light mode, a sun in dark */
+.theme-toggle .icon-moon,
+:root[data-theme="light"] .theme-toggle .icon-sun { display: none; }
+:root[data-theme="light"] .theme-toggle .icon-moon { display: block; }
 
 .nav__links > a:hover,
 .dropdown__toggle:hover,
@@ -218,8 +259,8 @@ a { color: inherit; text-decoration: none; }
   margin: 0 auto;
   /* first screen = this cover plus the Rust halftone band, so the band ends right at the fold */
   min-height: calc(100svh - var(--nav-h) - var(--halftone-below));
-  /* "Recent Work" sits just above where the transition starts; dots that drift higher pass behind it */
-  padding: 48px 32px calc(var(--halftone-above) + 40px);
+  /* "Recent Work" sits just above the highest point the transition's dots climb to */
+  padding: 48px 32px calc(var(--halftone-peak) + 12px);
   position: relative;
   z-index: 1;
   display: flex;
@@ -244,6 +285,17 @@ a { color: inherit; text-decoration: none; }
   line-height: 0.95;
   letter-spacing: -0.03em;
 }
+
+/* Tagline under the board: body type, a step quieter than the name */
+.cover__tagline {
+  max-width: 100ch;
+  margin: 40px auto 0;
+  font-size: clamp(17px, 1.5vw, 21px);
+  line-height: 1.5;
+  color: var(--muted);
+  text-wrap: balance;
+}
+/* two balanced lines where the screen allows; the board's width follows the longer one */
 
 /* Split-flap name: text stays for screen readers, modules are drawn over it */
 /* the board takes the free space and centres in it; "Recent Work" sits at the bottom */
@@ -271,7 +323,9 @@ a { color: inherit; text-decoration: none; }
 /* Every row shares the longest line's columns, so modules match in size */
 .sf-row {
   display: grid;
-  grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
+  /* split-flap.js sets --sf-col to a whole number of device pixels; the slack centres */
+  grid-template-columns: repeat(var(--cols), var(--sf-col, minmax(0, 1fr)));
+  justify-content: center;
   gap: var(--sf-gap, 6px);
 }
 
@@ -279,6 +333,9 @@ a { color: inherit; text-decoration: none; }
 .sf {
   position: relative;
   aspect-ratio: 1 / var(--sf-ratio, 1.4);
+  /* whole device pixels, from split-flap.js; with both set, aspect-ratio steps aside */
+  width: var(--sf-col, auto);
+  height: var(--sf-row, auto);
 }
 
 .sf canvas {
@@ -298,6 +355,12 @@ a { color: inherit; text-decoration: none; }
     linear-gradient(100deg, rgba(255, 255, 255, var(--sf-frame-sheen)), transparent 60%),
     var(--sf-frame-color);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 24px 60px rgba(0, 0, 0, 0.45);
+}
+
+/* on the light page the plate casts a soft warm-brown shadow, as on paper, and catches
+   the light along its top edge */
+:root[data-theme="light"] .sf-board.is-framed {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7), 0 1px 2px rgba(70, 52, 28, 0.12), 0 14px 36px rgba(70, 52, 28, 0.16);
 }
 
 .is-framed .sf {
@@ -390,8 +453,12 @@ a { color: inherit; text-decoration: none; }
 }
 
 .project--rust {
-  --band-from: var(--bg);
+  --band-from: var(--ground);
   --band-to: var(--c-rust);
+  /* Rust and Navy are dark in both modes, so they keep Mist text whatever the page does */
+  --fg: var(--c-mist);
+  --bg: var(--c-night);
+  color: var(--fg);
   --muted: var(--c-mist);
   --line: rgba(218, 228, 227, 0.35);
   --surface: rgba(4, 10, 19, 0.12);
@@ -400,6 +467,10 @@ a { color: inherit; text-decoration: none; }
 .project--navy {
   --band-from: var(--c-rust);
   --band-to: var(--c-navy);
+  --fg: var(--c-mist);
+  --bg: var(--c-night);
+  --muted: color-mix(in srgb, var(--c-mist) 66%, var(--c-night));
+  color: var(--fg);
   --line: rgba(218, 228, 227, 0.25);
   --surface: rgba(218, 228, 227, 0.06);
 }
@@ -418,7 +489,7 @@ a { color: inherit; text-decoration: none; }
 
 /* Sage is light, so this section takes dark text like Ochre */
 .project--sage {
-  --band-from: var(--c-pine);
+  --band-from: var(--pine-band);
   --band-to: var(--c-sage);
   --fg: var(--c-night);
   --bg: var(--c-sage);
@@ -431,9 +502,21 @@ a { color: inherit; text-decoration: none; }
 /* Pine: a deep green-grey between Ochre and Sage */
 .project--pine {
   --band-from: var(--c-ochre);
-  --band-to: var(--c-pine);
+  --band-to: var(--pine-band);
   --line: rgba(218, 228, 227, 0.25);
   --surface: rgba(218, 228, 227, 0.06);
+}
+/* in light mode "Recent Work" is set in Rust, like the board's letters above it and the band below */
+:root[data-theme="light"] .cover__work { color: var(--c-rust); }
+
+/* light Pine takes dark text, like Ochre and Sage */
+:root[data-theme="light"] .project--pine {
+  --fg: var(--c-night);
+  --bg: var(--pine-band);
+  --muted: var(--c-pine);
+  --line: rgba(4, 10, 19, 0.3);
+  --surface: rgba(4, 10, 19, 0.08);
+  color: var(--fg);
 }
 
 /* Project layout: tagline, pills and description in a narrow column on the left; the hero
@@ -705,7 +788,9 @@ a.card:hover .card__thumb img { transform: scale(1.03); }
   .dropdown__menu { left: auto; right: -16px; }
   .cover {
     gap: 40px;
-    padding: 32px 16px calc(var(--halftone-above) + 32px);
+    /* phones sit closer: 95% of the time the dots stay under ~3/4 of the peak (measured at
+       390px wide), so only a rare surge drifts up behind "Recent Work" */
+    padding: 32px 16px calc(var(--halftone-peak) * 0.75 + 8px);
   }
   .project { padding: 64px 16px; }
   .tinkering { padding: 32px 16px 80px; }
@@ -737,4 +822,14 @@ a.card:hover .card__thumb img { transform: scale(1.03); }
   .nav__links { width: 100%; justify-content: space-between; gap: 0; }
   /* 44px-tall tap rows; the text stays where it was */
   .nav__links > a { display: flex; align-items: center; min-height: 44px; }
+  .theme-toggle { width: 44px; height: 44px; margin: 0 -12px 0 0; }
+  /* the board: a thin plate and tight windows, so the width goes to the letters. The board
+     sets its own spacing inline as custom properties, so override the properties themselves */
+  .cover__name .sf-board.is-framed { padding: 5px; border-radius: 0; }
+  /* and it runs edge to edge, out through the cover's 16px gutters */
+  .cover__name .sf-board { width: calc(100% + 32px); max-width: none; margin: 0 -16px; }
+  .cover__name .sf-board, .cover__name .sf-row { gap: 3px; }
+  /* "Recent Work" steps down so it labels the work instead of competing with the name */
+  .cover__work { font-size: 20px; }
+  .cover__tagline { margin-top: 28px; font-size: 16px; }
 }

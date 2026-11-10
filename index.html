@@ -4,6 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Brian Studwell</title>
+  <!-- apply a saved light/dark choice before first paint, so the page doesn't flash -->
+  <script>try { if (localStorage.getItem('theme') === 'light') document.documentElement.dataset.theme = 'light'; } catch (e) {}</script>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -27,6 +29,10 @@
       <a href="tinkering/">Tinkering</a>
       <a href="https://www.linkedin.com/" target="_blank" rel="noopener">LinkedIn</a>
       <a href="#contact">Contact</a>
+      <button class="theme-toggle" type="button" aria-label="Light mode" aria-pressed="false">
+        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+      </button>
     </nav>
   </header>
 
@@ -34,6 +40,7 @@
     <section class="cover" id="top">
       <div class="cover__text">
         <h1 class="cover__name">Brian Studwell</h1>
+        <p class="cover__tagline">I design human-in-the-loop agentic systems for high-stakes, regulated industries. I think in systems, always keep the plates spinning, and care deeply about the people who rely on my work.</p>
       </div>
 
       <h2 class="cover__work" id="work">Recent Work</h2>
@@ -118,7 +125,9 @@
   <script src="halftone-versions.js"></script>
   <script>
     /* ---- Halftone bands: drawn by halftone.js from the active Halftone Lab version ---- */
-    Halftone.mount(document.querySelectorAll('.project--band'), Halftone.activeConfig());
+    const bands = Halftone.mount(document.querySelectorAll('.project--band'), Halftone.activeConfig());
+    // the bands read their colours from CSS, so switching light/dark redraws them
+    document.addEventListener('themechange', () => bands.redraw());
 
     /* ---- Split-flap name: the board lives in split-flap.js, this runs its clock ---- */
     (function () {
@@ -127,7 +136,7 @@
       // after the name lands, the board re-spins through these, pausing on each, and stops on the last
       const sequence = [
         ['PRODUCT', 'DESIGNER'],
-        ['UX', 'DESIGNER'],
+        ['PRODUCT', 'BUILDER'],
         ['EXPERIENCE', 'DESIGNER'],
         ['AX', 'DESIGNER'],
         ['SIX', 'DESIGNER?'],
@@ -138,13 +147,36 @@
       const RESTART = '\uE000';
       const config = SplitFlap.activeConfig();
       const name = config.lines || SplitFlap.DEFAULTS.lines;
-      // padX 1: "EXPERIENCE" then fits the same 12 columns, and shorter messages centre in them
-      const flap = SplitFlap.mount(heading, {
-        ...config, padX: 1, sequence,
+      // padX 1: "EXPERIENCE" then fits the same 12 columns, and shorter messages centre in them.
+      // On phones the board drops those side columns and enlarges the letters, so they stay legible
+      const phone = matchMedia('(max-width: 600px)');
+      // each mode's look comes from its active version in the Split-Flap Lab (see split-flap.js)
+      const LIGHT_BOARD = SplitFlap.activeStyle('light'), darkBoard = SplitFlap.activeStyle('dark');
+      const boardColours = () => document.documentElement.dataset.theme === 'light' ? LIGHT_BOARD : darkBoard;
+      const boardOptions = () => ({
+        ...config, ...boardColours(), sequence,
+        padX: phone.matches ? 0 : 1,
+        glyphSize: phone.matches ? 0.86 : (config.glyphSize ?? SplitFlap.DEFAULTS.glyphSize),
         chars: (config.chars || SplitFlap.DEFAULTS.chars) + RESTART,
         icons: { [RESTART]: ['M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8', 'M3 3v5h5'] },
       });
+      const flap = SplitFlap.mount(heading, boardOptions());
       const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      // the board's plate spans the tagline's longest line, so the two read as one block.
+      // Phones keep the edge-to-edge board from styles.css.
+      const tagline = document.querySelector('.cover__tagline');
+      const matchTagline = () => {
+        const board = heading.querySelector('.sf-board');
+        if (!board || !tagline) return;
+        if (phone.matches) { board.style.maxWidth = ''; return; }
+        const range = document.createRange();
+        range.selectNodeContents(tagline);
+        const widest = Math.max(0, ...[...range.getClientRects()].map(r => r.width));
+        board.style.maxWidth = widest ? Math.round(widest) + 'px' : '';
+      };
+      if (tagline) new ResizeObserver(matchTagline).observe(tagline);
+      document.fonts.ready.then(matchTagline);
 
       // a real button laid over the bottom-right window, shown once the restart icon has landed
       const replay = document.createElement('button');
@@ -182,6 +214,16 @@
           requestAnimationFrame(frame);
         }
         function run() { if (!running) { running = true; requestAnimationFrame(frame); } }
+        // switching light/dark recolours the board where it stands
+        document.addEventListener('themechange', () => flap.restyle(boardColours()));
+        // crossing the phone breakpoint rebuilds the board and plays it from the name again
+        phone.addEventListener('change', () => {
+          flap.update(boardOptions());
+          replay.hidden = true;
+          flap.spinTo(name, now());
+          step = 0; landed = null;
+          run();
+        });
         replay.addEventListener('click', () => {
           replay.hidden = true;
           flap.spinTo(name, now());

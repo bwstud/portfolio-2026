@@ -15,3 +15,19 @@ dropdowns.forEach(dropdown => {
 
 document.addEventListener('click', e => dropdowns.forEach(d => { if (!d.contains(e.target)) setOpen(d, false); }));
 document.addEventListener('keydown', e => { if (e.key === 'Escape') dropdowns.forEach(d => setOpen(d, false)); });
+
+/* Light/dark switch. The choice is remembered; the page starts dark. An inline script in <head>
+   applies a saved choice before first paint. Pages listen for "themechange" to redraw canvases. */
+const themeToggle = document.querySelector('.theme-toggle');
+if (themeToggle) {
+  const root = document.documentElement;
+  const sync = () => themeToggle.setAttribute('aria-pressed', root.dataset.theme === 'light');
+  sync();
+  themeToggle.addEventListener('click', () => {
+    const light = root.dataset.theme !== 'light';
+    if (light) root.dataset.theme = 'light'; else delete root.dataset.theme;
+    try { localStorage.setItem('theme', light ? 'light' : 'dark'); } catch (e) {}
+    sync();
+    document.dispatchEvent(new CustomEvent('themechange'));
+  });
+}

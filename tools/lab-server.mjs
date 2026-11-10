@@ -123,6 +123,7 @@ function problemWith(store) {
   if (!valid) return 'A version is missing its id, name or config.';
   if (new Set(store.versions.map(version => version.id)).size !== store.versions.length) return 'Two versions share an id.';
   if (!store.versions.some(version => version.id === store.active)) return 'The active version is not in the list.';
+  if (store.activeLight != null && !store.versions.some(version => version.id === store.activeLight)) return 'The light active version is not in the list.';
   return null;
 }
 
@@ -165,7 +166,9 @@ async function versionsApi(req, res, target) {
   }
   const problem = problemWith(store);
   if (problem) return send(res, 400, problem);
-  await writeVersions(target, { active: store.active, versions: store.versions });
+  // activeLight: the Split-Flap Lab's light-mode board, when one is set
+  const { active, activeLight, versions } = store;
+  await writeVersions(target, activeLight == null ? { active, versions } : { active, activeLight, versions });
   send(res, 200, 'Saved.');
 }
 

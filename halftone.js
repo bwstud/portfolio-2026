@@ -131,6 +131,20 @@
     return Math.ceil(reach);
   }
 
+  // how high the dots really climb above the section edge, for laying out what sits above a band.
+  // bleed() is a hard limit that assumes every noise field peaks at once; noise (ragged edge,
+  // heave, mottle) seldom passes ~70% of its nominal amplitude, so here it counts at NOISE.
+  // Checked against the active version: 480 frames over 4 minutes peaked at 308px; this gives 318.
+  function peak(input) {
+    const cfg = { ...DEFAULTS, ...input }, NOISE = 0.8;
+    const H = cfg.height, span = Math.max(1, (cfg.end - cfg.start) * H);
+    const dot = cfg.cell * Math.max(cfg.sizeTop, cfg.sizeBottom) * Math.max(1, cfg.stretch);
+    const mottle = cfg.animate ? Math.max(Math.abs(cfg.mottleMin), Math.abs(cfg.mottleMax)) : Math.abs(cfg.mottleAmp);
+    const noise = Math.abs(cfg.raggedAmp) + Math.abs(cfg.heaveAmp) + mottle * span;
+    const top = H / 2 + Math.abs(cfg.waveAmp) + NOISE * noise + Math.abs(cfg.warpAmp) + dot + Math.max(0, -cfg.start * H);
+    return Math.min(Math.ceil(top), H / 2 + bleed(cfg));
+  }
+
   /* ---- The mask: 0 is the colour above, 255 the colour below ---- */
   function mask(input, width, dpr) {
     const cfg = { ...DEFAULTS, ...input };
@@ -283,7 +297,9 @@
     host.append(probe);
     const c = getComputedStyle(probe).color;
     probe.remove();
-    return (c.match(/[\d.]+/g) || [0, 0, 0]).slice(0, 3).map(Number);
+    const n = (c.match(/[\d.]+/g) || [0, 0, 0]).slice(0, 3).map(Number);
+    // color-mix() and other modern colours compute to color(srgb r g b), in 0–1
+    return c.startsWith('color(') ? n.map(v => Math.round(v * 255)) : n;
   }
 
   function activeConfig() {
@@ -765,6 +781,8 @@ void main() { vec2 p = vec2((gl_VertexID << 1) & 2, gl_VertexID & 2); gl_Positio
     // how far the canvas reaches either side of the section edge; styles.css spaces content by it
     const reach = cfg.height / 2 + bleed(cfg);
     root.style.setProperty('--halftone-reach', reach + 'px');
+    // how high the dots realistically climb above the edge; styles.css keeps "Recent Work" above it
+    root.style.setProperty('--halftone-peak', peak(cfg) + 'px');
     // where the transition starts above the section edge and finishes below it, before distortion
     root.style.setProperty('--halftone-above', Math.max(0, (0.5 - cfg.start) * cfg.height) + 'px');
     root.style.setProperty('--halftone-below', Math.max(0, (cfg.end - 0.5) * cfg.height) + 'px');
@@ -816,5 +834,5 @@ void main() { vec2 p = vec2((gl_VertexID << 1) & 2, gl_VertexID & 2); gl_Positio
     };
   }
 
-  (typeof window !== 'undefined' ? window : self).Halftone = { DEFAULTS, bleed, mask, paint, rgb, activeConfig, mount, at, animate, moves, renderer, stir, play };
+  (typeof window !== 'undefined' ? window : self).Halftone = { DEFAULTS, bleed, peak, mask, paint, rgb, activeConfig, mount, at, animate, moves, renderer, stir, play };
 })();

@@ -7,7 +7,9 @@
   <meta name="robots" content="noindex">
   <link rel="stylesheet" href="../../styles.css">
   <style>
-    :root { color-scheme: dark; --accent: #f0b25e; --dock-h: 248px; --panel-w: 320px; }
+    :root { --dock-h: 248px; --panel-w: 320px; }
+    /* black and white: the accent is the page's own text colour, so it flips with light/dark */
+    :root, :root[data-theme="light"] { --accent: var(--fg); }
     html, body { height: 100%; overflow: hidden; }
     body {
       display: grid;
@@ -26,7 +28,8 @@
     .head a:hover { color: var(--fg); }
     .head h1 { font-size: 15px; font-weight: 600; }
 
-    .head__frame { width: 148px; }
+    .head__frame, .head__mode { width: 148px; }
+    .head__mode { margin-left: auto; }
 
     /* Stage */
     .stage { grid-area: stage; display: flex; align-items: center; justify-content: center; min-width: 0; padding: 24px 48px; overflow: hidden; }
@@ -47,13 +50,14 @@
     .row__value input[type="number"] { width: 60px; padding: 2px 4px; text-align: right; background: var(--bg); border: 1px solid var(--line); border-radius: 4px; color: var(--fg); }
     .row__value input[type="color"] { width: 28px; height: 22px; padding: 0; background: none; border: 1px solid var(--line); border-radius: 4px; }
     .row__reset { width: 20px; height: 20px; border-radius: 4px; color: var(--muted); visibility: hidden; }
-    .row__reset:hover { color: var(--fg); background: #222225; }
+    .row__reset:hover { color: var(--fg); background: var(--hover); }
     .row.is-changed .row__reset { visibility: visible; }
-    .row.is-changed .row__name { color: var(--accent); }
+    .row.is-changed .row__name { font-weight: 700; }
+    .row.is-changed .row__name::after { content: " •"; }
     .row input[type="range"] { grid-column: 1 / -1; width: 100%; accent-color: var(--accent); }
     .row textarea, .row input[type="text"] { grid-column: 1 / -1; width: 100%; padding: 5px 7px; resize: none; background: var(--bg); border: 1px solid var(--line); border-radius: 4px; font-variant-numeric: tabular-nums; }
     .row__hint { grid-column: 1 / -1; color: var(--muted); font-size: 12px; }
-    .row__hint.is-warning { color: var(--accent); }
+    .row__hint.is-warning { color: var(--fg); font-weight: 600; }
     .row__value input[type="checkbox"] { accent-color: var(--accent); }
 
     /* Versions */
@@ -65,6 +69,8 @@
     .versions { list-style: none; margin-top: 8px; }
     .version { display: grid; grid-template-columns: 1fr auto; gap: 6px; padding: 8px 0; border-bottom: 1px solid var(--line); }
     .version__name { min-width: 0; font-weight: 500; overflow-wrap: anywhere; }
+    .version__mode { margin-left: 6px; padding: 0 6px; border: 1px solid var(--line-strong); border-radius: 999px; color: var(--muted); font-size: 11px; font-weight: 400; }
+    .versions__about { display: block; margin-bottom: 8px; }
     .version__date { color: var(--muted); font-size: 12px; white-space: nowrap; }
     .version__actions { grid-column: 1 / -1; display: flex; align-items: center; gap: 6px; }
     .version__actions .chip { padding: 2px 9px; font-size: 12px; }
@@ -83,7 +89,7 @@
     .ease__side { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
     .seg { display: flex; padding: 2px; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; }
     .seg button { flex: 1; padding: 3px 0; border-radius: 4px; color: var(--muted); }
-    .seg button[aria-pressed="true"] { background: #2a2a2c; color: var(--fg); }
+    .seg button[aria-pressed="true"] { background: var(--fg); color: var(--bg); }
     .ease__about { color: var(--muted); font-size: 12px; min-height: 34px; }
     .ease select { width: 100%; }
     .bez { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
@@ -126,6 +132,10 @@
       <button type="button" data-frame="false" aria-pressed="false">Flat</button>
       <button type="button" data-frame="true" aria-pressed="true">Framed</button>
     </div>
+    <div class="seg head__mode" id="mode-switch" role="group" aria-label="Light or dark mode">
+      <button type="button" data-mode="dark" aria-pressed="true">Dark</button>
+      <button type="button" data-mode="light" aria-pressed="false">Light</button>
+    </div>
   </header>
 
   <main class="stage" id="stage"><div class="stage__fit" id="fit"></div></main>
@@ -139,6 +149,7 @@
     <div class="panel__list" id="params">
       <section class="group">
         <h2>Versions</h2>
+        <small class="row__hint versions__about">Saves go to the mode you're in. A light board sets the colours and lighting; its size, layout and timing come from the dark board.</small>
         <div id="version-tools" hidden>
           <form class="save" id="version-form">
             <input id="version-name" type="text" placeholder="Name this version" aria-label="Version name" autocomplete="off">

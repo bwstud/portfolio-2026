@@ -204,12 +204,8 @@
       board.style.setProperty('--sf-gap', (cfg.frame ? cfg.frameGap : cfg.gap) + 'px');
       board.classList.toggle('is-framed', cfg.frame);
       board.style.setProperty('--sf-inset', cfg.frame ? cfg.frameInset : 0);
-      board.style.setProperty('--sf-frame-color', cfg.frameColor);
-      board.style.setProperty('--sf-well-color', cfg.wellColor);
       board.style.setProperty('--sf-frame-pad', cfg.framePad + 'px');
-      board.style.setProperty('--sf-frame-depth', cfg.frameDepth);
-      board.style.setProperty('--sf-frame-lip', cfg.frameLip);
-      board.style.setProperty('--sf-frame-sheen', cfg.frameSheen);
+      plateStyle();
       board.style.setProperty('--sf-ratio', cfg.tileRatio);
       board.style.setProperty('--sf-overhang', cfg.overhang);
 
@@ -250,16 +246,40 @@
       redraw();
     }
 
+    // Everything lands on whole device pixels: cells, tiles, the space around each tile and the
+    // board's own position. Fractional sizes made each window blur its edges differently, so
+    // tiles looked off-centre and the gaps changed from window to window. The few pixels left
+    // over when the columns are rounded down go to the plate, split either side.
     function layout() {
       const dpr = window.devicePixelRatio || 1;
-      const cell = mods[0].el.clientWidth;
-      board.style.setProperty('--sf-cell', cell + 'px');
-      tw = Math.round(cell * dpr * (1 - 2 * (cfg.frame ? cfg.frameInset : 0)));
+      const style = getComputedStyle(board), row = board.firstElementChild;
+      const inner = (board.getBoundingClientRect().width - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight)) * dpr;
+      const gap = Math.round(parseFloat(getComputedStyle(row).columnGap) * dpr) || 0;
+      const inset = cfg.frame ? cfg.frameInset : 0;
+      const cellW = Math.max(4, Math.floor((inner - gap * (grid.cols - 1)) / grid.cols));
+      const insetX = Math.round(cellW * inset), insetY = Math.round(insetX * cfg.tileRatio);
+      tw = cellW - 2 * insetX;
       th = Math.round(tw * cfg.tileRatio);
       pad = Math.round(tw * cfg.overhang);
+      board.style.setProperty('--sf-col', cellW / dpr + 'px');
+      board.style.setProperty('--sf-row', (th + 2 * insetY) / dpr + 'px');
+      board.style.setProperty('--sf-cell', cellW / dpr + 'px');
+      const place = { left: (insetX - pad) / dpr + 'px', top: insetY / dpr + 'px', width: (tw + 2 * pad) / dpr + 'px', height: th / dpr + 'px' };
+      mods.forEach(m => Object.assign(m.canvas.style, place));
       tiles = {};
       [...mods.map(m => m.canvas), scratch].forEach(c => { c.width = tw + pad * 2; c.height = th; });
       if (fontReady) [...cfg.chars].forEach(tile);   // build every tile up front, not mid-spin
+      snap();
+    }
+
+    // nudge the board by under half a pixel so it starts on a device pixel; run again whenever
+    // the page around it moves without the board itself resizing
+    function snap() {
+      const dpr = window.devicePixelRatio || 1;
+      board.style.translate = '';
+      const r = board.getBoundingClientRect();
+      const dx = Math.round(r.left * dpr) - r.left * dpr, dy = Math.round(r.top * dpr) - r.top * dpr;
+      if (Math.abs(dx) > 0.01 || Math.abs(dy) > 0.01) board.style.translate = `${dx / dpr}px ${dy / dpr}px`;
     }
 
     function tile(ch) {
@@ -398,10 +418,34 @@
     }
     function redraw() { mods.forEach(m => { m.drawn = null; }); seek(time); }
 
+    // the plate's look lives in CSS custom properties on the board
+    function plateStyle() {
+      board.style.setProperty('--sf-frame-color', cfg.frameColor);
+      board.style.setProperty('--sf-well-color', cfg.wellColor);
+      board.style.setProperty('--sf-frame-depth', cfg.frameDepth);
+      board.style.setProperty('--sf-frame-lip', cfg.frameLip);
+      board.style.setProperty('--sf-frame-sheen', cfg.frameSheen);
+    }
+
+    // change colours and shading in place, without rebuilding: whatever is mid-spin carries on
+    function restyle(overrides) {
+      Object.assign(cfg, overrides);
+      plateStyle();
+      tiles = {};
+      if (fontReady) [...cfg.chars].forEach(tile);
+      redraw();
+    }
+
     build(options);
 
     // resizing a canvas clears it, so every layout change redraws straight away
     new ResizeObserver(() => { layout(); redraw(); }).observe(board);
+    let snapQueued = false;
+    addEventListener('resize', () => {
+      if (snapQueued) return;
+      snapQueued = true;
+      requestAnimationFrame(() => { snapQueued = false; snap(); });
+    });
 
     const ready = document.fonts.load('800 64px Geist').catch(() => {}).then(() => {
       fontReady = true; tiles = {};
@@ -417,6 +461,7 @@
       states: t => mods.map(m => stateAt(m, t)),   // what every module shows at time t
       ready,
       update: build,                  // rebuild from a new set of overrides, keeping the playhead
+      restyle,                        // recolour in place from a few overrides
       get duration() { return duration; },
       get grid() { return grid; },
       // the schedule, for drawing a timeline
@@ -428,11 +473,38 @@
   }
 
   // the overrides the site should run, from split-flap-versions.js
-  function activeConfig() {
-    const store = window.SPLIT_FLAP_VERSIONS;
-    const version = store && store.versions.find(v => v.id === store.active);
-    return version ? version.config : {};
+  // Light and dark. A board's size, layout and timing come from the dark active version; in
+  // light mode only its look (STYLE_KEYS) comes from the light active version, so switching
+  // modes can recolour a running board in place with restyle(). Until a light version is set
+  // active, light mode uses LIGHT.
+  const STYLE_KEYS = ['frameColor', 'wellColor', 'frameDepth', 'frameLip', 'frameSheen',
+    'tileTop', 'tileBottom', 'slotColor', 'glyphColor', 'fontWeight', 'grain', 'grainSize',
+    'topShade', 'bottomShine', 'edgeLight', 'edgeMinDeg', 'edgeSize'];
+  // warm, to sit on the light page's paper (#F5F3ED): a plate a shade darker than the page,
+  // cream tiles and Rust letters (tried: Night, Navy, #1C374E), like an enamel station board in daylight
+  const LIGHT = {
+    frameColor: '#e6e1d5', wellColor: '#cdc5b5', frameDepth: 0.3, frameLip: 0.7, frameSheen: 0.25,
+    tileTop: '#fffdf7', tileBottom: '#f0ebe0', glyphColor: '#9F4933', slotColor: '#b3aa98',
+    edgeLight: 0.55, grain: 0.035,
+  };
+  const pick = (config, keys) => Object.fromEntries(keys.map(k => [k, config[k]]));
+
+  // the overrides the site runs for a mode, from a versions store (split-flap-versions.js)
+  function resolveConfig(store, mode = 'dark') {
+    const find = id => store && store.versions.find(v => v.id === id);
+    const dark = find(store && store.active);
+    const config = dark ? { ...dark.config } : {};
+    if (mode !== 'light') return config;
+    const light = find(store.activeLight);
+    return { ...config, ...(light ? pick({ ...DEFAULTS, ...light.config }, STYLE_KEYS) : LIGHT) };
   }
 
-  window.SplitFlap = { DEFAULTS, EASES, resolveEase, flapState, flapEnd, mount, activeConfig };
+  // just the look for a mode: what restyle() takes
+  const activeStyle = (mode, store = window.SPLIT_FLAP_VERSIONS) =>
+    pick({ ...DEFAULTS, ...resolveConfig(store, mode) }, STYLE_KEYS);
+
+  const activeConfig = (mode, store = window.SPLIT_FLAP_VERSIONS) => resolveConfig(store, mode);
+
+  window.SplitFlap = { DEFAULTS, EASES, STYLE_KEYS, LIGHT, resolveEase, flapState, flapEnd, mount,
+    activeConfig, activeStyle, resolveConfig };
 })();

@@ -40,6 +40,16 @@
     sizeTop: 1, sizeBottom: 1,                // dot pitch multiplier at the top and bottom
     jitter: 0,                                // random offset per dot, fraction of the pitch
     seed: 1,
+    // cursor: the pointer stirs the air around the band and the dots ride it, like a hand moving
+    // through smoke. Needs WebGL.
+    cursor: true,
+    cursorRadius: 44,   // px: size of the stirred patch around the pointer
+    cursorForce: 0.7,   // how hard the pointer pushes the air (1: at the pointer's own speed)
+    cursorDots: 0.3,    // how much the dot grid itself bends with the air. 0 keeps the dots in
+                        //   place and only moves the transition; 1 drags the dots fully
+    cursorSwirl: 1,     // how strongly the wake curls into vortices
+    cursorDrag: 0.9,    // seconds the air keeps moving after the pointer passes
+    cursorHeal: 2.2,    // seconds for the dots to drift back into place
   };
 
   /* ---- Noise ---- */
@@ -328,6 +338,10 @@ uniform int uAnim;
 uniform int uSeed, uShape, uPerDot;
 uniform vec3 uFrom, uTo;
 uniform sampler2D uLut;
+uniform sampler2D uDisp;   // cursor displacement, px, over the whole canvas
+uniform int uDispOn;
+uniform vec2 uDispSize;
+uniform float uDispDots;
 out vec4 outColor;
 const float TAU = 6.28318530718;
 
@@ -388,7 +402,17 @@ float coverage(float x, float y) {
 void main() {
   float x = gl_FragCoord.x / uDpr;
   float y = (uRes.y - gl_FragCoord.y) / uDpr - uB;
-  float t = coverage(x, y);
+  // cursor: the colour here came from (x, y) - d. The transition follows the air fully and the
+  // dot grid by uDispDots, so the smoke parts without the dots smearing into moire. Faded out
+  // toward the canvas's top and bottom so nothing gets dragged past its edge
+  vec2 d = vec2(0.0);
+  if (uDispOn == 1) {
+    float yc = (y + uB) / (uH + 2.0 * uB);
+    d = texture(uDisp, vec2(x, y + uB) / uDispSize).rg * smoothstep(0.0, 0.16, yc) * smoothstep(0.0, 0.16, 1.0 - yc);
+  }
+  vec2 back = d * (1.0 - uDispDots);   // from the bent grid back to where the colour came from
+  x -= d.x * uDispDots; y -= d.y * uDispDots;
+  float t = coverage(x - back.x, y - back.y);
   float a;
   if (t < -uMargin) a = 0.0;
   else if (t > 1.0 + uMargin) a = 1.0;
@@ -415,7 +439,7 @@ void main() {
         float rad = R;
         if (uPerDot == 1) {
           float ox = du * s, oy = dv * s * uStretch;
-          rad = radius(coverage(x + ox * uCa - oy * uSa, y + ox * uSa + oy * uCa));
+          rad = radius(coverage(x - back.x + ox * uCa - oy * uSa, y - back.y + ox * uSa + oy * uCa));
         }
         best = max(best, rad - metric(vec2(du, dv)));
       }
@@ -453,12 +477,24 @@ void main() { vec2 p = vec2((gl_VertexID << 1) & 2, gl_VertexID & 2); gl_Positio
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
     gl.uniform1i(U('uLut'), 0);
+    // cursor displacement: two floats per sim cell, filtered so the warp is smooth
+    const disp = gl.createTexture();
+    gl.activeTexture(gl.TEXTURE1);
+    gl.bindTexture(gl.TEXTURE_2D, disp);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RG16F, 1, 1, 0, gl.RG, gl.FLOAT, new Float32Array(2));
+    gl.activeTexture(gl.TEXTURE0);
+    gl.uniform1i(U('uDisp'), 1);
     let lutKey = '';
     const SHAPES = { round: 0, square: 1, diamond: 2, line: 3 };
 
     return {
       gpu: true,
-      draw(input, width, dpr, from, to) {
+      // field: optional cursor displacement from stir() ({ data, cols, rows, cell })
+      draw(input, width, dpr, from, to, field) {
         const cfg = { ...DEFAULTS, ...input };
         const H = cfg.height, B = bleed(cfg);
         const w = Math.max(1, Math.round(width * dpr)), h = Math.max(1, Math.round((H + B * 2) * dpr));
@@ -470,6 +506,7 @@ void main() { vec2 p = vec2((gl_VertexID << 1) & 2, gl_VertexID & 2); gl_Positio
         const table = coverageTable(cfg.grid, cfg.shape), N = table.length;
         const key = cfg.grid + cfg.shape + cfg.curve;
         if (key !== lutKey) {
+          gl.activeTexture(gl.TEXTURE0);
           const RLUT = new Float32Array(1025);
           for (let i = 0; i <= 1024; i++) RLUT[i] = table[Math.min(N - 1, Math.round(Math.pow(i / 1024, cfg.curve) * (N - 1)))];
           gl.texImage2D(gl.TEXTURE_2D, 0, gl.R32F, 1025, 1, 0, gl.RED, gl.FLOAT, RLUT);
@@ -496,6 +533,14 @@ void main() { vec2 p = vec2((gl_VertexID << 1) & 2, gl_VertexID & 2); gl_Positio
         f('uMotMin', cfg.mottleMin); f('uMotMax', cfg.mottleMax); gl.uniform1i(U('uAnim'), cfg.animate ? 1 : 0);
         gl.uniform1i(U('uSeed'), cfg.seed | 0); gl.uniform1i(U('uShape'), SHAPES[cfg.shape] || 0); gl.uniform1i(U('uPerDot'), cfg.perDot ? 1 : 0);
         gl.uniform3f(U('uFrom'), from[0], from[1], from[2]); gl.uniform3f(U('uTo'), to[0], to[1], to[2]);
+        gl.uniform1i(U('uDispOn'), field ? 1 : 0);
+        if (field) {
+          gl.activeTexture(gl.TEXTURE1);
+          gl.texImage2D(gl.TEXTURE_2D, 0, gl.RG16F, field.cols, field.rows, 0, gl.RG, gl.FLOAT, field.data);
+          gl.activeTexture(gl.TEXTURE0);
+          gl.uniform2f(U('uDispSize'), field.cols * field.cell, field.rows * field.cell);
+          f('uDispDots', Math.max(0, Math.min(1, cfg.cursorDots)));
+        }
         gl.drawArrays(gl.TRIANGLES, 0, 3);
         return { w, h, bleed: B };
       },
@@ -514,9 +559,206 @@ void main() { vec2 p = vec2((gl_VertexID << 1) & 2, gl_VertexID & 2); gl_Positio
     };
   }
 
+  /* ---- Cursor: the pointer stirs the air and the dots ride it ----
+     A vortex method. As the pointer moves it sheds pairs of counter-rotating vortices either
+     side of its path, the way a hand moving through smoke does. Their combined flow can't bunch
+     up or thin out, pushes the air along the stroke, and dies away quickly with distance. The
+     vortices drift on each other's flow, so pairs curl and roll into wisps, and they weaken and
+     spread as they age. The dots follow a displacement field that the flow carries along and that
+     relaxes back to zero, so the band heals once the air settles.
+     Coordinates are the band's own px (the canvas's CSS size at zoom 1). */
+  const stirs = new Set();
+  let listening = false;
+  function listen() {
+    if (listening || typeof addEventListener !== 'function') return;
+    listening = true;
+    addEventListener('pointermove', e => {
+      if (e.pointerType === 'touch') return;
+      stirs.forEach(s => s.move(e.clientX, e.clientY, e.timeStamp));
+    }, { passive: true });
+    // the page moving under a still pointer isn't a stroke
+    const lift = () => stirs.forEach(s => s.lift());
+    addEventListener('scroll', lift, { passive: true, capture: true });
+    addEventListener('blur', lift);
+    document.addEventListener('pointerleave', lift);
+  }
+
+  function stir(canvas, CELL = 10) {
+    let cols = 0, rows = 0, n = 0, W = 0, Hc = 0;
+    let vx, vy, dx, dy, bx, by;
+    let prev = null, carry = 0, live = false;
+    const strokes = [], vortices = [];
+    const self = { data: null, cols: 0, rows: 0, cell: CELL };
+
+    function resize(width, height) {
+      W = width; Hc = height;
+      const c = Math.ceil(width / CELL) + 1, r = Math.ceil(height / CELL) + 1;
+      if (c === cols && r === rows) return;
+      cols = self.cols = c; rows = self.rows = r; n = c * r;
+      [vx, vy, dx, dy, bx, by] = Array.from({ length: 6 }, () => new Float32Array(n));
+      self.data = new Float32Array(n * 2);
+      vortices.length = 0; live = false;
+    }
+    function move(clientX, clientY, time) {
+      if (!n) return;
+      const rect = canvas.getBoundingClientRect();
+      if (!rect.width || !rect.height) return;
+      const x = (clientX - rect.left) * W / rect.width, y = (clientY - rect.top) * Hc / rect.height;
+      if (x < -80 || x > W + 80 || y < -80 || y > Hc + 80) { prev = null; return; }
+      if (prev) {
+        const dt = (time - prev.t) / 1000;
+        if (dt > 0.0005 && dt < 0.12) strokes.push({ x0: prev.x, y0: prev.y, x1: x, y1: y, dt });
+      }
+      prev = { x, y, t: time };
+    }
+    // flow at (x, y) from every vortex: Lamb-Oseen cores, so nothing blows up near a centre
+    function flow(x, y, skip) {
+      let u = 0, v = 0;
+      for (const w of vortices) {
+        if (w === skip) continue;
+        const ex = x - w.x, ey = y - w.y, r2 = ex * ex + ey * ey;
+        if (r2 > w.reach2 || r2 < 1e-6) continue;
+        const f = w.g * (1 - Math.exp(-r2 / w.s2)) / (2 * Math.PI * r2) * w.taper(r2);
+        u -= f * ey; v += f * ex;
+      }
+      return [u, v];
+    }
+    function vortex(x, y, g, s) {
+      const s2 = s * s, reach2 = s2 * 49;   // ignored beyond 7 core radii
+      return { x, y, g, g0: Math.abs(g), s2, reach2, taper: r2 => r2 < reach2 * 0.5 ? 1 : 2 - 2 * r2 / reach2 };
+    }
+
+    // advance by dt seconds. Returns false once everything has settled (nothing to draw)
+    function step(dt, cfg) {
+      if (!n || (!live && !strokes.length)) return false;
+      dt = Math.min(Math.max(dt, 1 / 240), 1 / 30);
+      const R = Math.max(4, cfg.cursorRadius), a = R * 0.55, gap = R * 0.45;
+      const core = R * 0.42 / (0.6 + 0.4 * Math.max(0, cfg.cursorSwirl));
+
+      // 1. shed vortex pairs along each stroke: one pair every `gap` px of travel. Each pair's
+      //    strength makes the air between them move at the pointer's speed (times force)
+      for (const st of strokes) {
+        const lx = st.x1 - st.x0, ly = st.y1 - st.y0, len = Math.hypot(lx, ly);
+        if (len < 0.5) continue;
+        const ux = lx / len, uy = ly / len, speed = Math.min(len / st.dt, 3500);
+        const g = cfg.cursorForce * speed * gap;
+        let d = gap - carry;
+        for (; d <= len; d += gap) {
+          const px = st.x0 + ux * d, py = st.y0 + uy * d;
+          // a little unevenness between the two, more with swirl, so pairs veer and roll up
+          const tilt = 1 + (Math.random() - 0.5) * 0.7 * cfg.cursorSwirl;
+          const jit = (Math.random() - 0.5) * a * 0.3;
+          vortices.push(vortex(px - uy * (a + jit), py + ux * (a + jit), g * tilt, core));
+          vortices.push(vortex(px + uy * (a - jit), py - ux * (a - jit), -g / tilt, core));
+        }
+        carry = len - (d - gap);
+      }
+      strokes.length = 0;
+      if (vortices.length > 320) vortices.splice(0, vortices.length - 320);
+
+      // 2. vortices drift on each other's flow, weaken, and spread
+      const fade = Math.exp(-dt / Math.max(0.05, cfg.cursorDrag)), spread = R * R * 0.12 * dt;
+      const moves = vortices.map(w => flow(w.x, w.y, w));
+      vortices.forEach((w, i) => {
+        w.x += moves[i][0] * dt; w.y += moves[i][1] * dt;
+        w.g *= fade; w.s2 += spread; w.reach2 = w.s2 * 49;
+      });
+      for (let i = vortices.length - 1; i >= 0; i--) if (Math.abs(vortices[i].g) < vortices[i].g0 * 0.03) vortices.splice(i, 1);
+
+      // 3. the air at every cell, then carry the displacement along it (semi-Lagrangian) while
+      //    it relaxes back to zero
+      vx.fill(0); vy.fill(0);
+      for (const w of vortices) {
+        const rc = Math.sqrt(w.reach2);
+        const i0 = Math.max(0, Math.floor((w.x - rc) / CELL)), i1 = Math.min(cols - 1, Math.ceil((w.x + rc) / CELL));
+        const j0 = Math.max(0, Math.floor((w.y - rc) / CELL)), j1 = Math.min(rows - 1, Math.ceil((w.y + rc) / CELL));
+        for (let j = j0; j <= j1; j++) {
+          const ey = (j + 0.5) * CELL - w.y;
+          for (let i = i0; i <= i1; i++) {
+            const ex = (i + 0.5) * CELL - w.x, r2 = ex * ex + ey * ey;
+            if (r2 > w.reach2 || r2 < 1e-6) continue;
+            const f = w.g * (1 - Math.exp(-r2 / w.s2)) / (2 * Math.PI * r2) * w.taper(r2), c = j * cols + i;
+            vx[c] -= f * ey; vy[c] += f * ex;
+          }
+        }
+      }
+      const heal = Math.exp(-dt / Math.max(0.1, cfg.cursorHeal)), sc = dt / CELL;
+      let most = 0;
+      for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) {
+        const c = j * cols + i;
+        let ex = dx[c], ey = dy[c];
+        if (vx[c] || vy[c]) {
+          const fi = i - vx[c] * sc, fj = j - vy[c] * sc;
+          ex = sample(dx, fi, fj) + vx[c] * dt; ey = sample(dy, fi, fj) + vy[c] * dt;
+        }
+        ex *= heal; ey *= heal;
+        const m = Math.hypot(ex, ey);
+        if (m > 150) { ex *= 150 / m; ey *= 150 / m; }
+        bx[c] = ex; by[c] = ey;
+        if (m > most) most = m;
+      }
+      [dx, bx] = [bx, dx]; [dy, by] = [by, dy];
+      for (let c = 0; c < n; c++) { self.data[2 * c] = dx[c]; self.data[2 * c + 1] = dy[c]; }
+      live = vortices.length > 0 || most > 0.15;
+      if (!live) { dx.fill(0); dy.fill(0); self.data.fill(0); }
+      return live;
+    }
+    // bilinear sample of a grid at cell coordinates (i, j)
+    function sample(f, i, j) {
+      i = Math.max(0, Math.min(cols - 1.001, i)); j = Math.max(0, Math.min(rows - 1.001, j));
+      const i0 = i | 0, j0 = j | 0, fx = i - i0, fy = j - j0, k = j0 * cols + i0;
+      const top = f[k] + (f[k + 1] - f[k]) * fx, bottom = f[k + cols] + (f[k + cols + 1] - f[k + cols]) * fx;
+      return top + (bottom - top) * fy;
+    }
+
+    Object.assign(self, {
+      resize, move, step,
+      lift() { prev = null; carry = 0; },
+      dispose() { stirs.delete(self); },
+    });
+    stirs.add(self);
+    listen();
+    return self;
+  }
+
+  // runs the bands: draws a frame whenever the band animates or the cursor has stirred it.
+  // items: [{ canvas, r: renderer, from, to }]. opts: width(), dpr(), visible(item), onFrame()
+  function play(items, input, opts) {
+    const cfg = { ...DEFAULTS, ...input };
+    const moving = moves(cfg);
+    if (!items.length || !items.every(item => item.r.gpu) || (!moving && !cfg.cursor)) return null;
+    if (cfg.cursor) items.forEach(item => { if (!item.stir) item.stir = stir(item.canvas); });
+    const tall = cfg.height + bleed(cfg) * 2, still = at(cfg, 0);
+    const visible = opts.visible || (() => true);
+    const gap = 1000 / Math.max(1, cfg.animFps) - 1, t0 = performance.now();
+    let raf = 0, last = 0, stopped = false;
+    function tick(now) {
+      if (stopped) return;
+      raf = requestAnimationFrame(tick);
+      if (typeof document !== 'undefined' && document.hidden) { last = 0; return; }
+      if (last && now - last < gap) return;
+      const dt = last ? (now - last) / 1000 : 1 / 60;
+      last = now;
+      const frame = moving ? at(cfg, (now - t0) / 1000) : still, W = opts.width(), dpr = opts.dpr();
+      let drew = false;
+      items.forEach(item => {
+        if (!visible(item)) return;
+        let stirring = false;
+        if (cfg.cursor && item.stir) { item.stir.resize(W, tall); stirring = item.stir.step(dt, cfg); }
+        if (moving || stirring || item.dirty) {
+          item.r.draw(frame, W, dpr, item.from, item.to, stirring ? item.stir : null);
+          item.dirty = stirring;   // one clean frame after the stirring settles
+          drew = true;
+        }
+      });
+      if (opts.onFrame) opts.onFrame(drew);
+    }
+    raf = requestAnimationFrame(tick);
+    return { stop() { stopped = true; cancelAnimationFrame(raf); } };
+  }
+
   /* ---- Site: one canvas per band, spanning the window, redrawn when the width changes ---- */
-  // options.autostart: false holds the animation until start() is called (the home page waits
-  // for the split-flap board to settle, so the two don't compete for frames)
+  // options.autostart: false holds the animation until start() is called
   function mount(sections, config, options = {}) {
     const cfg = { ...DEFAULTS, ...config };
     const root = document.documentElement;
@@ -562,11 +804,9 @@ void main() { vec2 p = vec2((gl_VertexID << 1) & 2, gl_VertexID & 2); gl_Positio
     let started = options.autostart !== false;
     function run() {
       if (anim) { anim.stop(); anim = null; }
-      // animation needs WebGL: without it the band stays still
-      if (!started || !moves(cfg) || still || !items.every(item => item.r.gpu)) return;
-      anim = animate(cfg, frame => {
-        items.forEach(item => { if (!io || visible.has(item.canvas)) item.r.draw(frame, W, dpr(), item.from, item.to); });
-      }, () => !document.hidden && (!io || visible.size > 0));
+      // animation and the cursor need WebGL: without it the band stays still
+      if (!started || still) return;
+      anim = play(items, cfg, { width: () => W, dpr, visible: item => !io || visible.has(item.canvas) });
     }
     draw();
     addEventListener('resize', () => { clearTimeout(timer); timer = setTimeout(draw, 120); });
@@ -576,5 +816,5 @@ void main() { vec2 p = vec2((gl_VertexID << 1) & 2, gl_VertexID & 2); gl_Positio
     };
   }
 
-  (typeof window !== 'undefined' ? window : self).Halftone = { DEFAULTS, bleed, mask, paint, rgb, activeConfig, mount, at, animate, moves, renderer };
+  (typeof window !== 'undefined' ? window : self).Halftone = { DEFAULTS, bleed, mask, paint, rgb, activeConfig, mount, at, animate, moves, renderer, stir, play };
 })();

@@ -766,6 +766,10 @@ function wire() {
   $('hear').addEventListener('click', () => setHear(!audio?.on));
   $('snap').addEventListener('click', () => { snapPending = true; });
   $('full').addEventListener('click', toggleFull);
+  $('exitfull').addEventListener('click', () => setFull(false));
+  document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement && document.body.classList.contains('is-full')) setFull(false); });
+  addEventListener('pointermove', wake);
+  addEventListener('pointerdown', wake);
   $('hide').addEventListener('click', toggleHide);
 
   strobeSlider = slider({ label: 'Strobe drift', min: 0, max: 2, step: 0.01, get: () => P.strobe, set: (v) => { P.strobe = v; }, fmt: (v) => (v === 0 ? 'Frozen' : `${trim(v)} Hz`) });
@@ -798,6 +802,8 @@ function wire() {
     const k = e.key.toLowerCase();
     if (k === ' ' && !(tag === 'BUTTON' || typing)) { e.preventDefault(); setPlaying(!playing); return; }
     if (typing) return;
+    if (e.key === 'Escape' && document.body.classList.contains('is-full')) { setFull(false); return; }
+    wake();
     if (k === 'r') toggleReverse();
     else if (k === 'f') toggleFull();
     else if (k === 'h') toggleHide();
@@ -811,9 +817,23 @@ function wire() {
   new ResizeObserver(() => fit()).observe($('stage'));
 }
 
-function toggleFull() {
-  if (document.fullscreenElement) document.exitFullscreen();
-  else document.documentElement.requestFullscreen?.().catch(() => toast('Full screen is not available here.'));
+// full screen shows the dish alone; the browser's own full screen is used where it exists,
+// and the layout still fills the window where it doesn't (iPhone Safari)
+function toggleFull() { setFull(!document.body.classList.contains('is-full')); }
+let idleTimer = 0;
+function setFull(on) {
+  document.body.classList.toggle('is-full', on);
+  $('full').setAttribute('aria-pressed', String(on));
+  if (on && !document.fullscreenElement) document.documentElement.requestFullscreen?.().catch(() => {});
+  if (!on && document.fullscreenElement) document.exitFullscreen().catch(() => {});
+  if (on) wake();
+  else { clearTimeout(idleTimer); document.body.classList.remove('is-idle'); $('full').focus(); }
+}
+// the exit button and cursor fade away while the dish is left alone
+function wake() {
+  document.body.classList.remove('is-idle');
+  clearTimeout(idleTimer);
+  if (document.body.classList.contains('is-full')) idleTimer = setTimeout(() => document.body.classList.add('is-idle'), 2500);
 }
 function toggleHide() {
   const hidden = document.body.classList.toggle('ui-hidden');

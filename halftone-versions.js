@@ -1,6 +1,6 @@
 /* Written by the Halftone Lab. The home page draws the version named by "active". */
 window.HALFTONE_VERSIONS = {
-  "active": "mw9ok4cu",
+  "active": "mw9ufaye",
   "versions": [
     {
       "id": "original",
@@ -103,6 +103,28 @@ window.HALFTONE_VERSIONS = {
         "heaveLen": 450,
         "rise": 92,
         "animPeriod": 2.3
+      }
+    },
+    {
+      "id": "mw9ufaye",
+      "name": "Steam with DIsplacement",
+      "savedAt": "2026-11-09T22:39:02.966Z",
+      "config": {
+        "height": 121,
+        "start": -0.44,
+        "end": 1.5,
+        "cell": 7.5625,
+        "dotSize": 0.66,
+        "perDot": false,
+        "animate": true,
+        "mottleMax": 1,
+        "flow": 50,
+        "heaveAmp": 11,
+        "heaveLen": 450,
+        "rise": 92,
+        "animPeriod": 2.3,
+        "cursorSwirl": 0.2,
+        "cursorDrag": 0.25
       }
     }
   ]

@@ -1,1 +1,38 @@
-[]
+[
+  {
+    "id": "test-1",
+    "name": "Test 1",
+    "about": "Three mirrors in an equilateral triangle, the usual toy kaleidoscope.T esting Testing",
+    "savedAt": "2026-11-10T03:56:05.960Z",
+    "params": {
+      "mirrors": "tri60",
+      "segments": 6,
+      "zoom": 3.1,
+      "picScale": 1.13,
+      "cellRotate": -17,
+      "cellX": -0.52,
+      "cellY": 0,
+      "turn": 9.5,
+      "drift": 0.4,
+      "spin": 0,
+      "breathe": 0,
+      "loss": 0.12,
+      "seam": 0,
+      "aberration": 0,
+      "lens": 0,
+      "twist": 0,
+      "eyepiece": "full",
+      "eyeSize": 0.94,
+      "edge": 0.03,
+      "vignette": 0.4,
+      "sheen": 0.14,
+      "rim": "#0a0a0c",
+      "brightness": 0.02,
+      "contrast": 1,
+      "saturation": 1,
+      "hue": 0,
+      "tint": "#ffffff",
+      "tintAmount": 0
+    }
+  }
+]

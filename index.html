@@ -26,7 +26,6 @@
     <nav class="nav__links">
       <a href="tinkering/">Tinkering</a>
       <a href="https://www.linkedin.com/" target="_blank" rel="noopener">LinkedIn</a>
-      <a href="https://github.com/" target="_blank" rel="noopener">GitHub</a>
       <a href="#contact">Contact</a>
     </nav>
   </header>
@@ -42,15 +41,25 @@
 
     <section class="project project--band project--rust" id="groom-lake" aria-label="Groom Lake">
       <div class="project__intro">
-        <h2 class="project__tagline">Redesigning a flagship product for the modern world</h2>
+        <h2 class="project__tagline">Who says enterprise can’t be pretty?</h2>
         <ul class="project__tags" aria-label="Project focus">
-          <li>UI Overhaul</li>
+          <li>Platform Redesign</li>
           <li>Design Systems</li>
-          <li>Core Feature Revamp</li>
-          <li>Mobile Integration</li>
+          <li>Pervasive AI</li>
         </ul>
+        <p class="project__desc">I led a down-to-the-studs redesign of our flagship EHS application to make our product best in class. Enterprises shouldn’t have to use slow, ugly, awkward software to meet their compliance obligations and stay safe. We set a high bar and leapt over it, developing an agent-first design system, overhauling core features, and designing a carefully constructed interface that makes our top-shelf product look the part. Embracing AI tooling made it all possible.</p>
       </div>
-      <figure class="project__hero placeholder" aria-label="Groom Lake hero image"><span>Hero image</span></figure>
+      <div class="project__media">
+        <figure class="project__hero project__hero--shot">
+          <img src="images/groom-lake-dashboard-1200.webp"
+               srcset="images/groom-lake-dashboard-1200.webp 1200w, images/groom-lake-dashboard-2000.webp 2000w"
+               sizes="(max-width: 800px) calc(100vw - 32px), 50vw"
+               width="1200" height="753" loading="lazy" decoding="async"
+               alt="The redesigned Ideagen home dashboard: a personal greeting, quick actions, an equipment calibration chart and quality indicators">
+          <figcaption>Workspaces are tailored to the unique needs of the user, their organization, and the context of use.</figcaption>
+        </figure>
+        <a class="button button--apricot" href="#">Try it for yourself</a>
+      </div>
     </section>
 
     <section class="project project--band project--navy" id="blackbird" aria-label="Blackbird">
@@ -77,7 +86,7 @@
       <figure class="project__hero placeholder" aria-label="Mazlan Builder hero image"><span>Hero image</span></figure>
     </section>
 
-    <section class="project project--band project--night" id="adept" aria-label="ADEPT">
+    <section class="project project--band project--pine" id="adept" aria-label="ADEPT">
       <div class="project__intro">
         <h2 class="project__tagline">Lorem ipsum dolor sit amet, consectetur adipiscing elit</h2>
         <ul class="project__tags" aria-label="Project focus">
@@ -108,98 +117,6 @@
   <script src="halftone.js"></script>
   <script src="halftone-versions.js"></script>
   <script>
-    /* ---- Guided scroll: any scroll glides the page to the next resting point in that direction:
-       the top of the page, or a project filling the screen (see .project__snap) ---- */
-    (function () {
-      const snaps = [...document.querySelectorAll('.project--band')].map(section => {
-        section.insertAdjacentHTML('afterbegin', '<span class="project__snap" aria-hidden="true"></span>');
-        return section.firstElementChild;
-      });
-      if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;   // plain scrolling
-
-      const nav = () => document.querySelector('.nav').offsetHeight;
-      const stops = () => {
-        const max = document.documentElement.scrollHeight - innerHeight, n = nav();
-        return [0, ...snaps.map(s => {
-          const r = s.getBoundingClientRect();
-          return Math.min(max, Math.round(scrollY + r.top + r.height / 2 - (n + (innerHeight - n) / 2)));
-        })];
-      };
-      const ease = p => p < 0.5 ? 4 * p * p * p : 1 - (-2 * p + 2) ** 3 / 2;   // easeInOutCubic
-      let gliding = false, locked = false, quiet = 0, settle = 0;
-
-      function glide(to) {
-        const from = scrollY, dist = to - from;
-        if (Math.abs(dist) < 2) return;
-        const ms = Math.min(1100, 650 + Math.abs(dist) * 0.2), t0 = performance.now();
-        gliding = true;
-        (function frame(now) {
-          const p = Math.min(1, (now - t0) / ms);
-          scrollTo({ top: from + dist * ease(p), behavior: 'instant' });
-          if (p < 1) requestAnimationFrame(frame); else gliding = false;
-        })(t0);
-      }
-      // the next stop in a direction, counted from the stop nearest the current position
-      function step(dir) {
-        const s = stops(), y = scrollY;
-        let i = s.reduce((best, v, k) => Math.abs(v - y) < Math.abs(s[best] - y) ? k : best, 0);
-        if (dir > 0 ? s[i] <= y + 2 : s[i] >= y - 2) i += dir;
-        glide(s[Math.max(0, Math.min(s.length - 1, i))]);
-      }
-      // one gesture moves one stop: trackpad momentum keeps firing wheel events, so stay locked
-      // until the glide is done and the wheel has been quiet for a moment
-      function lock() {
-        locked = true; clearTimeout(quiet);
-        quiet = setTimeout(function release() {
-          if (gliding) quiet = setTimeout(release, 100); else locked = false;
-        }, 220);
-      }
-      // leave scrollable panels (menus and the like) alone
-      const scrollsItself = (el, dy) => {
-        for (; el && el !== document.body; el = el.parentElement) {
-          const o = getComputedStyle(el).overflowY;
-          if ((o === 'auto' || o === 'scroll') && el.scrollHeight > el.clientHeight &&
-              (dy > 0 ? el.scrollTop + el.clientHeight < el.scrollHeight - 1 : el.scrollTop > 0)) return true;
-        }
-        return false;
-      };
-
-      addEventListener('wheel', e => {
-        if (e.ctrlKey || Math.abs(e.deltaY) < Math.abs(e.deltaX) || scrollsItself(e.target, e.deltaY)) return;
-        e.preventDefault();
-        if (!locked && Math.abs(e.deltaY) > 1) step(Math.sign(e.deltaY));
-        lock();
-      }, { passive: false });
-
-      let touchY = null;
-      addEventListener('touchstart', e => { touchY = scrollsItself(e.target, 1) ? null : e.touches[0].clientY; }, { passive: true });
-      addEventListener('touchmove', e => { if (touchY !== null) e.preventDefault(); }, { passive: false });
-      addEventListener('touchend', e => {
-        if (touchY === null) return;
-        const dy = touchY - e.changedTouches[0].clientY;
-        if (Math.abs(dy) > 24) step(Math.sign(dy));
-        touchY = null;
-      });
-
-      addEventListener('keydown', e => {
-        if (e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey || e.target.closest('input, textarea, select, [contenteditable]')) return;
-        const dir = { ArrowDown: 1, PageDown: 1, ' ': e.shiftKey ? -1 : 1, ArrowUp: -1, PageUp: -1 }[e.key];
-        if (e.key === 'Home' || e.key === 'End') { e.preventDefault(); const s = stops(); glide(e.key === 'Home' ? 0 : s[s.length - 1]); }
-        else if (dir && !(e.key === ' ' && e.target.closest('button, a'))) { e.preventDefault(); if (!gliding) step(dir); }
-      });
-
-      // anything else that moves the page (scrollbar, links, find in page) settles on the nearest stop
-      addEventListener('scroll', () => {
-        if (gliding || locked) return;
-        clearTimeout(settle);
-        settle = setTimeout(() => {
-          if (gliding || locked) return;
-          const s = stops(), y = scrollY;
-          glide(s.reduce((a, b) => Math.abs(b - y) < Math.abs(a - y) ? b : a));
-        }, 180);
-      }, { passive: true });
-    })();
-
     /* ---- Halftone bands: drawn by halftone.js from the active Halftone Lab version ---- */
     Halftone.mount(document.querySelectorAll('.project--band'), Halftone.activeConfig());
 
@@ -213,6 +130,7 @@
         ['UX', 'DESIGNER'],
         ['EXPERIENCE', 'DESIGNER'],
         ['AX', 'DESIGNER'],
+        ['SIX', 'DESIGNER?'],
         ['', '\u00AF\\_(\u30C4)_/\u00AF'],
       ];
       const holdName = 2000, holdTitle = 1000, titleSpeed = 2;   // the titles spin twice as fast

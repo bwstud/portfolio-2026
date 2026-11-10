@@ -1,3 +1,4 @@
+/* Geist: the split-flap board draws its letters in it, on canvas */
 @font-face {
   font-family: "Geist";
   font-weight: 100 900;
@@ -66,18 +67,23 @@
   --halftone-above: 72px;   /* section edge up to where the transition starts; halftone.js sets it */
   --halftone-below: 72px;   /* section edge down to where it finishes */
   --fg: var(--c-mist);
-  --muted: #9a9894;
-  --line: #2a2a2c;
-  --surface: #161618;
+  /* neutrals mixed from Mist over Night, so they sit in the palette's cool cast.
+     --muted keeps ≥4.5:1 on Night, Navy and Pine. */
+  --muted: color-mix(in srgb, var(--c-mist) 66%, var(--c-night));
+  --line: color-mix(in srgb, var(--c-mist) 16%, var(--c-night));
+  --surface: color-mix(in srgb, var(--c-mist) 6%, var(--c-night));
+  --hover: color-mix(in srgb, var(--c-mist) 12%, var(--c-night));
+  --line-strong: color-mix(in srgb, var(--c-mist) 24%, var(--c-night));
   --max: 1200px;
   --nav-h: 80px;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
-html {
-  scroll-behavior: smooth;
-  scroll-padding-top: var(--nav-h);
+html { scroll-padding-top: var(--nav-h); }
+
+@media (prefers-reduced-motion: no-preference) {
+  html { scroll-behavior: smooth; }
 }
 
 body {
@@ -88,6 +94,11 @@ body {
 }
 
 a { color: inherit; text-decoration: none; }
+
+/* browser surfaces in the palette: keyboard focus in the section's own text colour (Night on
+   the light bands), selection in Apricot */
+:focus-visible { outline: 2px solid var(--fg); outline-offset: 3px; }
+::selection { background: var(--c-apricot); color: var(--c-night); }
 
 /* Nav */
 .nav {
@@ -175,7 +186,7 @@ a { color: inherit; text-decoration: none; }
   transition: background 0.15s, color 0.15s;
 }
 
-.dropdown__menu a:hover { background: #222225; color: var(--fg); }
+.dropdown__menu a:hover { background: var(--hover); color: var(--fg); }
 
 /* Controls: a utility menu at the far left, kept apart from the real nav */
 .dropdown--controls .dropdown__toggle {
@@ -338,11 +349,14 @@ a { color: inherit; text-decoration: none; }
   position: relative;
   isolation: isolate;
   border-top: 0;
+  max-width: none;   /* full width, so the hero image can grow */
 }
 
 /* doubled class so it outranks the narrow-screen .project padding. The bottom leaves room for
    the next section's halftone, which reaches up into this one. */
 .project.project--band {
+  padding-left: clamp(32px, 4.5vw, 96px);
+  padding-right: clamp(32px, 4.5vw, 96px);
   padding-top: calc(var(--halftone-reach) + 72px);
   padding-bottom: max(96px, calc(var(--halftone-reach) + 40px));
   /* tall enough that a whole screen of solid colour fits between the two transitions: the band
@@ -362,17 +376,6 @@ a { color: inherit; text-decoration: none; }
 
 /* halftone.js draws the transition on a canvas centred on the edge with the section above,
    reaching --halftone-reach either side of it */
-/* resting point for the guided scroll in index.html: one screen (below the nav) of solid colour
-   in the middle of each project, so the page settles with neither transition showing */
-.project__snap {
-  position: absolute;
-  left: 0;
-  width: 1px;
-  top: calc(50% - (100svh - var(--nav-h)) / 2);
-  height: calc(100svh - var(--nav-h));
-  pointer-events: none;
-}
-
 .project--band > .halftone {
   position: absolute;
   z-index: -1;
@@ -415,7 +418,7 @@ a { color: inherit; text-decoration: none; }
 
 /* Sage is light, so this section takes dark text like Ochre */
 .project--sage {
-  --band-from: var(--c-night);
+  --band-from: var(--c-pine);
   --band-to: var(--c-sage);
   --fg: var(--c-night);
   --bg: var(--c-sage);
@@ -425,27 +428,39 @@ a { color: inherit; text-decoration: none; }
   color: var(--fg);
 }
 
-/* Night: back to the page background between Ochre and Sage */
-.project--night {
+/* Pine: a deep green-grey between Ochre and Sage */
+.project--pine {
   --band-from: var(--c-ochre);
-  --band-to: var(--c-night);
+  --band-to: var(--c-pine);
+  --line: rgba(218, 228, 227, 0.25);
+  --surface: rgba(218, 228, 227, 0.06);
 }
 
-/* Project layout: big tagline with attribute pills on the left, hero image on the right */
+/* Project layout: tagline, pills and description in a narrow column on the left; the hero
+   image takes the rest of the width */
 .project--band {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 64px;
+  grid-template-columns: minmax(340px, 5fr) minmax(0, 9fr);
+  gap: clamp(40px, 4.5vw, 96px);
   align-items: center;
 }
 
 .project__tagline {
   font-family: var(--font-display);
-  font-size: clamp(36px, 4.4vw, 64px);
+  font-size: clamp(36px, 3.4vw, 64px);
   font-weight: 700;
   line-height: 1.02;
   letter-spacing: -0.025em;
   text-wrap: balance;
+}
+
+.project__desc {
+  max-width: 56ch;
+  margin-top: 28px;
+  font-size: 17px;
+  line-height: 1.6;
+  color: var(--muted);
+  text-wrap: pretty;
 }
 
 .project__tags {
@@ -471,6 +486,49 @@ a { color: inherit; text-decoration: none; }
   width: 100%;
 }
 
+/* the hero with its call to action tucked under the image's right corner */
+.project__media {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 24px;
+  min-width: 0;
+}
+
+.button--apricot {
+  padding: 12px 24px;
+  border-color: var(--c-apricot);
+  background: var(--c-apricot);
+  color: var(--c-night);
+  font-size: 15px;
+  font-weight: 600;
+}
+.button--apricot:hover {
+  --apricot-lit: color-mix(in srgb, var(--c-apricot) 70%, white);
+  background: var(--apricot-lit);
+  border-color: var(--apricot-lit);
+  color: var(--c-night);
+}
+
+/* a product screenshot: shown whole, at its own shape, lifted off the section colour */
+.project__hero--shot { aspect-ratio: auto; }
+.project__hero--shot img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 10px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12), 0 24px 64px rgba(0, 0, 0, 0.3);
+}
+.project__hero--shot figcaption {
+  margin-top: 16px;
+  max-width: 64ch;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--muted);
+  text-wrap: pretty;
+}
+
 /* Embedded reel: breaks out of the content column to fill the viewport,
    capped so the whole 16:9 frame still fits on screen below the nav */
 main { overflow-x: clip; }
@@ -482,7 +540,7 @@ main { overflow-x: clip; }
   position: relative;
   border-radius: 8px;
   overflow: hidden;
-  background: #060a14;
+  background: var(--c-night);
 }
 
 .reel iframe {
@@ -520,8 +578,8 @@ main { overflow-x: clip; }
   gap: 12px;
   padding: 14px 22px 14px 18px;
   border-radius: 999px;
-  background: rgba(14, 14, 15, 0.7);
-  border: 1px solid rgba(242, 240, 236, 0.25);
+  background: color-mix(in srgb, var(--c-night) 70%, transparent);
+  border: 1px solid color-mix(in srgb, var(--c-mist) 25%, transparent);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   font-size: 16px;
@@ -596,14 +654,14 @@ main { overflow-x: clip; }
 
 a.card:hover,
 a.card:focus-visible {
-  border-color: #3d3d40;
+  border-color: var(--line-strong);
   transform: translateY(-2px);
 }
 
 .card__thumb {
   display: block;
   aspect-ratio: 16 / 10;
-  background: #030605;
+  background: var(--c-night);
   overflow: hidden;
 }
 
@@ -626,7 +684,7 @@ a.card:hover .card__thumb img { transform: scale(1.03); }
 
 .card__title { font-family: var(--font-display); font-size: 20px; font-weight: 600; }
 .card__desc { color: var(--muted); font-size: 15px; line-height: 1.5; }
-.card__meta { margin-top: 4px; font-family: var(--font-mono); color: #6b6a67; font-size: 13px; }
+.card__meta { margin-top: 4px; font-family: var(--font-mono); color: var(--muted); font-size: 13px; }
 
 .card--soon {
   min-height: 300px;
@@ -652,18 +710,31 @@ a.card:hover .card__thumb img { transform: scale(1.03); }
   .project { padding: 64px 16px; }
   .tinkering { padding: 32px 16px 80px; }
   .project--band { grid-template-columns: 1fr; gap: 40px; }
+  /* stacked, the content is already about a screen tall: holding the band at a full screen
+     plus the transitions only leaves a stretch of empty colour above the headline. The top
+     clears where the transition usually finishes rather than its furthest possible swell, so
+     the odd stray dot drifts behind the headline, as it does behind "Recent Work". */
+  .project.project--band {
+    padding-left: 16px;
+    padding-right: 16px;
+    padding-top: calc(var(--halftone-below) + 96px);
+    min-height: 0;
+  }
 }
 
 /* Phones: brand + agents button on one row, links on the next */
 @media (max-width: 600px) {
-  :root { --nav-h: 104px; }
+  :root { --nav-h: 96px; }
   .nav {
     height: auto;
     min-height: var(--nav-h);
     flex-wrap: wrap;
     align-content: center;
-    row-gap: 12px;
-    padding: 12px 16px;
+    row-gap: 0;
+    padding: 4px 16px;
   }
+  .nav__start { min-height: 44px; }
   .nav__links { width: 100%; justify-content: space-between; gap: 0; }
+  /* 44px-tall tap rows; the text stays where it was */
+  .nav__links > a { display: flex; align-items: center; min-height: 44px; }
 }

@@ -203,6 +203,21 @@
     .toast.is-shown { opacity: 1; }
     .fatal { position: fixed; inset: 0; display: grid; place-items: center; padding: 24px; text-align: center; color: var(--soft); }
 
+    /* ---------- full screen: the dish alone, edge to edge ---------- */
+    body.is-full { overflow: hidden; }
+    body.is-full .stage { position: fixed; inset: 0; z-index: 5; height: auto; border-radius: 0; }
+    body.is-full .top, body.is-full .readout, body.is-full .transport, body.is-full .rack { visibility: hidden; }
+    body.is-full.is-idle #view { cursor: none; }
+    .exitfull {
+      position: fixed; z-index: 6; top: 16px; right: 16px; display: none; align-items: center; gap: 6px;
+      padding: 7px 12px; border-radius: 8px; border: 1px solid var(--line-strong); background: var(--panel); color: var(--soft);
+      transition: opacity 0.4s;
+    }
+    .exitfull:hover { color: var(--fg); border-color: rgba(255, 255, 255, 0.32); }
+    .exitfull svg { width: 14px; height: 14px; }
+    body.is-full .exitfull { display: flex; }
+    body.is-full.is-idle .exitfull:not(:focus-visible) { opacity: 0; pointer-events: none; }
+
     @media (max-width: 860px) {
       html, body { overflow: auto; height: auto; }
       .top { position: sticky; background: var(--bg); }
@@ -227,7 +242,7 @@
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="1.5" y="4" width="13" height="9.5" rx="2"/><circle cx="8" cy="8.7" r="2.6"/><path d="M5.5 4l1-2h3l1 2"/></svg>
         <span class="hbtn__text">Snapshot</span>
       </button>
-      <button class="hbtn" id="full" type="button" title="Full screen (F)">
+      <button class="hbtn" id="full" type="button" title="Full screen (F)" aria-pressed="false">
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M2 6V2h4M14 6V2h-4M2 10v4h4M14 10v4h-4"/></svg>
         <span class="hbtn__text">Full screen</span>
       </button>
@@ -285,6 +300,11 @@
       <section class="tabpanel" role="tabpanel" id="panel-style" aria-labelledby="tab-style" hidden></section>
     </aside>
   </main>
+
+  <button class="exitfull" id="exitfull" type="button" title="Leave full screen (F or Esc)">
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M6 2v4H2M10 2v4h4M6 14v-4H2M10 14v-4h4"/></svg>
+    Exit full screen
+  </button>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 

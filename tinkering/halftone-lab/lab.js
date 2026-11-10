@@ -59,6 +59,14 @@
     { key: 'chaos', name: 'Randomness', min: 0, max: 1, step: 0.01, hint: 'Speeds up and slows down the heave, rise and mottle at random, and keeps the mottle changing shape' },
     { key: 'animPeriod', name: 'Swing time', min: 0.5, max: 20, step: 0.1, unit: 's', hint: 'Roughly how long one swing or swell takes' },
     { key: 'animFps', name: 'Frame rate', min: 4, max: 60, step: 1, unit: 'fps' },
+    { group: 'Cursor' },
+    { key: 'cursor', name: 'Cursor stirs the dots', bool: true, hint: 'Move the pointer through the band, like a hand through smoke. Needs WebGL' },
+    { key: 'cursorRadius', name: 'Hand size', min: 8, max: 160, step: 1, unit: 'px', hint: 'Width of the stirred patch, and of the vortices it sheds' },
+    { key: 'cursorForce', name: 'Push', min: 0, max: 3, step: 0.05, unit: '×', hint: 'How hard the pointer drags the air: 1 moves it at the pointer\'s speed' },
+    { key: 'cursorDots', name: 'Dot bend', min: 0, max: 1, step: 0.05, hint: 'How much the dot grid itself bends with the air. 0 keeps dots in place and only moves the transition' },
+    { key: 'cursorSwirl', name: 'Swirl', min: 0, max: 3, step: 0.05, hint: 'Tighter, more uneven vortices that curl and roll up' },
+    { key: 'cursorDrag', name: 'Air glide', min: 0.1, max: 4, step: 0.05, unit: 's', hint: 'How long the air keeps moving after the pointer passes' },
+    { key: 'cursorHeal', name: 'Settle time', min: 0.2, max: 10, step: 0.1, unit: 's', hint: 'How long the dots take to drift back into place' },
   ];
   // what "Zero" in the Distort group puts back: every distortion off
   const DISTORT_KEYS = ['animate', 'flow', 'heaveAmp', 'rise', 'morph', 'waveAmp', 'raggedAmp', 'mottleAmp', 'warpAmp', 'sizeTop', 'sizeBottom', 'jitter'];
@@ -174,7 +182,7 @@
   const dpr = () => Math.min(2, window.devicePixelRatio || 1);
 
   function layout(W, reach) {
-    seams.forEach(sm => sm.r.dispose());
+    seams.forEach(sm => { sm.r.dispose(); if (sm.stir) sm.stir.dispose(); });
     seams = [];
     const seam = (from, to) => {
       const el = document.createElement('div');
@@ -215,15 +223,16 @@
     paintAll(Halftone.at(cfg, 0), W);
     const gpu = seams.every(sm => sm.r.gpu);
     $('time').textContent = `${Math.round(performance.now() - t0)} ms${gpu ? '' : ' · no WebGL'}`;
-    if (Halftone.moves(cfg) && gpu) {
-      let last = performance.now(), frames = 0;
-      anim = Halftone.animate({ ...cfg }, settings => {
-        paintAll(settings, W);
-        frames++;
+    // animation and the cursor both draw through play(); the readout shows fps while drawing
+    let last = performance.now(), frames = 0;
+    anim = Halftone.play(seams, { ...cfg }, {
+      width: () => W / zoom, dpr: () => dpr() * zoom,
+      onFrame(drew) {
+        if (drew) frames++;
         const now = performance.now();
-        if (now - last > 500) { $('time').textContent = `${Math.round(frames * 1000 / (now - last))} fps`; frames = 0; last = now; }
-      }, () => !document.hidden);
-    }
+        if (now - last > 500) { if (frames) $('time').textContent = `${Math.round(frames * 1000 / (now - last))} fps`; frames = 0; last = now; }
+      },
+    });
   }
 
   let frame = 0;

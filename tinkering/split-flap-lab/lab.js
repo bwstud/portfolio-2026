@@ -200,7 +200,7 @@
     row.querySelector('.row__reset').addEventListener('click', () => {
       cfg[p.key] = base[p.key]; sync(); checkDrum(); changed();
     });
-    rows.push({ p, sync, hint });
+    rows.push({ p, sync, hint, row });
     sync();
     return row;
   }
@@ -262,6 +262,7 @@
   }
 
   $('reset').addEventListener('click', () => {
+    if (mode === 'light') return takeMode();
     Object.assign(cfg, base);
     rows.forEach(r => r.sync());
     checkDrum();
@@ -341,7 +342,8 @@
       const i = next.versions.findIndex(v => v.name === name);
       const entry = {
         id: i < 0 ? Date.now().toString(36) : next.versions[i].id,
-        name, mode, savedAt: new Date().toISOString(), config: overrides(),
+        name, mode, savedAt: new Date().toISOString(),
+        config: mode === 'light' ? pickStyle(cfg) : overrides(),
         lab: { seed: cfg.seed },
       };
       if (i < 0) next.versions.push(entry); else next.versions[i] = entry;
@@ -352,7 +354,8 @@
   function loadVersion(version) {
     if (modeOf(version) !== mode) setMode(modeOf(version), false);
     Object.keys(cfg).forEach(k => { delete cfg[k]; });
-    Object.assign(cfg, DEFAULTS, LAB_ONLY, version.lab, version.config);
+    Object.assign(cfg, DEFAULTS, LAB_ONLY, version.lab,
+      modeOf(version) === 'light' ? { ...resolveConfig(store, 'dark'), ...pickStyle({ ...DEFAULTS, ...version.config }) } : version.config);
     rows.forEach(r => r.sync());
     checkDrum();
     refreshEase();
@@ -437,7 +440,31 @@
     }
   });
 
-  /* ---- Light and dark: the lab page takes the mode, and the board takes that mode's active look ---- */
+  /* ---- Light and dark: the lab page takes the mode, and the board takes that mode's active look.
+     A light board is only its look (STYLE_KEYS: colours and lighting); size, layout and timing are
+     the dark active board's. So in Light mode the panel shows the dark board's settings and locks
+     everything but the look, and a light save stores only the look. ---- */
+  const pickStyle = config => Object.fromEntries(STYLE_KEYS.map(k => [k, config[k]]));
+  const FREE = ['lines', 'chars', 'seed'];   // the lab's message and shuffle, never part of a board
+  function takeMode() {
+    const look = { ...DEFAULTS, ...resolveConfig(store, mode) };
+    const keys = mode === 'light' ? SITE_KEYS.filter(k => !FREE.includes(k)) : STYLE_KEYS;
+    keys.forEach(k => { cfg[k] = look[k]; });
+    rows.forEach(r => r.sync());
+    checkDrum();
+    refreshEase();
+    changed();
+  }
+  function lockRows() {
+    const light = mode === 'light';
+    rows.forEach(r => {
+      if (!r.row) return;
+      const locked = light && !STYLE_KEYS.includes(r.p.key) && !FREE.includes(r.p.key);
+      r.row.classList.toggle('is-locked', locked);
+      r.row.querySelectorAll('input, textarea, button').forEach(el => { el.disabled = locked; });
+    });
+    frameButtons.forEach(button => { button.disabled = light; });
+  }
   const MODE_STORE = 'split-flap-lab/mode';
   function setMode(next, takeLook = true) {
     mode = next;
@@ -445,11 +472,12 @@
     else delete document.documentElement.dataset.theme;
     try { localStorage.setItem(MODE_STORE, mode); } catch (e) { /* private mode */ }
     $('mode-switch').querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', b.dataset.mode === mode));
+    lockRows();
     if (takeLook) {
-      Object.assign(cfg, SplitFlap.activeStyle(mode, store));
-      rows.forEach(r => r.sync());
-      changed();
-      status(`Showing the ${mode} board's colours and lighting.`);
+      takeMode();
+      status(mode === 'light'
+        ? 'Showing the light board: its colours and lighting on the dark board. Only colours and lighting change in Light mode.'
+        : "Showing the dark board's colours and lighting.");
     }
     drawPlot();
     drawTracks();
@@ -746,6 +774,7 @@
     return parseStore(await (await fetch(FILE_URL, { cache: 'no-store' })).text());
   }).then(data => {
     store = data;
+    if (mode === 'light') takeMode();
     renderVersions();
     refreshCount();
   }).catch(() => status(`Couldn't read ${FILE}.`));

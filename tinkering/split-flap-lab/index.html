@@ -52,6 +52,8 @@
     .row__reset { width: 20px; height: 20px; border-radius: 4px; color: var(--muted); visibility: hidden; }
     .row__reset:hover { color: var(--fg); background: var(--hover); }
     .row.is-changed .row__reset { visibility: visible; }
+    .row.is-locked { opacity: 0.4; }
+    .row.is-locked .row__reset { visibility: hidden; }
     .row.is-changed .row__name { font-weight: 700; }
     .row.is-changed .row__name::after { content: " •"; }
     .row input[type="range"] { grid-column: 1 / -1; width: 100%; accent-color: var(--accent); }

@@ -833,3 +833,19 @@ a.card:hover .card__thumb img { transform: scale(1.03); }
   .cover__work { font-size: 20px; }
   .cover__tagline { margin-top: 28px; font-size: 16px; }
 }
+
+/* a phone screenshot: kept to a screen's height and centred in the media column,
+   with the corners a phone's display has */
+.project__hero--phone { width: auto; }
+/* the media column shrinks to the phone's width and centres, so the button still tucks
+   under the image's right corner */
+.project__media:has(.project__hero--phone) { justify-self: center; }
+.project__hero--phone img {
+  width: auto;
+  height: min(80svh, 800px);
+  aspect-ratio: 480 / 1044;
+  border-radius: clamp(28px, 4.2svh, 44px);
+}
+@media (max-width: 800px) {
+  .project__hero--phone img { height: auto; width: min(72vw, 380px); border-radius: 32px; }
+}

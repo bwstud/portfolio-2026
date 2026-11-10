@@ -71,14 +71,24 @@
 
     <section class="project project--band project--navy" id="blackbird" aria-label="Blackbird">
       <div class="project__intro">
-        <h2 class="project__tagline">Lorem ipsum dolor sit amet, consectetur adipiscing elit</h2>
+        <h2 class="project__tagline">Agents that help workers stay safe, informed, and on task.</h2>
         <ul class="project__tags" aria-label="Project focus">
-          <li>Attribute</li>
-          <li>Attribute</li>
-          <li>Attribute</li>
+          <li>Agentic Triage</li>
+          <li>Product Strategy</li>
+          <li>Offline Patterns</li>
         </ul>
+        <p class="project__desc">I led a 0–1 project designing a new, unified app for Ideagen’s EHS portfolio. My team built a sophisticated product that addresses the needs of workers in far-flung, dirty and dangerous places. Mazlan, Ideagen’s AI, is embedded strategically throughout the experience to help users react and respond to their environment.</p>
       </div>
-      <figure class="project__hero placeholder" aria-label="Blackbird hero image"><span>Hero image</span></figure>
+      <div class="project__media">
+        <figure class="project__hero project__hero--shot project__hero--phone">
+          <img src="images/blackbird-intake-480.webp"
+               srcset="images/blackbird-intake-480.webp 480w, images/blackbird-intake-960.webp 960w"
+               sizes="(max-width: 800px) 72vw, 380px"
+               width="480" height="1044" loading="lazy" decoding="async"
+               alt="The Blackbird mobile app's New screen: Mazlan asks “Hi Maya, how can I help?” above a voice-first prompt, with assistants to report an incident, record an observation or mark a hazard">
+        </figure>
+        <a class="button button--apricot" href="#">Try it for yourself</a>
+      </div>
     </section>
 
     <section class="project project--band project--ochre" id="mazlan-builder" aria-label="Mazlan Builder">
@@ -141,9 +151,10 @@
         ['AX', 'DESIGNER'],
         ['SIX', 'DESIGNER?'],
         ['', '\u00AF\\_(\u30C4)_/\u00AF'],
+        ['', ''],   // then the board clears to reveal only the restart icon
       ];
-      const holdName = 2000, holdTitle = 1000, titleSpeed = 2;   // the titles spin twice as fast
-      // the restart icon (Lucide rotate-ccw) lands in the bottom-right window with the shrug
+      const holdName = 2000, holdTitle = 600, titleSpeed = 2.6;   // the titles spin 2.6x as fast
+      // the restart icon (Lucide rotate-ccw) lands in the bottom-right window as the board clears after the shrug
       const RESTART = '\uE000';
       const config = SplitFlap.activeConfig();
       const name = config.lines || SplitFlap.DEFAULTS.lines;
@@ -201,7 +212,7 @@
           const t = now();
           flap.seek(t);
           if (t >= flap.duration) {
-            if (step >= sequence.length) {                 // shrug and icon are up: wait for a click
+            if (step >= sequence.length) {                 // board cleared, icon up: wait for a click
               running = false; replay.hidden = false; place(); return;
             }
             if (landed === null) landed = t;

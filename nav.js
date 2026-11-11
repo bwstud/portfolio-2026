@@ -26,6 +26,7 @@ if (themeToggle) {
   themeToggle.addEventListener('click', () => {
     const light = root.dataset.theme !== 'light';
     if (light) root.dataset.theme = 'light'; else delete root.dataset.theme;
+    document.querySelector('meta[name="color-scheme"]')?.setAttribute('content', light ? 'light' : 'dark');
     try { localStorage.setItem('theme', light ? 'light' : 'dark'); } catch (e) {}
     sync();
     document.dispatchEvent(new CustomEvent('themechange'));

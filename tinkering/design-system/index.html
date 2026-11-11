@@ -6,8 +6,10 @@
   <title>Design System · Brian Studwell</title>
   <meta name="robots" content="noindex">
   <meta name="description" content="The tokens and components behind this site, shown with the site's own stylesheet so the page can't drift from what ships.">
-  <!-- apply a saved light/dark choice before first paint, so the page doesn't flash -->
-  <script>try { if (localStorage.getItem('theme') === 'light') document.documentElement.dataset.theme = 'light'; } catch (e) {}</script>
+  <!-- the page starts dark; the meta tells the browser before any CSS loads, so its own surfaces
+       (first-paint background, scrollbars, form controls) match. The script applies a saved choice. -->
+  <meta name="color-scheme" content="dark">
+  <script>try { if (localStorage.getItem('theme') === 'light') { document.documentElement.dataset.theme = 'light'; document.querySelector('meta[name="color-scheme"]').content = 'light'; } } catch (e) {}</script>
   <script src="../../button-versions.js"></script>
   <script src="../../buttons.js"></script>
   <link rel="stylesheet" href="../../styles.css">

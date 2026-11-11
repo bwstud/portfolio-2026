@@ -13,10 +13,10 @@
     }
 
     :root {
-      --bg: #030605;
-      --fg: #e6fbf6;
-      --muted: #7fa39b;
-      --teal: #2ee6c5;
+      --bg: #050505;
+      --fg: #f6f6f6;
+      --muted: #9c9c9c;
+      --teal: #cdcdcd;
       /* plus-sign cursor: dark outline under a teal stroke so it reads on glow and on black */
       --cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24'%3E%3Cpath d='M12 3v18M3 12h18' stroke='%23030605' stroke-width='4' stroke-linecap='round'/%3E%3Cpath d='M12 3v18M3 12h18' stroke='%232ee6c5' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E") 12 12, crosshair;
     }
@@ -80,12 +80,12 @@
       flex-direction: column;
       gap: 3px;
       padding: 9px 13px;
-      border: 1px solid rgba(46, 230, 197, 0.35);
+      border: 1px solid rgba(205, 205, 205, 0.35);
       border-radius: 8px;
-      background: rgba(3, 10, 9, 0.72);
+      background: rgba(8, 8, 8, 0.72);
       backdrop-filter: blur(6px);
       -webkit-backdrop-filter: blur(6px);
-      box-shadow: 0 0 24px rgba(46, 230, 197, 0.18);
+      box-shadow: 0 0 24px rgba(205, 205, 205, 0.18);
       font-size: 13px;
       line-height: 1.3;
       white-space: nowrap;
@@ -102,21 +102,23 @@
     .marker-label span { color: var(--teal); }
 
     /* Control panel (lil-gui), docked right */
+    /* lil-gui sets its own colours on every folder, so hand the panel's down to them */
+    body .lil-gui .lil-gui { --background-color: inherit; --widget-color: inherit; --hover-color: inherit; --focus-color: inherit; --number-color: inherit; --string-color: inherit; --title-background-color: inherit; --text-color: inherit; }
     .lil-gui.root {
-      --background-color: rgba(6, 14, 12, 0.82);
-      --widget-color: #12241f;
-      --hover-color: #1a332c;
-      --focus-color: #22413a;
+      --background-color: rgba(12, 12, 12, 0.82);
+      --widget-color: #212121;
+      --hover-color: #2e2e2e;
+      --focus-color: #3b3b3b;
       --number-color: var(--teal);
       --string-color: var(--teal);
-      --title-background-color: rgba(10, 24, 20, 0.95);
-      --text-color: #cfe9e2;
+      --title-background-color: rgba(21, 21, 21, 0.95);
+      --text-color: #e3e3e3;
       --font-family: inherit;
       --width: 300px;
       top: 16px;
       right: 16px;
       max-height: calc(100vh - 32px);
-      border: 1px solid rgba(46, 230, 197, 0.18);
+      border: 1px solid rgba(205, 205, 205, 0.18);
       border-radius: 10px;
       overflow: hidden auto;
       backdrop-filter: blur(10px);

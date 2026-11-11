@@ -4,8 +4,10 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Brian Studwell</title>
-  <!-- apply a saved light/dark choice before first paint, so the page doesn't flash -->
-  <script>try { if (localStorage.getItem('theme') === 'light') document.documentElement.dataset.theme = 'light'; } catch (e) {}</script>
+  <!-- the page starts dark; the meta tells the browser before any CSS loads, so its own surfaces
+       (first-paint background, scrollbars, form controls) match. The script applies a saved choice. -->
+  <meta name="color-scheme" content="dark">
+  <script>try { if (localStorage.getItem('theme') === 'light') { document.documentElement.dataset.theme = 'light'; document.querySelector('meta[name="color-scheme"]').content = 'light'; } } catch (e) {}</script>
   <script src="button-versions.js"></script>
   <script src="buttons.js"></script>
   <link rel="stylesheet" href="styles.css">
@@ -13,9 +15,16 @@
 <body>
   <header class="nav">
     <div class="nav__start">
+      <a class="chip" href="#top"><svg class="chip__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 18v4"/><path d="m17 18 1.956-11.468"/><path d="m3 8 7.82-5.615a2 2 0 0 1 2.36 0L21 8"/><path d="M4 18h16"/><path d="M7 18 5.044 6.532"/><circle cx="12" cy="10" r="2"/></svg>Home</a>
+      <a class="chip" href="#agents">Brian for Agents<svg class="chip__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/></svg></a>
+    </div>
+    <nav class="nav__links">
+      <a class="chip" href="tinkering/"><svg class="chip__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12.99 6.74 1.93 3.44"/><path d="M19.136 12a10 10 0 0 1-14.271 0"/><path d="m21 21-2.16-3.84"/><path d="m3 21 8.02-14.26"/><circle cx="12" cy="5" r="2"/></svg>Tinkering</a>
+      <a class="chip" href="https://www.linkedin.com/in/bwstudwell" target="_blank" rel="noopener"><svg class="chip__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect width="4" height="12" x="2" y="9"/><circle cx="4" cy="4" r="2"/></svg>LinkedIn</a>
+      <a class="chip" href="#contact"><svg class="chip__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="10" r="3"/><path d="M7 20.662V19a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v1.662"/></svg>Contact</a>
       <div class="dropdown dropdown--controls">
-        <button class="dropdown__toggle chip" aria-expanded="false" aria-controls="controls-menu">
-          <svg class="chip__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 8h4"/><path d="M12 21v-9"/><path d="M12 8V3"/><path d="M17 16h4"/><path d="M19 12V3"/><path d="M19 21v-5"/><path d="M3 14h4"/><path d="M5 10V3"/><path d="M5 21v-7"/></svg>Controls
+        <button class="dropdown__toggle chip" aria-expanded="false" aria-controls="controls-menu" aria-label="Controls">
+          <svg class="chip__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 8h4"/><path d="M12 21v-9"/><path d="M12 8V3"/><path d="M17 16h4"/><path d="M19 12V3"/><path d="M19 21v-5"/><path d="M3 14h4"/><path d="M5 10V3"/><path d="M5 21v-7"/></svg><span class="chip__label">Controls</span>
         </button>
         <ul class="dropdown__menu" id="controls-menu">
           <li><a href="tinkering/design-system/">Design System</a></li>
@@ -26,13 +35,6 @@
           <li><a href="tinkering/button-lab/">Button Lab</a></li>
         </ul>
       </div>
-      <a class="chip" href="#top"><svg class="chip__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 18v4"/><path d="m17 18 1.956-11.468"/><path d="m3 8 7.82-5.615a2 2 0 0 1 2.36 0L21 8"/><path d="M4 18h16"/><path d="M7 18 5.044 6.532"/><circle cx="12" cy="10" r="2"/></svg>Home</a>
-      <a class="chip" href="#agents">Brian for Agents<svg class="chip__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/></svg></a>
-    </div>
-    <nav class="nav__links">
-      <a class="chip" href="tinkering/"><svg class="chip__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12.99 6.74 1.93 3.44"/><path d="M19.136 12a10 10 0 0 1-14.271 0"/><path d="m21 21-2.16-3.84"/><path d="m3 21 8.02-14.26"/><circle cx="12" cy="5" r="2"/></svg>Tinkering</a>
-      <a class="chip" href="https://www.linkedin.com/in/bwstudwell" target="_blank" rel="noopener"><svg class="chip__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect width="4" height="12" x="2" y="9"/><circle cx="4" cy="4" r="2"/></svg>LinkedIn</a>
-      <a class="chip" href="#contact"><svg class="chip__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="10" r="3"/><path d="M7 20.662V19a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v1.662"/></svg>Contact</a>
       <button class="theme-toggle chip" type="button" aria-label="Light mode" aria-pressed="false">
         <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
         <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
@@ -73,7 +75,7 @@
       </div>
     </section>
 
-    <section class="project project--band project--navy" id="blackbird" aria-label="Blackbird">
+    <section class="project project--band project--navy project--flip" id="blackbird" aria-label="Blackbird">
       <div class="project__intro">
         <h2 class="project__tagline">Agents that help workers stay safe, informed, and on task.</h2>
         <ul class="project__tags" aria-label="Project focus">
@@ -84,12 +86,23 @@
         <p class="project__desc">I led a 0–1 project designing a new, unified app for Ideagen’s EHS portfolio. My team built a sophisticated product that addresses the needs of workers in far-flung, dirty and dangerous places. Mazlan, Ideagen’s AI, is embedded strategically throughout the experience to help users react and respond to their environment.</p>
       </div>
       <div class="project__media">
-        <figure class="project__hero project__hero--shot project__hero--phone">
-          <img src="images/blackbird-intake-480.webp"
+        <figure class="project__hero project__hero--device">
+          <div class="phone">
+            <div class="phone__body">
+              <span class="phone__layer" style="--i: 0"></span><span class="phone__layer" style="--i: 1"></span><span class="phone__layer" style="--i: 2"></span><span class="phone__layer" style="--i: 3"></span><span class="phone__layer" style="--i: 4"></span><span class="phone__layer" style="--i: 5"></span><span class="phone__layer" style="--i: 6"></span><span class="phone__layer" style="--i: 7"></span><span class="phone__layer" style="--i: 8"></span><span class="phone__layer" style="--i: 9"></span><span class="phone__layer" style="--i: 10"></span><span class="phone__layer" style="--i: 11"></span>
+              <div class="phone__back" aria-hidden="true"><span class="phone__camera"></span></div>
+              <div class="phone__front">
+                <img class="phone__screen" src="images/blackbird-intake-480.webp"
                srcset="images/blackbird-intake-480.webp 480w, images/blackbird-intake-960.webp 960w"
-               sizes="(max-width: 800px) 72vw, 380px"
+               sizes="(max-width: 800px) 64vw, 340px"
                width="480" height="1044" loading="lazy" decoding="async"
                alt="The Blackbird mobile app's New screen: Mazlan asks “Hi Maya, how can I help?” above a voice-first prompt, with assistants to report an incident, record an observation or mark a hazard">
+                <span class="phone__island" aria-hidden="true"></span>
+                <span class="phone__glare" aria-hidden="true"></span>
+              </div>
+            </div>
+            <span class="phone__shadow" aria-hidden="true"></span>
+          </div>
         </figure>
         <a class="button button--apricot" href="#">Try it for yourself</a>
       </div>

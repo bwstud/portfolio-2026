@@ -386,6 +386,14 @@ function renderAll() {
 }
 
 /* ---------- accent follows the palette ---------- */
+// the controls are greyscale: keep the accent's lightness, drop its hue
+function greyHex(hex) {
+  const lin = (v) => { v /= 255; return v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; };
+  const n = parseInt(hex.slice(1), 16);
+  const y = 0.2126 * lin(n >> 16) + 0.7152 * lin((n >> 8) & 255) + 0.0722 * lin(n & 255);
+  const v = Math.round(255 * Math.min(1, y <= 0.0031308 ? 12.92 * y : 1.055 * y ** (1 / 2.4) - 0.055));
+  return '#' + v.toString(16).padStart(2, '0').repeat(3);
+}
 
 function paletteChanged() {
   const stops = paletteStops();
@@ -396,7 +404,7 @@ function paletteChanged() {
     const lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
     if (lum > 0.3 && lum < 0.9) { pick = c; break; }
   }
-  document.documentElement.style.setProperty('--accent', pick);
+  document.documentElement.style.setProperty('--accent', greyHex(pick));
 }
 
 /* ---------- the surface ---------- */

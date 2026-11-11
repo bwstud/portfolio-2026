@@ -25,6 +25,18 @@
     sparkCoreColor: '#ffffff', sparkGlowColor: '#6eaaff', sparkFlash: true,
   };
 
+  // The site palette (styles.css --c-*). A colour that matches one is written as var(--c-name),
+  // so the buttons follow the palette if it changes. Keep in step with styles.css.
+  const PALETTE = {
+    night: '#040a13', navy: '#132534', pine: '#212c2d', slate: '#3c4f56', graphite: '#2f2f2f',
+    silver: '#b8b9b9', pewter: '#8b8b93', mist: '#dae4e3', rust: '#9f4933', umber: '#965200',
+    orange: '#f18300', apricot: '#ffb078', khaki: '#a0855b', sand: '#c7b799', sage: '#a6af98',
+    mocha: '#92715f', teal: '#418a8b', ochre: '#dfc06c', paper: '#f5f3ed', linen: '#f3eee7',
+    frost: '#e9f3f2', foam: '#f0f6f6', cloud: '#e9edf2',
+  };
+  const BY_HEX = Object.fromEntries(Object.entries(PALETTE).map(([name, hex]) => [hex, name]));
+  const token = hex => (BY_HEX[String(hex).toLowerCase()] ? `var(--c-${BY_HEX[String(hex).toLowerCase()]})` : hex);
+
   const px = v => v + 'px';
   const alpha = (hex, a) => {
     const n = parseInt(hex.slice(1), 16);
@@ -47,8 +59,8 @@
       '--chip-fs': px(c.fontSize), '--chip-fw': String(c.fontWeight), '--chip-ls': c.tracking + 'em',
       '--chip-tt': c.uppercase ? 'uppercase' : 'none', '--chip-lift': px(c.labelLift),
       '--chip-angle': c.angle + 'deg',
-      '--chip-top-d': c.topD, '--chip-bottom-d': c.bottomD, '--chip-edge-d': c.edgeD, '--chip-text-d': c.textD,
-      '--chip-top-l': c.topL, '--chip-bottom-l': c.bottomL, '--chip-edge-l': c.edgeL, '--chip-text-l': c.textL,
+      '--chip-top-d': token(c.topD), '--chip-bottom-d': token(c.bottomD), '--chip-edge-d': token(c.edgeD), '--chip-text-d': token(c.textD),
+      '--chip-top-l': token(c.topL), '--chip-bottom-l': token(c.bottomL), '--chip-edge-l': token(c.edgeL), '--chip-text-l': token(c.textL),
       '--chip-grain': String(c.grain), '--chip-grain-size': px(c.grainSize), '--chip-grain-blend': c.grainBlend,
       '--chip-shadow-d': shadowList(c.shadows, 'dark'), '--chip-shadow-l': shadowList(c.shadows, 'light'),
       '--chip-hover': String(c.hoverBright), '--chip-press-y': px(c.pressY),
@@ -66,7 +78,7 @@
 
   // spark.js reads Buttons.cfg on every move, so the lab's changes take effect at once
   const api = {
-    DEFAULTS, SHADOW, activeConfig, cfg: activeConfig(),
+    DEFAULTS, SHADOW, PALETTE, activeConfig, cfg: activeConfig(),
     apply(c) {
       api.cfg = { ...DEFAULTS, ...c };
       const style = document.documentElement.style;

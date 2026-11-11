@@ -14,17 +14,17 @@
     }
 
     :root {
-      --bg: #0c0d10;
-      --panel: rgba(16, 17, 21, 0.84);
+      --bg: #0d0d0d;
+      --panel: rgba(17, 17, 17, 0.84);
       --line: rgba(255, 255, 255, 0.09);
       --line-strong: rgba(255, 255, 255, 0.18);
-      --fg: #eef0f3;
-      --soft: #c4c8cf;
-      --muted: #8d929c;
-      --faint: #5d626b;
-      --accent: #f2a541;
-      --accent-ink: #1a1206;
-      --mountain: #7fb4ff;
+      --fg: #f0f0f0;
+      --soft: #c8c8c8;
+      --muted: #929292;
+      --faint: #626262;
+      --accent: #b5b5b5;
+      --accent-ink: #131313;
+      --mountain: #b2b2b2;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -91,7 +91,7 @@
     }
     .item + .item { margin-top: 2px; }
     .item:hover { background: rgba(255, 255, 255, 0.04); }
-    .item[aria-pressed="true"] { background: rgba(242, 165, 65, 0.1); border-color: rgba(242, 165, 65, 0.35); }
+    .item[aria-pressed="true"] { background: rgba(181, 181, 181, 0.1); border-color: rgba(181, 181, 181, 0.35); }
     .item__name { display: block; font-weight: 580; }
     .item[aria-pressed="true"] .item__name { color: var(--accent); }
     .item__sum { display: block; color: var(--soft); font-size: 12px; margin-top: 1px; }
@@ -105,7 +105,7 @@
     .piece + .piece { margin-top: 6px; }
     .piece__open { flex: 1; display: flex; gap: 10px; text-align: left; padding: 6px; border-radius: 9px; min-width: 0; }
     .piece__open:hover { background: rgba(255, 255, 255, 0.05); }
-    .piece img { width: 76px; height: 52px; object-fit: cover; border-radius: 6px; flex: none; background: #1b1c20; }
+    .piece img { width: 76px; height: 52px; object-fit: cover; border-radius: 6px; flex: none; background: #1c1c1c; }
     .piece b { display: block; font-weight: 570; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .piece small { display: block; color: var(--muted); font-size: 11.5px; line-height: 1.35; }
     .piece__del { width: 26px; color: var(--faint); font-size: 16px; border-radius: 7px; }
@@ -154,7 +154,7 @@
     .toggles { margin-top: 10px; display: grid; gap: 6px; }
     .toggles label { display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--soft); }
     .toggles input { accent-color: var(--accent); }
-    .toggles .dim { color: #7d828b; }
+    .toggles .dim { color: #828282; }
     .hint-text { margin-top: 10px; color: var(--faint); font-size: 11.5px; }
     .chips { display: flex; flex-wrap: wrap; gap: 5px; }
     .chip { padding: 5px 10px; border-radius: 999px; border: 1px solid var(--line-strong); font-size: 12px; color: var(--soft); }
@@ -175,7 +175,7 @@
     .step__count { color: var(--accent); font-size: 12px; font-weight: 620; }
     .step__time { color: var(--faint); font-size: 11px; font-variant-numeric: tabular-nums; }
     .step__title { font-size: 16px; font-weight: 620; margin-top: 3px; }
-    .step__text { color: #c9ccd3; margin-top: 4px; min-height: 3em; }
+    .step__text { color: #cccccc; margin-top: 4px; min-height: 3em; }
     .feedback { color: var(--accent); margin-top: 6px; font-size: 12.5px; min-height: 1.4em; }
     .feedback:empty { display: none; }
     .steps { display: flex; gap: 3px; margin: 12px 0 10px; }
@@ -193,7 +193,7 @@
     .tbtn:hover { background: rgba(255, 255, 255, 0.09); }
     .tbtn svg { width: 16px; height: 16px; fill: currentColor; }
     .tbtn--play { width: 44px; background: var(--accent); color: var(--accent-ink); border-color: transparent; }
-    .tbtn--play:hover { background: #f7b65e; }
+    .tbtn--play:hover { background: #c2c2c2; }
     .tbtn:disabled { opacity: 0.35; }
     .speed { margin-left: auto; display: flex; align-items: center; gap: 8px; color: var(--muted); }
     .speed .seg button { padding: 6px 8px; font-variant-numeric: tabular-nums; }
@@ -204,7 +204,7 @@
     .pill:hover { background: rgba(255, 255, 255, 0.09); }
     .pill:disabled { opacity: 0.35; }
     .pill--go { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
-    .pill--go:hover { background: #f7b65e; }
+    .pill--go:hover { background: #c2c2c2; }
     .fold-controls, .done-controls { display: none; gap: 6px; align-items: center; flex-wrap: wrap; }
     .is-fold .watch-controls { display: none; }
     .is-fold .fold-controls { display: flex; }
@@ -228,7 +228,7 @@
 
     .toast {
       position: fixed; z-index: 5; left: 50%; top: 58px; transform: translateX(-50%);
-      background: #1d1f24; border: 1px solid var(--line-strong); border-radius: 9px; padding: 8px 14px;
+      background: #1f1f1f; border: 1px solid var(--line-strong); border-radius: 9px; padding: 8px 14px;
       box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
     }
 

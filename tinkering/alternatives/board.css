@@ -1,0 +1,72 @@
+/* Split-flap board rules, copied from styles.css (lines 406-476) so the board works without the site stylesheet. */
+.sf-board {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sf-gap, 6px);
+  width: 100%;
+  max-width: var(--sf-width, 560px);
+}
+
+/* Every row shares the longest line's columns, so modules match in size */
+.sf-row {
+  display: grid;
+  /* split-flap.js sets --sf-col to a whole number of device pixels; the slack centres */
+  grid-template-columns: repeat(var(--cols), var(--sf-col, minmax(0, 1fr)));
+  justify-content: center;
+  gap: var(--sf-gap, 6px);
+}
+
+/* One module: a canvas that spills past the tile so flaps can swing toward the viewer */
+.sf {
+  position: relative;
+  aspect-ratio: 1 / var(--sf-ratio, 1.4);
+  /* whole device pixels, from split-flap.js; with both set, aspect-ratio steps aside */
+  width: var(--sf-col, auto);
+  height: var(--sf-row, auto);
+}
+
+.sf canvas {
+  position: absolute;
+  top: calc(var(--sf-inset, 0) * 100%);
+  left: calc((var(--sf-inset, 0) - (1 - 2 * var(--sf-inset, 0)) * var(--sf-overhang, 0.12)) * 100%);
+  width: calc((1 - 2 * var(--sf-inset, 0)) * (1 + 2 * var(--sf-overhang, 0.12)) * 100%);
+  height: calc((1 - 2 * var(--sf-inset, 0)) * 100%);
+}
+
+/* Framed: a plate with a recessed window per module. Leaves swing behind the plate, so the
+   window clips them, and the shading sits above the canvas as shadow cast by the plate. */
+.sf-board.is-framed {
+  padding: var(--sf-frame-pad);
+  border-radius: var(--radius-sm);
+  background:
+    linear-gradient(100deg, rgba(255, 255, 255, var(--sf-frame-sheen)), transparent 60%),
+    var(--sf-frame-color);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 24px 60px rgba(0, 0, 0, 0.45);
+}
+
+/* on the light page the plate casts a soft warm-brown shadow, as on paper, and catches
+   the light along its top edge */
+:root[data-theme="light"] .sf-board.is-framed {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7), 0 1px 2px rgba(70, 52, 28, 0.12), 0 14px 36px rgba(70, 52, 28, 0.16);
+}
+
+.is-framed .sf {
+  overflow: hidden;
+  border-radius: var(--radius-2xs);
+  background: var(--sf-well-color);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, var(--sf-frame-lip)),
+    0 -1px 0 rgba(0, 0, 0, 0.45);
+}
+
+.is-framed .sf::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow:
+    inset 0 calc(var(--sf-cell) * 0.14 * var(--sf-frame-depth)) calc(var(--sf-cell) * 0.12 * var(--sf-frame-depth)) rgba(0, 0, 0, calc(0.95 * var(--sf-frame-depth))),
+    inset 0 0 calc(var(--sf-cell) * 0.08 * var(--sf-frame-depth)) rgba(0, 0, 0, calc(0.8 * var(--sf-frame-depth)));
+}
+

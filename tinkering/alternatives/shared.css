@@ -1,0 +1,28 @@
+/* Shared by the five alternative home pages: fonts, reset, the "to add" slot and the switcher. */
+@font-face { font-family: "Geist"; font-weight: 100 900; font-display: swap; src: url("../../fonts/Geist-Variable.woff2") format("woff2"); }
+@font-face { font-family: "Söhne"; font-weight: 400; font-display: swap; src: url("../../fonts/soehne-buch.woff2") format("woff2"); }
+@font-face { font-family: "Söhne Breit"; font-weight: 600; font-display: swap; src: url("../../fonts/soehne-breit-halbfett.woff2") format("woff2"); }
+@font-face { font-family: "Söhne Mono"; font-weight: 400; font-display: swap; src: url("../../fonts/soehne-mono-buch.woff2") format("woff2"); }
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+h1, h2, h3, p, ul, ol, dl, dd, figure { margin: 0; }
+ul, ol { padding: 0; list-style: none; }
+img { display: block; max-width: 100%; height: auto; }
+a { color: inherit; }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
+.vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+/* A fact the mock-up needs and I don't have. Dashed so it can't pass for real copy. */
+.slot { border-bottom: 1px dashed currentColor; font-style: italic; cursor: help; }
+
+/* Switcher between the alternatives: review chrome, not part of any design */
+.alt-switch { position: fixed; left: 12px; bottom: 12px; z-index: 50; display: flex; gap: 2px; padding: 4px;
+  font: 12px/1 "Geist", system-ui, sans-serif; background: rgba(20, 22, 26, .88); color: #e8eaec; border-radius: 8px;
+  backdrop-filter: blur(8px); }
+.alt-switch a { padding: 7px 9px; border-radius: 5px; text-decoration: none; }
+.alt-switch a:hover { background: rgba(255, 255, 255, .14); }
+.alt-switch a[aria-current] { background: #e8eaec; color: #14161a; }
+@media print { .alt-switch { display: none; } }

@@ -546,7 +546,7 @@
       const host = document.querySelector('.ds-board');
       const config = SplitFlap.activeConfig();
       const look = () => SplitFlap.activeStyle(document.documentElement.dataset.theme === 'light' ? 'light' : 'dark');
-      const flap = SplitFlap.mount(host, { ...config, ...look(), lines: ['DESIGN', 'SYSTEM'], sequence: [], padX: 1 });
+      const flap = SplitFlap.mount(host, { ...config, ...look(), lines: ['DESIGN', 'SYSTEM'], sequence: [], padX: 1, padY: 0, nameCols: 0, boardWidth: 560 });
       const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
       const again = document.querySelector('.ds-board-replay');
       let t0 = 0, running = false;

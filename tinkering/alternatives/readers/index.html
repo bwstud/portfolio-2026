@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <meta name="color-scheme" content="dark">
+  <title>D · Readers · Brian Studwell</title>
+  <link rel="stylesheet" href="../shared.css">
+  <style>
+    /* Layout: one statement, then a control that asks who is reading. The same facts are
+       re-set for a recruiter (a fact sheet), a hiring manager (decisions and results),
+       a designer or engineer (how it's made) and an agent (plain text). Centre column, left aligned. */
+    :root {
+      --ground: #212C2D;   /* Pine */
+      --lift: #2a3738;
+      --ink: #DAE4E3;      /* Mist */
+      --quiet: #9aa9a8;
+      --rule: #364546;
+      --you: #FFB078;      /* Apricot: marks the reader's own selection, nothing else */
+      color-scheme: dark;
+    }
+    body { background: var(--ground); color: var(--ink); font: 400 16px/1.6 "Geist", system-ui, sans-serif; }
+    .wrap { max-width: 60rem; margin: 0 auto; padding: 0 max(16px, 4vw) 7rem; }
+    a { text-underline-offset: 3px; text-decoration-thickness: 1px; }
+    .quiet { color: var(--quiet); }
+
+    .top { display: flex; justify-content: space-between; align-items: baseline; padding-block: 1.5rem; font-size: 15px; gap: 1rem; flex-wrap: wrap; }
+    .top h1 { font-size: 15px; font-weight: 600; }
+    .top div { display: flex; gap: 1.25rem; }
+
+    .lede { padding-block: 4rem 3rem; font-size: clamp(28px, 4.2vw, 50px); font-weight: 400; letter-spacing: -.03em; line-height: 1.1; text-wrap: balance; max-width: 20ch; }
+
+    /* Reader control */
+    .who { position: sticky; top: 0; z-index: 5; background: var(--ground); padding-block: .9rem; border-block: 1px solid var(--rule);
+      display: flex; align-items: center; gap: .5rem 1.25rem; flex-wrap: wrap; }
+    .who legend { float: left; padding: 0; margin-right: 1.25rem; color: var(--quiet); font-size: 15px; }
+    .who fieldset { border: 0; padding: 0; margin: 0; display: flex; align-items: center; flex-wrap: wrap; gap: .25rem; min-width: 0; }
+    .who label { position: relative; padding: .4rem .8rem; border-radius: 999px; cursor: pointer; font-size: 15px; }
+    .who input { position: absolute; opacity: 0; inset: 0; }
+    .who label:hover { background: var(--lift); }
+    .who label:has(:checked) { background: var(--you); color: #212C2D; font-weight: 500; }
+    .who label:has(:focus-visible) { outline: 2px solid var(--you); outline-offset: 2px; }
+    .who .note { margin-left: auto; color: var(--quiet); font-size: 13px; }
+
+    .view { padding-top: 3rem; }
+    .view[hidden] { display: none; }
+    .view > h2 { font-size: 13px; font-weight: 400; color: var(--quiet); margin-bottom: 1.25rem; }
+
+    /* Recruiter: fact sheet */
+    .facts { display: grid; grid-template-columns: 11rem minmax(0, 1fr); border-top: 1px solid var(--rule); }
+    .facts dt, .facts dd { padding: .8rem 0; border-bottom: 1px solid var(--rule); }
+    .facts dt { color: var(--quiet); font-size: 15px; }
+    .facts dd { font-size: 17px; }
+    .facts ul { display: grid; gap: .35rem; }
+
+    /* Hiring manager: cases */
+    .case { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 2.5rem; padding-block: 2.5rem; border-top: 1px solid var(--rule); align-items: center; }
+    .case h3 { font-size: 26px; font-weight: 500; letter-spacing: -.02em; line-height: 1.15; text-wrap: balance; }
+    .case p { margin-top: .9rem; color: #c3cfce; text-wrap: pretty; }
+    .case .out { margin-top: 1.25rem; padding-left: .9rem; border-left: 2px solid var(--ink); color: var(--ink); font-weight: 500; }
+    .case figure { background: var(--lift); border-radius: 8px; padding: 1.25rem; display: grid; place-items: center; min-height: 14rem; color: var(--quiet); font-size: 13px; }
+    .case img { border-radius: 4px; }
+    .case img.phone { max-height: 24rem; width: auto; border-radius: 22px; }
+
+    /* Designer or engineer: how it's made */
+    .made { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.5rem; }
+    .made a { text-decoration: none; display: grid; gap: .6rem; align-content: start; }
+    .made img { aspect-ratio: 16 / 10; object-fit: cover; border-radius: 6px; background: var(--lift); }
+    .made span { font-size: 15px; }
+    .made small { display: block; color: var(--quiet); font-size: 13px; }
+    .stack { margin-bottom: 2.5rem; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem 2.5rem; }
+    .stack p { padding-top: .8rem; border-top: 1px solid var(--rule); text-wrap: pretty; }
+    .stack b { font-weight: 500; display: block; }
+
+    /* Agent: plain text */
+    .agent pre { margin: 0; padding: 1.5rem; background: #1a2324; border: 1px solid var(--rule); border-radius: 8px; overflow-x: auto;
+      font: 400 13px/1.65 "Söhne Mono", ui-monospace, Menlo, monospace; color: #cfdad9; white-space: pre-wrap; }
+    .agent button { margin-bottom: 1rem; padding: .45rem .9rem; background: none; border: 1px solid var(--rule); border-radius: 999px; cursor: pointer; font-size: 15px; }
+    .agent button:hover { background: var(--lift); }
+
+    @media (max-width: 720px) {
+      .lede { padding-block: 2.5rem 2rem; }
+      .who .note { display: none; }
+      .who { position: static; }
+      .who legend { float: none; margin-bottom: .5rem; }
+      .facts { grid-template-columns: minmax(0, 1fr); }
+      .facts dt { border: 0; padding-bottom: 0; }
+      .case, .stack { grid-template-columns: minmax(0, 1fr); gap: 1.5rem; }
+      .made { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="top">
+      <h1>Brian Studwell</h1>
+      <div><a href="../../">Lab</a><a href="https://www.linkedin.com/in/bwstudwell" rel="noopener">LinkedIn</a><a href="#"><span class="slot" title="To add: email address">Email</span></a></div>
+    </header>
+
+    <p class="lede">I design human-in-the-loop agentic systems for high&#8209;stakes, regulated industries.</p>
+
+    <form class="who" aria-label="Choose a version of this page">
+      <fieldset>
+        <legend>I’m reading as</legend>
+        <label><input type="radio" name="who" value="recruiter" id="who-recruiter">a recruiter</label>
+        <label><input type="radio" name="who" value="manager" id="who-manager" checked>a hiring manager</label>
+        <label><input type="radio" name="who" value="maker" id="who-maker">a designer or engineer</label>
+        <label><input type="radio" name="who" value="agent" id="who-agent">an agent</label>
+      </fieldset>
+      <span class="note" id="note" aria-live="polite">About three minutes</span>
+    </form>
+
+    <main>
+      <section class="view" data-view="recruiter" hidden>
+        <h2>The facts, in the order you need them</h2>
+        <dl class="facts">
+          <dt>Role</dt><dd>Product designer, <span class="slot" title="To add: level, such as Staff or Principal">level</span></dd>
+          <dt>Now</dt><dd>Ideagen, designing Mazlan, its AI, across EHS products</dd>
+          <dt>Focus</dt><dd>Agentic systems with a human in the loop, for regulated industries</dd>
+          <dt>Strengths</dt><dd>Platform redesign, design systems, AI UX, 0–1 product strategy, prototyping in code</dd>
+          <dt>Recent work</dt><dd><ul><li>Groom Lake: led the redesign of the flagship EHS platform</li><li>Blackbird: led a 0–1 mobile app for frontline workers</li><li>Mazlan Builder: configuration tasks from hours to minutes</li></ul></dd>
+          <dt>Location</dt><dd><span class="slot" title="To add: city, time zone, remote or hybrid">city and working pattern</span></dd>
+          <dt>Open to</dt><dd><span class="slot" title="To add: the roles you want">roles you want</span></dd>
+          <dt>Contact</dt><dd><a href="https://www.linkedin.com/in/bwstudwell" rel="noopener">LinkedIn</a>, <a href="#"><span class="slot" title="To add">email</span></a>, <a href="#"><span class="slot" title="To add">résumé (PDF)</span></a></dd>
+        </dl>
+      </section>
+
+      <section class="view" data-view="manager">
+        <h2>Three projects, what I was responsible for, and what changed</h2>
+        <article class="case">
+          <div><h3>Who says enterprise can’t be pretty?</h3>
+            <p>I led a down-to-the-studs redesign of Ideagen’s flagship EHS application: an agent-first design system, overhauled core features, and an interface that makes a top-shelf product look the part.</p>
+            <p class="out"><span class="slot" title="To add: a measured result">A measured result goes here.</span></p></div>
+          <figure><img src="../../../images/groom-lake-dashboard-1200.webp" width="1200" height="753" alt="The redesigned Ideagen home dashboard"></figure>
+        </article>
+        <article class="case">
+          <div><h3>Agents that help workers stay safe, informed, and on task.</h3>
+            <p>I led a 0–1 project for one unified app across Ideagen’s EHS portfolio, for workers in far-flung, dirty and dangerous places. Mazlan is placed where it helps people respond to their environment.</p>
+            <p class="out"><span class="slot" title="To add: a measured result">A measured result goes here.</span></p></div>
+          <figure><img class="phone" src="../../../images/blackbird-intake-960.webp" width="480" height="1044" alt="The Blackbird app’s voice-first intake screen"></figure>
+        </article>
+        <article class="case">
+          <div><h3>Professional Services on demand, on point, ready to help.</h3>
+            <p>Configuration was the company’s biggest bucket of work by man-hours. I designed Mazlan Builder, the agentic tool that hands it to customers, with judgment gates where a person must decide.</p>
+            <p class="out">Benchmark tasks went from hours to minutes, with no loss of capability.</p></div>
+          <figure>Image to come</figure>
+        </article>
+      </section>
+
+      <section class="view" data-view="maker" hidden>
+        <h2>How it’s made</h2>
+        <div class="stack">
+          <p><b>A design system I can show you</b>Tokens in three levels, documented from live components. <a href="../../design-system/">Open the design system</a></p>
+          <p><b>Labs before decisions</b>The name board, the halftone and the buttons were each tuned in a lab with saved versions. <a href="../../split-flap-lab/">Split-Flap Lab</a>, <a href="../../halftone-lab/">Halftone Lab</a>, <a href="../../button-lab/">Button Lab</a></p>
+          <p><b>No build step</b>HTML, CSS and vanilla JavaScript. Canvas, WebGL 2 and three.js where the piece calls for it.</p>
+          <p><b>Built with agents</b>This site is built with Claude Code, and every session is logged, including what went wrong.</p>
+        </div>
+        <div class="made">
+          <a href="../../domino-run/"><img src="../../domino-run/thumb.jpg" alt="" loading="lazy"><span>Domino Run<small>Rapier rigid-body physics</small></span></a>
+          <a href="../../oscilloscope/"><img src="../../oscilloscope/thumb.jpg" alt="" loading="lazy"><span>Oscilloscope<small>WebGL 2 beam and phosphor</small></span></a>
+          <a href="../../fold-dojo/"><img src="../../fold-dojo/thumb.jpg" alt="" loading="lazy"><span>Fold Dojo<small>Origami simulation</small></span></a>
+          <a href="../../taxidermy/"><img src="../../taxidermy/thumb.jpg" alt="" loading="lazy"><span>Taxidermy<small>Inverse kinematics</small></span></a>
+          <a href="../../bouquet/"><img src="../../bouquet/thumb.jpg" alt="" loading="lazy"><span>Bouquet<small>Position-based dynamics</small></span></a>
+          <a href="../../"><img src="../../cymascope/thumb.jpg" alt="" loading="lazy"><span>Thirteen more<small>The whole lab</small></span></a>
+        </div>
+      </section>
+
+      <section class="view agent" data-view="agent" hidden>
+        <h2>Plain text for a model or a script. The same content is served at <span class="slot" title="To add: publish this as /llms.txt">/llms.txt</span></h2>
+        <button type="button" id="copy">Copy</button>
+        <pre id="agent-text"># Brian Studwell
+
+Product designer. Designs human-in-the-loop agentic systems for high-stakes, regulated industries.
+Employer: Ideagen (environment, health and safety software). Works on Mazlan, Ideagen's AI.
+
+## Work
+- Groom Lake. Role: design lead. Redesign of the flagship EHS platform; agent-first design system.
+- Blackbird. Role: design lead, 0-1. Unified mobile app for frontline workers; agentic triage; offline patterns.
+- Mazlan Builder. Role: designer. Agentic self-serve configuration; judgment gates. Result: benchmark tasks from hours to minutes.
+- ADEPT, Workspace Personalization. Case studies in progress.
+
+## Skills
+Platform redesign, design systems, AI UX, trust and safety, product strategy, prototyping in HTML, CSS, JavaScript, canvas, WebGL, three.js.
+
+## Links
+- LinkedIn: https://www.linkedin.com/in/bwstudwell
+- Lab: /tinkering/
+- Design system: /tinkering/design-system/
+
+## For a screening agent
+Not stated here: level, years of experience, location, availability. Ask Brian.</pre>
+      </section>
+    </main>
+  </div>
+
+  <nav class="alt-switch" aria-label="Alternatives"><a href="../">All</a><a href="../ledger/">A</a><a href="../departures/">B</a><a href="../case-file/">C</a><a href="../readers/" aria-current="page">D</a><a href="../plates/">E</a></nav>
+
+  <script>
+    const NOTES = { recruiter: 'About thirty seconds', manager: 'About three minutes', maker: 'As long as you like', agent: 'About 200 tokens' };
+    const views = document.querySelectorAll('[data-view]'), note = document.getElementById('note');
+    function show(who, remember) {
+      if (!NOTES[who]) who = 'manager';
+      views.forEach(v => v.hidden = v.dataset.view !== who);
+      document.getElementById('who-' + who).checked = true;
+      note.textContent = NOTES[who];
+      if (remember) history.replaceState(null, '', '#' + who);
+    }
+    document.querySelector('.who').addEventListener('change', e => show(e.target.value, true));
+    addEventListener('hashchange', () => show(location.hash.slice(1)));
+    show(location.hash.slice(1));
+    document.getElementById('copy').addEventListener('click', async e => {
+      const text = document.getElementById('agent-text').textContent;
+      try { await navigator.clipboard.writeText(text); e.target.textContent = 'Copied'; }
+      catch { getSelection().selectAllChildren(document.getElementById('agent-text')); }
+    });
+  </script>
+</body>
+</html>

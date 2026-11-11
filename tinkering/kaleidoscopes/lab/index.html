@@ -14,20 +14,20 @@
     }
 
     :root {
-      --bg: #0b0b0e;
-      --panel: #121216;
-      --raise: #18181d;
+      --bg: #0b0b0b;
+      --panel: #121212;
+      --raise: #181818;
       --line: rgba(255, 255, 255, 0.08);
       --line-strong: rgba(255, 255, 255, 0.16);
       --fg: #f0eef0;
-      --soft: #c9c6cc;
-      --muted: #8f8b95;
-      --faint: #66626b;
-      --accent: #e7b75a;
-      --accent-ink: #1b1305;
-      --changed: #7fb8ff;
-      --bad: #ff7a6b;
-      --good: #79d39b;
+      --soft: #c7c7c7;
+      --muted: #8d8d8d;
+      --faint: #646464;
+      --accent: #bebebe;
+      --accent-ink: #141414;
+      --changed: #b5b5b5;
+      --bad: #a2a2a2;
+      --good: #c1c1c1;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -83,8 +83,8 @@
       padding: 5px 6px; border-radius: 8px; text-align: left; color: var(--soft);
     }
     .item:hover { background: rgba(255, 255, 255, 0.04); color: var(--fg); }
-    .item[aria-current="true"] { background: rgba(231, 183, 90, 0.1); color: var(--fg); box-shadow: inset 0 0 0 1px rgba(231, 183, 90, 0.45); }
-    .item canvas { width: 36px; height: 36px; border-radius: 50%; background: #1a1a1f; display: block; }
+    .item[aria-current="true"] { background: rgba(190, 190, 190, 0.1); color: var(--fg); box-shadow: inset 0 0 0 1px rgba(190, 190, 190, 0.45); }
+    .item canvas { width: 36px; height: 36px; border-radius: 50%; background: #1a1a1a; display: block; }
     .item__name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .item__dot { width: 7px; height: 7px; border-radius: 50%; background: var(--changed); }
     .list-actions { display: flex; gap: 6px; padding: 0 4px; }
@@ -97,19 +97,19 @@
     #preview.is-dragging { cursor: grabbing; }
     .cell-inset {
       position: absolute; left: 12px; bottom: 12px; padding: 8px; border-radius: 10px;
-      background: rgba(12, 12, 15, 0.82); border: 1px solid var(--line-strong);
+      background: rgba(12, 12, 12, 0.82); border: 1px solid var(--line-strong);
       backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
       display: grid; gap: 6px; pointer-events: none;
     }
     .cell-inset canvas { display: block; border-radius: 4px; }
     .cell-inset__label { font-size: 11px; color: var(--muted); }
     .view-tools { position: absolute; right: 12px; top: 12px; display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
-    .view-tools .btn { background: rgba(12, 12, 15, 0.8); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+    .view-tools .btn { background: rgba(12, 12, 12, 0.8); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
     .view-tools .btn[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
 
     .pics { border-top: 1px solid var(--line); padding: 8px 12px; display: flex; gap: 6px; overflow-x: auto; align-items: center; }
     .pics__label { color: var(--soft); font-weight: 620; font-size: 12px; margin-right: 4px; white-space: nowrap; }
-    .pic { flex: 0 0 auto; width: 46px; height: 46px; border-radius: 7px; overflow: hidden; border: 2px solid transparent; padding: 0; background: #1a1a1f; }
+    .pic { flex: 0 0 auto; width: 46px; height: 46px; border-radius: 7px; overflow: hidden; border: 2px solid transparent; padding: 0; background: #1a1a1a; }
     .pic img { width: 100%; height: 100%; object-fit: cover; display: block; }
     .pic[aria-pressed="true"] { border-color: var(--accent); }
     .pic--add { display: grid; place-items: center; border: 1px dashed var(--line-strong); color: var(--soft); }
@@ -147,7 +147,7 @@
 
     .savebar {
       position: fixed; right: 0; bottom: 0; width: 330px; padding: 10px 14px; display: flex; gap: 6px; flex-wrap: wrap;
-      background: rgba(11, 11, 14, 0.94); border-top: 1px solid var(--line); border-left: 1px solid var(--line);
+      background: rgba(11, 11, 11, 0.94); border-top: 1px solid var(--line); border-left: 1px solid var(--line);
       backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
     }
     .savebar__status { width: 100%; font-size: 12px; color: var(--muted); }

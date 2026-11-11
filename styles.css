@@ -93,14 +93,14 @@
   --chip-edge: var(--chip-edge-d); --chip-text: var(--chip-text-d); --chip-shadow: var(--chip-shadow-d);
 }
 
-/* Light mode: a light page colour (--ground) replaces Night, and Pine's section turns to a pale Pine-tinted
-   Mist with dark text. Rust, Navy and Ochre keep their colours. The neutrals mix Night over Mist. */
+/* Light mode: a light page colour (--ground) replaces Night, and Pine's section turns to Slate
+   with Mist text. Rust, Navy and Ochre keep their colours. The neutrals mix Night over Mist. */
 :root[data-theme="light"],
 [data-theme-scope="light"] {
   color-scheme: light;
   /* trying page colours: a warm off-white now; Mist, then white, were earlier passes */
   --ground: #F5F3ED;
-  --pine-band: color-mix(in srgb, var(--c-pine) 18%, var(--c-mist));
+  --pine-band: var(--c-slate);   /* pale Pine-tinted Mist and Umber were earlier passes */
   --fg: var(--c-night);
   /* neutrals mix Night over whatever the page colour is */
   --muted: color-mix(in srgb, var(--c-night) 72%, var(--ground));
@@ -201,12 +201,6 @@ a { color: inherit; text-decoration: none; }
   gap: 6px;
 }
 
-.dropdown__caret {
-  font-size: 11px;
-  transition: transform 0.15s;
-}
-
-.dropdown.is-open .dropdown__caret { transform: rotate(180deg); }
 
 .dropdown__menu {
   position: absolute;
@@ -302,7 +296,8 @@ a { color: inherit; text-decoration: none; }
 .nav .dropdown.is-open .chip { filter: brightness(var(--chip-current)); }
 .nav .theme-toggle.chip { width: var(--chip-h); padding: 0; }
 .nav .chip svg { width: 17px; height: 17px; }
-.nav .chip .dropdown__caret { font-size: 10px; }
+/* Lucide icons beside the labels, sized to the label and inheriting its colour */
+.nav .chip .chip__icon { flex: none; width: calc(var(--chip-fs) + 1px); height: calc(var(--chip-fs) + 1px); }
 
 /* Shared */
 .placeholder {
@@ -574,14 +569,14 @@ a { color: inherit; text-decoration: none; }
 /* in light mode "Recent Work" is set in Rust, like the board's letters above it and the band below */
 :root[data-theme="light"] .cover__work { color: var(--c-rust); }
 
-/* light Pine takes dark text, like Ochre and Sage */
+/* light mode's Slate is dark, so it keeps Mist text like Rust */
 :root[data-theme="light"] .project--pine {
-  --fg: var(--c-night);
+  --fg: var(--c-mist);
   --bg: var(--pine-band);
-  --muted: var(--c-pine);
-  --line: rgba(4, 10, 19, 0.3);
-  --surface: rgba(4, 10, 19, 0.08);
   color: var(--fg);
+  --muted: var(--c-mist);
+  --line: rgba(218, 228, 227, 0.35);
+  --surface: rgba(4, 10, 19, 0.12);
 }
 
 /* Project layout: tagline, pills and description in a narrow column on the left; the hero

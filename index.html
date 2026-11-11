@@ -76,6 +76,11 @@
     .bay { margin-top: var(--space-6); padding: var(--space-7); background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-sm);
       display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: var(--space-7); scroll-margin-top: var(--space-5); }
     .bay[hidden] { display: none; }
+    /* On load the record waits above its place, unseen, and settles down into it as the board's
+       last flaps land. Choosing another project afterwards swaps the record at once. */
+    .is-arriving .bay { opacity: 0; transform: translateY(-24px); }
+    .has-board:not(.is-arriving) .bay { transition: opacity 700ms cubic-bezier(0.23, 1, 0.32, 1), transform 700ms cubic-bezier(0.23, 1, 0.32, 1); }
+    @media (prefers-reduced-motion: reduce) { .has-board:not(.is-arriving) .bay { transition: none; } }
     .bay__name { margin: 0 0 var(--space-3); }
     .bay h2 { font: 600 clamp(24px, 2.6vw, 34px)/1.1 "Söhne Breit", sans-serif; letter-spacing: -.005em; text-wrap: balance; margin: 0; }
     .bay__meta { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-4); margin: var(--space-5) 0 0; padding: 0; list-style: none; }
@@ -307,13 +312,17 @@
         keys.appendChild(key);
       });
       document.documentElement.classList.add('has-board');
+      if (!still) document.documentElement.classList.add('is-arriving');   // the record holds back until the board resolves
 
       const fromHash = () => Math.max(0, rows.findIndex(r => '#' + r.id === location.hash));
       flap.ready.then(() => {
         const first = fromHash();
         bays.forEach((bay, k) => bay.hidden = k !== first);
         choose(first, { remember: false });
-        if (still) flap.seek(Infinity); else run();   // the rows flip in once; choosing a row leaves the board as it is
+        if (still) return flap.seek(Infinity);
+        run();   // the rows flip in once; choosing a row leaves the board as it is
+        // the record starts down as the last flaps are landing, so the two finish together
+        setTimeout(() => document.documentElement.classList.remove('is-arriving'), Math.max(0, flap.duration - 450));
       });
       addEventListener('hashchange', () => { if (rows.some(r => '#' + r.id === location.hash)) choose(fromHash(), { remember: false }); });
       document.addEventListener('themechange', () => { flap.restyle(SplitFlap.activeStyle(mode())); if (!running) flap.seek(now()); });

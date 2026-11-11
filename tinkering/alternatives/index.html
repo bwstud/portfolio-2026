@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Home page alternatives · Brian Studwell</title>
+  <link rel="stylesheet" href="shared.css">
+  <style>
+    :root { --ground: #F0F6F6; --ink: #040A13; --quiet: #56636A; --rule: #cfdcdb; color-scheme: light; }
+    body { background: var(--ground); color: var(--ink); font: 400 16px/1.55 "Söhne", "Helvetica Neue", Arial, sans-serif; }
+    main { max-width: 46rem; margin: 0 auto; padding: 5rem max(16px, 4vw) 6rem; }
+    h1 { font: 600 22px/1.2 "Söhne Breit", sans-serif; }
+    main > p { margin-top: .75rem; color: var(--quiet); max-width: 36rem; }
+    ol { margin-top: 3rem; border-top: 1px solid var(--rule); }
+    li a { display: grid; grid-template-columns: 2rem 9rem minmax(0, 1fr); gap: 1rem; padding: 1.1rem 0; border-bottom: 1px solid var(--rule); text-decoration: none; }
+    li a:hover b { text-decoration: underline; }
+    li span:first-child, li span:last-child { color: var(--quiet); }
+    b { font-weight: 400; }
+    @media (max-width: 560px) { li a { grid-template-columns: 2rem minmax(0, 1fr); } li span:last-child { grid-column: 2; } }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Five alternative home pages</h1>
+    <p>Each is a working page with the real copy and images. Dashed italic text marks a fact still to add. The current home page is <a href="../../">here</a>.</p>
+    <ol>
+      <li><a href="ledger/"><span>A</span><b>Ledger</b><span>One column of text, one preview pane. The quiet index.</span></a></li>
+      <li><a href="departures/"><span>B</span><b>Departures</b><span>The split-flap board becomes the table of contents.</span></a></li>
+      <li><a href="case-file/"><span>C</span><b>Case File</b><span>Problem, what I did, result. The same record for every project.</span></a></li>
+      <li><a href="readers/"><span>D</span><b>Readers</b><span>One page re-set for a recruiter, a hiring manager, a maker or an agent.</span></a></li>
+      <li><a href="plates/"><span>E</span><b>Plates</b><span>A gallery wall. The band colours become mats around the work.</span></a></li>
+    </ol>
+  </main>
+</body>
+</html>

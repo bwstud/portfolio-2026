@@ -2,10 +2,13 @@
    transport. The board on the stage is the same code the home page runs. */
 (function () {
   const { DEFAULTS, STYLE_KEYS, resolveEase, resolveConfig } = SplitFlap;
-  const STORE = 'split-flap-lab/v1';
+  const STORE = 'split-flap-lab/v2';   // v1 held settings for the two-line name board
   const LAB_ONLY = { seed: 1 };   // never part of a site config
-  // where the lab starts: the padded board, which reaches the site only through a saved version
-  const LAB_START = { padX: 2, padY: 1, fillRows: true, boardWidth: 840, grain: 0.08, frame: true };
+  // where the lab starts: the home page's board, five project rows with a status column
+  const LAB_START = {
+    lines: ['GROOM LAKE|SHIPPED', 'BLACKBIRD|SHIPPED', 'MAZLAN BUILDER|SHIPPED', 'ADEPT|WRITING', 'WORKSPACES|WRITING'],
+    nameCols: 16, statusCols: 12, padX: 0, padY: 0, fillRows: true, boardWidth: 1180, grain: 0.08, frame: true,
+  };
   const $ = id => document.getElementById(id);
   const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
   const clamp = (v, lo, hi) => Math.min(Math.max(v, lo), hi);
@@ -21,8 +24,12 @@
   const b = (key, label, hint) => ({ key, label, hint, type: 'toggle' });
   const GROUPS = [
     ['Message', [
-      { key: 'lines', label: 'Text', type: 'lines', hint: 'What the board spells, one row per line.' },
+      { key: 'lines', label: 'Rows', type: 'lines', hint: 'One row per line. Put | between the project and its status to set them in columns.' },
       { key: 'chars', label: 'Drum', type: 'text', hint: 'Every character on a module, in flip order.' },
+    ]],
+    ['Columns', [
+      n('nameCols', 'Project column', 0, 28, 1, 'modules', 'Width of the part before the |. 0 turns columns off and reads each line as written.'),
+      n('statusCols', 'Status column', 0, 24, 1, 'modules', 'Width of the part after the |.'),
     ]],
     ['Timing', [
       n('flipMs', 'Flip', 10, 400, 1, 'ms', 'Average time for one character change.'),
@@ -41,7 +48,7 @@
       n('samples', 'Samples', 1, 24, 1, '', 'Instants averaged per frame. More is smoother and slower.'),
     ]],
     ['Board', [
-      n('boardWidth', 'Width', 200, 1200, 10, 'px', 'Widest the board may grow.'),
+      n('boardWidth', 'Width', 200, 1800, 10, 'px', 'Widest the board may grow.'),
       n('gap', 'Gap', 0, 24, 1, 'px', 'Space between modules when flat.'),
       n('padX', 'Side cells', 0, 8, 1, '', 'Empty modules left and right of the text.'),
       n('padY', 'Top and bottom cells', 0, 6, 1, '', 'Empty rows above and below the text.'),
@@ -114,6 +121,7 @@
       queued = false;
       flap.update(engineConfig());
       fitBoard();
+      checkDrum();
       if (time > flap.duration) time = flap.duration;
       flap.seek(time);
       drawTracks();
@@ -178,18 +186,20 @@
     } else {
       const lines = p.type === 'lines';
       const box = document.createElement(lines ? 'textarea' : 'input');
-      if (lines) box.rows = 2; else box.type = 'text';
+      if (lines) box.rows = Math.max(2, cfg.lines.length); else box.type = 'text';
       box.id = id; box.spellcheck = false;
       row.append(box);
       box.addEventListener('input', () => {
         cfg[p.key] = lines ? box.value.split('\n') : box.value;
+        if (lines) box.rows = Math.max(2, cfg.lines.length);
         checkDrum();
         changed();
         mark();
       });
       sync = () => {
-        const v = lines ? cfg.lines.join('\n') : cfg.chars;
+        const v = lines ? cfg.lines.join('\n') : cfg[p.key];
         if (box.value !== v) box.value = v;
+        if (lines) box.rows = Math.max(2, cfg.lines.length);
       };
     }
 
@@ -228,10 +238,17 @@
 
   function checkDrum() {
     const row = rows.find(r => r.p.key === 'lines');
-    const missing = [...new Set([...cfg.lines.join('')])].filter(ch => !cfg.chars.includes(ch));
-    row.hint.classList.toggle('is-warning', missing.length > 0);
+    const missing = [...new Set([...cfg.lines.join('')])].filter(ch => ch !== '|' && !cfg.chars.includes(ch));
+    // a part longer than its column pushes that row's status out of line
+    const wide = cfg.nameCols > 0 ? cfg.lines.filter(l => l.includes('|')).flatMap(l => {
+      const [name, status = ''] = l.split('|').map(part => part.trim());
+      const texts = [[name, cfg.nameCols], [status, cfg.statusCols]];
+      return texts.filter(([text, cols]) => text.length > cols).map(([text]) => text);
+    }) : [];
+    row.hint.classList.toggle('is-warning', missing.length > 0 || wide.length > 0);
     row.hint.textContent = missing.length
-      ? `Not on the drum, so shown as its first character: ${missing.join(' ')}`
+      ? `Not on the drum, so added to the end of it: ${missing.join(' ')}`
+      : wide.length ? `Wider than its column: ${[...new Set(wide)].join(', ')}`
       : row.p.hint;
   }
 
@@ -774,7 +791,9 @@
     return parseStore(await (await fetch(FILE_URL, { cache: 'no-store' })).text());
   }).then(data => {
     store = data;
+    const active = store.versions.find(v => v.id === store.active);
     if (mode === 'light') takeMode();
+    else if (active && !Object.keys(saved).length) loadVersion(active);
     renderVersions();
     refreshCount();
   }).catch(() => status(`Couldn't read ${FILE}.`));

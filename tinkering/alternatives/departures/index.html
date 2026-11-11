@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <meta name="color-scheme" content="dark">
+  <title>B · Departures · Brian Studwell</title>
+  <link rel="stylesheet" href="../shared.css">
+  <link rel="stylesheet" href="../board.css">
+  <style>
+    /* Layout: the split-flap board is the table of contents. One board, one row per project;
+       choosing a row re-spins the board's status column and opens that project in the bay below.
+       Everything else is small mono type on a left edge, like the print on a terminal sign. */
+    :root {
+      --ground: #040A13;   /* Night */
+      --panel: #0b1420;
+      --ink: #DAE4E3;      /* Mist */
+      --quiet: #8B979C;
+      --rule: #1b2630;
+      --amber: #DFC06C;    /* Ochre: status only */
+      color-scheme: dark;
+    }
+    body { background: var(--ground); color: var(--ink); font: 400 16px/1.55 "Söhne", "Helvetica Neue", Arial, sans-serif; }
+    .wrap { max-width: 76rem; margin: 0 auto; padding: 0 max(16px, 4vw); }
+    .mono { font: 400 13px/1.5 "Söhne Mono", ui-monospace, Menlo, monospace; color: var(--quiet); }
+    a { text-underline-offset: 3px; text-decoration-thickness: 1px; }
+
+    .top { display: flex; justify-content: space-between; align-items: baseline; gap: 1.5rem; padding-block: 1.5rem; flex-wrap: wrap; }
+    .top h1 { font: 600 15px/1.2 "Söhne Breit", "Helvetica Neue", sans-serif; letter-spacing: .01em; }
+    .top nav { display: flex; gap: 1.5rem; flex-wrap: wrap; }
+    .top nav a { text-decoration: none; }
+    .top nav a:hover { color: var(--ink); text-decoration: underline; }
+
+    .lede { max-width: 44rem; padding-block: 3.5rem 2.5rem; font-size: clamp(22px, 2.4vw, 30px); line-height: 1.3; text-wrap: balance; }
+
+    /* Board */
+    .board { position: relative; }
+    .board__head, .board__keys { display: grid; grid-template-columns: 16fr 12fr; }
+    .board__head { padding: 0 0 .5rem; }
+    .board__flap { margin: 0; }
+    .board__flap .sf-board { max-width: none !important; width: 100%; --sf-width: 100%; }
+    .board__keys { position: absolute; inset: 0; top: 1.95rem; grid-template-columns: 1fr; grid-auto-rows: 1fr; }
+    .board__keys button { background: none; border: 0; padding: 0; cursor: pointer; border-radius: 4px; text-align: left; }
+    .board__keys button:hover, .board__keys button[aria-pressed="true"] { background-image: linear-gradient(to right, var(--amber) 3px, transparent 3px); }
+    .board__keys button:focus-visible { outline: 2px solid var(--amber); outline-offset: -2px; }
+    /* Without the board (no script, or reduced data): the same rows as text */
+    .board__plain { display: none; }
+    .no-board .board__flap, .no-board .board__keys { display: none; }
+    .no-board .board__plain { display: grid; gap: 1px; background: var(--rule); border: 1px solid var(--rule); }
+    .board__plain button { display: grid; grid-template-columns: 16fr 12fr; background: var(--ground); border: 0; padding: .9rem 1rem; text-align: left;
+      font: 600 15px/1.2 "Söhne Breit", sans-serif; letter-spacing: .06em; font-size: 13px; cursor: pointer; }
+    .board__plain button span:last-child { color: var(--amber); text-align: right; }
+    .board__plain button[aria-pressed="true"] { background-image: linear-gradient(to right, var(--amber) 3px, transparent 3px); }
+    .no-board .board__head { display: none; }
+
+    /* Bay */
+    .bay { margin-top: 2rem; display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 3rem; padding: 2.5rem; background: var(--panel);
+      border: 1px solid var(--rule); border-radius: 6px; min-height: 30rem; }
+    .bay[hidden] { display: none; }
+    .bay h2 { font: 600 clamp(24px, 2.6vw, 34px)/1.1 "Söhne Breit", sans-serif; letter-spacing: -.005em; text-wrap: balance; }
+    .bay p { margin-top: 1.25rem; color: #b9c4c6; max-width: 34rem; text-wrap: pretty; }
+    .bay dl { margin-top: 2rem; display: grid; grid-template-columns: 7rem 1fr; gap: .5rem 1rem; padding-top: 1.25rem; border-top: 1px solid var(--rule); }
+    .bay dd { color: var(--ink); font: 400 13px/1.5 "Söhne Mono", monospace; }
+    .bay__media { display: grid; place-items: center; min-width: 0; }
+    .bay__media img { border-radius: 6px; max-height: 30rem; width: auto; }
+    .bay__media img.phone { border-radius: 30px; max-height: 32rem; }
+    .bay__media .tbd { width: 100%; aspect-ratio: 16 / 10; display: grid; place-items: center; border: 1px dashed var(--rule); border-radius: 6px; }
+    .bay a.go { display: inline-block; margin-top: 1.75rem; color: var(--amber); }
+
+    .foot { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2rem; padding-block: 4rem 6rem; margin-top: 4rem; border-top: 1px solid var(--rule); }
+    .foot h3 { font: 400 13px/1.5 "Söhne Mono", monospace; color: var(--quiet); margin-bottom: .6rem; }
+    .foot li { padding: .15rem 0; }
+
+    @media (max-width: 760px) {
+      .bay { grid-template-columns: minmax(0, 1fr); padding: 1.5rem; gap: 2rem; }
+      .foot { grid-template-columns: minmax(0, 1fr); }
+      .lede { padding-block: 2rem 1.5rem; }
+      .board__head span:last-child { text-align: right; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="top">
+      <h1>Brian Studwell</h1>
+      <nav class="mono" aria-label="Site">
+        <a href="#board">Work</a><a href="../../">Lab</a><a href="https://www.linkedin.com/in/bwstudwell" rel="noopener">LinkedIn</a><a href="#contact">Contact</a><a href="#">For agents</a>
+      </nav>
+    </header>
+
+    <p class="lede">I design human-in-the-loop agentic systems for high-stakes, regulated industries.</p>
+
+    <main>
+      <section class="board" id="board" aria-label="Work">
+        <div class="board__head mono"><span>Project</span><span>Status</span></div>
+        <p class="board__flap" id="flap" aria-hidden="true"></p>
+        <div class="board__keys" id="keys"></div>
+        <div class="board__plain" id="plain"></div>
+      </section>
+
+      <article class="bay" data-bay="0">
+        <div>
+          <h2>Who says enterprise can’t be pretty?</h2>
+          <p>I led a down-to-the-studs redesign of Ideagen’s flagship EHS application. We built an agent-first design system, overhauled the core features, and gave a top-shelf product an interface that looks the part.</p>
+          <dl class="mono"><dt>Role</dt><dd>Design lead</dd><dt>Scope</dt><dd>Platform redesign, design system, pervasive AI</dd><dt>Outcome</dt><dd><span class="slot" title="To add: a measured result">to add</span></dd></dl>
+          <a class="go mono" href="#">Read the case study</a>
+        </div>
+        <div class="bay__media"><img src="../../../images/groom-lake-dashboard-1200.webp" width="1200" height="753" alt="The redesigned Ideagen home dashboard"></div>
+      </article>
+      <article class="bay" data-bay="1" hidden>
+        <div>
+          <h2>Agents that help workers stay safe, informed, and on task.</h2>
+          <p>I led a 0–1 project: one app for Ideagen’s EHS portfolio, built for workers in far-flung, dirty and dangerous places. Mazlan, Ideagen’s AI, sits where it helps people react to what is in front of them.</p>
+          <dl class="mono"><dt>Role</dt><dd>Design lead, 0–1</dd><dt>Scope</dt><dd>Agentic triage, product strategy, offline patterns</dd><dt>Outcome</dt><dd><span class="slot" title="To add: a measured result">to add</span></dd></dl>
+          <a class="go mono" href="#">Read the case study</a>
+        </div>
+        <div class="bay__media"><img class="phone" src="../../../images/blackbird-intake-960.webp" width="480" height="1044" alt="The Blackbird app’s voice-first intake screen"></div>
+      </article>
+      <article class="bay" data-bay="2" hidden>
+        <div>
+          <h2>Professional Services on demand, on point, ready to help.</h2>
+          <p>By man-hours, configuration was the biggest bucket of work the company had. Mazlan Builder is the agentic tool that puts it in customers’ hands, with judgment gates where a person has to decide.</p>
+          <dl class="mono"><dt>Role</dt><dd>Designer</dd><dt>Scope</dt><dd>AI UX, trust and safety, judgment gates</dd><dt>Outcome</dt><dd>Benchmark tasks from hours to minutes</dd></dl>
+          <a class="go mono" href="#">Read the case study</a>
+        </div>
+        <div class="bay__media"><div class="tbd mono">Image to come</div></div>
+      </article>
+      <article class="bay" data-bay="3" hidden><div><h2>ADEPT</h2><p>This case study is being written.</p></div><div class="bay__media"><div class="tbd mono">In progress</div></div></article>
+      <article class="bay" data-bay="4" hidden><div><h2>Workspace Personalization</h2><p>This case study is being written.</p></div><div class="bay__media"><div class="tbd mono">In progress</div></div></article>
+    </main>
+
+    <footer class="foot" id="contact">
+      <div><h3>About</h3><p>I think in systems, always keep the plates spinning, and care deeply about the people who rely on my work.</p></div>
+      <div><h3>Lab</h3><ul><li><a href="../../split-flap-lab/">Split-Flap Lab, where this board is tuned</a></li><li><a href="../../design-system/">Design system</a></li><li><a href="../../">Nineteen experiments</a></li></ul></div>
+      <div><h3>Contact</h3><ul><li><a href="https://www.linkedin.com/in/bwstudwell" rel="noopener">LinkedIn</a></li><li><a href="#"><span class="slot" title="To add: email address">email</span></a></li></ul></div>
+    </footer>
+  </div>
+
+  <nav class="alt-switch" aria-label="Alternatives"><a href="../">All</a><a href="../ledger/">A</a><a href="../departures/" aria-current="page">B</a><a href="../case-file/">C</a><a href="../readers/">D</a><a href="../plates/">E</a></nav>
+
+  <script src="../../../split-flap.js"></script>
+  <script src="../../../split-flap-versions.js"></script>
+  <script>
+    const ROWS = [
+      ['GROOM LAKE', 'SHIPPED'],
+      ['BLACKBIRD', 'SHIPPED'],
+      ['MAZLAN BUILDER', 'SHIPPED'],
+      ['ADEPT', 'WRITING'],
+      ['WORKSPACES', 'WRITING'],
+    ];
+    const NAME = 16, STATUS = 12;
+    const line = (name, status) => name.padEnd(NAME) + status.padEnd(STATUS);
+    const lines = ROWS.map(r => line(...r));
+    // the selected row's status column reads NOW SHOWING; the rest keep their status
+    const linesFor = i => ROWS.map((r, k) => line(r[0], k === i ? 'NOW SHOWING' : r[1]));
+
+    const bays = document.querySelectorAll('[data-bay]');
+    const keys = document.getElementById('keys'), plain = document.getElementById('plain');
+    let flap = null, t0 = performance.now(), current = 0;
+    const now = () => performance.now() - t0;
+    const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    function choose(i) {
+      current = i;
+      bays.forEach(b => b.hidden = +b.dataset.bay !== i);
+      document.querySelectorAll('[data-row]').forEach(b => b.setAttribute('aria-pressed', +b.dataset.row === i));
+      if (flap) { flap.spinTo(linesFor(i), still ? 0 : now(), { speed: 2.4 }); if (still) flap.seek(Infinity); else run(); }
+    }
+    ROWS.forEach((r, i) => {
+      for (const host of [keys, plain]) {
+        const b = document.createElement('button');
+        b.type = 'button'; b.dataset.row = i; b.setAttribute('aria-pressed', i === 0);
+        if (host === keys) b.setAttribute('aria-label', r[0] + ', ' + r[1].toLowerCase());
+        else b.innerHTML = `<span>${r[0]}</span><span>${r[1]}</span>`;
+        b.addEventListener('click', () => choose(i));
+        host.appendChild(b);
+      }
+    });
+
+    let running = false;
+    function run() { if (running) return; running = true; requestAnimationFrame(function frame() {
+      const t = now(); flap.seek(t);
+      if (t < flap.duration + 200) requestAnimationFrame(frame); else running = false;
+    }); }
+
+    try {
+      // 28 modules across can't be read on a phone, so phones get the same rows as text
+      if (matchMedia('(max-width: 760px)').matches) throw new Error('narrow');
+      const base = SplitFlap.activeConfig();
+      flap = SplitFlap.mount(document.getElementById('flap'), {
+        ...base, ...SplitFlap.activeStyle('dark'),
+        lines, sequence: ROWS.map((_, i) => linesFor(i)),
+        padX: 0, padY: 0, fillRows: true, boardWidth: 1180, staggerMs: 500, minFlips: 8, maxFlips: 14,
+      });
+      flap.ready.then(() => {
+        if (still) { flap.spinTo(linesFor(0), 0); flap.seek(Infinity); return; }
+        run();
+        setTimeout(() => choose(0), flap.duration + 500);
+      });
+    } catch (e) { document.documentElement.classList.add('no-board'); }
+  </script>
+</body>
+</html>

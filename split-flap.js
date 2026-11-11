@@ -37,6 +37,10 @@
     fillRows: false,            // short lines get empty modules out to the full width
     blankFlips: true,           // empty modules spin with the rest and land blank
 
+    // Rows: a line written "NAME|STATUS" is set in two columns, each padded to its width
+    nameCols: 0,                // modules in the left column; 0 leaves lines as written
+    statusCols: 0,              // modules in the right column
+
     // Frame: a plate with one recessed window per module
     frame: false,
     frameColor: '#1b1f26',
@@ -160,6 +164,14 @@
 
   const flapEnd = (m, cfg) => m.start + (m.seq.length - 1) * (m.flipMs || cfg.flipMs) + cfg.bounceMs;
 
+  // Rows. "NAME|STATUS" becomes one line with each part padded to its column, so the status
+  // column starts at the same module on every row. Lines without a bar pass through.
+  const compose = (lines, cfg) => lines.map(l => {
+    if (!(cfg.nameCols > 0) || !l.includes('|')) return l.replaceAll('|', ' ');
+    const [name, status = ''] = l.split('|');
+    return name.trim().padEnd(cfg.nameCols) + status.trim().padEnd(cfg.statusCols);
+  });
+
   // host gets the board appended to it. Nothing animates by itself: call seek(t) with a clock.
   function mount(host, options) {
     const board = document.createElement('span');
@@ -177,8 +189,8 @@
       cfg = { ...DEFAULTS, ...next };
       flipEase = resolveEase(cfg.flipEase);
       spinEase = resolveEase(cfg.spinEase);
-      const lines = cfg.lines.some(l => l.length) ? cfg.lines : [' '];
-      const messages = [lines, ...cfg.sequence];
+      const lines = compose(cfg.lines.some(l => l.length) ? cfg.lines : [' '], cfg);
+      const messages = [lines, ...cfg.sequence.map(m => compose(m, cfg))];
       // any character a message uses joins the end of the drum
       let chars = cfg.chars || ' ';
       messages.flat().forEach(l => [...l].forEach(c => { if (!chars.includes(c)) chars += c; }));
@@ -392,7 +404,7 @@
     // twice as fast.
     function spinTo(lines, t0, options) {
       const margin = Array.from({ length: cfg.padY }, () => blanks(grid.cols));
-      const targets = [...margin, ...layoutMessage(lines), ...margin].flat();
+      const targets = [...margin, ...layoutMessage(compose(lines, cfg)), ...margin].flat();
       mods.forEach((m, i) => spinModule(m, targets[i], t0, options));
       duration = Math.max(...mods.map(m => flapEnd(m, cfg))) + cfg.shutterMs;
     }
@@ -505,6 +517,6 @@
 
   const activeConfig = (mode, store = window.SPLIT_FLAP_VERSIONS) => resolveConfig(store, mode);
 
-  window.SplitFlap = { DEFAULTS, EASES, STYLE_KEYS, LIGHT, resolveEase, flapState, flapEnd, mount,
+  window.SplitFlap = { DEFAULTS, EASES, STYLE_KEYS, LIGHT, resolveEase, flapState, flapEnd, mount, compose,
     activeConfig, activeStyle, resolveConfig };
 })();

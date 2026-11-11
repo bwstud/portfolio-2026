@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>C · Case File · Brian Studwell</title>
+  <link rel="stylesheet" href="../shared.css">
+  <style>
+    /* Layout: a fixed left rail holds who and where; the right column is a stack of case
+       records. Every record has the same three fields, so the reader learns the form once
+       and can compare cases. The Result field is the only place colour appears. */
+    :root {
+      --ground: #E9EDF2;   /* Cloud */
+      --sheet: #F6F8FA;
+      --ink: #132534;      /* Navy */
+      --quiet: #51616E;
+      --rule: #cdd5de;
+      --result: #9F4933;   /* Rust */
+      color-scheme: light;
+    }
+    body { background: var(--ground); color: var(--ink); font: 400 16px/1.6 "Geist", system-ui, sans-serif; }
+    .page { display: grid; grid-template-columns: 19rem minmax(0, 1fr); gap: 5rem; max-width: 82rem; margin: 0 auto; padding: 0 max(20px, 4vw); }
+    a { text-underline-offset: 3px; text-decoration-thickness: 1px; }
+    .label { font-size: 13px; color: var(--quiet); letter-spacing: .01em; }
+
+    /* Rail */
+    .rail { position: sticky; top: 0; height: 100svh; padding-block: 3.5rem 2.5rem; display: flex; flex-direction: column; gap: 2rem; }
+    .rail h1 { font-size: 22px; font-weight: 600; letter-spacing: -.015em; line-height: 1.2; }
+    .rail .role { color: var(--quiet); margin-top: .25rem; }
+    .rail .pitch { font-size: 17px; line-height: 1.5; text-wrap: pretty; }
+    .rail nav { display: grid; gap: .1rem; margin-top: auto; }
+    .rail nav a { display: flex; justify-content: space-between; padding: .4rem 0; border-top: 1px solid var(--rule); text-decoration: none; font-size: 15px; }
+    .rail nav a:last-child { border-bottom: 1px solid var(--rule); }
+    .rail nav a span { color: var(--quiet); font-variant-numeric: tabular-nums; }
+    .rail nav a[aria-current] { font-weight: 600; }
+    .rail .links { display: flex; gap: 1.25rem; font-size: 15px; flex-wrap: wrap; }
+
+    /* Records */
+    main { padding-block: 3.5rem 7rem; display: grid; gap: 4.5rem; min-width: 0; }
+    .case { display: grid; gap: 1.75rem; scroll-margin-top: 2rem; }
+    .case header { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; padding-bottom: .75rem; border-bottom: 1px solid var(--ink); }
+    .case h2 { font-size: clamp(26px, 3vw, 38px); font-weight: 500; letter-spacing: -.025em; line-height: 1.1; text-wrap: balance; max-width: 22ch; }
+    .case figure { background: var(--sheet); border-radius: 6px; padding: clamp(1rem, 3vw, 2.5rem); display: grid; place-items: center; }
+    .case figure img { border-radius: 5px; box-shadow: 0 1px 0 rgba(19, 37, 52, .06), 0 20px 40px -18px rgba(19, 37, 52, .28); }
+    .case figure img.phone { max-height: 34rem; width: auto; border-radius: 30px; }
+    .case figure.tbd { aspect-ratio: 16 / 7; color: var(--quiet); border: 1px dashed var(--rule); background: none; }
+    .fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2rem; }
+    .fields dt { font-size: 13px; color: var(--quiet); padding-bottom: .5rem; }
+    .fields dd { text-wrap: pretty; }
+    .fields .result dt { color: var(--result); }
+    .fields .result dd { font-size: 19px; font-weight: 500; line-height: 1.35; letter-spacing: -.01em; }
+    .meta { display: flex; gap: .5rem 1.5rem; flex-wrap: wrap; font-size: 13px; color: var(--quiet); }
+    .meta a { color: var(--ink); margin-left: auto; font-size: 15px; }
+
+    .more { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2rem; padding-top: 2rem; border-top: 1px solid var(--ink); }
+    .more h2 { font-size: 13px; font-weight: 400; color: var(--quiet); margin-bottom: .6rem; }
+    .more li { display: flex; justify-content: space-between; gap: 1rem; padding: .4rem 0; border-bottom: 1px solid var(--rule); }
+    .more li span:last-child { color: var(--quiet); font-size: 13px; white-space: nowrap; }
+
+    @media (max-width: 900px) {
+      .page { grid-template-columns: minmax(0, 1fr); gap: 0; }
+      .rail { position: static; height: auto; padding-bottom: 0; }
+      .rail nav { margin-top: 0; }
+      .fields, .more { grid-template-columns: minmax(0, 1fr); gap: 1.25rem; }
+      .meta a { margin-left: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <aside class="rail">
+      <div>
+        <h1>Brian Studwell</h1>
+        <p class="role">Product designer at Ideagen</p>
+      </div>
+      <p class="pitch">I design human-in-the-loop agentic systems for high-stakes, regulated industries.</p>
+      <div class="links">
+        <a href="https://www.linkedin.com/in/bwstudwell" rel="noopener">LinkedIn</a>
+        <a href="#"><span class="slot" title="To add: a PDF résumé">Résumé</span></a>
+        <a href="#"><span class="slot" title="To add: email address">Email</span></a>
+      </div>
+      <nav aria-label="Cases">
+        <a href="#groom-lake" aria-current="true">Groom Lake <span>Platform</span></a>
+        <a href="#blackbird">Blackbird <span>Mobile, 0–1</span></a>
+        <a href="#mazlan-builder">Mazlan Builder <span>Agentic tool</span></a>
+        <a href="#more">Lab and background <span></span></a>
+      </nav>
+    </aside>
+
+    <main>
+      <article class="case" id="groom-lake">
+        <header><h2>Who says enterprise can’t be pretty?</h2><span class="label">Groom Lake</span></header>
+        <figure><img src="../../../images/groom-lake-dashboard-2000.webp" width="1200" height="753" alt="The redesigned Ideagen home dashboard: a greeting, quick actions, a calibration chart and quality indicators"></figure>
+        <dl class="fields">
+          <div><dt>Problem</dt><dd>Enterprises shouldn’t have to use slow, ugly, awkward software to meet their compliance obligations and stay safe.</dd></div>
+          <div><dt>What I did</dt><dd>Led a down-to-the-studs redesign of the flagship EHS application: an agent-first design system, overhauled core features, and an interface built with AI tooling throughout.</dd></div>
+          <div class="result"><dt>Result</dt><dd><span class="slot" title="To add: adoption, speed, sales or satisfaction figure">One measured outcome goes here.</span></dd></div>
+        </dl>
+        <p class="meta"><span>Design lead</span><span>Platform redesign</span><span>Design systems</span><span>Pervasive AI</span><a href="#">Full case study</a></p>
+      </article>
+
+      <article class="case" id="blackbird">
+        <header><h2>Agents that help workers stay safe, informed, and on task.</h2><span class="label">Blackbird</span></header>
+        <figure><img class="phone" src="../../../images/blackbird-intake-960.webp" width="480" height="1044" alt="The Blackbird app: Mazlan asks “Hi Maya, how can I help?” above a voice-first prompt"></figure>
+        <dl class="fields">
+          <div><dt>Problem</dt><dd>Workers in far-flung, dirty and dangerous places had several apps and little help reacting to what was in front of them.</dd></div>
+          <div><dt>What I did</dt><dd>Led a 0–1 project for one unified app across Ideagen’s EHS portfolio, with Mazlan placed where it helps a person respond to their environment.</dd></div>
+          <div class="result"><dt>Result</dt><dd><span class="slot" title="To add: a measured result">One measured outcome goes here.</span></dd></div>
+        </dl>
+        <p class="meta"><span>Design lead, 0–1</span><span>Agentic triage</span><span>Product strategy</span><span>Offline patterns</span><a href="#">Full case study</a></p>
+      </article>
+
+      <article class="case" id="mazlan-builder">
+        <header><h2>Professional Services on demand, on point, ready to help.</h2><span class="label">Mazlan Builder</span></header>
+        <figure class="tbd">Image to come</figure>
+        <dl class="fields">
+          <div><dt>Problem</dt><dd>By man-hours spent, configuration was the biggest bucket of work the company had.</dd></div>
+          <div><dt>What I did</dt><dd>Designed the agentic configuration tool that puts self-serve customisation in customers’ hands, with judgment gates where a person must decide.</dd></div>
+          <div class="result"><dt>Result</dt><dd>Benchmark tasks went from hours to minutes, without losing an ounce of capability.</dd></div>
+        </dl>
+        <p class="meta"><span>Designer</span><span>AI UX</span><span>Trust and safety</span><span>Judgment gates</span><a href="#">Full case study</a></p>
+      </article>
+
+      <section class="more" id="more">
+        <div>
+          <h2>Lab</h2>
+          <ul>
+            <li><a href="../../design-system/">Design system for this site</a><span>tokens, live components</span></li>
+            <li><a href="../../split-flap-lab/">Split-Flap Lab</a><span>canvas</span></li>
+            <li><a href="../../domino-run/">Domino Run</a><span>rigid-body physics</span></li>
+            <li><a href="../../oscilloscope/">Oscilloscope</a><span>WebGL 2</span></li>
+            <li><a href="../../">All nineteen experiments</a><span></span></li>
+          </ul>
+        </div>
+        <div>
+          <h2>Background</h2>
+          <ul>
+            <li><span>Ideagen</span><span class="slot" title="To add: title and years">title, years</span></li>
+            <li><span class="slot" title="To add: previous employer">Previous role</span><span class="slot" title="To add">title, years</span></li>
+            <li><span class="slot" title="To add: previous employer">Previous role</span><span class="slot" title="To add">title, years</span></li>
+            <li><span>ADEPT, Workspace Personalization</span><span>cases in progress</span></li>
+          </ul>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <nav class="alt-switch" aria-label="Alternatives"><a href="../">All</a><a href="../ledger/">A</a><a href="../departures/">B</a><a href="../case-file/" aria-current="page">C</a><a href="../readers/">D</a><a href="../plates/">E</a></nav>
+
+  <script>
+    // The rail marks the case nearest the top of the window.
+    const links = [...document.querySelectorAll('.rail nav a')];
+    const io = new IntersectionObserver(entries => entries.forEach(e => {
+      if (!e.isIntersecting) return;
+      links.forEach(a => a.getAttribute('href') === '#' + e.target.id ? a.setAttribute('aria-current', 'true') : a.removeAttribute('aria-current'));
+    }), { rootMargin: '-20% 0px -70% 0px' });
+    document.querySelectorAll('.case, .more').forEach(el => io.observe(el));
+  </script>
+</body>
+</html>

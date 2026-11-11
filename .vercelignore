@@ -1,6 +1,7 @@
 # Allowlist: upload only the site. Everything else in this folder (Work/, etc.) stays local.
 /*
 !index.html
+!llms.txt
 !styles.css
 !nav.js
 !spark.js
@@ -23,3 +24,6 @@
 
 # Font order downloads include the invoice: never deploy
 /fonts/Klim-Order-*
+
+# Draft home page alternatives from the design review: kept in the repo, not deployed
+/tinkering/alternatives

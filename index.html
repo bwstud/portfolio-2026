@@ -4,286 +4,334 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Brian Studwell</title>
+  <meta name="description" content="Brian Studwell designs human-in-the-loop agentic systems for high-stakes, regulated industries.">
   <!-- the page starts dark; the meta tells the browser before any CSS loads, so its own surfaces
        (first-paint background, scrollbars, form controls) match. The script applies a saved choice. -->
   <meta name="color-scheme" content="dark">
   <script>try { if (localStorage.getItem('theme') === 'light') { document.documentElement.dataset.theme = 'light'; document.querySelector('meta[name="color-scheme"]').content = 'light'; } } catch (e) {}</script>
-  <script src="button-versions.js"></script>
-  <script src="buttons.js"></script>
+  <link rel="alternate" type="text/plain" href="llms.txt" title="Plain-text version for agents">
   <link rel="stylesheet" href="styles.css">
+  <style>
+    /* Home page. The split-flap board is the table of contents: one row per project. Choosing a
+       row lightens its flaps and opens that project's record in the bay below.
+       Without the board (phones, no script) the rows are links and every record is on the page.
+       Colours, spacing, radii and type sizes come from the tokens in styles.css. */
+    :root { --signal: var(--c-ochre); }                       /* status and Result, nothing else */
+    :root[data-theme="light"] { --signal: var(--c-rust); }
+
+    .home { max-width: 76rem; margin: 0 auto; padding: 0 max(var(--space-4), 4vw); }
+    .home a { text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
+    .mono { font: 400 var(--text-2xs)/1.5 "Söhne Mono", ui-monospace, Menlo, monospace; color: var(--muted); }
+
+    .top { display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-5); padding-block: var(--space-5); flex-wrap: wrap; }
+    .top h1 { font: 600 var(--text-sm)/1.2 "Söhne Breit", "Helvetica Neue", sans-serif; letter-spacing: .01em; margin: 0; }
+    .top nav { display: flex; gap: var(--space-5); flex-wrap: wrap; align-items: baseline; }
+    .top nav a { text-decoration: none; }
+    .top nav a:hover { color: var(--fg); text-decoration: underline; }
+    .top .theme-toggle { background: none; border: 0; padding: 0; font: inherit; color: inherit; cursor: pointer; }
+    .top .theme-toggle:hover { color: var(--fg); text-decoration: underline; }
+    .theme-toggle .to-dark, :root[data-theme="light"] .theme-toggle .to-light { display: none; }
+    :root[data-theme="light"] .theme-toggle .to-dark { display: inline; }
+
+    .lede { max-width: 44rem; margin: 0; padding-block: var(--space-8) var(--space-7); font-size: clamp(22px, 2.4vw, 30px); line-height: 1.3; text-wrap: balance; }
+
+    /* The tagline arrives word by word, in reading order, like a reply being written. The script
+       under the tagline wraps each word; without it the sentence is simply there. */
+    .lede__word { display: inline-block; opacity: 0; transform: translateY(.18em); filter: blur(4px);
+      animation: lede-word 420ms cubic-bezier(0.23, 1, 0.32, 1) forwards; animation-delay: calc(var(--i) * 55ms + 120ms); }
+    @keyframes lede-word { to { opacity: 1; transform: none; filter: none; } }
+    @media (prefers-reduced-motion: reduce) { .lede__word { animation: none; opacity: 1; transform: none; filter: none; } }
+
+    /* Rows as links: the default, and what phones keep */
+    .rows { display: grid; gap: 1px; background: var(--line); border: 1px solid var(--line); margin: 0; padding: 0; list-style: none; }
+    .rows a { display: flex; justify-content: space-between; gap: var(--space-4); background: var(--ground); padding: var(--space-4);
+      font: 600 var(--text-2xs)/1.2 "Söhne Breit", sans-serif; letter-spacing: .06em; text-transform: uppercase; text-decoration: none; }
+    .rows a span:last-child { color: var(--signal); }
+
+    /* The board, once split-flap.js has mounted it */
+    .board { display: none; }
+    .has-board .rows { display: none; }
+    /* The board leaves the text column: as wide as the window allows up to 1800px, always with
+       at least 200px clear on each side. 100vw counts a classic scrollbar, so 32px is held back
+       for it. It stays centred on the window, like the column. */
+    .has-board .board { display: block; --board-w: min(1800px, 100vw - 432px); width: var(--board-w); margin-inline: calc(50% - var(--board-w) / 2); }
+    .home main { overflow-x: visible; }   /* styles.css clips main, which would cut the board off */
+    .board__head { display: grid; grid-template-columns: 16fr 12fr; padding-bottom: var(--space-2); }
+    .board__stage { position: relative; }
+    .board__flap { margin: 0; }
+    .board__flap .sf-board { --sf-width: 100%; max-width: none; width: 100%; }
+    .board__keys { position: absolute; inset: 0; display: grid; grid-auto-rows: 1fr; padding-block: var(--sf-frame-pad, 0px); }
+    .board__keys button { background: none; border: 0; padding: 0; cursor: pointer; border-radius: var(--radius-xs); }
+    .board__keys button:focus-visible { outline: 2px solid var(--fg); outline-offset: -2px; }
+    /* The row in view has lighter flaps; a row under the pointer lightens part of the way.
+       On the light board, where the flaps are already near white, the row takes a shade instead. */
+    .board__flap .sf canvas { transition: filter .2s ease; }
+    .board__flap .sf-row.is-hover .sf canvas { filter: brightness(1.3); }
+    .board__flap .sf-row.is-chosen .sf canvas { filter: brightness(1.75); }
+    :root[data-theme="light"] .board__flap .sf-row.is-hover .sf canvas { filter: brightness(.97); }
+    :root[data-theme="light"] .board__flap .sf-row.is-chosen .sf canvas { filter: brightness(.92); }
+    @media (prefers-reduced-motion: reduce) { .board__flap .sf canvas { transition: none; } }
+
+    /* A project's record */
+    .bay { margin-top: var(--space-6); padding: var(--space-7); background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-sm);
+      display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: var(--space-7); scroll-margin-top: var(--space-5); }
+    .bay[hidden] { display: none; }
+    /* On load the record waits above its place, unseen, and settles down into it as the board's
+       last flaps land. Choosing another project afterwards swaps the record at once. */
+    .is-arriving .bay { opacity: 0; transform: translateY(-24px); }
+    .has-board:not(.is-arriving) .bay { transition: opacity 700ms cubic-bezier(0.23, 1, 0.32, 1), transform 700ms cubic-bezier(0.23, 1, 0.32, 1); }
+    @media (prefers-reduced-motion: reduce) { .has-board:not(.is-arriving) .bay { transition: none; } }
+    .bay__name { margin: 0 0 var(--space-3); }
+    .bay h2 { font: 600 clamp(24px, 2.6vw, 34px)/1.1 "Söhne Breit", sans-serif; letter-spacing: -.005em; text-wrap: balance; margin: 0; }
+    .bay__meta { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-4); margin: var(--space-5) 0 0; padding: 0; list-style: none; }
+    .bay__media { display: grid; place-items: center; min-width: 0; margin: 0; }
+    .bay__media img { border-radius: var(--radius-sm); max-height: 26rem; width: auto; max-width: 100%; height: auto; }
+    .bay__media img.is-phone { border-radius: 30px; max-height: 30rem; }
+    .bay__media.is-empty { aspect-ratio: 16 / 10; border: 1px dashed var(--line-strong); border-radius: var(--radius-sm); }
+    .fields { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-6); margin: 0; padding-top: var(--space-5); border-top: 1px solid var(--line); }
+    .fields dt { padding-bottom: var(--space-2); }
+    .fields dd { margin: 0; font-size: var(--text-md); line-height: 1.55; text-wrap: pretty; }
+    .fields .is-result dt { color: var(--signal); }
+    .fields .is-result dd { font-size: var(--text-heading); line-height: 1.35; }
+    /* a fact still to be supplied: dashed so it can't pass for real copy */
+    .slot { border-bottom: 1px dashed currentColor; font-style: italic; color: var(--muted); }
+
+    .foot { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-6); margin-top: var(--space-9); padding-block: var(--space-7) calc(var(--halftone-peak) / 2 + var(--space-5));
+      position: relative; z-index: 1;   /* the tallest dots now reach the footer: its text stays on top of them */ border-top: 1px solid var(--line); }
+    .foot h2 { font: 400 var(--text-2xs)/1.5 "Söhne Mono", monospace; color: var(--muted); margin: 0 0 var(--space-2); }
+    .foot p, .foot ul { margin: 0; padding: 0; list-style: none; font-size: var(--text-md); line-height: 1.55; }
+    .foot li { padding: 2px 0; }
+
+    /* The halftone, kept as the page's bottom edge: the ground dissolves into a strip of Slate.
+       The band classes and colours are the ones in styles.css; halftone.js draws the dots. */
+    .endband { display: block; height: calc(var(--halftone-below) + var(--space-5)); --band-from: var(--ground); --band-to: var(--c-slate); }
+    /* halftone.js draws on a canvas that reaches --halftone-reach above and below the edge. The
+       frame is that much taller than the strip and pulled up over the footer's empty space, so it
+       shows everything above the edge and cuts off what would hang below the end of the page. */
+    .endframe { overflow: clip; pointer-events: none; padding-top: var(--halftone-reach); margin-top: calc(-1 * var(--halftone-reach)); }
+
+    @media (max-width: 760px) {
+      .lede { padding-block: var(--space-6) var(--space-5); }
+      .bay { grid-template-columns: minmax(0, 1fr); padding: var(--space-5); gap: var(--space-5); }
+      .fields { grid-template-columns: minmax(0, 1fr); gap: var(--space-5); }
+      .foot { grid-template-columns: minmax(0, 1fr); margin-top: var(--space-8); }
+    }
+  </style>
 </head>
 <body>
-  <header class="nav">
-    <div class="nav__start">
-      <a class="chip" href="#top"><svg class="chip__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 18v4"/><path d="m17 18 1.956-11.468"/><path d="m3 8 7.82-5.615a2 2 0 0 1 2.36 0L21 8"/><path d="M4 18h16"/><path d="M7 18 5.044 6.532"/><circle cx="12" cy="10" r="2"/></svg>Home</a>
-      <a class="chip" href="#agents">Brian for Agents<svg class="chip__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/></svg></a>
-    </div>
-    <nav class="nav__links">
-      <a class="chip" href="tinkering/"><svg class="chip__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12.99 6.74 1.93 3.44"/><path d="M19.136 12a10 10 0 0 1-14.271 0"/><path d="m21 21-2.16-3.84"/><path d="m3 21 8.02-14.26"/><circle cx="12" cy="5" r="2"/></svg>Tinkering</a>
-      <a class="chip" href="https://www.linkedin.com/in/bwstudwell" target="_blank" rel="noopener"><svg class="chip__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect width="4" height="12" x="2" y="9"/><circle cx="4" cy="4" r="2"/></svg>LinkedIn</a>
-      <a class="chip" href="#contact"><svg class="chip__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="10" r="3"/><path d="M7 20.662V19a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v1.662"/></svg>Contact</a>
-      <div class="dropdown dropdown--controls">
-        <button class="dropdown__toggle chip" aria-expanded="false" aria-controls="controls-menu" aria-label="Controls">
-          <svg class="chip__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 8h4"/><path d="M12 21v-9"/><path d="M12 8V3"/><path d="M17 16h4"/><path d="M19 12V3"/><path d="M19 21v-5"/><path d="M3 14h4"/><path d="M5 10V3"/><path d="M5 21v-7"/></svg><span class="chip__label">Controls</span>
-        </button>
-        <ul class="dropdown__menu" id="controls-menu">
-          <li><a href="tinkering/design-system/">Design System</a></li>
-          <li><a href="tinkering/split-flap-lab/">Split-Flap Lab</a></li>
+  <div class="home">
+    <header class="top">
+      <h1>Brian Studwell</h1>
+      <nav class="mono" aria-label="Site">
+        <a href="#work">Work</a>
+        <a href="tinkering/">Lab</a>
+        <a href="https://www.linkedin.com/in/bwstudwell" target="_blank" rel="noopener">LinkedIn</a>
+        <a href="llms.txt">For agents</a>
+        <button class="theme-toggle" type="button" aria-label="Light mode" aria-pressed="false"><span class="to-light">Light</span><span class="to-dark">Dark</span></button>
+      </nav>
+    </header>
+
+    <p class="lede">I design human-in-the-loop agentic systems for high-stakes, regulated industries.</p>
+    <!-- straight after the tagline, so its words are wrapped before the first paint and never flash in whole -->
+    <script>
+      (function () {
+        const lede = document.querySelector('.lede');
+        lede.innerHTML = lede.textContent.trim().split(/\s+/).map((word, i) => `<span class="lede__word" style="--i:${i}">${word}</span>`).join(' ');
+      })();
+    </script>
+
+    <main>
+      <section id="work" aria-label="Work">
+        <ul class="rows">
+          <li><a href="#groom-lake"><span>Groom Lake</span><span>Shipped</span></a></li>
+          <li><a href="#blackbird"><span>Blackbird</span><span>Shipped</span></a></li>
+          <li><a href="#mazlan-builder"><span>Mazlan Builder</span><span>Shipped</span></a></li>
+        </ul>
+        <div class="board">
+          <div class="board__head mono" aria-hidden="true"><span>Project</span><span>Status</span></div>
+          <div class="board__stage">
+            <p class="board__flap" id="flap" aria-hidden="true"></p>
+            <div class="board__keys" id="keys" role="group" aria-label="Choose a project"></div>
+          </div>
+        </div>
+      </section>
+
+      <article class="bay" id="groom-lake" aria-labelledby="groom-lake-h">
+        <div>
+          <p class="bay__name mono">Groom Lake</p>
+          <h2 id="groom-lake-h">Who says enterprise can’t be pretty?</h2>
+          <ul class="bay__meta mono"><li>Design lead</li><li>Platform redesign</li><li>Design systems</li><li>Pervasive AI</li></ul>
+        </div>
+        <figure class="bay__media">
+          <img src="images/groom-lake-dashboard-1200.webp"
+               srcset="images/groom-lake-dashboard-1200.webp 1200w, images/groom-lake-dashboard-2000.webp 2000w"
+               sizes="(max-width: 760px) calc(100vw - 80px), 44vw" width="1200" height="753" decoding="async"
+               alt="The redesigned Ideagen home dashboard: a personal greeting, quick actions, an equipment calibration chart and quality indicators">
+        </figure>
+        <dl class="fields">
+          <div><dt class="mono">Problem</dt><dd>Enterprises shouldn’t have to use slow, ugly, awkward software to meet their compliance obligations and stay safe.</dd></div>
+          <div><dt class="mono">What I did</dt><dd>I led a down-to-the-studs redesign of our flagship EHS application: an agent-first design system, overhauled core features, and a carefully constructed interface. Embracing AI tooling made it all possible.</dd></div>
+          <div class="is-result"><dt class="mono">Result</dt><dd><span class="slot">A measured result goes here.</span></dd></div>
+        </dl>
+      </article>
+
+      <article class="bay" id="blackbird" aria-labelledby="blackbird-h">
+        <div>
+          <p class="bay__name mono">Blackbird</p>
+          <h2 id="blackbird-h">Agents that help workers stay safe, informed, and on task.</h2>
+          <ul class="bay__meta mono"><li>Design lead, 0–1</li><li>Agentic triage</li><li>Product strategy</li><li>Offline patterns</li></ul>
+        </div>
+        <figure class="bay__media">
+          <img class="is-phone" src="images/blackbird-intake-480.webp"
+               srcset="images/blackbird-intake-480.webp 480w, images/blackbird-intake-960.webp 960w"
+               sizes="230px" width="480" height="1044" loading="lazy" decoding="async"
+               alt="The Blackbird mobile app's New screen: Mazlan asks “Hi Maya, how can I help?” above a voice-first prompt, with assistants to report an incident, record an observation or mark a hazard">
+        </figure>
+        <dl class="fields">
+          <div><dt class="mono">Problem</dt><dd>Workers in far-flung, dirty and dangerous places need to react and respond to their environment, across a portfolio of separate EHS products.</dd></div>
+          <div><dt class="mono">What I did</dt><dd>I led a 0–1 project designing a new, unified app for Ideagen’s EHS portfolio. Mazlan, Ideagen’s AI, is embedded strategically throughout the experience.</dd></div>
+          <div class="is-result"><dt class="mono">Result</dt><dd><span class="slot">A measured result goes here.</span></dd></div>
+        </dl>
+      </article>
+
+      <article class="bay" id="mazlan-builder" aria-labelledby="mazlan-builder-h">
+        <div>
+          <p class="bay__name mono">Mazlan Builder</p>
+          <h2 id="mazlan-builder-h">Professional Services on demand, on point, ready to help.</h2>
+          <ul class="bay__meta mono"><li>Designer</li><li>AI UX</li><li>Trust + Safety</li><li>Judgment gates</li></ul>
+        </div>
+        <figure class="bay__media is-empty mono">Image to come</figure>
+        <dl class="fields">
+          <div><dt class="mono">Problem</dt><dd>By man-hours spent, configuration was the biggest bucket of work our company had.</dd></div>
+          <div><dt class="mono">What I did</dt><dd>I designed Ideagen’s agentic configuration tool, Mazlan Builder, which puts the power of self-serve customization in the customers’ hands.</dd></div>
+          <div class="is-result"><dt class="mono">Result</dt><dd>Benchmark tasks went from hours to minutes, without losing an ounce of capability.</dd></div>
+        </dl>
+      </article>
+
+    </main>
+
+    <footer class="foot">
+      <div><h2>About</h2><p>I think in systems, always keep the plates spinning, and care deeply about the people who rely on my work.</p></div>
+      <div><h2>Lab</h2>
+        <ul>
+          <li><a href="tinkering/">Nineteen experiments</a></li>
+          <li><a href="tinkering/split-flap-lab/">Split-Flap Lab, where this board is tuned</a></li>
+          <li><a href="tinkering/design-system/">Design system</a></li>
           <li><a href="tinkering/halftone-lab/">Halftone Lab</a></li>
-          <li><a href="tinkering/domino-run/lab/">Domino Lab</a></li>
-          <li><a href="tinkering/kaleidoscopes/lab/">Kaleidoscope Lab</a></li>
           <li><a href="tinkering/button-lab/">Button Lab</a></li>
         </ul>
       </div>
-      <button class="theme-toggle chip" type="button" aria-label="Light mode" aria-pressed="false">
-        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
-        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
-      </button>
-    </nav>
-  </header>
-
-  <main>
-    <section class="cover" id="top">
-      <div class="cover__text">
-        <h1 class="cover__name">Brian Studwell</h1>
-        <p class="cover__tagline">I design human-in-the-loop agentic systems for high-stakes, regulated industries. I think in systems, always keep the plates spinning, and care deeply about the people who rely on my work.</p>
-      </div>
-
-      <h2 class="cover__work" id="work">Recent Work</h2>
-    </section>
-
-    <section class="project project--band project--rust" id="groom-lake" aria-label="Groom Lake">
-      <div class="project__intro">
-        <h2 class="project__tagline">Who says enterprise can’t be pretty?</h2>
-        <ul class="project__tags" aria-label="Project focus">
-          <li>Platform Redesign</li>
-          <li>Design Systems</li>
-          <li>Pervasive AI</li>
-        </ul>
-        <p class="project__desc">I led a down-to-the-studs redesign of our flagship EHS application to make our product best in class. Enterprises shouldn’t have to use slow, ugly, awkward software to meet their compliance obligations and stay safe. We set a high bar and leapt over it, developing an agent-first design system, overhauling core features, and designing a carefully constructed interface that makes our top-shelf product look the part. Embracing AI tooling made it all possible.</p>
-      </div>
-      <div class="project__media">
-        <figure class="project__hero project__hero--shot">
-          <img src="images/groom-lake-dashboard-1200.webp"
-               srcset="images/groom-lake-dashboard-1200.webp 1200w, images/groom-lake-dashboard-2000.webp 2000w"
-               sizes="(max-width: 800px) calc(100vw - 32px), 50vw"
-               width="1200" height="753" loading="lazy" decoding="async"
-               alt="The redesigned Ideagen home dashboard: a personal greeting, quick actions, an equipment calibration chart and quality indicators">
-          <figcaption>Workspaces are tailored to the unique needs of the user, their organization, and the context of use.</figcaption>
-        </figure>
-        <a class="button button--apricot" href="#">Try it for yourself</a>
-      </div>
-    </section>
-
-    <section class="project project--band project--navy project--flip" id="blackbird" aria-label="Blackbird">
-      <div class="project__intro">
-        <h2 class="project__tagline">Agents that help workers stay safe, informed, and on task.</h2>
-        <ul class="project__tags" aria-label="Project focus">
-          <li>Agentic Triage</li>
-          <li>Product Strategy</li>
-          <li>Offline Patterns</li>
-        </ul>
-        <p class="project__desc">I led a 0–1 project designing a new, unified app for Ideagen’s EHS portfolio. My team built a sophisticated product that addresses the needs of workers in far-flung, dirty and dangerous places. Mazlan, Ideagen’s AI, is embedded strategically throughout the experience to help users react and respond to their environment.</p>
-      </div>
-      <div class="project__media">
-        <figure class="project__hero project__hero--device">
-          <div class="phone">
-            <div class="phone__body">
-              <span class="phone__layer" style="--i: 0"></span><span class="phone__layer" style="--i: 1"></span><span class="phone__layer" style="--i: 2"></span><span class="phone__layer" style="--i: 3"></span><span class="phone__layer" style="--i: 4"></span><span class="phone__layer" style="--i: 5"></span><span class="phone__layer" style="--i: 6"></span><span class="phone__layer" style="--i: 7"></span><span class="phone__layer" style="--i: 8"></span><span class="phone__layer" style="--i: 9"></span><span class="phone__layer" style="--i: 10"></span><span class="phone__layer" style="--i: 11"></span>
-              <div class="phone__back" aria-hidden="true"><span class="phone__camera"></span></div>
-              <div class="phone__front">
-                <img class="phone__screen" src="images/blackbird-intake-480.webp"
-               srcset="images/blackbird-intake-480.webp 480w, images/blackbird-intake-960.webp 960w"
-               sizes="(max-width: 800px) 64vw, 340px"
-               width="480" height="1044" loading="lazy" decoding="async"
-               alt="The Blackbird mobile app's New screen: Mazlan asks “Hi Maya, how can I help?” above a voice-first prompt, with assistants to report an incident, record an observation or mark a hazard">
-                <span class="phone__island" aria-hidden="true"></span>
-                <span class="phone__glare" aria-hidden="true"></span>
-              </div>
-            </div>
-            <span class="phone__shadow" aria-hidden="true"></span>
-          </div>
-        </figure>
-        <a class="button button--apricot" href="#">Try it for yourself</a>
-      </div>
-    </section>
-
-    <section class="project project--band project--ochre" id="mazlan-builder" aria-label="Mazlan Builder">
-      <div class="project__intro">
-        <h2 class="project__tagline">Professional Services on demand, on point, ready to help.</h2>
-        <ul class="project__tags" aria-label="Project focus">
-          <li>AI UX</li>
-          <li>Trust + Safety</li>
-          <li>Judgment Gates</li>
-        </ul>
-        <p class="project__desc">I designed Ideagen’s agentic configuration tool, Mazlan Builder, that puts the power of self-serve customization in the customers’ hands. By man-hours spent, configuration was the biggest bucket of work our company had. Mazlan Builder cut benchmark tasks from hours to minutes, without losing an ounce of capability. Ideagen now delivers more value, faster, to customers with a better understanding of how their implementations work.</p>
-      </div>
-      <figure class="project__hero placeholder" aria-label="Mazlan Builder hero image"><span>Hero image</span></figure>
-    </section>
-
-    <section class="project project--band project--pine" id="adept" aria-label="ADEPT">
-      <div class="project__intro">
-        <h2 class="project__tagline">Lorem ipsum dolor sit amet, consectetur adipiscing elit</h2>
-        <ul class="project__tags" aria-label="Project focus">
-          <li>Attribute</li>
-          <li>Attribute</li>
-          <li>Attribute</li>
+      <div><h2>Contact</h2>
+        <ul>
+          <li><a href="https://www.linkedin.com/in/bwstudwell" target="_blank" rel="noopener">LinkedIn</a></li>
+          <li><a href="llms.txt">Plain text for agents</a></li>
         </ul>
       </div>
-      <figure class="project__hero placeholder" aria-label="ADEPT hero image"><span>Hero image</span></figure>
-    </section>
-
-    <section class="project project--band project--sage" id="workspace-personalization" aria-label="Workspace Personalization">
-      <div class="project__intro">
-        <h2 class="project__tagline">Lorem ipsum dolor sit amet, consectetur adipiscing elit</h2>
-        <ul class="project__tags" aria-label="Project focus">
-          <li>Attribute</li>
-          <li>Attribute</li>
-          <li>Attribute</li>
-        </ul>
-      </div>
-      <figure class="project__hero placeholder" aria-label="Workspace Personalization hero image"><span>Hero image</span></figure>
-    </section>
-  </main>
+    </footer>
+  </div>
+  <div class="endframe" aria-hidden="true"><div class="project--band endband"></div></div>
 
   <script src="nav.js"></script>
-  <script src="spark.js" defer></script>
   <script src="split-flap.js"></script>
   <script src="split-flap-versions.js"></script>
   <script src="halftone.js"></script>
   <script src="halftone-versions.js"></script>
   <script>
-    /* ---- Halftone bands: drawn by halftone.js from the active Halftone Lab version ---- */
-    const bands = Halftone.mount(document.querySelectorAll('.project--band'), Halftone.activeConfig());
-    // the bands read their colours from CSS, so switching light/dark redraws them
-    document.addEventListener('themechange', () => bands.redraw());
+    /* ---- The halftone under the footer, drawn from the active Halftone Lab version ---- */
+    if (window.Halftone) {
+      const edge = Halftone.mount(document.querySelectorAll('.endband'), Halftone.activeConfig());
+      // it reads its colours from CSS, so switching light/dark redraws it
+      document.addEventListener('themechange', () => edge.redraw());
+    }
 
-    /* ---- Split-flap name: the board lives in split-flap.js, this runs its clock ---- */
+    /* ---- The board: project rows on the left, status on the right. Its size, columns, timing and
+       look are the active version from the Split-Flap Lab; the rows come from the links above. ---- */
     (function () {
-      const heading = document.querySelector('.cover__name');
-      heading.classList.add('is-flap');
-      // after the name lands, the board re-spins through these, pausing on each, and stops on the last
-      const sequence = [
-        ['PRODUCT', 'DESIGNER'],
-        ['PRODUCT', 'BUILDER'],
-        ['EXPERIENCE', 'DESIGNER'],
-        ['AX', 'DESIGNER'],
-        ['SIX', 'DESIGNER?'],
-        ['', '\u00AF\\_(\u30C4)_/\u00AF'],   // the restart icon lands with the shrug, and the board rests there
-      ];
-      const holdName = 2000, holdTitle = 600, titleSpeed = 2.6;   // the titles spin 2.6x as fast
-      // the restart icon (Lucide rotate-ccw) lands in the bottom-right window together with the shrug
-      const RESTART = '\uE000';
-      const config = SplitFlap.activeConfig();
-      const name = config.lines || SplitFlap.DEFAULTS.lines;
-      // padX 1: "EXPERIENCE" then fits the same 12 columns, and shorter messages centre in them.
-      // On phones the board drops those side columns and enlarges the letters, so they stay legible
-      const phone = matchMedia('(max-width: 600px)');
-      // each mode's look comes from its active version in the Split-Flap Lab (see split-flap.js)
-      const LIGHT_BOARD = SplitFlap.activeStyle('light'), darkBoard = SplitFlap.activeStyle('dark');
-      const boardColours = () => document.documentElement.dataset.theme === 'light' ? LIGHT_BOARD : darkBoard;
-      const boardOptions = () => ({
-        ...config, ...boardColours(), sequence,
-        padX: phone.matches ? 0 : 1,
-        glyphSize: phone.matches ? 0.86 : (config.glyphSize ?? SplitFlap.DEFAULTS.glyphSize),
-        chars: (config.chars || SplitFlap.DEFAULTS.chars) + RESTART,
-        icons: { [RESTART]: ['M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8', 'M3 3v5h5'] },
+      const bays = [...document.querySelectorAll('.bay')];
+      const config = window.SplitFlap ? SplitFlap.activeConfig() : {};
+      // The words come from the lab's Rows ("NAME|STATUS", top to bottom), matched to the projects
+      // in order. The links in the markup are what shows without the lab's file or without script.
+      const written = (config.lines || []).every(l => l.includes('|')) ? config.lines || [] : [];
+      const rows = [...document.querySelectorAll('.rows a')].map((a, i) => {
+        if (written[i]) {
+          const [name, status = ''] = written[i].split('|').map(part => part.trim());
+          a.children[0].textContent = name;
+          a.children[1].textContent = status.replace(/\s+/g, ' ');
+        }
+        return { id: a.hash.slice(1), name: a.children[0].textContent.toUpperCase(), status: a.children[1].textContent.toUpperCase() };
       });
-      const flap = SplitFlap.mount(heading, boardOptions());
+      // the board has one row per project here, however many rows the lab's version holds
+      const lines = written.length ? written.slice(0, rows.length) : rows.map(r => r.name + '|' + r.status);
+      // 28 modules across can't be read on a small screen: those keep the rows as links, with every record on the page
+      const wide = matchMedia('(min-width: 1100px)');   // narrower, the 200px margins leave the board too small to read
+      if (!wide.matches || !window.SplitFlap) return;
+
       const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const mode = () => document.documentElement.dataset.theme === 'light' ? 'light' : 'dark';
+      const keys = document.getElementById('keys');
+      const t0 = performance.now(), now = () => performance.now() - t0;
+      let flap, running = false;
 
-      // the board's plate spans the tagline's longest line, so the two read as one block.
-      // Phones keep the edge-to-edge board from styles.css.
-      const tagline = document.querySelector('.cover__tagline');
-      const matchTagline = () => {
-        const board = heading.querySelector('.sf-board');
-        if (!board || !tagline) return;
-        if (phone.matches) { board.style.maxWidth = ''; return; }
-        const range = document.createRange();
-        range.selectNodeContents(tagline);
-        const widest = Math.max(0, ...[...range.getClientRects()].map(r => r.width));
-        board.style.maxWidth = widest ? Math.round(widest) + 'px' : '';
-      };
-      if (tagline) new ResizeObserver(matchTagline).observe(tagline);
-      document.fonts.ready.then(matchTagline);
-
-      // a real button laid over the bottom-right window, shown once the restart icon has landed
-      const replay = document.createElement('button');
-      replay.type = 'button';
-      replay.className = 'cover__replay';
-      replay.setAttribute('aria-label', 'Replay the board');
-      replay.hidden = true;
-      heading.parentElement.appendChild(replay);
-      const place = () => {
-        const cell = flap.cell(-1).getBoundingClientRect(), box = heading.parentElement.getBoundingClientRect();
-        Object.assign(replay.style, { left: cell.left - box.left + 'px', top: cell.top - box.top + 'px',
-                                      width: cell.width + 'px', height: cell.height + 'px' });
-      };
-      new ResizeObserver(place).observe(heading);
-
-      flap.ready.then(() => {
-        if (still) { flap.seek(Infinity); return; }
-        const t0 = performance.now(), now = () => performance.now() - t0;
-        // step: index of the next message; past the last one, wait for a click
-        let step = 0, landed = null, running = false;
-        function frame() {
+      function run() {
+        if (running) return;
+        running = true;
+        requestAnimationFrame(function frame() {
           const t = now();
           flap.seek(t);
-          if (t >= flap.duration) {
-            if (step >= sequence.length) {                 // shrug and icon up: wait for a click
-              running = false; replay.hidden = false; place(); return;
-            }
-            if (landed === null) landed = t;
-            if (t - landed >= (step ? holdTitle : holdName)) {
-              flap.spinTo(sequence[step], t, { speed: titleSpeed });
-              if (step === sequence.length - 1) flap.spinCell(-1, RESTART, t, { speed: titleSpeed });
-              step++; landed = null;
-            }
-          }
-          requestAnimationFrame(frame);
+          if (t < flap.duration + 200) requestAnimationFrame(frame); else running = false;
+        });
+      }
+
+      const boardRows = () => [...document.querySelectorAll('#flap .sf-row')];
+      function choose(i, { remember = true } = {}) {
+        bays.forEach((bay, k) => bay.hidden = k !== i);
+        [...keys.children].forEach((key, k) => key.setAttribute('aria-pressed', k === i));
+        boardRows().forEach((row, k) => row.classList.toggle('is-chosen', k === i));
+        if (remember) history.replaceState(null, '', '#' + rows[i].id);
+      }
+
+      try {
+        flap = SplitFlap.mount(document.getElementById('flap'), {
+          nameCols: 16, statusCols: 12,   // for a version saved before boards had columns
+          ...config, ...SplitFlap.activeStyle(mode()),
+          lines, sequence: [],
+        });
+      } catch (e) { return; }   // no board: the links and stacked records stay
+
+      // one hit area per board row, so they line up; only rows with a project behind them are buttons
+      lines.forEach((_, i) => {
+        const r = rows[i];
+        const key = document.createElement(r ? 'button' : 'span');
+        if (r) {
+          key.type = 'button';
+          key.setAttribute('aria-label', r.name + ', ' + r.status.toLowerCase());
+          key.addEventListener('click', () => choose(i));
+          key.addEventListener('pointerenter', () => boardRows()[i]?.classList.add('is-hover'));
+          key.addEventListener('pointerleave', () => boardRows()[i]?.classList.remove('is-hover'));
         }
-        function run() { if (!running) { running = true; requestAnimationFrame(frame); } }
-        // switching light/dark recolours the board where it stands
-        document.addEventListener('themechange', () => flap.restyle(boardColours()));
-        // crossing the phone breakpoint rebuilds the board and plays it from the name again
-        phone.addEventListener('change', () => {
-          flap.update(boardOptions());
-          replay.hidden = true;
-          flap.spinTo(name, now());
-          step = 0; landed = null;
-          run();
-        });
-        replay.addEventListener('click', () => {
-          replay.hidden = true;
-          flap.spinTo(name, now());
-          step = 0; landed = null;
-          run();
-        });
-        run();
+        keys.appendChild(key);
+      });
+      document.documentElement.classList.add('has-board');
+      if (!still) document.documentElement.classList.add('is-arriving');   // the record holds back until the board resolves
+
+      const fromHash = () => Math.max(0, rows.findIndex(r => '#' + r.id === location.hash));
+      flap.ready.then(() => {
+        const first = fromHash();
+        bays.forEach((bay, k) => bay.hidden = k !== first);
+        choose(first, { remember: false });
+        if (still) return flap.seek(Infinity);
+        run();   // the rows flip in once; choosing a row leaves the board as it is
+        // the record starts down as the last flaps are landing, so the two finish together
+        setTimeout(() => document.documentElement.classList.remove('is-arriving'), Math.max(0, flap.duration - 450));
+      });
+      addEventListener('hashchange', () => { if (rows.some(r => '#' + r.id === location.hash)) choose(fromHash(), { remember: false }); });
+      document.addEventListener('themechange', () => { flap.restyle(SplitFlap.activeStyle(mode())); if (!running) flap.seek(now()); });
+      // crossing to phone width hands back to the links and shows every record
+      wide.addEventListener('change', e => {
+        document.documentElement.classList.toggle('has-board', e.matches);
+        if (!e.matches) bays.forEach(bay => bay.hidden = false); else choose(fromHash(), { remember: false });
       });
     })();
-
-    /* ---- Reels: start on click, offer replay when finished ---- */
-    document.querySelectorAll('.reel').forEach(reel => {
-      const frame = reel.querySelector('iframe');
-      const button = reel.querySelector('.reel__play');
-      const label = button.querySelector('.reel__label');
-      let started = false;
-
-      button.addEventListener('click', () => {
-        const player = frame.contentWindow && frame.contentWindow.__reel;
-        if (!player || !player.play) return;   // player still loading
-        if (!started) { player.seek(0); started = true; }   // poster frame → beginning
-        player.onend = () => {
-          label.textContent = 'Replay';
-          button.setAttribute('aria-label', 'Replay ' + frame.title);
-          reel.classList.remove('is-playing');
-        };
-        player.play();
-        reel.classList.add('is-playing');
-        frame.focus();
-      });
-    });
   </script>
 </body>
 </html>

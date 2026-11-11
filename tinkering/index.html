@@ -6,13 +6,15 @@
   <title>Tinkering · Brian Studwell</title>
   <!-- apply a saved light/dark choice before first paint, so the page doesn't flash -->
   <script>try { if (localStorage.getItem('theme') === 'light') document.documentElement.dataset.theme = 'light'; } catch (e) {}</script>
+  <script src="../button-versions.js"></script>
+  <script src="../buttons.js"></script>
   <link rel="stylesheet" href="../styles.css">
 </head>
 <body>
   <header class="nav">
     <div class="nav__start">
       <div class="dropdown dropdown--controls">
-        <button class="dropdown__toggle" aria-expanded="false" aria-controls="controls-menu">
+        <button class="dropdown__toggle chip" aria-expanded="false" aria-controls="controls-menu">
           Controls <span class="dropdown__caret" aria-hidden="true">▾</span>
         </button>
         <ul class="dropdown__menu" id="controls-menu">
@@ -20,16 +22,17 @@
           <li><a href="halftone-lab/">Halftone Lab</a></li>
           <li><a href="domino-run/lab/">Domino Lab</a></li>
           <li><a href="kaleidoscopes/lab/">Kaleidoscope Lab</a></li>
+          <li><a href="button-lab/">Button Lab</a></li>
         </ul>
       </div>
-      <a class="nav__brand" href="../">BS</a>
-      <a class="button" href="../#agents">Brian for Agents</a>
+      <a class="chip" href="../">Home</a>
+      <a class="chip" href="../#agents">Brian for Agents</a>
     </div>
     <nav class="nav__links">
-      <a href="./" aria-current="page">Tinkering</a>
-      <a href="https://www.linkedin.com/in/bwstudwell" target="_blank" rel="noopener">LinkedIn</a>
-      <a href="../#contact">Contact</a>
-      <button class="theme-toggle" type="button" aria-label="Light mode" aria-pressed="false">
+      <a class="chip" href="./" aria-current="page">Tinkering</a>
+      <a class="chip" href="https://www.linkedin.com/in/bwstudwell" target="_blank" rel="noopener">LinkedIn</a>
+      <a class="chip" href="../#contact">Contact</a>
+      <button class="theme-toggle chip" type="button" aria-label="Light mode" aria-pressed="false">
         <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
         <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
       </button>
@@ -238,5 +241,6 @@
   </main>
 
   <script src="../nav.js"></script>
+  <script src="../spark.js" defer></script>
 </body>
 </html>

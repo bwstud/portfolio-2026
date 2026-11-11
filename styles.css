@@ -79,11 +79,24 @@
   --line-strong: color-mix(in srgb, var(--c-mist) 24%, var(--c-night));
   --max: 1200px;
   --nav-h: 80px;
+  /* Nav buttons ("chips"). buttons.js sets these from the Button Lab's active version; these
+     defaults match its Original. Colours: the split-flap tiles (Deep Blue dark, built-in light). */
+  --chip-h: 36px; --chip-px: 16px; --chip-radius: 18px; --chip-bw: 1px; --chip-gap: 10px;
+  --chip-fs: 14px; --chip-fw: 500; --chip-ls: 0em; --chip-tt: none; --chip-lift: 0px; --chip-angle: 180deg;
+  --chip-top-d: #10202d; --chip-bottom-d: #0a161f; --chip-edge-d: #2c3b46; --chip-text-d: #dae4e3;
+  --chip-top-l: #fffdf7; --chip-bottom-l: #f0ebe0; --chip-edge-l: #cfcbc3; --chip-text-l: #040a13;
+  --chip-grain: 0.14; --chip-grain-size: 83px; --chip-grain-blend: normal;
+  --chip-shadow-d: none; --chip-shadow-l: none;
+  --chip-hover: 1.18; --chip-press-y: 1px; --chip-press: 0.92; --chip-current: 0.82; --chip-speed: 150ms;
+  --spark-glow: rgba(110, 170, 255, 0.8);
+  --chip-top: var(--chip-top-d); --chip-bottom: var(--chip-bottom-d);
+  --chip-edge: var(--chip-edge-d); --chip-text: var(--chip-text-d); --chip-shadow: var(--chip-shadow-d);
 }
 
 /* Light mode: a light page colour (--ground) replaces Night, and Pine's section turns to a pale Pine-tinted
    Mist with dark text. Rust, Navy and Ochre keep their colours. The neutrals mix Night over Mist. */
-:root[data-theme="light"] {
+:root[data-theme="light"],
+[data-theme-scope="light"] {
   color-scheme: light;
   /* trying page colours: a warm off-white now; Mist, then white, were earlier passes */
   --ground: #F5F3ED;
@@ -95,6 +108,8 @@
   --surface: color-mix(in srgb, var(--c-night) 5%, var(--ground));
   --hover: color-mix(in srgb, var(--c-night) 10%, var(--ground));
   --line-strong: color-mix(in srgb, var(--c-night) 26%, var(--ground));
+  --chip-top: var(--chip-top-l); --chip-bottom: var(--chip-bottom-l);
+  --chip-edge: var(--chip-edge-l); --chip-text: var(--chip-text-l); --chip-shadow: var(--chip-shadow-l);
 }
 :root { color-scheme: dark; }
 
@@ -137,11 +152,9 @@ a { color: inherit; text-decoration: none; }
   -webkit-backdrop-filter: blur(18px) saturate(1.4);
 }
 
-.nav__start { display: flex; align-items: center; gap: 20px; }
+.nav__start { display: flex; align-items: center; }
 
-.nav__brand { font-family: var(--font-display); font-weight: 600; letter-spacing: 0.04em; }
-
-.nav__links { display: flex; align-items: center; gap: 32px; }
+.nav__links { display: flex; align-items: center; }
 
 .nav__links > a,
 .dropdown__toggle {
@@ -238,6 +251,58 @@ a { color: inherit; text-decoration: none; }
 }
 
 .dropdown--controls .dropdown__menu { left: 0; right: auto; z-index: 1; }
+
+
+/* Nav buttons ("chips"): every nav control is a pill shaded like a split-flap tile, with the
+   same film grain. Every value comes from a --chip-* property (see :root and buttons.js). */
+.nav__start, .nav__links { gap: var(--chip-gap); }
+.nav .chip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: var(--chip-h);
+  min-height: 0;
+  /* extra bottom padding raises the centred label by half of it: the label lift */
+  padding: 0 var(--chip-px) calc(var(--chip-lift) * 2);
+  margin: 0;
+  border: var(--chip-bw) solid var(--chip-edge);
+  border-radius: var(--chip-radius);
+  font-family: inherit;
+  font-size: var(--chip-fs);
+  font-weight: var(--chip-fw);
+  letter-spacing: var(--chip-ls);
+  text-transform: var(--chip-tt);
+  white-space: nowrap;
+  color: var(--chip-text);
+  background: linear-gradient(var(--chip-angle), var(--chip-top), var(--chip-bottom));
+  box-shadow: var(--chip-shadow);
+  cursor: pointer;
+  isolation: isolate;
+  transition: filter var(--chip-speed), transform var(--chip-speed);
+}
+/* the split-flap leaves' film grain (same recipe, baked to a tile) */
+.nav .chip::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: url("images/grain.png") 0 0 / var(--chip-grain-size) var(--chip-grain-size);
+  mix-blend-mode: var(--chip-grain-blend);
+  opacity: var(--chip-grain);
+  pointer-events: none;
+  z-index: -1;
+}
+/* .is-hover, .is-press and .is-current let the Button Lab show each state at rest */
+.nav .chip:hover, .nav .chip.is-hover { color: var(--chip-text); background-color: transparent; filter: brightness(var(--chip-hover)); }
+.nav .chip:active, .nav .chip.is-press { transform: translateY(var(--chip-press-y)); filter: brightness(var(--chip-press)); }
+.nav .chip[aria-current="page"],
+.nav .chip.is-current,
+.nav .dropdown.is-open .chip { filter: brightness(var(--chip-current)); }
+.nav .theme-toggle.chip { width: var(--chip-h); padding: 0; }
+.nav .chip svg { width: 17px; height: 17px; }
+.nav .chip .dropdown__caret { font-size: 10px; }
 
 /* Shared */
 .placeholder {
@@ -807,7 +872,7 @@ a.card:hover .card__thumb img { transform: scale(1.03); }
   }
 }
 
-/* Phones: brand + agents button on one row, links on the next */
+/* Phones: controls, home and agents on one row, links on the next */
 @media (max-width: 600px) {
   :root { --nav-h: 96px; }
   .nav {
@@ -818,11 +883,10 @@ a.card:hover .card__thumb img { transform: scale(1.03); }
     row-gap: 0;
     padding: 4px 16px;
   }
-  .nav__start { min-height: 44px; }
-  .nav__links { width: 100%; justify-content: space-between; gap: 0; }
-  /* 44px-tall tap rows; the text stays where it was */
-  .nav__links > a { display: flex; align-items: center; min-height: 44px; }
-  .theme-toggle { width: 44px; height: 44px; margin: 0 -12px 0 0; }
+  .nav__start { min-height: 44px; gap: min(var(--chip-gap), 6px); }
+  .nav__links { width: 100%; justify-content: space-between; gap: min(var(--chip-gap), 6px); }
+  .nav .chip { padding: 0 min(var(--chip-px), 12px) calc(var(--chip-lift) * 2); font-size: min(var(--chip-fs), 13px); }
+  .nav .theme-toggle.chip { padding: 0; }
   /* the board: a thin plate and tight windows, so the width goes to the letters. The board
      sets its own spacing inline as custom properties, so override the properties themselves */
   .cover__name .sf-board.is-framed { padding: 5px; border-radius: 0; }
@@ -849,3 +913,15 @@ a.card:hover .card__thumb img { transform: scale(1.03); }
 @media (max-width: 800px) {
   .project__hero--phone img { height: auto; width: min(72vw, 380px); border-radius: 32px; }
 }
+
+/* Static spark (spark.js): the button flinches when it discharges */
+@keyframes button-zap {
+  0%   { filter: brightness(1.6); box-shadow: 0 0 0 1px rgba(150, 195, 255, 0.9), 0 0 14px rgba(110, 170, 255, 0.7); }
+  100% { filter: none; box-shadow: 0 0 0 0 transparent; }
+}
+.button.is-zapped { animation: button-zap 0.28s ease-out; }
+@keyframes chip-zap {
+  0%   { filter: brightness(1.5) drop-shadow(0 0 6px var(--spark-glow)); }
+  100% { filter: none; }
+}
+.nav .chip.is-zapped { animation: chip-zap 0.28s ease-out; }

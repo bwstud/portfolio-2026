@@ -1,5 +1,6 @@
 /* Local server for the site. It serves exactly what .vercelignore ships, lets the
-   Split-Flap Lab write split-flap-versions.js and the Halftone Lab write halftone-versions.js,
+   Split-Flap Lab write split-flap-versions.js, the Halftone Lab halftone-versions.js and the
+   Button Lab button-versions.js,
    lets Domino Run save runs, elements and lab settings into tinkering/domino-run/, and lets
    the Kaleidoscope Lab write tinkering/kaleidoscopes/configs.json. Never deployed. Start it with `dvs`. */
 import { spawn } from 'node:child_process';
@@ -23,6 +24,11 @@ const STORES = {
     file: path.join(ROOT, 'halftone-versions.js'),
     global: 'HALFTONE_VERSIONS',
     header: '/* Written by the Halftone Lab. The home page draws the version named by "active". */\n',
+  },
+  '/__lab/buttons': {
+    file: path.join(ROOT, 'button-versions.js'),
+    global: 'BUTTON_VERSIONS',
+    header: '/* Written by the Button Lab. The site\'s nav buttons use the version named by "active". */\n',
   },
 };
 const MAX_BODY = 256 * 1024;

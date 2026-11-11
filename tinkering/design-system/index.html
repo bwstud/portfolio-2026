@@ -13,7 +13,9 @@
   <link rel="stylesheet" href="../../styles.css">
   <style>
     /* Page layout only. Every specimen below uses the site's real classes from styles.css. */
-    .ds { max-width: var(--max); margin: 0 auto; padding: 48px 32px 120px; }
+    .ds { max-width: var(--max); margin: 0 auto; padding: var(--space-7) var(--space-6) var(--space-9); }
+    .ds + .ds { padding-top: 0; }
+    .ds:has(+ .ds-bands-demo) { padding-bottom: 0; }
     .ds__head { margin-bottom: 72px; }
     .ds__intro { margin-top: 20px; max-width: 60ch; color: var(--muted); font-size: 18px; line-height: 1.6; text-wrap: pretty; }
     .ds__flow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; margin-top: 28px; font-family: var(--font-mono); font-size: 13px; color: var(--muted); }
@@ -29,6 +31,7 @@
     .ds-h3 { font-family: var(--font-display); font-size: 20px; font-weight: 600; margin: 40px 0 16px; }
     .ds-lede { max-width: 64ch; color: var(--muted); font-size: 16px; line-height: 1.6; text-wrap: pretty; }
     .ds-lede + .ds-lede { margin-top: 12px; }
+    .ds-h2 + .ds-lede { margin-top: var(--space-3); }
     .ds code, .ds-mono { font-family: var(--font-mono); font-size: 13px; }
     .ds-lede code { color: var(--fg); }
 
@@ -67,12 +70,14 @@
     .ds-type__sample .cover__tagline { margin: 0; max-width: 60ch; text-wrap: pretty; }
     .ds-type__sample .project__desc { margin: 0; }
     .ds-type__sample .project__tags { margin: 0; }
+    /* text styles shown in the text colour; each page decides whether to set them muted */
+    .ds-type__sample .cover__tagline, .ds-type__sample .tinkering__intro, .ds-type__sample .project__desc, .ds-type__sample .card__desc, .ds-type__sample .card__meta { color: var(--fg); }
 
     /* Shape, space and motion */
     .ds-radii { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 16px; }
     .ds-radius { height: 72px; border: 1px solid var(--line-strong); background: var(--surface); }
     .ds-space { display: grid; gap: 10px; }
-    .ds-space__row { display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 16px; align-items: center; }
+    .ds-space__row { display: grid; grid-template-columns: 130px minmax(0, 1fr); gap: 16px; align-items: center; }
     .ds-space__bar { height: 12px; border-radius: 2px; background: var(--c-orange); }
     .ds-motion { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; }
     .ds-motion__card { padding: 18px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
@@ -96,6 +101,27 @@
 
     .ds-card { max-width: 380px; }
 
+    /* Board */
+    .ds-board-stage { display: flex; flex-direction: column; align-items: center; gap: var(--space-5); }
+    .ds-board { width: 100%; max-width: 640px; font-size: 0; color: transparent; }
+    .ds-board .sf-board { margin: 0 auto; }
+    /* a <button> with the .button look: undo the browser's own button styling */
+    .ds-board-replay { background: none; color: inherit; font: inherit; font-size: var(--text-xs); font-weight: 500; cursor: pointer; }
+
+    /* Full-bleed sample sections: shorter than on the home page */
+    .ds-bands-demo .project.project--band {
+      min-height: 0;
+      padding-top: calc(var(--halftone-reach) + var(--space-7));
+      padding-bottom: calc(var(--halftone-reach) + var(--space-7));
+    }
+    .ds-bands-demo .project__hero { aspect-ratio: 16 / 9; }
+    /* the halftone reaches up past the first section's edge, so leave it room */
+    .ds-bands-demo { margin-top: var(--halftone-reach); }
+    .ds-section--cont { border-top: 0; }
+
+    /* the reel at the column's width instead of the window's */
+    .ds-reel { --reel-w: 100%; aspect-ratio: 16 / 9; }
+
     /* Audit */
     .ds-issues { list-style: none; display: grid; gap: 12px; }
     .ds-issue { padding: 16px 18px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
@@ -103,7 +129,7 @@
     .ds-issue p { margin-top: 6px; color: var(--muted); font-size: 15px; line-height: 1.55; }
 
     @media (max-width: 800px) {
-      .ds { padding: 32px 16px 80px; }
+      .ds { padding: var(--space-6) var(--space-4) var(--space-9); }
       .ds-section { padding: 48px 0; }
       .ds-type__row { grid-template-columns: 1fr; gap: 12px; }
       .ds-stage { padding: 24px 16px; }
@@ -140,7 +166,8 @@
     </nav>
   </header>
 
-  <main class="ds">
+  <main>
+  <div class="ds">
     <header class="ds__head">
       <h1 class="tinkering__title">Design System</h1>
       <p class="ds__intro">The tokens and parts this site is built from. Every specimen here is drawn by the site’s own stylesheet, so this page always matches what ships. Use the sun and moon button to see both themes.</p>
@@ -188,39 +215,47 @@
     <!-- Type -->
     <section class="ds-section" id="type" aria-labelledby="type-h">
       <div class="ds-section__head"><h2 class="ds-h2" id="type-h">Type</h2><span class="ds-status">Draft</span></div>
-      <p class="ds-lede">Söhne from Klim, in three cuts: <strong>Söhne Breit</strong> semibold for display, <strong>Söhne</strong> book for text, <strong>Söhne Mono</strong> for tags, captions and metadata. Geist appears only as the split-flap board’s letters, drawn on canvas. Sizes are set per element for now; there is no type scale yet.</p>
+      <p class="ds-lede">Söhne from Klim, in three cuts: <strong>Söhne Breit</strong> semibold for display, <strong>Söhne</strong> book for text, <strong>Söhne Mono</strong> for tags, captions and metadata. Geist appears only as the split-flap board’s letters, drawn on canvas. Every size is a <code>--text-*</code> token. Text styles are shown here in the text colour; each page can set them in <code>--muted</code> instead.</p>
 
       <div class="ds-type" style="margin-top: 24px">
         <div class="ds-type__row">
-          <div class="ds-type__spec"><strong>Name</strong>.cover__name<br>Breit 600 · 48–104px<br>line 0.95 · −0.03em</div>
+          <div class="ds-type__spec"><strong>Name</strong>.cover__name<br>--text-name<br>Breit 600 · 48–104px<br>line 0.95 · −0.03em</div>
           <div class="ds-type__sample"><p class="cover__name">Brian Studwell</p></div>
         </div>
         <div class="ds-type__row">
-          <div class="ds-type__spec"><strong>Section title</strong>.cover__work<br>Breit 600 · 36–68px<br>line 1.1 · −0.01em</div>
+          <div class="ds-type__spec"><strong>Section title</strong>.cover__work<br>--text-section-title<br>Breit 600 · 36–68px<br>line 1.1 · −0.01em</div>
           <div class="ds-type__sample"><p class="cover__work">Recent Work</p></div>
         </div>
         <div class="ds-type__row">
-          <div class="ds-type__spec"><strong>Project tagline</strong>.project__tagline<br>Breit 700 · 36–64px<br>line 1.02 · −0.025em</div>
+          <div class="ds-type__spec"><strong>Project tagline</strong>.project__tagline<br>--text-tagline<br>Breit 600 · 36–64px<br>line 1.02 · −0.025em</div>
           <div class="ds-type__sample"><p class="project__tagline">Who says enterprise can’t be pretty?</p></div>
         </div>
         <div class="ds-type__row">
-          <div class="ds-type__spec"><strong>Card title</strong>.card__title<br>Breit 600 · 20px</div>
+          <div class="ds-type__spec"><strong>Page title</strong>.tinkering__title<br>--text-page-title<br>Breit 600 · 40–72px<br>line 1 · −0.03em</div>
+          <div class="ds-type__sample"><p class="tinkering__title">Tinkering</p></div>
+        </div>
+        <div class="ds-type__row">
+          <div class="ds-type__spec"><strong>Card title</strong>.card__title<br>--text-heading<br>Breit 600 · 20px</div>
           <div class="ds-type__sample"><p class="card__title">Split-Flap Lab</p></div>
         </div>
         <div class="ds-type__row">
-          <div class="ds-type__spec"><strong>Lead</strong>.cover__tagline<br>Söhne 400 · 17–21px<br>line 1.5 · muted</div>
+          <div class="ds-type__spec"><strong>Lead</strong>.cover__tagline<br>--text-lead<br>Söhne 400 · 17–21px<br>line 1.5</div>
           <div class="ds-type__sample"><p class="cover__tagline">I design human-in-the-loop agentic systems for high-stakes, regulated industries.</p></div>
         </div>
         <div class="ds-type__row">
-          <div class="ds-type__spec"><strong>Body</strong>.project__desc<br>Söhne 400 · 17px<br>line 1.6 · max 56ch · muted</div>
+          <div class="ds-type__spec"><strong>Intro</strong>.tinkering__intro<br>--text-lg<br>Söhne 400 · 18px<br>line 1.6 · max 46ch</div>
+          <div class="ds-type__sample"><p class="tinkering__intro" style="margin: 0">Experiments, sketches, and things I built to see what would happen.</p></div>
+        </div>
+        <div class="ds-type__row">
+          <div class="ds-type__spec"><strong>Body</strong>.project__desc<br>--text-base<br>Söhne 400 · 17px<br>line 1.6 · max 56ch</div>
           <div class="ds-type__sample"><p class="project__desc">Enterprises shouldn’t have to use slow, ugly, awkward software to meet their compliance obligations and stay safe.</p></div>
         </div>
         <div class="ds-type__row">
-          <div class="ds-type__spec"><strong>Small</strong>.card__desc<br>Söhne 400 · 15px<br>line 1.5 · muted</div>
+          <div class="ds-type__spec"><strong>Small</strong>.card__desc<br>--text-sm<br>Söhne 400 · 15px<br>line 1.5</div>
           <div class="ds-type__sample"><p class="card__desc">A wall of flaps that clatter round to spell a name.</p></div>
         </div>
         <div class="ds-type__row">
-          <div class="ds-type__spec"><strong>Mono</strong>.card__meta, tags, captions<br>Söhne Mono 400 · 13px</div>
+          <div class="ds-type__spec"><strong>Mono</strong>.card__meta, tags, captions<br>--text-2xs<br>Söhne Mono 400 · 13px</div>
           <div class="ds-type__sample"><p class="card__meta">Canvas 2D · spring physics · Web Audio</p></div>
         </div>
       </div>
@@ -229,30 +264,32 @@
     <!-- Shape and space -->
     <section class="ds-section" id="shape" aria-labelledby="shape-h">
       <div class="ds-section__head"><h2 class="ds-h2" id="shape-h">Shape and space</h2><span class="ds-status">Draft</span></div>
-      <p class="ds-lede">These are the values in use today, gathered from styles.css. None of them are tokens yet. The page column is <code>--max</code> (1200px) with 32px gutters, 16px on phones.</p>
+      <p class="ds-lede">Every padding, margin, gap and corner in styles.css uses one of these tokens. The page column is <code>--max</code> (1200px) with <code>--space-6</code> gutters, <code>--space-4</code> on phones.</p>
 
       <h3 class="ds-h3">Corner radius</h3>
       <div class="ds-radii">
-        <div><div class="ds-radius" style="border-radius: 999px"></div><p class="ds-swatch__meta">999px · pills, tags, buttons</p></div>
-        <div><div class="ds-radius" style="border-radius: 12px"></div><p class="ds-swatch__meta">12px · cards</p></div>
-        <div><div class="ds-radius" style="border-radius: 10px"></div><p class="ds-swatch__meta">10px · menus, screenshots</p></div>
-        <div><div class="ds-radius" style="border-radius: 8px"></div><p class="ds-swatch__meta">8px · reels, placeholders</p></div>
-        <div><div class="ds-radius" style="border-radius: 6px"></div><p class="ds-swatch__meta">6px · menu items, board</p></div>
-        <div><div class="ds-radius" style="border-radius: 3px"></div><p class="ds-swatch__meta">3px · board windows</p></div>
+        <div><div class="ds-radius" style="border-radius: var(--radius-pill)"></div><p class="ds-swatch__meta">--radius-pill · 999px<br>pills, tags, buttons</p></div>
+        <div><div class="ds-radius" style="border-radius: var(--radius-xl)"></div><p class="ds-swatch__meta">--radius-xl · 12px<br>cards</p></div>
+        <div><div class="ds-radius" style="border-radius: var(--radius-lg)"></div><p class="ds-swatch__meta">--radius-lg · 10px<br>menus, screenshots</p></div>
+        <div><div class="ds-radius" style="border-radius: var(--radius-md)"></div><p class="ds-swatch__meta">--radius-md · 8px<br>reels, placeholders</p></div>
+        <div><div class="ds-radius" style="border-radius: var(--radius-sm)"></div><p class="ds-swatch__meta">--radius-sm · 6px<br>menu items, the board’s plate</p></div>
+        <div><div class="ds-radius" style="border-radius: var(--radius-xs)"></div><p class="ds-swatch__meta">--radius-xs · 4px<br>small hit areas</p></div>
+        <div><div class="ds-radius" style="border-radius: var(--radius-2xs)"></div><p class="ds-swatch__meta">--radius-2xs · 3px<br>board windows</p></div>
       </div>
 
-      <h3 class="ds-h3">Spacing in use</h3>
+      <h3 class="ds-h3">Spacing scale</h3>
       <div class="ds-space">
-        <div class="ds-space__row"><span class="ds-mono">8</span><span class="ds-space__bar" style="width: 8px"></span></div>
-        <div class="ds-space__row"><span class="ds-mono">12</span><span class="ds-space__bar" style="width: 12px"></span></div>
-        <div class="ds-space__row"><span class="ds-mono">16</span><span class="ds-space__bar" style="width: 16px"></span></div>
-        <div class="ds-space__row"><span class="ds-mono">24</span><span class="ds-space__bar" style="width: 24px"></span></div>
-        <div class="ds-space__row"><span class="ds-mono">32</span><span class="ds-space__bar" style="width: 32px"></span></div>
-        <div class="ds-space__row"><span class="ds-mono">48</span><span class="ds-space__bar" style="width: 48px"></span></div>
-        <div class="ds-space__row"><span class="ds-mono">56</span><span class="ds-space__bar" style="width: 56px"></span></div>
-        <div class="ds-space__row"><span class="ds-mono">96</span><span class="ds-space__bar" style="width: 96px"></span></div>
+        <div class="ds-space__row"><span class="ds-mono">--space-1 · 4</span><span class="ds-space__bar" style="width: var(--space-1)"></span></div>
+        <div class="ds-space__row"><span class="ds-mono">--space-2 · 8</span><span class="ds-space__bar" style="width: var(--space-2)"></span></div>
+        <div class="ds-space__row"><span class="ds-mono">--space-3 · 12</span><span class="ds-space__bar" style="width: var(--space-3)"></span></div>
+        <div class="ds-space__row"><span class="ds-mono">--space-4 · 16</span><span class="ds-space__bar" style="width: var(--space-4)"></span></div>
+        <div class="ds-space__row"><span class="ds-mono">--space-5 · 24</span><span class="ds-space__bar" style="width: var(--space-5)"></span></div>
+        <div class="ds-space__row"><span class="ds-mono">--space-6 · 32</span><span class="ds-space__bar" style="width: var(--space-6)"></span></div>
+        <div class="ds-space__row"><span class="ds-mono">--space-7 · 48</span><span class="ds-space__bar" style="width: var(--space-7)"></span></div>
+        <div class="ds-space__row"><span class="ds-mono">--space-8 · 56</span><span class="ds-space__bar" style="width: var(--space-8)"></span></div>
+        <div class="ds-space__row"><span class="ds-mono">--space-9 · 96</span><span class="ds-space__bar" style="width: var(--space-9)"></span></div>
       </div>
-      <p class="ds-notes" style="margin-top: 16px">Odd ones out: 6, 10, 14, 20, 22, 28 and 40 also appear. Most could snap to the scale above.</p>
+      <p class="ds-notes" style="margin-top: 16px">A few values sit outside the scale on purpose: the split-flap board’s gaps and plate padding, and the nav’s phone gaps, are tuned in their labs; the 6px between a nav button’s icon and label is part of the settled button; section padding that clears the halftone dots is worked out from the halftone’s reach; and phone screenshots take a phone’s own corner radius.</p>
     </section>
 
     <!-- Motion -->
@@ -286,6 +323,7 @@
       <ul class="ds-notes" style="margin-top: 16px">
         <li>A pill shaded like a split-flap tile, with the board’s film grain. Class <code>.chip</code>, inside <code>.nav</code>.</li>
         <li>Every value is a <code>--chip-*</code> token. The <a href="../button-lab/" style="text-decoration: underline">Button Lab</a> tunes them and saves versions, and <code>buttons.js</code> applies the active one. Active version: <span class="ds-mono" id="chip-version">…</span></li>
+        <li>A colour that matches the palette is written as its token (Mist text becomes <code>var(--c-mist)</code>), so it follows palette changes. The Button Lab’s colour pickers offer the palette as swatches.</li>
         <li>States change brightness, not colour, so one rule works in both themes. Icons are Lucide outlines, sized to the label.</li>
       </ul>
       <div class="ds-scroll" style="margin-top: 16px">
@@ -298,7 +336,7 @@
       <div class="ds-section__head" style="margin-top: 56px"><h3 class="ds-h3" style="margin: 0">Controls menu</h3><span class="ds-status">Draft</span></div>
       <div class="ds-stage">
         <div class="nav ds-nav">
-          <div class="dropdown is-open">
+          <div class="ds-dropdown">
             <span class="chip is-current"><svg class="chip__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 8h4"/><path d="M12 21v-9"/><path d="M12 8V3"/><path d="M17 16h4"/><path d="M19 12V3"/><path d="M19 21v-5"/><path d="M3 14h4"/><path d="M5 10V3"/><path d="M5 21v-7"/></svg>Controls</span>
             <ul class="dropdown__menu">
               <li><a href="./">Design System</a></li>
@@ -337,21 +375,83 @@
         </a>
       </div>
       <p class="ds-notes" style="margin-top: 16px">The Tinkering grid. On hover it lifts 2px, the border strengthens and the thumbnail zooms slightly.</p>
+
+      <div class="ds-section__head" style="margin-top: 56px"><h3 class="ds-h3" style="margin: 0">Split-flap board</h3><span class="ds-status ds-status--settled">Settled</span></div>
+      <div class="ds-stage ds-board-stage">
+        <p class="ds-board" aria-label="Design System">Design System</p>
+        <button class="button ds-board-replay" type="button">Play again</button>
+      </div>
+      <ul class="ds-notes" style="margin-top: 16px">
+        <li>The home page’s name. One canvas per letter, each flipping round a drum of characters, drawn with motion blur so fast flaps smear like film. Letters are Geist; the plate and windows take their colours from the theme.</li>
+        <li>Everything about it, from timing and blur to the plate and grain, is tuned in the <a href="../split-flap-lab/" style="text-decoration: underline">Split-Flap Lab</a>, which keeps a dark and a light version. <code>split-flap.js</code> runs the active ones.</li>
+        <li>On phones the board drops its side columns, runs edge to edge and enlarges the letters. With reduced motion it shows the last frame straight away.</li>
+      </ul>
+
+      <div class="ds-section__head" style="margin-top: 56px"><h3 class="ds-h3" style="margin: 0">Project section and halftone transition</h3><span class="ds-status">Draft</span></div>
+      <p class="ds-notes">Two work sections as they appear on the home page, shortened. Each section’s colour arrives through a halftone: dots of the new colour grow until they touch, then holes of the old colour shrink away. It spans the full width of the window.</p>
+    </section>
+
+  </div>
+
+    <div class="ds-bands-demo">
+      <section class="project project--band project--rust" aria-label="Sample project section">
+        <div class="project__intro">
+          <h4 class="project__tagline">Tagline that sells the work</h4>
+          <ul class="project__tags" aria-label="Project focus"><li>Tag one</li><li>Tag two</li></ul>
+          <p class="project__desc">A short description of the project in the body style. The text column stays narrow on the left; the image takes the rest of the width.</p>
+        </div>
+        <div class="project__media">
+          <figure class="project__hero placeholder"><span>Hero image</span></figure>
+          <a class="button button--apricot" href="#components">Call to action</a>
+        </div>
+      </section>
+      <section class="project project--band project--navy" aria-label="Second sample project section">
+        <div class="project__intro">
+          <h4 class="project__tagline">The next section</h4>
+          <p class="project__desc">Every section sets its own roles, so text, lines and tags follow its colour.</p>
+        </div>
+        <div class="project__media"><figure class="project__hero placeholder"><span>Hero image</span></figure></div>
+      </section>
+    </div>
+
+  <div class="ds">
+    <section class="ds-section ds-section--cont" aria-label="More components">
+      <ul class="ds-notes">
+        <li><strong>Layout:</strong> tagline, tags and description in a narrow left column (<code>minmax(340px, 5fr)</code>), the image in the rest (<code>9fr</code>), stacked below 800px. The call to action tucks under the image’s right corner.</li>
+        <li><strong>Height:</strong> on the home page each section is at least a screen tall plus room for the transitions at both ends, so a full screen of solid colour sits between them.</li>
+        <li><strong>Halftone:</strong> drawn by <code>halftone.js</code> on a canvas, with WebGL when it’s available, from the active version in the <a href="../halftone-lab/" style="text-decoration: underline">Halftone Lab</a>. It may drift and respond to the cursor. It holds still for reduced motion.</li>
+      </ul>
+
+      <div class="ds-section__head" style="margin-top: 56px"><h3 class="ds-h3" style="margin: 0">Reel player</h3><span class="ds-status">Draft</span></div>
+      <div class="reel ds-reel">
+        <iframe src="../../reels/groom-lake/?autoplay=0&amp;loop=0&amp;t=4" title="Groom Lake product reel" allow="fullscreen" loading="lazy"></iframe>
+        <button class="reel__play" type="button" aria-label="Play Groom Lake reel">
+          <span class="reel__pill"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5v11a1 1 0 0 0 1.5.86l9-5.5a1 1 0 0 0 0-1.72l-9-5.5A1 1 0 0 0 4 2.5z"/></svg><span class="reel__label">Play reel</span><span class="reel__dur">1:04</span></span>
+        </button>
+      </div>
+      <ul class="ds-notes" style="margin-top: 16px">
+        <li>A product reel in a 16:9 frame. On the home page it breaks out of the column to fill the window, capped so the whole frame fits below the nav.</li>
+        <li>Before it plays, a glass pill sits bottom left, clear of the title card, over a soft shade. On hover the pill fills with the text colour. Once playing, the overlay fades in 250ms; when the reel ends the label turns to “Replay”.</li>
+      </ul>
+
+      <div class="ds-section__head" style="margin-top: 56px"><h3 class="ds-h3" style="margin: 0">Static spark</h3><span class="ds-status">Draft</span></div>
+      <ul class="ds-notes">
+        <li>When the pointer comes close to a button, a small bolt jumps from the button’s edge to the pointer, and the button flinches brighter for 280ms. It never fires while the pointer is on the button, and only on devices with a fine pointer and without reduced motion.</li>
+        <li>Reach, life, jaggedness, glow and colours are set in the <a href="../button-lab/" style="text-decoration: underline">Button Lab</a> with the nav buttons. It is <strong id="spark-state">…</strong> in the active version.</li>
+      </ul>
     </section>
 
     <!-- Open issues -->
     <section class="ds-section" id="open" aria-labelledby="open-h">
       <h2 class="ds-h2" id="open-h">Open issues</h2>
-      <p class="ds-lede">Problems found while putting this page together, to fix as each piece gets settled.</p>
+      <p class="ds-lede">Known problems, to fix as each piece gets settled.</p>
       <ul class="ds-issues" style="margin-top: 24px">
-        <li class="ds-issue"><span class="ds-issue__title">Nav button colours bypass the palette</span><p>The chip colours are typed in as hex (<code>#10202d</code>, <code>#fffdf7</code>) instead of pointing at palette tokens, so a palette change won’t reach them.</p></li>
-        <li class="ds-issue"><span class="ds-issue__title">Section bands hardcode their lines and surfaces</span><p>Rust, Navy, Ochre, Sage and light-mode Slate set <code>--line</code> and <code>--surface</code> as rgba literals, while the page-level roles mix from palette tokens.</p></li>
-        <li class="ds-issue"><span class="ds-issue__title">Project taglines ask for a weight that isn’t loaded</span><p><code>.project__tagline</code> is set to 700, but Söhne Breit is only loaded at 600, so the browser fakes the bold.</p></li>
-        <li class="ds-issue"><span class="ds-issue__title">No type, spacing or radius tokens</span><p>Sizes, gaps and corners are typed in per rule. These need scales before more components get built.</p></li>
-        <li class="ds-issue"><span class="ds-issue__title">Leftover Controls rules</span><p><code>.dropdown--controls .dropdown__toggle</code> still sets padding, border and size, but the chip rules now override all of it.</p></li>
-        <li class="ds-issue"><span class="ds-issue__title">Not yet documented</span><p>The split-flap board, the halftone transition, the reel player, the project layout and the static spark.</p></li>
+        <li class="ds-issue"><span class="ds-issue__title">Some nav button colours aren’t in the palette</span><p>Mist and Rust now link to their tokens. The dark buttons’ tile colours (<code>#10202d</code>, <code>#0a161f</code>, <code>#2c3b46</code>), the light buttons’ top (<code>#c35f46</code>) and text (<code>#eee1ce</code>), and the shadow colours are still their own. Either add them to the palette, or swap them for the nearest palette colours in the Button Lab.</p></li>
+        <li class="ds-issue"><span class="ds-issue__title">The type scale has near neighbours</span><p>18, 17, 16 and 15px all appear. Intro (18) and body (17) could merge, and 16 is only used by the reel pill and the phone lead.</p></li>
+        <li class="ds-issue"><span class="ds-issue__title">The nav is too wide between 600 and 800px</span><p>It stays on one row and pushes the page sideways (769px wide at 700px). Wrapping it onto two rows, as on phones, would fix it.</p></li>
       </ul>
     </section>
+  </div>
   </main>
 
   <script>
@@ -361,6 +461,7 @@
         ['Warms', [['Rust', 'rust'], ['Umber', 'umber'], ['Orange', 'orange'], ['Apricot', 'apricot']]],
         ['Earths', [['Khaki', 'khaki'], ['Sand', 'sand'], ['Sage', 'sage'], ['Mocha', 'mocha']]],
         ['Accents', [['Teal', 'teal'], ['Ochre', 'ochre']]],
+        ['Lights', [['Paper', 'paper'], ['Linen', 'linen'], ['Frost', 'frost'], ['Foam', 'foam'], ['Cloud', 'cloud']]],
       ];
       const ROLES = [
         ['--ground', 'Page colour'],
@@ -425,6 +526,65 @@
       // the motion tracks are as wide as their cards
       document.querySelectorAll('.ds-motion__track').forEach(t => t.style.setProperty('--w', t.clientWidth + 'px'));
     })();
+  </script>
+  <script src="../../split-flap.js"></script>
+  <script src="../../split-flap-versions.js"></script>
+  <script src="../../halftone.js"></script>
+  <script src="../../halftone-versions.js"></script>
+  <script>
+    /* the static spark's state in the active Button Lab version */
+    document.getElementById('spark-state').textContent = window.Buttons && Buttons.cfg.spark ? 'on' : 'off';
+
+    /* Halftone: the same call the home page makes */
+    const bands = Halftone.mount(document.querySelectorAll('.ds-bands-demo .project--band'), Halftone.activeConfig());
+    document.addEventListener('themechange', () => bands.redraw());
+
+    /* Split-flap: the active versions, spelling this page's name */
+    (function () {
+      const host = document.querySelector('.ds-board');
+      const config = SplitFlap.activeConfig();
+      const look = () => SplitFlap.activeStyle(document.documentElement.dataset.theme === 'light' ? 'light' : 'dark');
+      const flap = SplitFlap.mount(host, { ...config, ...look(), lines: ['DESIGN', 'SYSTEM'], sequence: [], padX: 1 });
+      const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const again = document.querySelector('.ds-board-replay');
+      let t0 = 0, running = false;
+      function frame() {
+        const t = performance.now() - t0;
+        flap.seek(t);
+        if (t < flap.duration) requestAnimationFrame(frame); else running = false;
+      }
+      function play(fromBlank) {
+        if (still) { flap.seek(Infinity); return; }
+        t0 = performance.now();
+        if (fromBlank) flap.spinTo(['DESIGN', 'SYSTEM'], 0);
+        if (!running) { running = true; requestAnimationFrame(frame); }
+      }
+      flap.ready.then(() => play(false));
+      again.addEventListener('click', () => play(true));
+      if (still) again.hidden = true;
+      document.addEventListener('themechange', () => flap.restyle(look()));
+    })();
+
+    /* Reel: start on click, offer replay when finished (as on the home page) */
+    document.querySelectorAll('.reel').forEach(reel => {
+      const frame = reel.querySelector('iframe');
+      const button = reel.querySelector('.reel__play');
+      const label = button.querySelector('.reel__label');
+      let started = false;
+      button.addEventListener('click', () => {
+        const player = frame.contentWindow && frame.contentWindow.__reel;
+        if (!player || !player.play) return;
+        if (!started) { player.seek(0); started = true; }
+        player.onend = () => {
+          label.textContent = 'Replay';
+          button.setAttribute('aria-label', 'Replay ' + frame.title);
+          reel.classList.remove('is-playing');
+        };
+        player.play();
+        reel.classList.add('is-playing');
+        frame.focus();
+      });
+    });
   </script>
   <script src="../../nav.js"></script>
   <script src="../../spark.js" defer></script>

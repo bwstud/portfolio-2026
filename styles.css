@@ -60,6 +60,47 @@
   /* Accents */
   --c-teal: #418A8B;
   --c-ochre: #DFC06C;
+  /* Lights: page and panel colours for light mode */
+  --c-paper: #F5F3ED;
+  --c-linen: #F3EEE7;
+  --c-frost: #E9F3F2;
+  --c-foam: #F0F6F6;
+  --c-cloud: #E9EDF2;
+
+  /* Space: every padding, margin and gap uses a step. Lab-tuned parts (the split-flap board,
+     the nav buttons) and offsets worked out from the halftone keep their own values. */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 56px;
+  --space-9: 96px;
+
+  /* Corners */
+  --radius-2xs: 3px;    /* split-flap windows */
+  --radius-xs: 4px;     /* small hit areas */
+  --radius-sm: 6px;     /* menu items, the board's plate */
+  --radius-md: 8px;     /* reels, placeholders */
+  --radius-lg: 10px;    /* menus, screenshots */
+  --radius-xl: 12px;    /* cards */
+  --radius-pill: 999px; /* tags, buttons */
+
+  /* Type sizes. Display sizes are named for their job; text sizes run large to small. */
+  --text-name: clamp(48px, 8vw, 104px);
+  --text-page-title: clamp(40px, 6vw, 72px);
+  --text-section-title: clamp(36px, 4.7vw, 68px);
+  --text-tagline: clamp(36px, 3.4vw, 64px);
+  --text-heading: 20px;
+  --text-lead: clamp(17px, 1.5vw, 21px);
+  --text-lg: 18px;
+  --text-base: 17px;
+  --text-md: 16px;
+  --text-sm: 15px;
+  --text-xs: 14px;
+  --text-2xs: 13px;
 
   /* Roles. --ground is the page colour and --pine-band the Pine section; light mode swaps both */
   --ground: var(--c-night);
@@ -83,8 +124,8 @@
      defaults match its Original. Colours: the split-flap tiles (Deep Blue dark, built-in light). */
   --chip-h: 36px; --chip-px: 16px; --chip-radius: 18px; --chip-bw: 1px; --chip-gap: 10px;
   --chip-fs: 14px; --chip-fw: 500; --chip-ls: 0em; --chip-tt: none; --chip-lift: 0px; --chip-angle: 180deg;
-  --chip-top-d: #10202d; --chip-bottom-d: #0a161f; --chip-edge-d: #2c3b46; --chip-text-d: #dae4e3;
-  --chip-top-l: #fffdf7; --chip-bottom-l: #f0ebe0; --chip-edge-l: #cfcbc3; --chip-text-l: #040a13;
+  --chip-top-d: #10202d; --chip-bottom-d: #0a161f; --chip-edge-d: #2c3b46; --chip-text-d: var(--c-mist);
+  --chip-top-l: #fffdf7; --chip-bottom-l: #f0ebe0; --chip-edge-l: #cfcbc3; --chip-text-l: var(--c-night);
   --chip-grain: 0.14; --chip-grain-size: 83px; --chip-grain-blend: normal;
   --chip-shadow-d: none; --chip-shadow-l: none;
   --chip-hover: 1.18; --chip-press-y: 1px; --chip-press: 0.92; --chip-current: 0.82; --chip-speed: 150ms;
@@ -98,8 +139,8 @@
 :root[data-theme="light"],
 [data-theme-scope="light"] {
   color-scheme: light;
-  /* trying page colours: a warm off-white now; Mist, then white, were earlier passes */
-  --ground: #F5F3ED;
+  /* trying page colours: Paper, a warm off-white, now; Mist, then white, were earlier passes */
+  --ground: var(--c-paper);
   --pine-band: var(--c-slate);   /* pale Pine-tinted Mist and Umber were earlier passes */
   --fg: var(--c-night);
   /* neutrals mix Night over whatever the page colour is */
@@ -141,7 +182,7 @@ a { color: inherit; text-decoration: none; }
   top: 0;
   z-index: 10;
   height: var(--nav-h);
-  padding: 0 max(32px, calc((100% - var(--max)) / 2 + 32px));
+  padding: 0 max(var(--space-6), calc((100% - var(--max)) / 2 + var(--space-6)));
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -159,7 +200,7 @@ a { color: inherit; text-decoration: none; }
 .nav__links > a,
 .dropdown__toggle {
   color: var(--muted);
-  font-size: 15px;
+  font-size: var(--text-sm);
   transition: color 0.15s;
 }
 
@@ -169,9 +210,8 @@ a { color: inherit; text-decoration: none; }
   place-items: center;
   width: 36px;
   height: 36px;
-  margin: -4px -8px -4px 0;
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: transparent;
   color: var(--muted);
   cursor: pointer;
@@ -198,20 +238,18 @@ a { color: inherit; text-decoration: none; }
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 6px;
 }
-
 
 .dropdown__menu {
   position: absolute;
-  top: calc(100% + 14px);
+  top: calc(100% + var(--space-3));
   left: -16px;
   min-width: 240px;
-  padding: 8px;
+  padding: var(--space-2);
   list-style: none;
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: var(--radius-lg);
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
   opacity: 0;
   visibility: hidden;
@@ -227,9 +265,9 @@ a { color: inherit; text-decoration: none; }
 
 .dropdown__menu a {
   display: block;
-  padding: 10px 12px;
-  border-radius: 6px;
-  font-size: 14px;
+  padding: var(--space-3);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-xs);
   color: var(--muted);
   transition: background 0.15s, color 0.15s;
 }
@@ -237,13 +275,6 @@ a { color: inherit; text-decoration: none; }
 .dropdown__menu a:hover { background: var(--hover); color: var(--fg); }
 
 /* Controls: a utility menu at the far left, kept apart from the real nav */
-.dropdown--controls .dropdown__toggle {
-  padding: 8px 14px;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  font-size: 14px;
-}
-
 .dropdown--controls .dropdown__menu { left: 0; right: auto; z-index: 1; }
 
 
@@ -302,13 +333,13 @@ a { color: inherit; text-decoration: none; }
 /* Shared */
 .placeholder {
   border: 1px dashed var(--line);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   background: var(--surface);
   display: flex;
   align-items: center;
   justify-content: center;
   color: var(--muted);
-  font-size: 13px;
+  font-size: var(--text-2xs);
   letter-spacing: 0.1em;
 }
 
@@ -320,19 +351,19 @@ a { color: inherit; text-decoration: none; }
   /* first screen = this cover plus the Rust halftone band, so the band ends right at the fold */
   min-height: calc(100svh - var(--nav-h) - var(--halftone-below));
   /* "Recent Work" sits just above the highest point the transition's dots climb to */
-  padding: 48px 32px calc(var(--halftone-peak) + 12px);
+  padding: var(--space-7) var(--space-6) calc(var(--halftone-peak) + 12px);
   position: relative;
   z-index: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 56px;
+  gap: var(--space-8);
   text-align: center;
 }
 
 .cover__work {
   font-family: var(--font-display);
-  font-size: clamp(36px, 4.7vw, 68px);
+  font-size: var(--text-section-title);
   font-weight: 600;
   line-height: 1.1;
   letter-spacing: -0.01em;
@@ -340,7 +371,7 @@ a { color: inherit; text-decoration: none; }
 
 .cover__name {
   font-family: var(--font-display);
-  font-size: clamp(48px, 8vw, 104px);
+  font-size: var(--text-name);
   font-weight: 600;
   line-height: 0.95;
   letter-spacing: -0.03em;
@@ -349,8 +380,8 @@ a { color: inherit; text-decoration: none; }
 /* Tagline under the board: body type, a step quieter than the name */
 .cover__tagline {
   max-width: 100ch;
-  margin: 40px auto 0;
-  font-size: clamp(17px, 1.5vw, 21px);
+  margin: var(--space-6) auto 0;
+  font-size: var(--text-lead);
   line-height: 1.5;
   color: var(--muted);
   text-wrap: balance;
@@ -363,7 +394,7 @@ a { color: inherit; text-decoration: none; }
 .cover__name .sf-board { margin: 0 auto; }
 .cover__text { position: relative; }
 /* invisible button over the board's bottom-right window once it shows the restart icon */
-.cover__replay { position: absolute; border-radius: 4px; cursor: pointer; background: transparent; border: 0; padding: 0; }
+.cover__replay { position: absolute; border-radius: var(--radius-xs); cursor: pointer; background: transparent; border: 0; padding: 0; }
 .cover__replay:hover { background: rgba(255, 255, 255, 0.06); }
 .cover__replay:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
 
@@ -410,7 +441,7 @@ a { color: inherit; text-decoration: none; }
    window clips them, and the shading sits above the canvas as shadow cast by the plate. */
 .sf-board.is-framed {
   padding: var(--sf-frame-pad);
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   background:
     linear-gradient(100deg, rgba(255, 255, 255, var(--sf-frame-sheen)), transparent 60%),
     var(--sf-frame-color);
@@ -425,7 +456,7 @@ a { color: inherit; text-decoration: none; }
 
 .is-framed .sf {
   overflow: hidden;
-  border-radius: 3px;
+  border-radius: var(--radius-2xs);
   background: var(--sf-well-color);
   box-shadow:
     0 1px 0 rgba(255, 255, 255, var(--sf-frame-lip)),
@@ -446,10 +477,10 @@ a { color: inherit; text-decoration: none; }
 .button {
   display: inline-block;
   flex-shrink: 0;
-  padding: 8px 16px;
+  padding: var(--space-2) var(--space-4);
   border: 1px solid var(--fg);
-  border-radius: 999px;
-  font-size: 14px;
+  border-radius: var(--radius-pill);
+  font-size: var(--text-xs);
   font-weight: 500;
   white-space: nowrap;
   transition: background 0.15s, color 0.15s;
@@ -461,7 +492,7 @@ a { color: inherit; text-decoration: none; }
 .project {
   max-width: var(--max);
   margin: 0 auto;
-  padding: 96px 32px;
+  padding: var(--space-9) var(--space-6);
   border-top: 1px solid var(--line);
 }
 
@@ -478,8 +509,8 @@ a { color: inherit; text-decoration: none; }
 /* doubled class so it outranks the narrow-screen .project padding. The bottom leaves room for
    the next section's halftone, which reaches up into this one. */
 .project.project--band {
-  padding-left: clamp(32px, 4.5vw, 96px);
-  padding-right: clamp(32px, 4.5vw, 96px);
+  padding-left: clamp(var(--space-6), 4.5vw, var(--space-9));
+  padding-right: clamp(var(--space-6), 4.5vw, var(--space-9));
   padding-top: calc(var(--halftone-reach) + 72px);
   padding-bottom: max(96px, calc(var(--halftone-reach) + 40px));
   /* tall enough that a whole screen of solid colour fits between the two transitions: the band
@@ -520,8 +551,8 @@ a { color: inherit; text-decoration: none; }
   --bg: var(--c-night);
   color: var(--fg);
   --muted: var(--c-mist);
-  --line: rgba(218, 228, 227, 0.35);
-  --surface: rgba(4, 10, 19, 0.12);
+  --line: color-mix(in srgb, var(--c-mist) 35%, transparent);
+  --surface: color-mix(in srgb, var(--c-night) 12%, transparent);
 }
 
 .project--navy {
@@ -531,8 +562,8 @@ a { color: inherit; text-decoration: none; }
   --bg: var(--c-night);
   --muted: color-mix(in srgb, var(--c-mist) 66%, var(--c-night));
   color: var(--fg);
-  --line: rgba(218, 228, 227, 0.25);
-  --surface: rgba(218, 228, 227, 0.06);
+  --line: color-mix(in srgb, var(--c-mist) 25%, transparent);
+  --surface: color-mix(in srgb, var(--c-mist) 6%, transparent);
 }
 
 /* Ochre is light, so this section flips to dark text */
@@ -542,8 +573,8 @@ a { color: inherit; text-decoration: none; }
   --fg: var(--c-night);
   --bg: var(--c-ochre);
   --muted: var(--c-pine);
-  --line: rgba(4, 10, 19, 0.3);
-  --surface: rgba(4, 10, 19, 0.08);
+  --line: color-mix(in srgb, var(--c-night) 30%, transparent);
+  --surface: color-mix(in srgb, var(--c-night) 8%, transparent);
   color: var(--fg);
 }
 
@@ -554,8 +585,8 @@ a { color: inherit; text-decoration: none; }
   --fg: var(--c-night);
   --bg: var(--c-sage);
   --muted: var(--c-night);
-  --line: rgba(4, 10, 19, 0.35);
-  --surface: rgba(4, 10, 19, 0.08);
+  --line: color-mix(in srgb, var(--c-night) 35%, transparent);
+  --surface: color-mix(in srgb, var(--c-night) 8%, transparent);
   color: var(--fg);
 }
 
@@ -563,8 +594,8 @@ a { color: inherit; text-decoration: none; }
 .project--pine {
   --band-from: var(--c-ochre);
   --band-to: var(--pine-band);
-  --line: rgba(218, 228, 227, 0.25);
-  --surface: rgba(218, 228, 227, 0.06);
+  --line: color-mix(in srgb, var(--c-mist) 25%, transparent);
+  --surface: color-mix(in srgb, var(--c-mist) 6%, transparent);
 }
 /* in light mode "Recent Work" is set in Rust, like the board's letters above it and the band below */
 :root[data-theme="light"] .cover__work { color: var(--c-rust); }
@@ -575,8 +606,8 @@ a { color: inherit; text-decoration: none; }
   --bg: var(--pine-band);
   color: var(--fg);
   --muted: var(--c-mist);
-  --line: rgba(218, 228, 227, 0.35);
-  --surface: rgba(4, 10, 19, 0.12);
+  --line: color-mix(in srgb, var(--c-mist) 35%, transparent);
+  --surface: color-mix(in srgb, var(--c-night) 12%, transparent);
 }
 
 /* Project layout: tagline, pills and description in a narrow column on the left; the hero
@@ -584,14 +615,14 @@ a { color: inherit; text-decoration: none; }
 .project--band {
   display: grid;
   grid-template-columns: minmax(340px, 5fr) minmax(0, 9fr);
-  gap: clamp(40px, 4.5vw, 96px);
+  gap: clamp(var(--space-7), 4.5vw, var(--space-9));
   align-items: center;
 }
 
 .project__tagline {
   font-family: var(--font-display);
-  font-size: clamp(36px, 3.4vw, 64px);
-  font-weight: 700;
+  font-size: var(--text-tagline);
+  font-weight: 600;
   line-height: 1.02;
   letter-spacing: -0.025em;
   text-wrap: balance;
@@ -599,8 +630,8 @@ a { color: inherit; text-decoration: none; }
 
 .project__desc {
   max-width: 56ch;
-  margin-top: 28px;
-  font-size: 17px;
+  margin-top: var(--space-5);
+  font-size: var(--text-base);
   line-height: 1.6;
   color: var(--muted);
   text-wrap: pretty;
@@ -609,18 +640,18 @@ a { color: inherit; text-decoration: none; }
 .project__tags {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 32px;
+  gap: var(--space-2);
+  margin-top: var(--space-6);
   list-style: none;
 }
 
 .project__tags li {
-  padding: 6px 12px;
+  padding: var(--space-2) var(--space-3);
   border: 1px solid var(--line);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   color: var(--muted);
   font-family: var(--font-mono);
-  font-size: 13px;
+  font-size: var(--text-2xs);
   line-height: 1.2;
 }
 
@@ -634,16 +665,16 @@ a { color: inherit; text-decoration: none; }
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 24px;
+  gap: var(--space-5);
   min-width: 0;
 }
 
 .button--apricot {
-  padding: 12px 24px;
+  padding: var(--space-3) var(--space-5);
   border-color: var(--c-apricot);
   background: var(--c-apricot);
   color: var(--c-night);
-  font-size: 15px;
+  font-size: var(--text-sm);
   font-weight: 600;
 }
 .button--apricot:hover {
@@ -659,14 +690,14 @@ a { color: inherit; text-decoration: none; }
   display: block;
   width: 100%;
   height: auto;
-  border-radius: 10px;
+  border-radius: var(--radius-lg);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12), 0 24px 64px rgba(0, 0, 0, 0.3);
 }
 .project__hero--shot figcaption {
-  margin-top: 16px;
+  margin-top: var(--space-4);
   max-width: 64ch;
   font-family: var(--font-mono);
-  font-size: 13px;
+  font-size: var(--text-2xs);
   line-height: 1.5;
   color: var(--muted);
   text-wrap: pretty;
@@ -681,7 +712,7 @@ main { overflow-x: clip; }
   width: var(--reel-w);
   margin-left: calc(50% - var(--reel-w) / 2);
   position: relative;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   overflow: hidden;
   background: var(--c-night);
 }
@@ -701,7 +732,7 @@ main { overflow-x: clip; }
   inset: 0;
   display: flex;
   align-items: flex-end;
-  padding: clamp(16px, 3vw, 40px);
+  padding: clamp(var(--space-4), 3vw, var(--space-7));
   border: 0;
   background: linear-gradient(to top, rgba(0, 0, 0, 0.45), transparent 40%);
   color: var(--fg);
@@ -718,14 +749,14 @@ main { overflow-x: clip; }
 .reel__pill {
   display: inline-flex;
   align-items: center;
-  gap: 12px;
-  padding: 14px 22px 14px 18px;
-  border-radius: 999px;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-5) var(--space-3) var(--space-4);
+  border-radius: var(--radius-pill);
   background: color-mix(in srgb, var(--c-night) 70%, transparent);
   border: 1px solid color-mix(in srgb, var(--c-mist) 25%, transparent);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-  font-size: 16px;
+  font-size: var(--text-md);
   font-weight: 500;
   transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
@@ -756,31 +787,31 @@ main { overflow-x: clip; }
 .tinkering {
   max-width: var(--max);
   margin: 0 auto;
-  padding: 48px 32px 120px;
+  padding: var(--space-7) var(--space-6) var(--space-9);
 }
 
-.tinkering__head { margin-bottom: 48px; }
+.tinkering__head { margin-bottom: var(--space-7); }
 
 .tinkering__title {
   font-family: var(--font-display);
-  font-size: clamp(40px, 6vw, 72px);
+  font-size: var(--text-page-title);
   font-weight: 600;
   line-height: 1;
   letter-spacing: -0.03em;
 }
 
 .tinkering__intro {
-  margin-top: 20px;
+  margin-top: var(--space-5);
   max-width: 46ch;
   color: var(--muted);
-  font-size: 18px;
+  font-size: var(--text-lg);
   line-height: 1.6;
 }
 
 .cards {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
-  gap: 24px;
+  gap: var(--space-5);
   list-style: none;
 }
 
@@ -789,7 +820,7 @@ main { overflow-x: clip; }
   flex-direction: column;
   height: 100%;
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: var(--radius-xl);
   overflow: hidden;
   background: var(--surface);
   transition: border-color 0.2s, transform 0.2s;
@@ -821,13 +852,13 @@ a.card:hover .card__thumb img { transform: scale(1.03); }
 .card__body {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 20px 22px 24px;
+  gap: var(--space-2);
+  padding: var(--space-5);
 }
 
-.card__title { font-family: var(--font-display); font-size: 20px; font-weight: 600; }
-.card__desc { color: var(--muted); font-size: 15px; line-height: 1.5; }
-.card__meta { margin-top: 4px; font-family: var(--font-mono); color: var(--muted); font-size: 13px; }
+.card__title { font-family: var(--font-display); font-size: var(--text-heading); font-weight: 600; }
+.card__desc { color: var(--muted); font-size: var(--text-sm); line-height: 1.5; }
+.card__meta { margin-top: var(--space-1); font-family: var(--font-mono); color: var(--muted); font-size: var(--text-2xs); }
 
 .card--soon {
   min-height: 300px;
@@ -836,32 +867,31 @@ a.card:hover .card__thumb img { transform: scale(1.03); }
   border-style: dashed;
   background: none;
   color: var(--muted);
-  font-size: 13px;
+  font-size: var(--text-2xs);
   letter-spacing: 0.1em;
 }
 
 @media (max-width: 800px) {
   :root { --nav-h: 64px; }
-  .nav { padding: 0 16px; }
-  .nav__links { gap: 20px; }
+  .nav { padding: 0 var(--space-4); }
   .reel { --reel-w: calc(100vw - 32px); }
   .dropdown__menu { left: auto; right: -16px; }
   .cover {
-    gap: 40px;
+    gap: var(--space-6);
     /* phones sit closer: 95% of the time the dots stay under ~3/4 of the peak (measured at
        390px wide), so only a rare surge drifts up behind "Recent Work" */
-    padding: 32px 16px calc(var(--halftone-peak) * 0.75 + 8px);
+    padding: var(--space-6) var(--space-4) calc(var(--halftone-peak) * 0.75 + 8px);
   }
-  .project { padding: 64px 16px; }
-  .tinkering { padding: 32px 16px 80px; }
-  .project--band { grid-template-columns: 1fr; gap: 40px; }
+  .project { padding: var(--space-8) var(--space-4); }
+  .tinkering { padding: var(--space-6) var(--space-4) var(--space-9); }
+  .project--band { grid-template-columns: 1fr; gap: var(--space-7); }
   /* stacked, the content is already about a screen tall: holding the band at a full screen
      plus the transitions only leaves a stretch of empty colour above the headline. The top
      clears where the transition usually finishes rather than its furthest possible swell, so
      the odd stray dot drifts behind the headline, as it does behind "Recent Work". */
   .project.project--band {
-    padding-left: 16px;
-    padding-right: 16px;
+    padding-left: var(--space-4);
+    padding-right: var(--space-4);
     padding-top: calc(var(--halftone-below) + 96px);
     min-height: 0;
   }
@@ -876,7 +906,7 @@ a.card:hover .card__thumb img { transform: scale(1.03); }
     flex-wrap: wrap;
     align-content: center;
     row-gap: 0;
-    padding: 4px 16px;
+    padding: var(--space-1) var(--space-4);
   }
   .nav__start { min-height: 44px; gap: min(var(--chip-gap), 6px); }
   .nav__links { width: 100%; justify-content: space-between; gap: min(var(--chip-gap), 6px); }
@@ -889,8 +919,8 @@ a.card:hover .card__thumb img { transform: scale(1.03); }
   .cover__name .sf-board { width: calc(100% + 32px); max-width: none; margin: 0 -16px; }
   .cover__name .sf-board, .cover__name .sf-row { gap: 3px; }
   /* "Recent Work" steps down so it labels the work instead of competing with the name */
-  .cover__work { font-size: 20px; }
-  .cover__tagline { margin-top: 28px; font-size: 16px; }
+  .cover__work { font-size: var(--text-heading); }
+  .cover__tagline { margin-top: var(--space-5); font-size: var(--text-md); }
 }
 
 /* a phone screenshot: kept to a screen's height and centred in the media column,

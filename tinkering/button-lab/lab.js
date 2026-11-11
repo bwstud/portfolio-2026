@@ -62,6 +62,15 @@
 
   const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
   const HEX = /^#[0-9a-f]{6}$/i;
+  // one shared <datalist> of the site palette (from buttons.js) for every colour picker
+  function paletteList() {
+    if (!document.getElementById('palette-swatches')) {
+      const list = Object.assign(document.createElement('datalist'), { id: 'palette-swatches' });
+      Object.values(Buttons.PALETTE).forEach(hex => list.append(Object.assign(document.createElement('option'), { value: hex })));
+      document.body.append(list);
+    }
+    return 'palette-swatches';
+  }
   const rows = [];
   let group = null;
 
@@ -103,6 +112,8 @@
       const text = Object.assign(document.createElement('input'), { type: 'text', id, spellcheck: false, maxLength: 7 });
       const swatch = Object.assign(document.createElement('input'), { type: 'color' });
       swatch.setAttribute('aria-label', `${p.name} swatch`);
+      // the site palette shows as suggested swatches in the picker; picking one links the button to it
+      swatch.setAttribute('list', paletteList());
       swatch.addEventListener('input', () => { cfg[p.key] = swatch.value; changed(); });
       text.addEventListener('change', () => {
         const v = text.value.trim().startsWith('#') ? text.value.trim() : '#' + text.value.trim();

@@ -1,4 +1,4 @@
-// The click sound for the front page (and the cover prototypes in lab/hook). Where you click decides which boom plays, so the
+// The click sound for the cover pages. Where you click decides which boom plays, so the
 // same spot always sounds the same.
 //
 // The page is read like a target centred on the middle of the window, stretched to its shape:
@@ -10,7 +10,7 @@
 //
 // Usage: <script src="cover/boom.js"></script>, then boomOn(target, allow) to make clicks and taps on target play;
 // allow(event) says whether a given press counts. boom(x, y) plays directly (window coordinates).
-// On the prototypes in lab/, press Z to show or hide the map.
+// When the site is running on this machine (localhost), press Z to show or hide the map.
 (() => {
   const CENTRE = 'rumble-super-low-shattering';
   const INNER = ['boom-low-sub-03', 'boom-thud-deep-low', 'boom-dark-ultra-low-short', 'boom-stone-slammer'];   // clockwise from the top right quarter
@@ -74,7 +74,7 @@
     map.innerHTML = s;
   }
   addEventListener('keydown', (e) => {
-    if (!location.pathname.includes('/lab/') || e.key.toLowerCase() !== 'z' || e.metaKey || e.ctrlKey || e.altKey || e.target.closest?.('input, textarea')) return;
+    if (!/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname) || e.key.toLowerCase() !== 'z' || e.metaKey || e.ctrlKey || e.altKey || e.target.closest?.('input, textarea')) return;
     if (map) { map.remove(); map = null; return; }
     map = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     map.setAttribute('aria-hidden', 'true');

@@ -1,13 +1,14 @@
-// Cover switcher: a small menu in the bottom right corner of every cover prototype.
-// To add a cover: make a new page in this folder, load this script in it
-// (<script src="covers.js"></script>), and add a line to COVERS.
+// Cover switcher: a small menu in the bottom right corner of every cover page.
+// The front page (index.html, at the site root) is the Chladni cover; the others live in cover/.
+// To add a cover: make a new page in cover/, load this script in it
+// (<script src="covers.js"></script>), and add a line to COVERS. Addresses are from the site root.
 (() => {
   const COVERS = [
-    { file: 'chladni.html', name: 'Chladni sand' },
-    { file: 'cymascope.html', name: 'Cymascope' },
+    { file: '/', name: 'Chladni sand' },
+    { file: '/cover/cymascope.html', name: 'Cymascope' },
   ];
 
-  const here = location.pathname.split('/').pop() || COVERS[0].file;
+  const here = location.pathname.replace(/\/index\.html$/, '/');
   const css = document.createElement('style');
   css.textContent = `
     .covers { position: fixed; right: 20px; bottom: 20px; z-index: 100; font: 400 12px/1 "Söhne Mono", ui-monospace, Menlo, monospace;

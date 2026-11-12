@@ -6,9 +6,9 @@
   <title>Cover: Cymascope (prototype)</title>
   <meta name="robots" content="noindex">
   <meta name="color-scheme" content="dark">
-  <link rel="stylesheet" href="../../styles.css">
+  <link rel="stylesheet" href="../styles.css">
   <style>
-    /* PROTOTYPE cover. The Cymascope from Rigs and Jigs fills the page and slowly breathes; the
+    /* An alternative cover, reached from the Covers menu. The Cymascope from Rigs and Jigs fills the page and slowly breathes; the
        sentence and Recent Work sit on a pane of blurred glass. "Tune" opens the Cymascope's own
        control panel so the look can be dialled in; the result is remembered in this browser. */
     html, body { height: 100%; margin: 0; overflow: hidden; background: var(--c-night); touch-action: none; }   /* a tap is a tap, never the start of a scroll */
@@ -81,12 +81,12 @@
   </style>
 </head>
 <body>
-  <iframe id="scope" src="../../tinkering/cymascope/index.html" title="Cymascope" tabindex="-1"></iframe>
+  <iframe id="scope" src="../tinkering/cymascope/index.html" title="Cymascope" tabindex="-1"></iframe>
 
   <main class="hook">
     <div class="glass">
       <h1 class="hook__text"><span class="hook__name">I’m Brian.</span> I design human-in-the-loop agentic systems for high-stakes, regulated industries.</h1>
-      <a class="hook__cta" href="../../work.html">Recent Work <span aria-hidden="true">→</span></a>
+      <a class="hook__cta" href="../work.html">Recent Work <span aria-hidden="true">→</span></a>
     </div>
   </main>
 
@@ -111,7 +111,7 @@
   </div>
 
   <script src="covers.js"></script>
-  <script src="../../cover/boom.js"></script>
+  <script src="boom.js"></script>
   <script>
   (() => {
     const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;

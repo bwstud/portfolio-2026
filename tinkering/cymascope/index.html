@@ -125,7 +125,7 @@
     }
     .rack .notes { position: static; width: auto; flex: none; background: rgba(255, 255, 255, 0.03); }
 
-    .tabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2px; padding: 3px; border-radius: 10px; background: rgba(0, 0, 0, 0.35); flex: none; }
+    .tabs { display: grid; grid-template-columns: repeat(5, 1fr); gap: 2px; padding: 3px; border-radius: 10px; background: rgba(0, 0, 0, 0.35); flex: none; }
     .tab { padding: 6px 8px; border-radius: 7px; color: var(--muted); font-weight: 560; }
     .tab:hover { color: var(--fg); }
     .tab[aria-selected="true"] { background: rgba(255, 255, 255, 0.1); color: var(--fg); }
@@ -235,7 +235,7 @@
 </head>
 <body>
   <header class="top">
-    <a class="back" href="../" aria-label="Back to Tinkering">← <span class="back__text">Tinkering</span></a>
+    <a class="back" href="../" aria-label="Back to Rigs and Jigs">← <span class="back__text">Rigs and Jigs</span></a>
     <span class="brand">Cymascope</span>
     <div class="top__end">
       <button class="hbtn" id="snap" type="button" title="Save a picture (S)">
@@ -293,11 +293,13 @@
         <button class="tab" role="tab" id="tab-dish" aria-controls="panel-dish" aria-selected="false" tabindex="-1">Dish</button>
         <button class="tab" role="tab" id="tab-light" aria-controls="panel-light" aria-selected="false" tabindex="-1">Light</button>
         <button class="tab" role="tab" id="tab-style" aria-controls="panel-style" aria-selected="false" tabindex="-1">Style</button>
+        <button class="tab" role="tab" id="tab-distort" aria-controls="panel-distort" aria-selected="false" tabindex="-1">Distort</button>
       </div>
       <section class="tabpanel" role="tabpanel" id="panel-sound" aria-labelledby="tab-sound"></section>
       <section class="tabpanel" role="tabpanel" id="panel-dish" aria-labelledby="tab-dish" hidden></section>
       <section class="tabpanel" role="tabpanel" id="panel-light" aria-labelledby="tab-light" hidden></section>
       <section class="tabpanel" role="tabpanel" id="panel-style" aria-labelledby="tab-style" hidden></section>
+      <section class="tabpanel" role="tabpanel" id="panel-distort" aria-labelledby="tab-distort" hidden></section>
     </aside>
   </main>
 
@@ -309,6 +311,6 @@
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
   <script src="../notes.js"></script>
-  <script type="module" src="app.js"></script>
+  <script type="module" src="app.js?v=5"></script>
 </body>
 </html>

@@ -44,6 +44,10 @@ uniform float uContrast;
 uniform int uCrop;
 uniform float uRim;
 uniform float uHue;
+uniform vec3 uTouch;    // a fingertip over the dish: x, y in pixels, and strength (0 = none)
+uniform vec4 uPulse[4];  // rings spreading from clicks: x, y, radius and push, all in pixels (push 0 = unused)
+uniform float uPulseW;   // how wide a ring is, in pixels
+uniform vec4 uTouchK;   // its reach in pixels, the ripple's phase, how much of it is ripple (0 = plain lens), ring count
 out vec4 o;
 
 const float PI = 3.14159265;
@@ -98,7 +102,22 @@ float shade(int mode, vec2 s, float h, float lap, float k) {
 }
 
 void main() {
-  vec2 fc = gl_FragCoord.xy - uCenter;
+  vec2 fc = gl_FragCoord.xy;
+  for (int i = 0; i < 4; i++) {
+    if (uPulse[i].w == 0.0) continue;
+    // a ring of displacement travelling outward: the picture is pushed out, then drawn back, as it passes
+    vec2 d = gl_FragCoord.xy - uPulse[i].xy;
+    float r = length(d);
+    float q = (r - uPulse[i].z) / uPulseW;
+    fc -= d / max(r, 1.0) * uPulse[i].w * exp(-q * q) * cos(q * 2.2);
+  }
+  if (uTouch.z != 0.0) {
+    // the picture bends under the fingertip like a lens, with a ripple spreading from it
+    vec2 d = gl_FragCoord.xy - uTouch.xy;
+    float r = length(d) / uTouchK.x;
+    fc -= d * uTouch.z * exp(-r * r * 1.6) * (1.0 - uTouchK.z + uTouchK.z * cos(r * uTouchK.w - uTouchK.y));
+  }
+  fc -= uCenter;
   float uScreen = length(fc) / uRadius;
   vec2 p = fc / (uRadius * uZoom);
   float cr = cos(uRot), sr = sin(uRot);
@@ -239,6 +258,8 @@ function compile(gl, type, src) {
   if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s));
   return s;
 }
+
+const NO_PULSES = new Float32Array(16);
 
 function program(gl, vs, fs) {
   const p = gl.createProgram();
@@ -393,6 +414,11 @@ export class Renderer {
       gl.uniform1i(u.uCrop, v.crop);
       gl.uniform1f(u.uRim, v.rim);
       gl.uniform1f(u.uHue, v.hue);
+      const tc = v.touch || [0, 0, 0, 1, 0, 0, 0];
+      gl.uniform3f(u.uTouch, tc[0], tc[1], tc[2]);
+      gl.uniform4f(u.uTouchK, Math.max(1, tc[3]), tc[4], tc[5], tc[6]);
+      gl.uniform4fv(u.uPulse, v.pulses || NO_PULSES);
+      gl.uniform1f(u.uPulseW, Math.max(1, v.pulseW || 1));
     });
     const { img, bA, bB } = this;
     this.pass(this.down, bA, (u) => {

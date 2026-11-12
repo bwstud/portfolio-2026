@@ -11,7 +11,7 @@
   <style>
     /* The front page. Sand on a vibrating plate fills the page, the pattern drifts from one figure to
        the next, and the sentence arrives over it. Recent Work opens the site (work.html).
-       Prototypes of this and other covers live in lab/hook/ (not deployed). */
+       The Covers menu, bottom right, switches to the other covers in cover/. */
     html, body { height: 100%; margin: 0; overflow: hidden; background: var(--c-night); }
     #plate { position: fixed; inset: 0; width: 100%; height: 100%; display: block; cursor: crosshair; touch-action: none; }   /* a tap is a tap, never the start of a scroll */
     .hook { position: fixed; inset: 0; display: grid; align-content: center; justify-items: center; text-align: center;
@@ -156,6 +156,7 @@
     hz.spinTiming = { duration: 360, easing: 'cubic-bezier(0.23, 1, 0.32, 1)' };
     hz.opacityTiming = { duration: 200, easing: 'ease-out' };
   </script>
+  <script src="cover/covers.js"></script>
   <script src="cover/boom.js"></script>
   <script>
   (() => {
@@ -270,9 +271,9 @@
     const pulses = [];
     addEventListener('pointermove', (e) => { if (e.pointerType === 'mouse') { mouse.x = e.clientX; mouse.y = e.clientY; mouse.on = true; } });
     document.documentElement.addEventListener('pointerleave', () => { mouse.on = false; });
-    window.boomOn?.(window, (e) => !e.target.closest?.('a, button, .dock'));   // the same presses that send a pulse
+    window.boomOn?.(window, (e) => !e.target.closest?.('a, button, .covers, .dock'));   // the same presses that send a pulse
     addEventListener('pointerdown', (e) => {
-      if (e.target.closest('a, button, .dock')) return;
+      if (e.target.closest('a, button, .covers, .dock')) return;
       pulses.push({ x: e.clientX, y: e.clientY, t: performance.now() });
       if (pulses.length > 4) pulses.shift();
     });

@@ -4,6 +4,7 @@
 (() => {
   const COVERS = [
     { file: 'chladni.html', name: 'Chladni sand' },
+    { file: 'cymascope.html', name: 'Cymascope' },
   ];
 
   const here = location.pathname.split('/').pop() || COVERS[0].file;

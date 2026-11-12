@@ -1,5 +1,5 @@
 import { Dish, FLUIDS, WAVEFORMS, TAU, MAX_X, noteOf } from './physics.js';
-import { Renderer, MAX_MODES } from './render.js';
+import { Renderer, MAX_MODES } from './render.js?v=5';
 
 const $ = (id) => document.getElementById(id);
 
@@ -374,6 +374,25 @@ function renderStyle() {
     hint('Mirror folds repeat one wedge of the dish round the circle, like a kaleidoscope.')));
   frameSliders = [zoomS, rotS];
 }
+function renderDistort() {
+  const panel = $('panel-distort');
+  panel.replaceChildren();
+  panel.append(group('Cursor', null,
+    slider({ label: 'Strength', min: 0, max: 1, get: () => TC.strength, set: (v) => { TC.strength = v; }, fmt: (v) => (v === 0 ? 'Off' : fmtPct(v)) }),
+    slider({ label: 'Reach', min: 0.05, max: 0.7, get: () => TC.size, set: (v) => { TC.size = v; }, fmt: fmtPct }),
+    slider({ label: 'Trail', min: 0, max: 0.97, get: () => 1 - TC.follow, set: (v) => { TC.follow = 1 - v; }, fmt: fmtPct }),
+    hint('Move the pointer over the picture. It bends like a lens under a fingertip. Reach is a share of the picture’s shorter side; Trail is how far the bend lags behind the pointer.')));
+  panel.append(group('Ripple', null,
+    slider({ label: 'Amount', min: 0, max: 1, get: () => TC.ripple, set: (v) => { TC.ripple = v; }, fmt: (v) => (v === 0 ? 'Plain lens' : fmtPct(v)) }),
+    slider({ label: 'Rings', min: 1, max: 20, step: 0.5, get: () => TC.waves, set: (v) => { TC.waves = v; }, fmt: (v) => trim(v / TAU * 1.6) }),
+    slider({ label: 'Speed', min: -10, max: 10, step: 0.1, get: () => TC.speed, set: (v) => { TC.speed = v; }, fmt: (v) => (v === 0 ? 'Still' : `${trim(Math.abs(v) / TAU)} Hz ${v > 0 ? 'outward' : 'inward'}`) }),
+    hint('Rings run out from the pointer across its reach. A negative speed draws them inward.')));
+  panel.append(group('Click', null,
+    slider({ label: 'Strength', min: 0, max: 1.5, get: () => TC.click, set: (v) => { TC.click = v; }, fmt: (v) => (v === 0 ? 'Off' : fmtPct(v)) }),
+    slider({ label: 'Speed', min: 0.2, max: 3, get: () => TC.clickSpeed, set: (v) => { TC.clickSpeed = v; }, fmt: fmtX }),
+    slider({ label: 'Ring width', min: 0.02, max: 0.3, get: () => TC.clickWidth, set: (v) => { TC.clickWidth = v; }, fmt: fmtPct }),
+    hint('Click the picture and a ring spreads from that spot, bending the picture as it passes and fading as it goes.')));
+}
 let frameSliders = [];
 const wrapDeg = (d) => ((((d + 180) % 360) + 360) % 360) - 180;
 
@@ -382,6 +401,7 @@ function renderAll() {
   renderDish();
   renderLight();
   renderStyle();
+  renderDistort();
   strobeSlider?.sync();
 }
 
@@ -410,6 +430,30 @@ function paletteChanged() {
 /* ---------- the surface ---------- */
 
 const dish = new Dish();
+// Cursor distortion: the picture bends under the pointer like a lens, with ripples running out from it.
+// TC is what the Distort tab tunes; it is kept apart from the presets, so choosing one doesn't reset it.
+const TC = { strength: 0, size: 0.24, ripple: 0.45, waves: 7, speed: 3.2, follow: 0.16, click: 0, clickSpeed: 0.9, clickWidth: 0.09 };
+// Where the fingertip is. tx, ty: where the pointer is (CSS pixels from the canvas's top left);
+// x, y trail behind it; s eases between 0 and 1 as the pointer arrives and leaves. A page that
+// frames this one (the cover prototype in lab/hook) sets tx, ty and on itself.
+const touch = { x: 0, y: 0, tx: 0, ty: 0, s: 0, on: false, phase: 0 };
+const stillPlease = matchMedia('(prefers-reduced-motion: reduce)');
+// A click sends a ring outward from where it landed, bending the picture as it passes. Up to four at once.
+const pulses = [];
+const pulseData = new Float32Array(16);
+function pulseAt(x, y) {
+  if (TC.click <= 0 || stillPlease.matches) return;
+  pulses.push({ x, y, age: 0 });
+  if (pulses.length > 4) pulses.shift();
+}
+function updateTouch(dt) {
+  const f = dt * 60;
+  const k = 1 - Math.pow(1 - clamp(TC.follow, 0.01, 1), f);
+  touch.x += (touch.tx - touch.x) * k; touch.y += (touch.ty - touch.y) * k;
+  touch.s += ((touch.on && !stillPlease.matches ? 1 : 0) - touch.s) * (1 - Math.pow(0.93, f));
+  touch.phase = (touch.phase + TC.speed * dt) % TAU;
+  for (const p of pulses) p.age += dt;
+}
 let renderer;
 
 let T = 0;                      // seconds of playback, for the sweep and the spin
@@ -536,6 +580,14 @@ function draw() {
   const xref = info.length ? Math.max(4, info[0].x0) : 20;
   const radius = ST.shape === 'dish' ? Math.min(w, h) * 0.46 : Math.max(w, h) * 0.5;
   seed = (seed + 17.31) % 1000;
+  const short = Math.min(w, h), far = Math.hypot(w, h);
+  const sx = w / Math.max(1, $('view').clientWidth), sy = h / Math.max(1, $('view').clientHeight);
+  while (pulses.length && pulses[0].age * TC.clickSpeed * short > far) pulses.shift();
+  pulseData.fill(0);
+  pulses.forEach((p, i) => {
+    const r = p.age * TC.clickSpeed * short;
+    pulseData.set([p.x * sx, h - p.y * sy, r, TC.click * 0.07 * short * Math.pow(Math.max(0, 1 - r / far), 1.2)], i * 4);   // fades as it spreads
+  });
   renderer.draw(modeCoefs(), {
     center: [w / 2, h / 2], radius, zoom: ST.zoom, rot: (ST.rotation * Math.PI) / 180, fold: ST.fold,
     slope: (P.drive * 0.75) / xref * 3, lapScale: 1 / (xref * xref) * 3 * P.drive, nonlin: P.nonlin * 0.8,
@@ -544,6 +596,9 @@ function draw() {
     colorBy: { light: 0, direction: 1, height: 2 }[ST.colorBy], exposure: ST.exposure, contrast: ST.contrast,
     crop: ST.shape === 'dish' ? 1 : 0, rim: ST.rim, hue: ST.hue,
     glow: ST.glow, grain: ST.grain, vignette: ST.vignette, seed, invert: ST.invert,
+    touch: [touch.x * (w / Math.max(1, $('view').clientWidth)), h - touch.y * (h / Math.max(1, $('view').clientHeight)),
+      TC.strength * 0.85 * touch.s, TC.size * Math.min(w, h), touch.phase, TC.ripple, TC.waves],
+    pulses: pulseData, pulseW: TC.clickWidth * short,
   });
 }
 
@@ -745,6 +800,8 @@ function wireView() {
     return Math.atan2(-(e.clientY - r.top - r.height / 2), e.clientX - r.left - r.width / 2);
   };
   c.addEventListener('pointerdown', (e) => {
+    const box = c.getBoundingClientRect();
+    pulseAt(e.clientX - box.left, e.clientY - box.top);
     drag = { a: angleAt(e), rot: ST.rotation };
     c.setPointerCapture(e.pointerId);
     c.classList.add('is-dragging');
@@ -758,6 +815,16 @@ function wireView() {
   const end = () => { drag = null; c.classList.remove('is-dragging'); };
   c.addEventListener('pointerup', end);
   c.addEventListener('pointercancel', end);
+  // the fingertip for the Distort tab follows the pointer over the picture
+  const feel = (e) => {
+    if (e.pointerType !== 'mouse') return;
+    const r = c.getBoundingClientRect();
+    touch.tx = e.clientX - r.left; touch.ty = e.clientY - r.top;
+    if (!touch.on) { touch.x = touch.tx; touch.y = touch.ty; }
+    touch.on = true;
+  };
+  c.addEventListener('pointermove', feel);
+  c.addEventListener('pointerleave', () => { touch.on = false; });
   c.addEventListener('wheel', (e) => {
     e.preventDefault();
     ST.zoom = clamp(ST.zoom * Math.exp(-e.deltaY * 0.0015), 0.5, 6);
@@ -858,6 +925,7 @@ function frame(now) {
   const dtReal = last ? Math.min(0.1, (now - last) / 1000) : 0;
   last = now;
   listen();
+  updateTouch(dtReal);
   if (playing) tick(reverse ? -dtReal : dtReal);
   else updateModes(dtReal);
   draw();
@@ -897,6 +965,7 @@ requestAnimationFrame(frame);
 
 // for scripted checks
 window.__cyma = {
-  P, L, ST, active, get dominant() { return dominant; }, get info() { return info; },
+  P, L, ST, TC, touch, pulseAt, active, get dominant() { return dominant; }, get info() { return info; },
   applyPreset: (i) => applyPreset(PRESETS[i]), presets: PRESETS.map((p) => p.name), changed,
+  apply: (state) => { if (state.TC) Object.assign(TC, state.TC); applyPreset({ P: {}, L: {}, ST: {}, ...state }); },   // load a whole look (used by the cover prototype in lab/hook)
 };

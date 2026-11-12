@@ -1,0 +1,348 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cover: Cymascope (prototype)</title>
+  <meta name="robots" content="noindex">
+  <meta name="color-scheme" content="dark">
+  <link rel="stylesheet" href="../../styles.css">
+  <style>
+    /* PROTOTYPE cover. The Cymascope from Rigs and Jigs fills the page and slowly breathes; the
+       sentence and Recent Work sit on a pane of blurred glass. "Tune" opens the Cymascope's own
+       control panel so the look can be dialled in; the result is remembered in this browser. */
+    html, body { height: 100%; margin: 0; overflow: hidden; background: var(--c-night); touch-action: none; }   /* a tap is a tap, never the start of a scroll */
+    .tunes__list { touch-action: pan-y; }
+    #scope { position: fixed; inset: 0; width: 100%; height: 100%; border: 0; display: block; pointer-events: none; }
+    .is-tuning #scope { pointer-events: auto; }
+
+    .hook { position: fixed; inset: 0; display: grid; place-items: center; padding: 0 max(16px, 4vw); pointer-events: none; }
+    .glass { display: flex; flex-direction: column; align-items: center; text-align: center; pointer-events: auto;
+      max-width: min(1320px, 100%); padding: clamp(28px, 4vw, 56px) clamp(20px, 4.4vw, 64px) clamp(28px, 3.4vw, 48px); border-radius: 28px;
+      background: linear-gradient(180deg, rgba(10, 16, 24, 0.42), rgba(4, 8, 14, 0.5)); border: 1px solid rgba(255, 255, 255, 0.12);
+      box-shadow: 0 1px 0 rgba(255, 255, 255, 0.12) inset, 0 30px 80px rgba(0, 0, 0, 0.35);
+      -webkit-backdrop-filter: blur(22px) saturate(1.25); backdrop-filter: blur(22px) saturate(1.25);
+      opacity: 0; transform: translateY(10px) scale(0.985);
+      transition: opacity 700ms ease, transform 900ms cubic-bezier(0.23, 1, 0.32, 1), scale 400ms cubic-bezier(0.23, 1, 0.32, 1), translate 400ms cubic-bezier(0.23, 1, 0.32, 1); }
+    .is-in .glass { opacity: 1; transform: none; }
+    .hook__text { margin: 0; text-wrap: balance; font: 600 clamp(28px, 4.7vw, 68px)/1.08 var(--font-display); letter-spacing: -.01em; color: var(--c-mist); }
+    .hook__name { display: block; margin-bottom: 16px; font-size: clamp(20px, 2.9vw, 42px); line-height: 1.1; letter-spacing: -.005em; color: var(--c-ochre); }
+    .word { display: inline-block; opacity: 0; transform: translateY(.18em); filter: blur(6px); }
+    .is-in .word { animation: word 520ms cubic-bezier(0.23, 1, 0.32, 1) forwards; animation-delay: calc(var(--i) * 70ms + 350ms); }
+    @keyframes word { to { opacity: 1; transform: none; filter: none; } }
+    .hook__cta { margin-top: 36px; display: inline-flex; align-items: center; gap: .6em;
+      font: 400 14px/1 var(--font-mono); letter-spacing: .06em; text-transform: uppercase; text-decoration: none;
+      color: var(--c-mist); border: 1px solid var(--c-mist); border-radius: 999px; padding: 15px 22px;
+      opacity: 0; transform: translateY(8px); transition: opacity 600ms ease, transform 600ms cubic-bezier(0.23, 1, 0.32, 1), background 150ms, color 150ms; }
+    .is-done .hook__cta { opacity: 1; transform: none; }
+    .hook__cta:hover, .hook__cta:focus-visible { background: var(--c-mist); color: var(--c-night); }
+
+    /* the tuning bar, bottom left */
+    .tune { position: fixed; left: 20px; bottom: 20px; z-index: 100; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; max-width: calc(100vw - 180px);
+      font: 400 12px/1 var(--font-mono); letter-spacing: .06em; text-transform: uppercase; color: #DAE4E3; }
+    .tune button, .tune label { display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 999px; font: inherit; letter-spacing: inherit; text-transform: inherit; color: inherit;
+      background: rgba(4, 10, 19, .82); border: 1px solid rgba(218, 228, 227, .35); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+    .tune button { cursor: pointer; transition: border-color 150ms, background 150ms, scale 120ms ease-out; }
+    .tune button:hover { border-color: #DAE4E3; }
+    .tune button:active { scale: 0.97; }
+    .tune button[aria-pressed="true"] { background: #DAE4E3; color: #040A13; border-color: #DAE4E3; }
+    .tune :focus-visible { outline: 2px solid #DFC06C; outline-offset: 2px; }
+    .tune__more { display: none; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .is-tuning .tune__more { display: flex; }
+    .tune input[type="range"] { width: 90px; accent-color: #DFC06C; }
+    .tune button:disabled { opacity: .55; cursor: default; border-color: rgba(218, 228, 227, .35); }
+    /* saved tunes: a small sheet above the bar */
+    .tunes { position: absolute; left: 0; bottom: calc(100% + 8px); width: 340px; max-width: calc(100vw - 40px); padding: 10px; border-radius: 14px; text-transform: none; letter-spacing: 0;
+      background: rgba(4, 10, 19, .9); border: 1px solid rgba(218, 228, 227, .35); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); box-shadow: 0 24px 60px rgba(0, 0, 0, .5); }
+    .tunes[hidden] { display: none; }
+    .tunes__save { display: flex; gap: 8px; }
+    .tunes__save input { flex: 1; min-width: 0; height: 40px; padding: 0 14px; border-radius: 999px; font: 400 14px/1 var(--font-sans); color: #DAE4E3;
+      background: rgba(218, 228, 227, .08); border: 1px solid rgba(218, 228, 227, .25); }
+    .tunes__save input::placeholder { color: rgba(218, 228, 227, .5); }
+    .tunes__save button { flex: none; text-transform: uppercase; letter-spacing: .06em; }
+    .tunes__list { list-style: none; margin: 8px 0 0; padding: 0; max-height: 40vh; overflow-y: auto; }
+    .tunes__list:empty::after { content: "No saved tunes yet."; display: block; padding: 10px 6px 4px; font: 400 13px/1.4 var(--font-sans); color: rgba(218, 228, 227, .6); }
+    .tunes__row { display: flex; align-items: center; gap: 4px; }
+    .tune .tunes__row button { height: 40px; border-radius: 8px; border-color: transparent; background: none; -webkit-backdrop-filter: none; backdrop-filter: none; }
+    .tune .tunes__row button:hover { background: rgba(218, 228, 227, .1); border-color: transparent; }
+    .tune .tunes__load { flex: 1; min-width: 0; justify-content: flex-start; padding: 0 10px; font: 400 14px/1 var(--font-sans); text-transform: none; letter-spacing: 0; }
+    .tunes__load span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .tunes__load::before { content: ""; flex: none; width: 6px; height: 6px; border-radius: 50%; }
+    .tunes__row.is-active .tunes__load { color: #DFC06C; }
+    .tunes__row.is-active .tunes__load::before { background: currentColor; }
+    .tunes__tag { flex: none; margin-left: auto; font: 400 10px/1 var(--font-mono); letter-spacing: .06em; text-transform: uppercase; opacity: .8; }
+    .tune .tunes__del { flex: none; width: 40px; padding: 0; justify-content: center; font-size: 16px; color: rgba(218, 228, 227, .6); }
+    .tune .tunes__del:hover { color: #DAE4E3; }
+    .tune output { min-width: 3.2em; text-align: right; font-variant-numeric: tabular-nums; color: #DFC06C; }
+    @media (prefers-reduced-motion: reduce) {
+      .glass, .hook__cta { opacity: 1; transform: none; transition: none; }
+      .word { opacity: 1; transform: none; filter: none; animation: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <iframe id="scope" src="../../tinkering/cymascope/index.html" title="Cymascope" tabindex="-1"></iframe>
+
+  <main class="hook">
+    <div class="glass">
+      <h1 class="hook__text"><span class="hook__name">I’m Brian.</span> I design human-in-the-loop agentic systems for high-stakes, regulated industries.</h1>
+      <a class="hook__cta" href="../../work.html">Recent Work <span aria-hidden="true">→</span></a>
+    </div>
+  </main>
+
+  <div class="tune" role="group" aria-label="Tune the visualization">
+    <button id="tune" type="button" aria-pressed="false" title="Open the Cymascope's control panel">Tune</button>
+    <div class="tune__more">
+      <label>Pulse <input id="depth" type="range" min="0" max="0.8" step="0.01" aria-label="Pulse depth"><output id="depth-out"></output></label>
+      <label>Every <input id="period" type="range" min="2" max="30" step="0.5" aria-label="Pulse period"><output id="period-out"></output></label>
+      <label>Opacity <input id="opacity" type="range" min="0.05" max="1" step="0.01" aria-label="Opacity of the visualization"><output id="opacity-out"></output></label>
+      <button id="tunes-btn" type="button" aria-expanded="false" aria-controls="tunes" title="Save this tune, or load one you saved">Save / load tunes</button>
+      <button id="activate" type="button" title="Make the current tune the one this page opens with">Set as active</button>
+      <button id="copy" type="button" title="Copy the current tune as text, to paste to Claude">Copy settings</button>
+      <button id="reset" type="button" title="Go back to the tune this page opens with">Revert</button>
+    </div>
+    <div class="tunes" id="tunes" hidden>
+      <form class="tunes__save" id="tunes-form">
+        <input id="tune-name" type="text" placeholder="Name this tune" aria-label="Name for this tune" maxlength="40" autocomplete="off">
+        <button type="submit">Save tune</button>
+      </form>
+      <ul class="tunes__list" id="tunes-list"></ul>
+    </div>
+  </div>
+
+  <script src="covers.js"></script>
+  <script src="../../cover/boom.js"></script>
+  <script>
+  (() => {
+    const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const $ = (id) => document.getElementById(id);
+    const q = new URLSearchParams(location.search);
+
+    // ---- the sentence, word by word ----------------------------------------------------------
+    const hook = document.querySelector('.hook');
+    let wi = 0;
+    const split = (node) => {
+      [...node.childNodes].forEach((c) => {
+        if (c.nodeType === 3) {
+          const frag = document.createDocumentFragment();
+          c.textContent.split(/(\s+)/).forEach((t) => {
+            if (!t) return;
+            if (/^\s+$/.test(t)) { frag.append(' '); return; }
+            const s = document.createElement('span');
+            s.className = 'word'; s.style.setProperty('--i', wi++); s.textContent = t;
+            frag.append(s);
+          });
+          c.replaceWith(frag);
+        } else if (c.nodeType === 1) { split(c); if (c.classList.contains('hook__name')) wi += 5; }
+      });
+    };
+    split(document.querySelector('.hook__text'));
+    const TEXT_AT = reduced || q.has('still') ? 0 : 1200;
+    setTimeout(() => hook.classList.add('is-in'), TEXT_AT);
+    setTimeout(() => hook.classList.add('is-done'), TEXT_AT + wi * 70 + 850);
+    if (q.has('still')) document.querySelectorAll('.word, .glass, .hook__cta').forEach((w) => { w.style.animationDuration = '1ms'; w.style.animationDelay = '0s'; w.style.transition = 'none'; });
+
+    // ---- the Cymascope, dressed as a background ------------------------------------------------
+    // It runs in a frame, untouched; this page hides its chrome, and in tuning mode floats its
+    // control panel over the picture.
+    // A "tune" is a whole look: the Cymascope's settings plus this page's pulse.
+    const DEFAULT = { P: {}, L: {}, ST: { shape: 'fill' }, pulse: { depth: 0.3, period: 9 }, opacity: 1, TC: { strength: 0.5, click: 0.6 } };   // TC: the Distort tab   // Style > Shape > Fill the frame
+    const pulse = { depth: 0.3, period: 9 };                             // how far and how slowly the waves swell
+    let opacity = 1;                                                     // how strongly the picture shows against the page colour
+    const frameEl = $('scope');
+    let cy = null, base = 0, wrote = NaN;
+
+    // Saved in this browser: the tune the page opens with, and any named tunes.
+    const KEY = 'cover-cymascope-v2';
+    const store = { active: null, tunes: [] };
+    try {
+      Object.assign(store, JSON.parse(localStorage.getItem(KEY)) || {});
+      const old = JSON.parse(localStorage.getItem('cover-cymascope-v1'));        // the first version saved one look, automatically
+      if (!store.active && old) store.active = old;
+      // An earlier version of this page could save a look with the drive at zero (a flat, empty dish)
+      // while it wasn't connected to the Cymascope. Drop that value so the normal drive is used.
+      [store.active, ...store.tunes.map((t) => t.look)].forEach((look) => { if (look?.P && !(look.P.drive > 0)) delete look.P.drive; });
+    } catch {}
+    const persist = () => { try { localStorage.setItem(KEY, JSON.stringify(store)); } catch {} };
+
+    const current = () => ({
+      P: { ...cy.P, drive: base, tones: cy.P.tones.map((t) => ({ ...t })), sweep: { ...cy.P.sweep } },
+      L: { ...cy.L }, ST: { ...cy.ST, custom: [...cy.ST.custom] }, pulse: { ...pulse }, opacity, TC: { ...cy.TC },
+    });
+    const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+    function applyLook(look) {
+      const TC = look.TC || { strength: look.distort >= 0 ? look.distort : DEFAULT.TC.strength };   // older tunes kept one distort number
+      if (TC.click === undefined) TC.click = DEFAULT.TC.click;          // tunes saved before clicks made ripples
+      if (cy.apply) cy.apply({ P: look.P, L: look.L, ST: look.ST, TC });
+      else {                                                             // an older, cached copy of the Cymascope: set what we can directly
+        Object.assign(cy.P, look.P); Object.assign(cy.L, look.L); Object.assign(cy.ST, look.ST); cy.changed();
+      }
+      Object.assign(pulse, DEFAULT.pulse, look.pulse);
+      opacity = look.opacity > 0 ? look.opacity : 1;
+      base = cy.P.drive; wrote = NaN;
+      syncBar();
+    }
+    function syncBar() {
+      $('depth').value = pulse.depth; $('depth-out').textContent = Math.round(pulse.depth * 100) + '%';
+      $('period').value = pulse.period; $('period-out').textContent = pulse.period + ' s';
+      $('opacity').value = opacity; $('opacity-out').textContent = Math.round(opacity * 100) + '%';
+      const view = frameEl.contentDocument?.getElementById('view');      // fade the picture itself, not the control panel beside it
+      if (view) view.style.opacity = opacity;
+    }
+
+    frameEl.addEventListener('load', () => {
+      const doc = frameEl.contentDocument, win = frameEl.contentWindow;
+      const css = doc.createElement('style');
+      css.textContent = `
+        html, body { background: #040A13 !important; }
+        .top, .readout, .transport, .exitfull, .toast, .rack .notes, .rack { display: none !important; }
+        .app { display: block !important; }
+        .viewer { padding: 0 !important; }
+        #view { cursor: default !important; }
+        .stage { background: #040A13 !important; position: fixed !important; inset: 0 !important; height: auto !important; border-radius: 0 !important; z-index: 0; }
+        body.cover-tuning .rack { display: flex !important; position: fixed; z-index: 10; top: 16px; right: 16px; bottom: 76px; width: min(340px, calc(100vw - 32px));
+          border: 1px solid rgba(255, 255, 255, 0.14); border-radius: 16px; background: rgba(8, 11, 16, 0.74) !important;
+          -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px); box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5); }
+        /* playback and the strobe (how fast the surface rises and falls) float bottom left, above the cover's own bar */
+        body.cover-tuning .transport { display: flex !important; position: fixed; z-index: 10; left: 20px; bottom: 124px; width: min(620px, calc(100vw - 420px)); min-width: 300px;
+          margin: 0; border: 1px solid rgba(255, 255, 255, 0.14); border-radius: 14px; background: rgba(8, 11, 16, 0.74) !important;
+          -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px); box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5); }
+        body.cover-tuning #hear { display: none !important; }
+      `;
+      doc.head.append(css);
+      // On the cover the picture can't be turned by dragging it (Rotation in the Style tab still works).
+      // Catching the press on the way down keeps it from ever reaching the Cymascope's own drag handler.
+      window.boomOn?.(doc.getElementById('stage'), (e) => e.target.id === 'view', true);
+      doc.getElementById('stage').addEventListener('pointerdown', (e) => {
+        if (e.target.id !== 'view') return;
+        e.stopPropagation();
+        cy?.pulseAt?.(e.clientX, e.clientY);                             // a click still sends a ring out
+      }, true);
+      const ready = () => {
+        cy = win.__cyma;
+        if (!cy) { setTimeout(ready, 50); return; }
+        applyLook(store.active || DEFAULT);
+        if (reduced) doc.getElementById('play')?.click();                // hold the picture still
+        if (q.has('tune')) setTuning(true);
+        if (q.has('tunes')) openTunes(true);
+        if (q.has('ptr') && cy.touch) { const [x, y] = q.get('ptr').split(',').map(Number); Object.assign(cy.touch, { x, y, tx: x, ty: y, s: 1, on: true }); }   // for screenshots
+        if (q.has('tab')) doc.getElementById('tab-' + q.get('tab'))?.click();
+        if (q.has('click')) { const [x, y, age] = q.get('click').split(',').map(Number); setTimeout(() => cy.pulseAt(x, y), Math.max(0, 2500 - age * 1000)); }   // for screenshots
+        requestAnimationFrame(tick);
+      };
+      ready();
+    });
+
+    // The cursor: the Cymascope bends the picture under a fingertip (its Distort tab). Outside tuning
+    // mode the pointer never reaches the frame, so this page passes the position in.
+    const onMove = (e) => {
+      const t = cy?.touch;
+      if (!t || tuning || e.pointerType !== 'mouse') return;
+      t.tx = e.clientX; t.ty = e.clientY;
+      if (!t.on) { t.x = t.tx; t.y = t.ty; }
+      t.on = true;
+    };
+    addEventListener('pointermove', onMove);
+    // a click anywhere on the page (not on a button or link) sends a ring out from that spot
+    const plain = (e) => !e.target.closest?.('a, button, input, .tune, .covers');
+    addEventListener('pointerdown', (e) => { if (plain(e)) cy?.pulseAt?.(e.clientX, e.clientY); });
+    window.boomOn?.(window, plain);
+    document.documentElement.addEventListener('pointerleave', () => { if (cy?.touch && !tuning) cy.touch.on = false; });
+
+    // Every frame: the slow pulse.
+    let turn = 0, lastT = 0, lastUi = 0;                                  // turn: where the pulse is in its cycle, 0 to 1
+    function tick(now) {
+      requestAnimationFrame(tick);
+      if (!cy) return;
+      // slow breathing: the drive swells and settles. If the Drive slider is moved, that becomes the new centre.
+      turn = (turn + Math.min(0.1, (now - (lastT || now)) / 1000) / pulse.period) % 1; lastT = now;   // changing the period never makes it jump
+      if (cy.P.drive !== wrote) base = cy.P.drive;
+      wrote = reduced ? base : base * (1 + pulse.depth * Math.sin(turn * Math.PI * 2));
+      cy.P.drive = wrote;
+      if (tuning && now - lastUi > 400) { lastUi = now; syncActive(); }
+    }
+
+    // ---- tuning ----------------------------------------------------------------------------------
+    let tuning = false;
+    // while the panel is open the glass pane shrinks and slides left, so the two don't overlap
+    const glass = document.querySelector('.glass'), PANEL = 372;
+    function place() {
+      const room = innerWidth - PANEL - 32, w = glass.offsetWidth;
+      const on = tuning && innerWidth > 700;
+      glass.style.scale = on ? Math.min(1, room / w) : '';
+      glass.style.translate = on ? `${-PANEL / 2}px 0` : '';
+    }
+    addEventListener('resize', place);
+    function setTuning(on) {
+      tuning = on;
+      document.body.classList.toggle('is-tuning', on);
+      frameEl.contentDocument.body.classList.toggle('cover-tuning', on);
+      $('tune').setAttribute('aria-pressed', String(on));
+      $('tune').textContent = on ? 'Done' : 'Tune';
+      if (!on) openTunes(false);
+      place();
+    }
+    $('tune').addEventListener('click', () => setTuning(!tuning));
+    $('depth').addEventListener('input', (e) => { pulse.depth = +e.target.value; syncBar(); });
+    $('period').addEventListener('input', (e) => { pulse.period = +e.target.value; syncBar(); });
+    $('opacity').addEventListener('input', (e) => { opacity = +e.target.value; syncBar(); });
+
+    // the tune this page opens with
+    function syncActive() {
+      const is = !!store.active && same(current(), store.active);
+      $('activate').disabled = is;
+      $('activate').textContent = is ? 'Active' : 'Set as active';
+    }
+    $('activate').addEventListener('click', () => { store.active = current(); persist(); syncActive(); renderTunes(); });
+    $('reset').addEventListener('click', () => { applyLook(store.active || DEFAULT); syncActive(); });
+
+    // named tunes
+    function renderTunes() {
+      const list = $('tunes-list');
+      list.textContent = '';
+      store.tunes.forEach((t, i) => {
+        const li = document.createElement('li');
+        li.className = 'tunes__row' + (store.active && same(t.look, store.active) ? ' is-active' : '');
+        const load = document.createElement('button');
+        load.type = 'button'; load.className = 'tunes__load'; load.title = 'Load this tune';
+        const name = document.createElement('span'); name.textContent = t.name; load.append(name);
+        if (li.classList.contains('is-active')) { const tag = document.createElement('span'); tag.className = 'tunes__tag'; tag.textContent = 'Active'; load.append(tag); }
+        load.addEventListener('click', () => { applyLook(t.look); syncActive(); });
+        const del = document.createElement('button');
+        del.type = 'button'; del.className = 'tunes__del'; del.textContent = '×'; del.setAttribute('aria-label', `Delete ${t.name}`); del.title = 'Delete this tune';
+        del.addEventListener('click', () => { store.tunes.splice(i, 1); persist(); renderTunes(); });
+        li.append(load, del);
+        list.append(li);
+      });
+    }
+    function openTunes(on) {
+      $('tunes').hidden = !on;
+      $('tunes-btn').setAttribute('aria-expanded', String(on));
+      if (on) { renderTunes(); $('tune-name').focus(); }
+    }
+    $('tunes-btn').addEventListener('click', () => openTunes($('tunes').hidden));
+    $('tunes-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const name = $('tune-name').value.trim() || `Tune ${store.tunes.length + 1}`;
+      const at = store.tunes.findIndex((t) => t.name === name);         // saving under an existing name replaces it
+      const entry = { name, look: current() };
+      if (at >= 0) store.tunes[at] = entry; else store.tunes.unshift(entry);
+      persist(); $('tune-name').value = ''; renderTunes();
+    });
+    addEventListener('pointerdown', (e) => { if (!$('tunes').hidden && !e.target.closest('#tunes, #tunes-btn')) openTunes(false); });
+
+    $('copy').addEventListener('click', async () => {
+      const text = JSON.stringify(current(), null, 1);
+      try { await navigator.clipboard.writeText(text); $('copy').textContent = 'Copied'; }
+      catch { $('copy').textContent = 'Copy failed'; console.log(text); }
+      setTimeout(() => { $('copy').textContent = 'Copy settings'; }, 1600);
+    });
+    addEventListener('keydown', (e) => {
+      if (e.key !== 'Escape') return;
+      if (!$('tunes').hidden) openTunes(false); else if (tuning) setTuning(false);
+    });
+    syncBar();
+  })();
+  </script>
+</body>
+</html>

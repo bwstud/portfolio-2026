@@ -17,7 +17,8 @@ Thinks in systems, keeps the plates spinning, and cares about the people who rel
 
 ## Links
 
-- [Home](/): the work, as a split-flap board
+- [Front page](/): an interactive Chladni plate, sand drawn into figures by sound
+- [Work](/work.html): the work, as a split-flap board
 - [Lab](/tinkering/): nineteen interactive experiments
 - [Design system](/tinkering/design-system/): tokens and live components for this site
 - [LinkedIn](https://www.linkedin.com/in/bwstudwell)

@@ -11,7 +11,7 @@
     /* THROWAWAY PROTOTYPE of the front-page hook. Sand on a vibrating plate fills the page,
        the pattern drifts from one figure to the next, and the sentence arrives over it. */
     html, body { height: 100%; margin: 0; overflow: hidden; background: var(--c-night); }
-    #plate { position: fixed; inset: 0; width: 100%; height: 100%; display: block; cursor: crosshair; }
+    #plate { position: fixed; inset: 0; width: 100%; height: 100%; display: block; cursor: crosshair; touch-action: none; }   /* a tap is a tap, never the start of a scroll */
     .hook { position: fixed; inset: 0; display: grid; align-content: center; justify-items: center; text-align: center;
       padding: 0 max(24px, 5vw); pointer-events: none; }
     .hook__text { margin: 0; max-width: 18em; text-wrap: balance; font: 600 68px/1.08 var(--font-display);
@@ -141,7 +141,7 @@
           </div>
         </div>
       </section>
-      <a class="hook__cta" href="../../index.html">Recent Work <span aria-hidden="true">→</span></a>
+      <a class="hook__cta" href="../../work.html">Recent Work <span aria-hidden="true">→</span></a>
     </div>
   </main>
 
@@ -155,6 +155,7 @@
     hz.opacityTiming = { duration: 200, easing: 'ease-out' };
   </script>
   <script src="covers.js"></script>
+  <script src="../../cover/boom.js"></script>
   <script>
   (() => {
     const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -268,6 +269,7 @@
     const pulses = [];
     addEventListener('pointermove', (e) => { if (e.pointerType === 'mouse') { mouse.x = e.clientX; mouse.y = e.clientY; mouse.on = true; } });
     document.documentElement.addEventListener('pointerleave', () => { mouse.on = false; });
+    window.boomOn?.(window, (e) => !e.target.closest?.('a, button, .covers, .dock'));   // the same presses that send a pulse
     addEventListener('pointerdown', (e) => {
       if (e.target.closest('a, button, .covers, .dock')) return;
       pulses.push({ x: e.clientX, y: e.clientY, t: performance.now() });

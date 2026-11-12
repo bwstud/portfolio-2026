@@ -1,6 +1,6 @@
 /* Written by the Split-Flap Lab. The home page runs the version named by "active". */
 window.SPLIT_FLAP_VERSIONS = {
-  "active": "mw8pp8m6",
+  "active": "mwczjakn",
   "versions": [
     {
       "id": "original",
@@ -196,6 +196,62 @@ window.SPLIT_FLAP_VERSIONS = {
         "selectSpeed": 1.5,
         "selectMinFlips": 40,
         "selectMaxFlips": 60,
+        "frame": true,
+        "frameColor": "#0a0f19",
+        "wellColor": "#080d17",
+        "framePad": 17,
+        "frameGap": 10,
+        "tileRatio": 1.61,
+        "grain": 0.08,
+        "grainSize": 0.6,
+        "glyphSize": 0.72,
+        "tileTop": "#10202d",
+        "tileBottom": "#0a161f"
+      },
+      "lab": {
+        "seed": 1
+      }
+    },
+    {
+      "id": "mwczjakn",
+      "name": "Departures Tune 2",
+      "mode": "dark",
+      "savedAt": "2026-11-12T03:25:56.220Z",
+      "config": {
+        "lines": [
+          "GROOM LAKE|1014",
+          "BLACKBIRD|0120",
+          "MAZ BUILDER|1002"
+        ],
+        "chars": " ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890",
+        "flipMs": 100,
+        "startMs": 20,
+        "staggerMs": 150,
+        "minFlips": 35,
+        "maxFlips": 45,
+        "bounceMs": 40,
+        "spinEase": [
+          0.16,
+          1,
+          0.3,
+          1
+        ],
+        "shutterMs": 80,
+        "boardWidth": 1800,
+        "gap": 4,
+        "fillRows": true,
+        "nameCols": 11,
+        "statusCols": 7,
+        "recordFadeMs": 2000,
+        "recordDrop": 32,
+        "recordLeadMs": 1600,
+        "recordBlur": 9,
+        "recordEase": [
+          0.05,
+          0.94,
+          0,
+          1
+        ],
         "frame": true,
         "frameColor": "#0a0f19",
         "wellColor": "#080d17",

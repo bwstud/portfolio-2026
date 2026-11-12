@@ -41,6 +41,18 @@
     nameCols: 0,                // modules in the left column; 0 leaves lines as written
     statusCols: 0,              // modules in the right column
 
+    // Record: the project panel under the board on the home page. It waits above its place,
+    // unseen, and lowers into it as the board lands. The engine doesn't draw it; the page does.
+    recordFadeMs: 700,          // how long the fade and the drop take
+    recordDrop: 24,             // px it starts above its resting place; negative starts below
+    recordLeadMs: 450,          // it starts this long before the board's last flap lands
+    recordBlur: 0,              // px of blur it starts with
+    // Touch: hover(index) lifts a resting module's lower flap; spinCell(..., { flips }) turns it
+    liftDeg: 36,                // how far the lower flap swings up under the cursor
+    liftMs: 160,                // how long it takes to lift and to drop back
+
+    recordEase: [0.23, 1, 0.32, 1],   // how it settles: a named ease or a cubic-bezier array
+
     // Frame: a plate with one recessed window per module
     frame: false,
     frameColor: '#1b1f26',
@@ -169,7 +181,10 @@
   const compose = (lines, cfg) => lines.map(l => {
     if (!(cfg.nameCols > 0) || !l.includes('|')) return l.replaceAll('|', ' ');
     const [name, status = ''] = l.split('|');
-    return name.trim().padEnd(cfg.nameCols) + status.trim().padEnd(cfg.statusCols);
+    // Each column is exactly its width: a name too long is cut at its end, a status at its start
+    // (so "SHIPPED 1014" in four modules is "1014"), and the status ends at the board's right edge.
+    const cut = (text, cols, fromEnd) => cols > 0 ? (fromEnd ? text.slice(-cols) : text.slice(0, cols)) : '';
+    return cut(name.trim(), cfg.nameCols).padEnd(cfg.nameCols) + cut(status.trim(), cfg.statusCols, true).padStart(Math.max(0, cfg.statusCols));
   });
 
   // host gets the board appended to it. Nothing animates by itself: call seek(t) with a clock.
@@ -379,8 +394,15 @@
     function drawModule(m, t) {
       const moving = t > m.start - cfg.shutterMs && t < flapEnd(m, cfg) + cfg.shutterMs;
       if (!moving) {
-        const st = stateAt(m, t), key = st.top + st.bottom;
-        if (m.drawn !== key) { drawState(m.ctx, st); m.drawn = key; }
+        const st = stateAt(m, t), up = liftAt(m, t), key = st.top + st.bottom + (up > 0 ? up.toFixed(3) : '');
+        if (m.drawn === key) return;
+        // a resting module under the cursor: its lower flap swings up, showing the leaf behind it
+        if (up > 0) {
+          const n = m.seq.length - 1, at = cfg.chars.indexOf(st.top), len = cfg.chars.length;
+          const behind = n > 0 ? m.seq[n - 1] : cfg.chars[(at - 1 + len) % len];
+          drawState(m.ctx, { top: st.top, bottom: behind, leaf: { half: 'bottom', ch: st.bottom, deg: cfg.liftDeg * up } });
+        } else drawState(m.ctx, st);
+        m.drawn = key;
         return;
       }
       // running average of samples: sample j is laid over the mean of the ones before it
@@ -395,6 +417,24 @@
         m.ctx.drawImage(scratch, 0, 0);
       }
       m.ctx.globalAlpha = 1;
+    }
+
+    // how far a module's lower flap is lifted at time t, 0 to 1
+    function liftAt(m, t) {
+      const l = m.lift;
+      if (!l) return 0;
+      const u = cfg.liftMs > 0 ? Math.min(Math.max((t - l.t0) / cfg.liftMs, 0), 1) : 1;
+      return l.from + (l.to - l.from) * (1 - (1 - u) ** 3);
+    }
+    // lift one module's lower flap (index as in spinCell) and let every other one drop; null drops all.
+    // Returns the time the motion ends, so the caller knows how long to keep seeking.
+    function hover(index, t) {
+      const on = index === null || index === undefined ? null : mods.at(index);
+      mods.forEach(m => {
+        const to = m === on ? 1 : 0;
+        if ((m.lift ? m.lift.to : 0) !== to) m.lift = { from: liftAt(m, t), to, t0: t };
+      });
+      return t + cfg.liftMs;
     }
 
     function seek(t) { time = t; mods.forEach(m => drawModule(m, t)); }
@@ -415,18 +455,19 @@
       duration = Math.max(...mods.map(m => flapEnd(m, cfg))) + cfg.shutterMs;
     }
 
-    function spinModule(m, target, t0, { speed = 1 } = {}) {
+    // flips: an exact count (the drum's length is one full turn back to the same letter). delay: ms before it starts.
+    function spinModule(m, target, t0, { speed = 1, flips: exact, delay } = {}) {
       const chars = cfg.chars, len = chars.length, random = Math.random;
       const minFlips = Math.min(cfg.minFlips, cfg.maxFlips), maxFlips = Math.max(cfg.minFlips, cfg.maxFlips);
       const to = Math.max(chars.indexOf(target), 0);
       // the first flip lands on a random letter and the spin runs on from there, so neighbours
       // that showed the same thing don't march through the drum together
-      const flips = minFlips + Math.floor(random() * (maxFlips - minFlips + 1));
+      const flips = exact || minFlips + Math.floor(random() * (maxFlips - minFlips + 1));
       const at = i => chars[(i % len + len) % len];
       m.seq = [m.target, ...Array.from({ length: flips }, (_, k) => at(to - flips + 1 + k))];
       m.target = target;
       m.flipMs = cfg.flipMs / speed * (0.8 + random() * 0.4);   // each module keeps its own pace
-      m.start = t0 + (cfg.startMs + random() * cfg.staggerMs) / speed;
+      m.start = t0 + (delay ?? (cfg.startMs + random() * cfg.staggerMs) / speed);
     }
     function redraw() { mods.forEach(m => { m.drawn = null; }); seek(time); }
 
@@ -469,6 +510,9 @@
       seek,
       spinTo,
       spinCell,
+      hover,                          // lift the lower flap of the module under the cursor
+      get chars() { return cfg.chars; },
+      get count() { return mods.length; },
       cell: index => mods.at(index).el,   // a module's element, for placing things over it
       states: t => mods.map(m => stateAt(m, t)),   // what every module shows at time t
       ready,

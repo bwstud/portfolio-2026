@@ -9,6 +9,8 @@
        (first-paint background, scrollbars, form controls) match. The script applies a saved choice. -->
   <meta name="color-scheme" content="dark">
   <script>try { if (localStorage.getItem('theme') === 'light') { document.documentElement.dataset.theme = 'light'; document.querySelector('meta[name="color-scheme"]').content = 'light'; } } catch (e) {}</script>
+  <script src="button-versions.js"></script>
+  <script src="buttons.js"></script>
   <link rel="alternate" type="text/plain" href="llms.txt" title="Plain-text version for agents">
   <link rel="stylesheet" href="styles.css">
   <style>
@@ -19,21 +21,41 @@
     :root { --signal: var(--c-ochre); }                       /* status and Result, nothing else */
     :root[data-theme="light"] { --signal: var(--c-rust); }
 
-    .home { max-width: 76rem; margin: 0 auto; padding: 0 max(var(--space-4), 4vw); }
-    .home a { text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
+    .home, .foot-col { max-width: 76rem; margin: 0 auto; padding: 0 max(var(--space-4), 4vw); }
+    .home { position: relative; z-index: 1; }   /* above the halftone's canvas, which reaches up behind the last project */
+    .home a, .foot-col a { text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
     .mono { font: 400 var(--text-2xs)/1.5 "Söhne Mono", ui-monospace, Menlo, monospace; color: var(--muted); }
 
-    .top { display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-5); padding-block: var(--space-5); flex-wrap: wrap; }
+    /* the name sits over the tagline; the nav buttons above are the site's chips from styles.css */
+    .top { padding-top: var(--space-7); }
     .top h1 { font: 600 var(--text-sm)/1.2 "Söhne Breit", "Helvetica Neue", sans-serif; letter-spacing: .01em; margin: 0; }
-    .top nav { display: flex; gap: var(--space-5); flex-wrap: wrap; align-items: baseline; }
-    .top nav a { text-decoration: none; }
-    .top nav a:hover { color: var(--fg); text-decoration: underline; }
-    .top .theme-toggle { background: none; border: 0; padding: 0; font: inherit; color: inherit; cursor: pointer; }
-    .top .theme-toggle:hover { color: var(--fg); text-decoration: underline; }
-    .theme-toggle .to-dark, :root[data-theme="light"] .theme-toggle .to-light { display: none; }
-    :root[data-theme="light"] .theme-toggle .to-dark { display: inline; }
+    /* Wide screens: the nav is a rail down the left of the page, its buttons stacked and all one
+       width. The column stays centred when there's room beside the rail and moves right when there isn't. */
+    @media (min-width: 1100px) {
+      .nav { position: fixed; inset: 0 auto auto 0; height: auto; flex-direction: column; justify-content: flex-start; align-items: flex-start;
+        gap: var(--chip-gap); padding: var(--rail-top, 152px) 0 0 var(--space-5);   /* first button level with the name */ background: none; backdrop-filter: none; -webkit-backdrop-filter: none; }
+      .nav__start, .nav__links { flex-direction: column; align-items: stretch; align-self: stretch; }
+      .nav .chip { width: 100%; justify-content: flex-start; }
+      /* Controls and the light/dark switch leave the rail for the top right corner, at their own sizes */
+      .nav .dropdown--controls, .nav .theme-toggle.chip { position: fixed; top: var(--space-6); }
+      .nav .theme-toggle.chip { right: var(--space-5); width: var(--chip-h); justify-content: center; }
+      .nav .dropdown--controls { right: calc(var(--space-5) + var(--chip-h) + var(--chip-gap)); }
+      .nav .dropdown--controls .chip { width: auto; }
+      .nav .dropdown__menu { left: auto; right: 0; }
+      .home, .foot-col { margin-left: max(150px, calc((100% - 76rem) / 2)); margin-right: auto; }
+      .top { padding-top: 160px; }   /* the name, tagline and board start well down the page */
+    }
+    /* Phones: the buttons flow as one wrapping run, so the row never runs off the side */
+    @media (max-width: 600px) {
+      .nav { justify-content: flex-start; gap: var(--space-2) 6px; padding-block: var(--space-3); }
+      .nav__start, .nav__links { display: contents; }
+    }
+    /* Between phone and rail the row can't hold every button, so it wraps */
+    @media (min-width: 601px) and (max-width: 1099px) {
+      .nav { height: auto; min-height: var(--nav-h); flex-wrap: wrap; row-gap: var(--space-2); padding-block: var(--space-3); }
+    }
 
-    .lede { max-width: 44rem; margin: 0; padding-block: var(--space-8) var(--space-7); font-size: clamp(22px, 2.4vw, 30px); line-height: 1.3; text-wrap: balance; }
+    .lede { max-width: 44rem; margin: 0; padding-block: var(--space-5) var(--space-7); font-size: clamp(22px, 2.4vw, 30px); line-height: 1.3; text-wrap: balance; }
 
     /* The tagline arrives word by word, in reading order, like a reply being written. The script
        under the tagline wraps each word; without it the sentence is simply there. */
@@ -51,12 +73,12 @@
     /* The board, once split-flap.js has mounted it */
     .board { display: none; }
     .has-board .rows { display: none; }
-    /* The board leaves the text column: as wide as the window allows up to 1800px, always with
-       at least 200px clear on each side. 100vw counts a classic scrollbar, so 32px is held back
-       for it. It stays centred on the window, like the column. */
-    .has-board .board { display: block; --board-w: min(1800px, 100vw - 432px); width: var(--board-w); margin-inline: calc(50% - var(--board-w) / 2); }
-    .home main { overflow-x: visible; }   /* styles.css clips main, which would cut the board off */
-    .board__head { display: grid; grid-template-columns: 16fr 12fr; padding-bottom: var(--space-2); }
+    /* The board spans the content column, edge to edge, whatever its module count. */
+    .has-board .board { display: block; }
+    /* each heading starts at the left edge of the first module of its column; the script measures where */
+    .board__head { position: relative; padding-bottom: var(--space-2); }
+    .board__head span { display: block; margin-left: var(--project-x, 0px); }
+    .board__head span:last-child { position: absolute; top: 0; left: var(--released-x, 75%); margin: 0; }
     .board__stage { position: relative; }
     .board__flap { margin: 0; }
     .board__flap .sf-board { --sf-width: 100%; max-width: none; width: 100%; }
@@ -70,19 +92,23 @@
     .board__flap .sf-row.is-chosen .sf canvas { filter: brightness(1.75); }
     :root[data-theme="light"] .board__flap .sf-row.is-hover .sf canvas { filter: brightness(.97); }
     :root[data-theme="light"] .board__flap .sf-row.is-chosen .sf canvas { filter: brightness(.92); }
+    /* while the board shows something other than the projects, no row is lit */
+    :root:root .board__flap.is-aside .sf-row .sf canvas { filter: none; }
     @media (prefers-reduced-motion: reduce) { .board__flap .sf canvas { transition: none; } }
 
     /* A project's record */
-    .bay { margin-top: var(--space-6); padding: var(--space-7); background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-sm);
+    .bay { margin-top: var(--space-7);
       display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: var(--space-7); scroll-margin-top: var(--space-5); }
     .bay[hidden] { display: none; }
+    .has-board .bay { margin-top: 100px; }   /* clear air under the board; the stacked small-screen records keep the tighter gap */
     /* On load the record waits above its place, unseen, and settles down into it as the board's
        last flaps land. Choosing another project afterwards swaps the record at once. */
-    .is-arriving .bay { opacity: 0; transform: translateY(-24px); }
-    .has-board:not(.is-arriving) .bay { transition: opacity 700ms cubic-bezier(0.23, 1, 0.32, 1), transform 700ms cubic-bezier(0.23, 1, 0.32, 1); }
+    .is-arriving .bay { opacity: 0; transform: translateY(calc(-1 * var(--record-drop, 24px))); filter: blur(var(--record-blur, 0px)); }
+    .has-board:not(.is-arriving) .bay { transition: opacity var(--record-ms, 700ms) var(--record-ease, cubic-bezier(0.23, 1, 0.32, 1)),
+      transform var(--record-ms, 700ms) var(--record-ease, cubic-bezier(0.23, 1, 0.32, 1)), filter var(--record-ms, 700ms) var(--record-ease, cubic-bezier(0.23, 1, 0.32, 1)); }
     @media (prefers-reduced-motion: reduce) { .has-board:not(.is-arriving) .bay { transition: none; } }
     .bay__name { margin: 0 0 var(--space-3); }
-    .bay h2 { font: 600 clamp(24px, 2.6vw, 34px)/1.1 "Söhne Breit", sans-serif; letter-spacing: -.005em; text-wrap: balance; margin: 0; }
+    .bay h2 { font: 600 clamp(28px, 2.95vw, 42px)/1.08 "Söhne Breit", sans-serif; letter-spacing: -.01em; text-wrap: balance; margin: 0; }
     .bay__meta { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-4); margin: var(--space-5) 0 0; padding: 0; list-style: none; }
     .bay__media { display: grid; place-items: center; min-width: 0; margin: 0; }
     .bay__media img { border-radius: var(--radius-sm); max-height: 26rem; width: auto; max-width: 100%; height: auto; }
@@ -96,41 +122,65 @@
     /* a fact still to be supplied: dashed so it can't pass for real copy */
     .slot { border-bottom: 1px dashed currentColor; font-style: italic; color: var(--muted); }
 
-    .foot { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-6); margin-top: var(--space-9); padding-block: var(--space-7) calc(var(--halftone-peak) / 2 + var(--space-5));
-      position: relative; z-index: 1;   /* the tallest dots now reach the footer: its text stays on top of them */ border-top: 1px solid var(--line); }
-    .foot h2 { font: 400 var(--text-2xs)/1.5 "Söhne Mono", monospace; color: var(--muted); margin: 0 0 var(--space-2); }
+    .foot { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-6); }
+    .foot h2 { font: 400 var(--text-2xs)/1.5 "Söhne Mono", monospace; color: var(--c-mist); margin: 0 0 var(--space-2); }
     .foot p, .foot ul { margin: 0; padding: 0; list-style: none; font-size: var(--text-md); line-height: 1.55; }
     .foot li { padding: 2px 0; }
 
-    /* The halftone, kept as the page's bottom edge: the ground dissolves into a strip of Slate.
-       The band classes and colours are the ones in styles.css; halftone.js draws the dots. */
-    .endband { display: block; height: calc(var(--halftone-below) + var(--space-5)); --band-from: var(--ground); --band-to: var(--c-slate); }
-    /* halftone.js draws on a canvas that reaches --halftone-reach above and below the edge. The
-       frame is that much taller than the strip and pulled up over the footer's empty space, so it
-       shows everything above the edge and cuts off what would hang below the end of the page. */
-    .endframe { overflow: clip; pointer-events: none; padding-top: var(--halftone-reach); margin-top: calc(-1 * var(--halftone-reach)); }
+    /* The page ends on a solid field of Slate, and the footer sits on it. The ground dissolves
+       into the field through the halftone at its top edge. The band classes and colours are the
+       ones in styles.css; halftone.js draws the dots. Slate is the same in both themes, so the
+       footer's text is Paper and Mist in both: about 7:1 and 6:1 against it. */
+    .endband { display: block; --band-from: var(--ground); --band-to: var(--c-slate); color: var(--c-paper); pointer-events: auto;
+      padding-block: calc(var(--halftone-below) + 144px) var(--space-8); }   /* stray dots fall well past --halftone-below; the text starts under all of them */
+    .endband a:focus-visible { outline: 2px solid var(--c-paper); outline-offset: 2px; }
+    /* halftone.js draws on a canvas wider than the page that reaches --halftone-reach above the
+       field's edge. The frame clips the canvas to the page's width; it is that much taller than
+       the field and pulled up over the space left under the last project, so the dots above the
+       edge show. Nothing in that overlap takes clicks. */
+    .endframe { overflow: clip; pointer-events: none; padding-top: var(--halftone-reach);
+      margin-top: calc(var(--space-8) + var(--halftone-above) - var(--halftone-reach)); }
 
     @media (max-width: 760px) {
       .lede { padding-block: var(--space-6) var(--space-5); }
-      .bay { grid-template-columns: minmax(0, 1fr); padding: var(--space-5); gap: var(--space-5); }
+      .bay { grid-template-columns: minmax(0, 1fr); gap: var(--space-5); }
       .fields { grid-template-columns: minmax(0, 1fr); gap: var(--space-5); }
-      .foot { grid-template-columns: minmax(0, 1fr); margin-top: var(--space-8); }
+      .foot { grid-template-columns: minmax(0, 1fr); }
     }
   </style>
 </head>
 <body>
-  <div class="home">
-    <header class="top">
-      <h1>Brian Studwell</h1>
-      <nav class="mono" aria-label="Site">
-        <a href="#work">Work</a>
-        <a href="tinkering/">Lab</a>
-        <a href="https://www.linkedin.com/in/bwstudwell" target="_blank" rel="noopener">LinkedIn</a>
-        <a href="llms.txt">For agents</a>
-        <button class="theme-toggle" type="button" aria-label="Light mode" aria-pressed="false"><span class="to-light">Light</span><span class="to-dark">Dark</span></button>
-      </nav>
-    </header>
+  <header class="nav">
+    <div class="nav__start">
+      <a class="chip" href="#top"><svg class="chip__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 18v4"/><path d="m17 18 1.956-11.468"/><path d="m3 8 7.82-5.615a2 2 0 0 1 2.36 0L21 8"/><path d="M4 18h16"/><path d="M7 18 5.044 6.532"/><circle cx="12" cy="10" r="2"/></svg>Home</a>
+    </div>
+    <nav class="nav__links">
+      <a class="chip" href="tinkering/"><svg class="chip__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12.99 6.74 1.93 3.44"/><path d="M19.136 12a10 10 0 0 1-14.271 0"/><path d="m21 21-2.16-3.84"/><path d="m3 21 8.02-14.26"/><circle cx="12" cy="5" r="2"/></svg>Tinkering</a>
+      <a class="chip" href="https://www.linkedin.com/in/bwstudwell" target="_blank" rel="noopener"><svg class="chip__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect width="4" height="12" x="2" y="9"/><circle cx="4" cy="4" r="2"/></svg>LinkedIn</a>
+      <a class="chip" href="#contact"><svg class="chip__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="10" r="3"/><path d="M7 20.662V19a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v1.662"/></svg>Contact</a>
+      <a class="chip" href="llms.txt" download="brian.md" title="Download a Markdown summary to give to your agent">brian.md<svg class="chip__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/></svg></a>
+      <div class="dropdown dropdown--controls">
+        <button class="dropdown__toggle chip" aria-expanded="false" aria-controls="controls-menu" aria-label="Controls">
+          <svg class="chip__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 8h4"/><path d="M12 21v-9"/><path d="M12 8V3"/><path d="M17 16h4"/><path d="M19 12V3"/><path d="M19 21v-5"/><path d="M3 14h4"/><path d="M5 10V3"/><path d="M5 21v-7"/></svg><span class="chip__label">Controls</span>
+        </button>
+        <ul class="dropdown__menu" id="controls-menu">
+          <li><a href="tinkering/design-system/">Design System</a></li>
+          <li><a href="tinkering/split-flap-lab/">Split-Flap Lab</a></li>
+          <li><a href="tinkering/halftone-lab/">Halftone Lab</a></li>
+          <li><a href="tinkering/domino-run/lab/">Domino Lab</a></li>
+          <li><a href="tinkering/kaleidoscopes/lab/">Kaleidoscope Lab</a></li>
+          <li><a href="tinkering/button-lab/">Button Lab</a></li>
+        </ul>
+      </div>
+      <button class="theme-toggle chip" type="button" aria-label="Light mode" aria-pressed="false">
+        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+      </button>
+    </nav>
+  </header>
+  <div class="home" id="top">
 
+    <header class="top"><h1>Brian Studwell</h1></header>
     <p class="lede">I design human-in-the-loop agentic systems for high-stakes, regulated industries.</p>
     <!-- straight after the tagline, so its words are wrapped before the first paint and never flash in whole -->
     <script>
@@ -143,12 +193,12 @@
     <main>
       <section id="work" aria-label="Work">
         <ul class="rows">
-          <li><a href="#groom-lake"><span>Groom Lake</span><span>Shipped</span></a></li>
-          <li><a href="#blackbird"><span>Blackbird</span><span>Shipped</span></a></li>
-          <li><a href="#mazlan-builder"><span>Mazlan Builder</span><span>Shipped</span></a></li>
+          <li><a href="#groom-lake"><span>Groom Lake</span><span>1014</span></a></li>
+          <li><a href="#blackbird"><span>Blackbird</span><span>0120</span></a></li>
+          <li><a href="#mazlan-builder"><span>Mazlan Builder</span><span>1002</span></a></li>
         </ul>
         <div class="board">
-          <div class="board__head mono" aria-hidden="true"><span>Project</span><span>Status</span></div>
+          <div class="board__head mono" aria-hidden="true"><span>Project</span><span>Released</span></div>
           <div class="board__stage">
             <p class="board__flap" id="flap" aria-hidden="true"></p>
             <div class="board__keys" id="keys" role="group" aria-label="Choose a project"></div>
@@ -210,41 +260,47 @@
 
     </main>
 
-    <footer class="foot">
-      <div><h2>About</h2><p>I think in systems, always keep the plates spinning, and care deeply about the people who rely on my work.</p></div>
-      <div><h2>Lab</h2>
-        <ul>
-          <li><a href="tinkering/">Nineteen experiments</a></li>
-          <li><a href="tinkering/split-flap-lab/">Split-Flap Lab, where this board is tuned</a></li>
-          <li><a href="tinkering/design-system/">Design system</a></li>
-          <li><a href="tinkering/halftone-lab/">Halftone Lab</a></li>
-          <li><a href="tinkering/button-lab/">Button Lab</a></li>
-        </ul>
-      </div>
-      <div><h2>Contact</h2>
-        <ul>
-          <li><a href="https://www.linkedin.com/in/bwstudwell" target="_blank" rel="noopener">LinkedIn</a></li>
-          <li><a href="llms.txt">Plain text for agents</a></li>
-        </ul>
+  </div>
+  <div class="endframe">
+    <footer class="project--band endband">
+      <div class="foot-col">
+        <div class="foot">
+          <div><h2>About</h2><p>I think in systems, always keep the plates spinning, and care deeply about the people who rely on my work.</p></div>
+          <div><h2>Lab</h2>
+            <ul>
+              <li><a href="tinkering/">Nineteen experiments</a></li>
+              <li><a href="tinkering/split-flap-lab/">Split-Flap Lab, where this board is tuned</a></li>
+              <li><a href="tinkering/design-system/">Design system</a></li>
+              <li><a href="tinkering/halftone-lab/">Halftone Lab</a></li>
+              <li><a href="tinkering/button-lab/">Button Lab</a></li>
+            </ul>
+          </div>
+          <div id="contact"><h2>Contact</h2>
+            <ul>
+              <li><a href="https://www.linkedin.com/in/bwstudwell" target="_blank" rel="noopener">LinkedIn</a></li>
+              <li><a href="llms.txt">Plain text for agents</a></li>
+            </ul>
+          </div>
+        </div>
       </div>
     </footer>
   </div>
-  <div class="endframe" aria-hidden="true"><div class="project--band endband"></div></div>
 
   <script src="nav.js"></script>
+  <script src="spark.js" defer></script>
   <script src="split-flap.js"></script>
   <script src="split-flap-versions.js"></script>
   <script src="halftone.js"></script>
   <script src="halftone-versions.js"></script>
   <script>
-    /* ---- The halftone under the footer, drawn from the active Halftone Lab version ---- */
+    /* ---- The halftone above the footer, drawn from the active Halftone Lab version ---- */
     if (window.Halftone) {
       const edge = Halftone.mount(document.querySelectorAll('.endband'), Halftone.activeConfig());
       // it reads its colours from CSS, so switching light/dark redraws it
       document.addEventListener('themechange', () => edge.redraw());
     }
 
-    /* ---- The board: project rows on the left, status on the right. Its size, columns, timing and
+    /* ---- The board: project rows on the left, release dates on the right. Its size, columns, timing and
        look are the active version from the Split-Flap Lab; the rows come from the links above. ---- */
     (function () {
       const bays = [...document.querySelectorAll('.bay')];
@@ -262,25 +318,94 @@
       });
       // the board has one row per project here, however many rows the lab's version holds
       const lines = written.length ? written.slice(0, rows.length) : rows.map(r => r.name + '|' + r.status);
-      // 28 modules across can't be read on a small screen: those keep the rows as links, with every record on the page
-      const wide = matchMedia('(min-width: 1100px)');   // narrower, the 200px margins leave the board too small to read
+      // a board of modules can't be read on a small screen: those keep the rows as links, with every record on the page
+      const wide = matchMedia('(min-width: 1100px)');   // narrower, the modules are too small to read
       if (!wide.matches || !window.SplitFlap) return;
 
+      const SHRUG = '¯\\_(ツ)_/¯';
+      const PARTY = 'ヽ(⌐■_■)ノ♪♬';
+      const TABLE = '(╯°□°）╯︵ ┻━┻';
       const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
       const mode = () => document.documentElement.dataset.theme === 'light' ? 'light' : 'dark';
       const keys = document.getElementById('keys');
       const t0 = performance.now(), now = () => performance.now() - t0;
       let flap, running = false;
 
+      let busyUntil = 0;   // a lifted flap or a clicked module keeps the board drawing past its own schedule
       function run() {
         if (running) return;
         running = true;
         requestAnimationFrame(function frame() {
           const t = now();
           flap.seek(t);
-          if (t < flap.duration + 200) requestAnimationFrame(frame); else running = false;
+          if (t < Math.max(flap.duration, busyUntil) + 200) requestAnimationFrame(frame); else running = false;
         });
       }
+
+      // The row buttons lie over the board, so the module under the cursor is found by position.
+      function moduleAt(x, y) {
+        for (let i = 0; i < flap.count; i++) {
+          const box = flap.cell(i).getBoundingClientRect();
+          if (x >= box.left && x < box.right && y >= box.top && y < box.bottom) return i;
+        }
+        return null;
+      }
+      let hovered = null;
+      function lift(i) {
+        if (i === hovered || still) return;
+        hovered = i;
+        busyUntil = flap.hover(i, now());
+        run();
+      }
+      // one full turn of the drum, back to the letter it shows
+      function spinOnce(i) {
+        if (i === null || still) return;
+        const letter = flap.states(now())[i].top, t = now();
+        flap.spinCell(i, letter, t, { flips: flap.chars.length, delay: 0, speed: 3 });
+        busyUntil = Math.max(busyUntil, flap.duration);
+        run();
+      }
+      keys.addEventListener('pointermove', e => { if (e.pointerType !== 'touch') lift(moduleAt(e.clientX, e.clientY)); });
+      keys.addEventListener('pointerleave', () => lift(null));
+      // A zero in Blackbird's release number turns the whole board to a shrug, the Z in Maz to a
+      // dancer in shades and the K in Lake to a flipped table, centred on the middle row. It stays
+      // until the board is clicked again, anywhere, which turns it back to the projects.
+      let shrugging = false;
+      const flapEl = document.getElementById('flap');
+      const EGGS = [   // a character in one project's row, and what clicking it turns the board to
+        { id: 'blackbird', ch: '0', released: true, show: SHRUG },
+        { id: 'mazlan-builder', ch: 'Z', released: false, show: PARTY },
+        { id: 'groom-lake', ch: 'K', released: false, show: TABLE },
+      ];
+      function eggAt(i) {
+        if (i === null) return null;
+        const across = flap.grid.cols, row = Math.floor(i / across) - cols.padY, col = i % across - cols.padX;
+        const ch = SplitFlap.compose(lines, cols)[row]?.[col];
+        return EGGS.find(egg => egg.id === rows[row]?.id && egg.ch === ch && egg.released === col >= cols.nameCols) || null;
+      }
+      function turnTo(message, speed) {
+        flap.spinTo(message, now(), { speed });
+        busyUntil = Math.max(busyUntil, flap.duration);
+        run();
+      }
+      // capture, so a click that ends the shrug doesn't also choose the row under it
+      keys.addEventListener('click', e => {
+        if (!shrugging) return;
+        e.stopPropagation();
+        shrugging = false;
+        flapEl.classList.remove('is-aside');
+        turnTo(lines, 2);
+      }, true);
+      keys.addEventListener('click', e => {
+        const i = moduleAt(e.clientX, e.clientY);
+        const egg = still ? null : eggAt(i);
+        if (egg) {
+          shrugging = true;
+          flapEl.classList.add('is-aside');
+          const middle = Math.floor((lines.length - 1) / 2);
+          turnTo(lines.map((_, r) => r === middle ? egg.show : ''), 5);   // the engine centres a message on the board
+        } else spinOnce(i);
+      });
 
       const boardRows = () => [...document.querySelectorAll('#flap .sf-row')];
       function choose(i, { remember = true } = {}) {
@@ -290,13 +415,27 @@
         if (remember) history.replaceState(null, '', '#' + rows[i].id);
       }
 
+      const cols = { nameCols: 16, statusCols: 4, padX: 0, padY: 0, ...config };   // 16 + 4 for a version saved before boards had columns
+
       try {
         flap = SplitFlap.mount(document.getElementById('flap'), {
-          nameCols: 16, statusCols: 12,   // for a version saved before boards had columns
-          ...config, ...SplitFlap.activeStyle(mode()),
-          lines, sequence: [],
+          ...cols, ...SplitFlap.activeStyle(mode()),
+          lines, sequence: [[SHRUG], [PARTY], [TABLE]],   // listed so the drum carries its characters
         });
       } catch (e) { return; }   // no board: the links and stacked records stay
+
+      // The headings start where their columns' first characters do: Project at the first name
+      // module, Released at the first module the longest release value reaches (they end at the right).
+      const head = document.querySelector('.board__head');
+      const longest = Math.min(cols.statusCols, Math.max(0, ...lines.map(l => (l.split('|')[1] || '').trim().length)));
+      function placeHeads() {
+        const first = cols.padY * flap.grid.cols + cols.padX, from = head.getBoundingClientRect().left;
+        const x = col => flap.cell(first + col).getBoundingClientRect().left - from;
+        head.style.setProperty('--project-x', x(0) + 'px');
+        head.style.setProperty('--released-x', x(cols.nameCols + cols.statusCols - longest) + 'px');
+      }
+      placeHeads();
+      new ResizeObserver(placeHeads).observe(document.getElementById('flap'));
 
       // one hit area per board row, so they line up; only rows with a project behind them are buttons
       lines.forEach((_, i) => {
@@ -304,7 +443,7 @@
         const key = document.createElement(r ? 'button' : 'span');
         if (r) {
           key.type = 'button';
-          key.setAttribute('aria-label', r.name + ', ' + r.status.toLowerCase());
+          key.setAttribute('aria-label', r.name + ', released ' + r.status.toLowerCase());
           key.addEventListener('click', () => choose(i));
           key.addEventListener('pointerenter', () => boardRows()[i]?.classList.add('is-hover'));
           key.addEventListener('pointerleave', () => boardRows()[i]?.classList.remove('is-hover'));
@@ -312,6 +451,16 @@
         keys.appendChild(key);
       });
       document.documentElement.classList.add('has-board');
+      // the record's entrance is tuned in the Split-Flap Lab ("Record entrance") and saved with the board
+      const entrance = { ...SplitFlap.DEFAULTS, ...config };
+      const root = document.documentElement.style;
+      root.setProperty('--record-ms', entrance.recordFadeMs + 'ms');
+      // a bezier goes to CSS as it is; a named ease (bounce, elastic) is sampled into linear() stops
+      const ease = entrance.recordEase, curve = SplitFlap.resolveEase(ease);
+      root.setProperty('--record-ease', Array.isArray(ease) ? `cubic-bezier(${ease.join(', ')})`
+        : `linear(${Array.from({ length: 41 }, (_, i) => +curve(i / 40).toFixed(4)).join(', ')})`);
+      root.setProperty('--record-drop', entrance.recordDrop + 'px');
+      root.setProperty('--record-blur', entrance.recordBlur + 'px');
       if (!still) document.documentElement.classList.add('is-arriving');   // the record holds back until the board resolves
 
       const fromHash = () => Math.max(0, rows.findIndex(r => '#' + r.id === location.hash));
@@ -322,7 +471,7 @@
         if (still) return flap.seek(Infinity);
         run();   // the rows flip in once; choosing a row leaves the board as it is
         // the record starts down as the last flaps are landing, so the two finish together
-        setTimeout(() => document.documentElement.classList.remove('is-arriving'), Math.max(0, flap.duration - 450));
+        setTimeout(() => document.documentElement.classList.remove('is-arriving'), Math.max(0, flap.duration - entrance.recordLeadMs));
       });
       addEventListener('hashchange', () => { if (rows.some(r => '#' + r.id === location.hash)) choose(fromHash(), { remember: false }); });
       document.addEventListener('themechange', () => { flap.restyle(SplitFlap.activeStyle(mode())); if (!running) flap.seek(now()); });

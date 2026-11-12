@@ -34,6 +34,13 @@
     /* Stage */
     .stage { grid-area: stage; display: flex; align-items: center; justify-content: center; min-width: 0; padding: 24px 48px; overflow: hidden; }
     .stage__fit { display: flex; justify-content: center; width: 100%; }
+    .stage { flex-direction: column; gap: 24px; }
+    .record { width: min(100%, 720px); height: 132px; flex: none; display: grid; grid-template-columns: 5fr 7fr; gap: 24px; padding: 20px;
+      background: var(--surface); border: 1px solid var(--line); border-radius: 6px; will-change: transform, opacity; }
+    .record div { display: flex; flex-direction: column; gap: 9px; justify-content: center; }
+    .record i, .record b { display: block; height: 7px; border-radius: 4px; background: var(--line-strong); }
+    .record b { height: 16px; background: var(--muted); opacity: .7; }
+    .record span { border-radius: 4px; background: var(--line); }
 
     /* Parameter panel */
     .panel { grid-area: panel; display: flex; flex-direction: column; min-height: 0; border-left: 1px solid var(--line); background: var(--surface); }
@@ -58,6 +65,14 @@
     .row.is-changed .row__name::after { content: " •"; }
     .row input[type="range"] { grid-column: 1 / -1; width: 100%; accent-color: var(--accent); }
     .row textarea, .row input[type="text"] { grid-column: 1 / -1; width: 100%; padding: 5px 7px; resize: none; background: var(--bg); border: 1px solid var(--line); border-radius: 4px; font-variant-numeric: tabular-nums; }
+    .pairs { grid-column: 1 / -1; display: grid; gap: 4px; }
+    .pair { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0, 1fr) 72px 22px; gap: 4px; align-items: center; }
+    .row .pair input[type="text"] { grid-column: auto; min-width: 0; }
+    .pair--head { color: var(--muted); font-size: 12px; }
+    .pair__remove { height: 22px; border: 0; border-radius: 4px; background: none; color: var(--muted); cursor: pointer; }
+    .pair__remove:hover:not(:disabled) { color: var(--fg); background: var(--hover); }
+    .pair__remove:disabled { visibility: hidden; }
+    .row .pairs + .chip { grid-column: 1 / -1; justify-self: start; }
     .row__hint { grid-column: 1 / -1; color: var(--muted); font-size: 12px; }
     .row__hint.is-warning { color: var(--fg); font-weight: 600; }
     .row__value input[type="checkbox"] { accent-color: var(--accent); }
@@ -140,7 +155,11 @@
     </div>
   </header>
 
-  <main class="stage" id="stage"><div class="stage__fit" id="fit"></div></main>
+  <main class="stage" id="stage">
+    <div class="stage__fit" id="fit"></div>
+    <!-- a stand-in for the home page's project panel, so its entrance can be tuned against the board -->
+    <div class="record" id="record" aria-hidden="true"><div><i style="width: 22%"></i><b style="width: 78%"></b><b style="width: 52%"></b><i style="width: 64%"></i></div><span></span></div>
+  </main>
 
   <aside class="panel" aria-label="Parameters">
     <div class="panel__top">
@@ -173,6 +192,7 @@
         <div class="seg" id="target">
           <button type="button" data-target="spinEase" aria-pressed="true">Spin</button>
           <button type="button" data-target="flipEase" aria-pressed="false">Leaf</button>
+          <button type="button" data-target="recordEase" aria-pressed="false">Record</button>
         </div>
         <p class="ease__about" id="about"></p>
         <select id="preset" aria-label="Easing preset"></select>

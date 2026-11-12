@@ -79,7 +79,7 @@
     map = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     map.setAttribute('aria-hidden', 'true');
     map.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;z-index:90;pointer-events:none;fill:none;stroke:#DFC06C;stroke-width:1;stroke-dasharray:4 5;' +
-      'font:400 11px "Söhne Mono",ui-monospace,Menlo,monospace;letter-spacing:.06em;text-transform:uppercase;text-anchor:middle;dominant-baseline:middle';
+      'font:400 11px "Söhne Mono",ui-monospace,Menlo,monospace;letter-spacing:.02em;text-anchor:middle;dominant-baseline:middle';
     document.body.append(map);
     const css = document.createElementNS('http://www.w3.org/2000/svg', 'style');
     drawMap();

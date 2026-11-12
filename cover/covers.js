@@ -11,12 +11,12 @@
   const here = location.pathname.replace(/\/index\.html$/, '/');
   const css = document.createElement('style');
   css.textContent = `
-    .covers { position: fixed; right: 20px; bottom: 20px; z-index: 100; font: 400 12px/1 "Söhne Mono", ui-monospace, Menlo, monospace;
-      letter-spacing: .06em; text-transform: uppercase; }
+    .covers { position: fixed; right: 20px; bottom: 20px; z-index: 100; font: 400 13px/1 "Söhne Mono", ui-monospace, Menlo, monospace;
+      letter-spacing: .02em; }
     .covers__toggle, .covers__menu { background: rgba(4, 10, 19, .82); color: #DAE4E3; border: 1px solid rgba(218, 228, 227, .35);
       -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
     .covers__toggle { display: flex; align-items: center; gap: 8px; margin-left: auto; padding: 12px 16px; border-radius: 999px; font: inherit;
-      letter-spacing: inherit; text-transform: inherit; cursor: pointer; transition: border-color 150ms, background 150ms; }
+      letter-spacing: inherit; cursor: pointer; transition: border-color 150ms, background 150ms; }
     .covers__toggle:hover, .covers__toggle[aria-expanded="true"] { border-color: #DAE4E3; }
     .covers__toggle:focus-visible, .covers__menu a:focus-visible { outline: 2px solid #DFC06C; outline-offset: 2px; }
     .covers__caret { width: 8px; height: 8px; border: solid currentColor; border-width: 1px 1px 0 0; transform: translateY(2px) rotate(-45deg); transition: transform 150ms; }
@@ -30,6 +30,14 @@
     .covers__menu a[aria-current="page"] { color: #DFC06C; }
     .covers__menu a[aria-current="page"]::before { background: currentColor; }
     .covers__num { margin-left: auto; opacity: .5; }
+    /* on a phone the bottom of the screen belongs to the controls and Recent Work: sit in the top corner and open downward */
+    @media (max-width: 600px), (max-height: 520px) {
+      .covers { top: max(12px, env(safe-area-inset-top)); right: max(12px, env(safe-area-inset-right)); bottom: auto; }
+      .covers__toggle { padding: 10px 14px; }
+      .covers__caret { transform: translateY(-2px) rotate(135deg); }
+      .covers__toggle[aria-expanded="true"] .covers__caret { transform: translateY(2px) rotate(-45deg); }
+      .covers__menu { top: calc(100% + 8px); bottom: auto; transform: translateY(-6px); }
+    }
     @media (prefers-reduced-motion: reduce) { .covers__menu, .covers__caret { transition: none; } }
   `;
   document.head.append(css);

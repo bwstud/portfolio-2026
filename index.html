@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Brian Studwell</title>
   <meta name="description" content="Brian Studwell designs human-in-the-loop agentic systems for high-stakes, regulated industries.">
   <meta name="color-scheme" content="dark">
@@ -15,15 +15,17 @@
     html, body { height: 100%; margin: 0; overflow: hidden; background: var(--c-night); }
     #plate { position: fixed; inset: 0; width: 100%; height: 100%; display: block; cursor: crosshair; touch-action: none; }   /* a tap is a tap, never the start of a scroll */
     .hook { position: fixed; inset: 0; display: grid; align-content: center; justify-items: center; text-align: center;
-      padding: 0 max(24px, 5vw); pointer-events: none; }
-    .hook__text { margin: 0; max-width: 18em; text-wrap: balance; font: 600 68px/1.08 var(--font-display);
+      padding: max(24px, env(safe-area-inset-top)) max(20px, 5vw, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom)) max(20px, 5vw, env(safe-area-inset-left));
+      pointer-events: none; }
+    /* 68px on a laptop; on a phone the sentence scales with the screen's width, and with its height when it's turned sideways */
+    .hook__text { margin: 0; max-width: 18em; text-wrap: balance; font: 600 clamp(26px, min(8.4vw, 7.6svh), 68px)/1.08 var(--font-display);
       letter-spacing: -.01em; color: var(--c-mist); }
-    .hook__name { display: block; margin-bottom: 16px; font-size: 42px; line-height: 1.1; letter-spacing: -.005em; color: var(--c-ochre); }
+    .hook__name { display: block; margin-bottom: .24em; font-size: .62em; line-height: 1.1; letter-spacing: -.005em; color: var(--c-ochre); }
     .word { display: inline-block; opacity: 0; transform: translateY(.18em); filter: blur(6px); }
     .is-in .word { animation: word 520ms cubic-bezier(0.23, 1, 0.32, 1) forwards; animation-delay: calc(var(--i) * 70ms); }
     @keyframes word { to { opacity: 1; transform: none; filter: none; } }
     .hook__cta { display: inline-flex; align-items: center; gap: .6em; pointer-events: auto;
-      font: 400 14px/1 var(--font-mono); letter-spacing: .06em; text-transform: uppercase; text-decoration: none;
+      font: 400 14px/1 var(--font-mono); letter-spacing: .02em; text-decoration: none;
       color: var(--c-mist); border: 1px solid var(--c-mist); border-radius: 999px; padding: 15px 22px;
       opacity: 0; transform: translateY(8px); transition: opacity 600ms ease, transform 600ms cubic-bezier(0.23, 1, 0.32, 1), background 150ms, color 150ms; }
     .is-done .hook__cta { opacity: 1; transform: none; }
@@ -46,7 +48,7 @@
     .dock button { appearance: none; border: 0; padding: 0; font: inherit; color: inherit; cursor: pointer; }
     .dock :focus-visible { outline: 2px solid var(--c-ochre); outline-offset: 3px; }
     .dock__sep { width: 1px; align-self: stretch; background: var(--d-line); }
-    .cap { font: 400 11px/1 var(--font-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--d-muted); }
+    .cap { font: 400 12px/1 var(--font-mono); letter-spacing: .02em; color: var(--d-muted); }
     /* the sound switch: a slide in a recessed slot. Its thumb is machined like the knob, so the two read as one instrument */
     .switch { display: flex; align-items: center; gap: 14px; }
     .toggle { position: relative; width: 40px; height: 72px; border-radius: 20px; touch-action: manipulation;
@@ -100,7 +102,19 @@
     .hop svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
     .hook__cta { margin-top: 28px; }
     .hook__inner { display: flex; flex-direction: column; align-items: center; }
-    @media (max-width: 480px) { .freq { display: none; } .dock { gap: 14px; padding: 10px 16px; } }
+    /* Phones. The controls shrink as a whole (zoom keeps the knob's pointer maths true), and turned sideways
+       the controls and Recent Work sit side by side under the sentence so everything fits on one screen. */
+    @media (max-width: 600px) {
+      .dock { zoom: .82; margin-top: 30px; gap: 14px; padding: 10px 18px 10px 14px; }
+      .hook__cta { margin-top: 22px; padding: 14px 20px; }
+    }
+    @media (max-width: 380px) { .freq { display: none; } .readout { min-width: 64px; } }
+    @media (max-height: 520px) and (orientation: landscape) {
+      .hook__inner { flex-flow: row wrap; justify-content: center; align-items: center; column-gap: 20px; }
+      .hook__text { flex-basis: 100%; max-width: 22em; }
+      .dock { zoom: .66; margin-top: 18px; }
+      .hook__cta { margin-top: 18px; padding: 13px 18px; }
+    }
     @media (prefers-reduced-motion: reduce) { .dock { opacity: 1; transform: none; transition: none; } .toggle__thumb { transition: none; } }
   </style>
 </head>
@@ -272,11 +286,29 @@
     addEventListener('pointermove', (e) => { if (e.pointerType === 'mouse') { mouse.x = e.clientX; mouse.y = e.clientY; mouse.on = true; } });
     document.documentElement.addEventListener('pointerleave', () => { mouse.on = false; });
     window.boomOn?.(window, (e) => !e.target.closest?.('a, button, .covers, .dock'));   // the same presses that send a pulse
+    const pulse = (x, y) => { pulses.push({ x, y, t: performance.now() }); if (pulses.length > 4) pulses.shift(); };
+    // A mouse sends its pulse on the press. A finger parts the sand as it drags, like the cursor does,
+    // and sends the pulse only if it lifts close to where it landed: a tap, the same moment its boom plays.
+    let finger = null;
     addEventListener('pointerdown', (e) => {
       if (e.target.closest('a, button, .covers, .dock')) return;
-      pulses.push({ x: e.clientX, y: e.clientY, t: performance.now() });
-      if (pulses.length > 4) pulses.shift();
+      if (e.pointerType === 'mouse') { pulse(e.clientX, e.clientY); return; }
+      if (finger) return;                                        // one finger at a time
+      finger = { id: e.pointerId, x: e.clientX, y: e.clientY };
+      mouse.x = e.clientX; mouse.y = e.clientY;
     });
+    addEventListener('pointermove', (e) => {
+      if (!finger || e.pointerId !== finger.id) return;
+      mouse.x = e.clientX; mouse.y = e.clientY;
+      if (Math.hypot(e.clientX - finger.x, e.clientY - finger.y) >= 24) mouse.on = true;   // a drag, not a tap
+    });
+    const lift = (e, tap) => {
+      if (!finger || e.pointerId !== finger.id) return;
+      if (tap && Math.hypot(e.clientX - finger.x, e.clientY - finger.y) < 24) pulse(finger.x, finger.y);
+      finger = null; mouse.on = false;
+    };
+    addEventListener('pointerup', (e) => lift(e, true));
+    addEventListener('pointercancel', (e) => lift(e, false));
 
     // ---- Recent Work: hover it and every grain rushes in to fill the button --------------------
     const cta = document.querySelector('.hook__cta');
@@ -307,7 +339,7 @@
     // ---- sand ------------------------------------------------------------------------------
     const REST = 0.11, DAMP = 0.86, HEAL = 0.004, RUSH = 0.02, GATHER = 0.04, PULSE = 2.9, MOUSE_R = 130, PULSE_SPEED = 1100, PULSE_BAND = 90;
     function step(k, now) {
-      const K = 0.07 * S, inv = 1 / CELL, R2 = MOUSE_R * MOUSE_R;
+      const K = 0.07 * S, inv = 1 / CELL, mr = finger ? Math.min(MOUSE_R, 0.24 * Math.min(W, H)) : MOUSE_R, R2 = mr * mr;
       const far = Math.hypot(W, H);
       const live = [];
       for (const p of pulses) {
@@ -344,7 +376,7 @@
         if (mouse.on) {
           const dx = sx - mouse.x, dy = sy - mouse.y, d2 = dx * dx + dy * dy;
           if (d2 < R2 && d2 > 0.01) {
-            const d = Math.sqrt(d2), f = 1 - d / MOUSE_R, g = f * f * 3.2 / d;
+            const d = Math.sqrt(d2), f = 1 - d / mr, g = f * f * 3.2 / d;
             px += dx * g; py += dy * g;
           }
         }

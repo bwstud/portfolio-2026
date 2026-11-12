@@ -4,10 +4,10 @@
   const { DEFAULTS, STYLE_KEYS, resolveEase, resolveConfig } = SplitFlap;
   const STORE = 'split-flap-lab/v2';   // v1 held settings for the two-line name board
   const LAB_ONLY = { seed: 1 };   // never part of a site config
-  // where the lab starts: the home page's board, five project rows with a status column
+  // where the lab starts: the home page's board, three project rows with a Released column
   const LAB_START = {
-    lines: ['GROOM LAKE|SHIPPED', 'BLACKBIRD|SHIPPED', 'MAZLAN BUILDER|SHIPPED', 'ADEPT|WRITING', 'WORKSPACES|WRITING'],
-    nameCols: 16, statusCols: 12, padX: 0, padY: 0, fillRows: true, boardWidth: 1180, grain: 0.08, frame: true,
+    lines: ['GROOM LAKE|1014', 'BLACKBIRD|0120', 'MAZLAN BUILDER|1002'],
+    nameCols: 16, statusCols: 4, padX: 0, padY: 0, fillRows: true, boardWidth: 1180, grain: 0.08, frame: true,
   };
   const $ = id => document.getElementById(id);
   const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
@@ -24,12 +24,18 @@
   const b = (key, label, hint) => ({ key, label, hint, type: 'toggle' });
   const GROUPS = [
     ['Message', [
-      { key: 'lines', label: 'Rows', type: 'lines', hint: 'One row per line. Put | between the project and its status to set them in columns.' },
+      { key: 'lines', label: 'Rows', type: 'lines', hint: 'One board row each. Leave Released empty for a row with no date.' },
       { key: 'chars', label: 'Drum', type: 'text', hint: 'Every character on a module, in flip order.' },
     ]],
     ['Columns', [
       n('nameCols', 'Project column', 0, 28, 1, 'modules', 'Width of the part before the |. 0 turns columns off and reads each line as written.'),
-      n('statusCols', 'Status column', 0, 24, 1, 'modules', 'Width of the part after the |.'),
+      n('statusCols', 'Released column', 0, 24, 1, 'modules', 'Width of the part after the |.'),
+    ]],
+    ['Record entrance', [
+      n('recordFadeMs', 'Duration', 0, 2000, 10, 'ms', 'How long the project panel takes to fade in and settle. 0 shows it at once.'),
+      n('recordLeadMs', 'Starts before landing', -1000, 3000, 10, 'ms', 'How long before the board’s last flap lands the panel starts. Negative waits until after.'),
+      n('recordDrop', 'Drop', -120, 120, 1, 'px', 'How far above its place the panel starts. Negative makes it rise from below.'),
+      n('recordBlur', 'Blur', 0, 24, 0.5, 'px', 'Blur the panel starts with, clearing as it settles.'),
     ]],
     ['Timing', [
       n('flipMs', 'Flip', 10, 400, 1, 'ms', 'Average time for one character change.'),
@@ -107,7 +113,8 @@
   // shrink the board when it would be taller than the stage
   function fitBoard() {
     const { cols, rows } = flap.grid, style = getComputedStyle(stage);
-    const room = stage.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom);
+    // the stand-in record under the board takes its share of the stage
+    const room = stage.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom) - $('record').offsetHeight - 24;
     const gap = cfg.frame ? cfg.frameGap : cfg.gap, plate = cfg.frame ? cfg.framePad * 2 : 0;
     const tile = (room - plate - (rows - 1) * gap) / (rows * cfg.tileRatio);
     $('fit').style.maxWidth = Math.max(cols * tile + (cols - 1) * gap + plate, 120) + 'px';
@@ -122,7 +129,7 @@
       flap.update(engineConfig());
       fitBoard();
       checkDrum();
-      if (time > flap.duration) time = flap.duration;
+      if (time > span()) time = span();
       flap.seek(time);
       drawTracks();
       drawPlot();
@@ -183,24 +190,53 @@
       roll.addEventListener('click', () => set(Math.floor(Math.random() * 1e6)));
       box.addEventListener('change', () => { if (box.value !== '') set(Math.abs(Math.round(+box.value))); else sync(); });
       sync = () => { box.value = cfg.seed; };
+    } else if (p.type === 'lines') {
+      // one pair of fields per board row; a row with no release date is stored without the |
+      const list = document.createElement('div'), add = document.createElement('button');
+      list.className = 'pairs'; list.id = id; list.setAttribute('role', 'group');
+      add.type = 'button'; add.className = 'chip'; add.textContent = 'Add row';
+      const read = () => [...list.children].map(pair => {
+        const [name, date] = [...pair.querySelectorAll('input')].map(input => input.value);
+        return date.trim() ? name + '|' + date : name;
+      });
+      const commit = () => { cfg.lines = read(); checkDrum(); changed(); mark(); };
+      const field = (text, label, cls) => {
+        const input = document.createElement('input');
+        input.type = 'text'; input.value = text; input.spellcheck = false; input.className = cls;
+        input.setAttribute('aria-label', label);
+        input.addEventListener('input', commit);
+        return input;
+      };
+      const draw = () => {
+        list.replaceChildren(...cfg.lines.map((line, i) => {
+          const at = line.indexOf('|'), pair = document.createElement('div'), remove = document.createElement('button');
+          pair.className = 'pair';
+          remove.type = 'button'; remove.className = 'pair__remove'; remove.textContent = '×';
+          remove.setAttribute('aria-label', `Remove row ${i + 1}`);
+          remove.disabled = cfg.lines.length < 2;
+          remove.addEventListener('click', () => { cfg.lines = cfg.lines.filter((_, k) => k !== i); draw(); checkDrum(); changed(); mark(); });
+          pair.append(field(at < 0 ? line : line.slice(0, at).trimEnd(), `Row ${i + 1} project name`, 'pair__name'),
+            field(at < 0 ? '' : line.slice(at + 1).trim(), `Row ${i + 1} release date`, 'pair__date'), remove);
+          return pair;
+        }));
+      };
+      add.addEventListener('click', () => { cfg.lines = [...cfg.lines, '']; draw(); list.lastChild.querySelector('input').focus(); checkDrum(); changed(); mark(); });
+      const heads = document.createElement('div');
+      heads.className = 'pair pair--head';
+      heads.innerHTML = '<span>Project</span><span>Released</span><span></span>';
+      row.append(heads, list, add);
+      sync = () => { if (!same(read(), cfg.lines)) draw(); };
     } else {
-      const lines = p.type === 'lines';
-      const box = document.createElement(lines ? 'textarea' : 'input');
-      if (lines) box.rows = Math.max(2, cfg.lines.length); else box.type = 'text';
-      box.id = id; box.spellcheck = false;
+      const box = document.createElement('input');
+      box.type = 'text'; box.id = id; box.spellcheck = false;
       row.append(box);
       box.addEventListener('input', () => {
-        cfg[p.key] = lines ? box.value.split('\n') : box.value;
-        if (lines) box.rows = Math.max(2, cfg.lines.length);
+        cfg[p.key] = box.value;
         checkDrum();
         changed();
         mark();
       });
-      sync = () => {
-        const v = lines ? cfg.lines.join('\n') : cfg[p.key];
-        if (box.value !== v) box.value = v;
-        if (lines) box.rows = Math.max(2, cfg.lines.length);
-      };
+      sync = () => { if (box.value !== cfg[p.key]) box.value = cfg[p.key]; };
     }
 
     row.append(hint);
@@ -239,7 +275,7 @@
   function checkDrum() {
     const row = rows.find(r => r.p.key === 'lines');
     const missing = [...new Set([...cfg.lines.join('')])].filter(ch => ch !== '|' && !cfg.chars.includes(ch));
-    // a part longer than its column pushes that row's status out of line
+    // a part longer than its column is cut to fit on the board
     const wide = cfg.nameCols > 0 ? cfg.lines.filter(l => l.includes('|')).flatMap(l => {
       const [name, status = ''] = l.split('|').map(part => part.trim());
       const texts = [[name, cfg.nameCols], [status, cfg.statusCols]];
@@ -248,7 +284,7 @@
     row.hint.classList.toggle('is-warning', missing.length > 0 || wide.length > 0);
     row.hint.textContent = missing.length
       ? `Not on the drum, so added to the end of it: ${missing.join(' ')}`
-      : wide.length ? `Wider than its column: ${[...new Set(wide)].join(', ')}`
+      : wide.length ? `Cut to fit its column: ${[...new Set(wide)].join(', ')}`
       : row.p.hint;
   }
 
@@ -522,6 +558,7 @@
   const ABOUT = {
     spinEase: 'Spacing of flips across a module’s whole spin. Reshapes the run: try Slow landing.',
     flipEase: 'Leaf angle within one flip. At 55 ms it reads as texture: slow playback to see it.',
+    recordEase: 'How the project panel fades in and settles under the board. Watch the stand-in panel.',
   };
   const AXES = ['x1', 'y1', 'x2', 'y2'];
   const Y_MIN = -0.4, Y_MAX = 1.4, W = 250, H = 200, PAD_X = 14;
@@ -617,6 +654,13 @@
   function moveProbe() {
     const probe = $('probe');
     if (!probe) return;
+    if (target === 'recordEase') {
+      const u = cfg.recordFadeMs > 0 ? (time - (flap.duration - cfg.recordLeadMs)) / cfg.recordFadeMs : -1;
+      if (!(u > 0 && u < 1)) return probe.setAttribute('visibility', 'hidden');
+      probe.setAttribute('cx', px(u));
+      probe.setAttribute('cy', py(resolveEase(cfg.recordEase)(u)));
+      return probe.setAttribute('visibility', 'visible');
+    }
     const track = textTracks().at(-1);
     const u = (time - track.start) / track.spinMs;
     if (!(u > 0 && u < 1)) return probe.setAttribute('visibility', 'hidden');
@@ -635,7 +679,10 @@
     const letters = flap.tracks.filter(m => !m.blank);
     return letters.length ? letters : flap.tracks;
   };
-  const timeX = t => LABEL_W + t / flap.duration * (tracksEl.clientWidth - LABEL_W - RIGHT);
+  // The timeline runs to the board's last flap or to the end of the record's entrance, whichever
+  // is later, so an entrance that starts at or after the landing can still be seen and scrubbed.
+  const span = () => Math.max(flap.duration, flap.duration - cfg.recordLeadMs + cfg.recordFadeMs);
+  const timeX = t => LABEL_W + t / span() * (tracksEl.clientWidth - LABEL_W - RIGHT);
 
   function drawTracks() {
     const dpr = window.devicePixelRatio || 1;
@@ -678,12 +725,24 @@
 
   function showTime() {
     $('now').textContent = (time / 1000).toFixed(3);
-    $('total').textContent = (flap.duration / 1000).toFixed(3);
+    $('total').textContent = (span() / 1000).toFixed(3);
     head.style.transform = `translateX(${timeX(time)}px)`;
-    tracksEl.setAttribute('aria-valuemax', Math.round(flap.duration));
+    tracksEl.setAttribute('aria-valuemax', Math.round(span()));
     tracksEl.setAttribute('aria-valuenow', Math.round(time));
     tracksEl.setAttribute('aria-valuetext', (time / 1000).toFixed(2) + ' seconds');
     moveProbe();
+    moveRecord();
+  }
+
+  // The stand-in for the home page's project panel: where it is at this point on the timeline.
+  // Its curve is the easing editor's "Record" target.
+  function moveRecord() {
+    const start = flap.duration - cfg.recordLeadMs;
+    const p = cfg.recordFadeMs > 0 ? clamp((time - start) / cfg.recordFadeMs, 0, 1) : (time >= start ? 1 : 0);
+    const e = resolveEase(cfg.recordEase)(p), record = $('record');
+    record.style.opacity = clamp(e, 0, 1);
+    record.style.transform = `translateY(${-(1 - e) * cfg.recordDrop}px)`;
+    record.style.filter = cfg.recordBlur > 0 && e < 1 ? `blur(${Math.max(0, 1 - e) * cfg.recordBlur}px)` : '';
   }
 
   /* ---- Transport: direction is 1 playing, -1 rewinding, 0 paused ---- */
@@ -699,7 +758,7 @@
   }
 
   function moveTo(t) {
-    time = clamp(t, 0, flap.duration);
+    time = clamp(t, 0, span());
     flap.seek(time);
     showTime();
   }
@@ -711,7 +770,7 @@
     if (now < holdUntil) return requestAnimationFrame(tick);
     if (holdUntil) { holdUntil = 0; moveTo(0); return requestAnimationFrame(tick); }
     moveTo(time + dt * direction * +$('speed').value);
-    if (direction === 1 && time >= flap.duration) {
+    if (direction === 1 && time >= span()) {
       if (!$('loop').checked) return setDirection(0);
       holdUntil = now + LOOP_HOLD_MS;
     } else if (direction === -1 && time <= 0) {
@@ -722,7 +781,7 @@
 
   const play = () => {
     if (direction === 1) return;
-    if (time >= flap.duration) moveTo(0);
+    if (time >= span()) moveTo(0);
     holdUntil = 0;
     setDirection(1);
   };
@@ -737,7 +796,7 @@
 
   function scrubTo(e) {
     const box = tracksEl.getBoundingClientRect();
-    moveTo((e.clientX - box.left - LABEL_W) / (box.width - LABEL_W - RIGHT) * flap.duration);
+    moveTo((e.clientX - box.left - LABEL_W) / (box.width - LABEL_W - RIGHT) * span());
   }
   let scrubbing = false;
   tracksEl.addEventListener('pointerdown', e => {
@@ -802,7 +861,7 @@
   setDirection(0);
   flap.ready.then(() => {
     drawTracks();
-    if (matchMedia('(prefers-reduced-motion: reduce)').matches) moveTo(flap.duration);
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) moveTo(span());
     else play();
   });
 })();

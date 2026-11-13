@@ -2,6 +2,8 @@
 /*
 !index.html
 !work.html
+!bio.html
+!how-i-work.html
 !cover
 !llms.txt
 !styles.css
@@ -20,6 +22,7 @@
 !images
 !reels
 !tinkering
+!api
 
 # Raw scans and licensed reference model stay local
 /tinkering/taxidermy/source

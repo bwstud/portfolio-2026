@@ -106,6 +106,7 @@ async function serveFile(req, res, pathname) {
     'Content-Length': size ? end - start + 1 : 0,
     'Accept-Ranges': 'bytes',
     'Cache-Control': 'no-store',
+    'Last-Modified': info.mtime.toUTCString(),   // the lighting lab's Blender live link polls this
     'X-Content-Type-Options': 'nosniff',
   };
   if (code === 206) headers['Content-Range'] = `bytes ${start}-${end}/${size}`;

@@ -19,6 +19,7 @@
 !images
 !reels
 !tinkering
+!api
 
 # Raw scans and licensed reference model stay local
 /tinkering/taxidermy/source

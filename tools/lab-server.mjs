@@ -2,7 +2,8 @@
    Split-Flap Lab write split-flap-versions.js, the Halftone Lab halftone-versions.js and the
    Button Lab button-versions.js,
    lets Domino Run save runs, elements and lab settings into tinkering/domino-run/, and lets
-   the Kaleidoscope Lab write tinkering/kaleidoscopes/configs.json. Never deployed. Start it with `dvs`. */
+   the Kaleidoscope Lab write tinkering/kaleidoscopes/configs.json, and runs api/xmas.mjs
+   (Xmastreemagochi accounts) against a local JSON file instead of Redis. Never deployed. Start it with `dvs`. */
 import { spawn } from 'node:child_process';
 import { createReadStream } from 'node:fs';
 import { mkdir, readdir, readFile, realpath, rename, rm, stat, writeFile } from 'node:fs/promises';
@@ -307,6 +308,43 @@ async function kaleidoApi(req, res, pathname) {
 }
 
 /* ---- Server ---- */
+/* ---- Xmastreemagochi: the real Vercel Function, backed by a local file ---- */
+const XMAS_DB = path.join(ROOT, 'tools', '.xmas-local-db.json');
+let xmasData = {};
+try { xmasData = JSON.parse(await readFile(XMAS_DB, 'utf8')); } catch {}
+const xmasSave = () => writeFile(XMAS_DB, JSON.stringify(xmasData));
+const xmasLive = key => {
+  const e = xmasData[key];
+  if (e && e.exp && e.exp < Date.now()) { delete xmasData[key]; return null; }
+  return e ?? null;
+};
+globalThis.__XMAS_LOCAL_STORE = {
+  get: async key => xmasLive(key)?.v ?? null,
+  set: async (key, v, ttl) => { xmasData[key] = { v, exp: ttl ? Date.now() + ttl * 1000 : 0 }; await xmasSave(); return 'OK'; },
+  setNew: async (key, v) => { if (xmasLive(key)) return false; xmasData[key] = { v, exp: 0 }; await xmasSave(); return true; },
+  del: async key => { delete xmasData[key]; await xmasSave(); return 1; },
+  incr: async (key, ttl) => {
+    const e = xmasLive(key) ?? { v: 0, exp: Date.now() + ttl * 1000 };
+    e.v = Number(e.v) + 1; xmasData[key] = e; await xmasSave(); return e.v;
+  },
+};
+const xmasApi = await import(path.join(ROOT, 'api', 'xmas.mjs'));
+async function xmasRoute(req, res) {
+  const handler = xmasApi[req.method];
+  if (!handler) return send(res, 405, 'Method not allowed');
+  const chunks = [];
+  let size = 0;
+  for await (const c of req) { size += c.length; if (size > 700 * 1024) return send(res, 413, 'Too large'); chunks.push(c); }
+  const request = new Request(`http://${req.headers.host}${req.url}`, {
+    method: req.method,
+    headers: Object.entries(req.headers).filter(([, v]) => typeof v === 'string'),
+    body: ['GET', 'HEAD'].includes(req.method) ? undefined : Buffer.concat(chunks),
+  });
+  const response = await handler(request);
+  res.writeHead(response.status, Object.fromEntries(response.headers));
+  res.end(Buffer.from(await response.arrayBuffer()));
+}
+
 const server = createServer(async (req, res) => {
   try {
     // a hostile domain can point itself at 127.0.0.1, so the name has to be ours as well
@@ -317,6 +355,7 @@ const server = createServer(async (req, res) => {
     if (Object.hasOwn(STORES, pathname)) await versionsApi(req, res, STORES[pathname]);
     else if (pathname === DOMINO || pathname.startsWith(`${DOMINO}/`)) await dominoApi(req, res, pathname);
     else if (pathname.startsWith(`${KALEIDO}/`)) await kaleidoApi(req, res, pathname);
+    else if (pathname === '/api/xmas') await xmasRoute(req, res);
     else await serveFile(req, res, pathname);
   } catch (e) {
     console.error(e);
@@ -338,7 +377,7 @@ server.on('error', e => {
 
 server.on('listening', () => {
   const url = `http://127.0.0.1:${server.address().port}/`;
-  console.log(`Site:  ${url}\nLab:   ${url}tinkering/split-flap-lab/\nHalftone: ${url}tinkering/halftone-lab/\nDominoes: ${url}tinkering/domino-run/\nKaleidoscopes: ${url}tinkering/kaleidoscopes/`);
+  console.log(`Site:  ${url}\nLab:   ${url}tinkering/split-flap-lab/\nHalftone: ${url}tinkering/halftone-lab/\nDominoes: ${url}tinkering/domino-run/\nKaleidoscopes: ${url}tinkering/kaleidoscopes/\nXmastreemagochi: ${url}tinkering/xmastreemagochi/`);
   if (process.argv.includes('--open')) spawn('open', [url], { stdio: 'ignore' }).on('error', () => {});
 });
 

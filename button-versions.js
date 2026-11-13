@@ -1,6 +1,6 @@
 /* Written by the Button Lab. The site's nav buttons use the version named by "active". */
 window.BUTTON_VERSIONS = {
-  "active": "mwbngm4v",
+  "active": "matte",
   "versions": [
     {
       "id": "original",
@@ -156,6 +156,119 @@ window.BUTTON_VERSIONS = {
             "alpha": 0.61
           }
         ],
+        "spark": false
+      }
+    },
+    {
+      "id": "matte",
+      "name": "Matte",
+      "savedAt": "2026-11-13T00:00:00.000Z",
+      "config": {
+        "height": 34,
+        "padX": 12,
+        "radius": 6,
+        "border": 0,
+        "gap": 12,
+        "fontSize": 11,
+        "fontWeight": 400,
+        "tracking": 0.1,
+        "uppercase": true,
+        "mono": true,
+        "labelLift": 0,
+        "topD": "#2e2e30",
+        "bottomD": "#1f1f21",
+        "textD": "#b4b4b6",
+        "topL": "#cacacc",
+        "bottomL": "#bbbbbd",
+        "textL": "#2a2a2d",
+        "grain": 0,
+        "shadows": [
+          {
+            "theme": "dark",
+            "inset": true,
+            "x": 0,
+            "y": 1,
+            "blur": 0,
+            "spread": 0,
+            "color": "#ffffff",
+            "alpha": 0.11
+          },
+          {
+            "theme": "dark",
+            "inset": false,
+            "x": 0,
+            "y": 0,
+            "blur": 0,
+            "spread": 1,
+            "color": "#070707",
+            "alpha": 1
+          },
+          {
+            "theme": "dark",
+            "inset": false,
+            "x": 0,
+            "y": 3,
+            "blur": 0,
+            "spread": 0,
+            "color": "#0c0c0c",
+            "alpha": 1
+          },
+          {
+            "theme": "dark",
+            "inset": false,
+            "x": 0,
+            "y": 6,
+            "blur": 7,
+            "spread": 0,
+            "color": "#000000",
+            "alpha": 0.5
+          },
+          {
+            "theme": "light",
+            "inset": true,
+            "x": 0,
+            "y": 1,
+            "blur": 0,
+            "spread": 0,
+            "color": "#ffffff",
+            "alpha": 0.5
+          },
+          {
+            "theme": "light",
+            "inset": false,
+            "x": 0,
+            "y": 0,
+            "blur": 0,
+            "spread": 1,
+            "color": "#474749",
+            "alpha": 1
+          },
+          {
+            "theme": "light",
+            "inset": false,
+            "x": 0,
+            "y": 3,
+            "blur": 0,
+            "spread": 0,
+            "color": "#6a6a6c",
+            "alpha": 1
+          },
+          {
+            "theme": "light",
+            "inset": false,
+            "x": 0,
+            "y": 6,
+            "blur": 7,
+            "spread": 0,
+            "color": "#000000",
+            "alpha": 0.25
+          }
+        ],
+        "hoverBright": 1.12,
+        "pressY": 2,
+        "pressBright": 0.95,
+        "currentBright": 1.25,
+        "speed": 110,
         "spark": false
       }
     }

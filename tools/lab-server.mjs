@@ -1,6 +1,6 @@
 /* Local server for the site. It serves exactly what .vercelignore ships, lets the
    Split-Flap Lab write split-flap-versions.js, the Halftone Lab halftone-versions.js and the
-   Button Lab button-versions.js,
+   Button Lab button-versions.js and the Dissolve Lab cover/dissolve-versions.js,
    lets Domino Run save runs, elements and lab settings into tinkering/domino-run/, and lets
    the Kaleidoscope Lab write tinkering/kaleidoscopes/configs.json, and runs api/xmas.mjs
    (Xmastreemagochi accounts) against a local JSON file instead of Redis. Never deployed. Start it with `dvs`. */
@@ -25,6 +25,16 @@ const STORES = {
     file: path.join(ROOT, 'halftone-versions.js'),
     global: 'HALFTONE_VERSIONS',
     header: '/* Written by the Halftone Lab. The home page draws the version named by "active". */\n',
+  },
+  '/__lab/dissolve': {
+    file: path.join(ROOT, 'cover', 'dissolve-versions.js'),
+    global: 'DISSOLVE_VERSIONS',
+    header: '/* Written by the Dissolve Lab. The cover plays the version named by "active". */\n',
+  },
+  '/__lab/filings': {
+    file: path.join(ROOT, 'filings-versions.js'),
+    global: 'FILINGS_VERSIONS',
+    header: '/* Written by the Button Lab (Experiments). The site\'s nav buttons get the iron filings version named by "active"; "off" means none. */\n',
   },
   '/__lab/buttons': {
     file: path.join(ROOT, 'button-versions.js'),

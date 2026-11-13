@@ -8,11 +8,23 @@
   <meta name="color-scheme" content="dark">
   <link rel="alternate" type="text/plain" href="llms.txt" title="Plain-text version for agents">
   <link rel="stylesheet" href="styles.css">
+  <link rel="prefetch" href="work.html">   <!-- so the work page is ready when the sand has gone -->
+  <link rel="stylesheet" href="tinkering/matte-lab/matte.css?v=12">   <!-- the Matte system: the Recent Work key and the Covers menu -->
   <style>
     /* The front page. Sand on a vibrating plate fills the page, the pattern drifts from one figure to
        the next, and the sentence arrives over it. Recent Work opens the site (work.html).
        The Covers menu, bottom right, switches to the other covers in cover/. */
     html, body { height: 100%; margin: 0; overflow: hidden; background: var(--c-night); }
+    @media (prefers-reduced-motion: no-preference) { @view-transition { navigation: auto; } }   /* the work page fades in over the empty plate */
+    /* Recent Work pressed: the sand is gone at once, the sentence and the key rise and fade, and the panel dissolves into
+       particles that fall upward (cover/dissolve.js) */
+    html.is-leaving .hook__text, html.is-leaving .hook__go { opacity: 0; transform: translateY(calc(var(--leave-rise, 56) * -1px)); pointer-events: none;
+      transition: opacity calc(var(--leave-out, 320) * 0.875ms) var(--ease-in), transform calc(var(--leave-out, 320) * 1ms) var(--ease-in); }   /* the numbers come from the Dissolve Lab's active version */
+    html.is-leaving .hook__text { transition-delay: calc(var(--leave-text-delay, 0) * 1ms); }
+    html.is-leaving .hook__go { transition-delay: calc(var(--leave-key-delay, 60) * 1ms); }
+    .is-lab .covers { display: none; }   /* inside the Dissolve Lab's preview */
+    .covers { transition: opacity 200ms ease; }
+    html.is-leaving .covers { opacity: 0; pointer-events: none; }
     #plate { position: fixed; inset: 0; width: 100%; height: 100%; display: block; cursor: crosshair; touch-action: none; }   /* a tap is a tap, never the start of a scroll */
     .hook { position: fixed; inset: 0; display: grid; align-content: center; justify-items: center; text-align: center;
       padding: max(24px, env(safe-area-inset-top)) max(20px, 5vw, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom)) max(20px, 5vw, env(safe-area-inset-left));
@@ -24,98 +36,98 @@
     .word { display: inline-block; opacity: 0; transform: translateY(.18em); filter: blur(6px); }
     .is-in .word { animation: word 520ms cubic-bezier(0.23, 1, 0.32, 1) forwards; animation-delay: calc(var(--i) * 70ms); }
     @keyframes word { to { opacity: 1; transform: none; filter: none; } }
-    .hook__cta { display: inline-flex; align-items: center; gap: .6em; pointer-events: auto;
-      font: 400 14px/1 var(--font-mono); letter-spacing: .02em; text-decoration: none;
-      color: var(--c-mist); border: 1px solid var(--c-mist); border-radius: 999px; padding: 15px 22px;
-      opacity: 0; transform: translateY(8px); transition: opacity 600ms ease, transform 600ms cubic-bezier(0.23, 1, 0.32, 1), background 150ms, color 150ms; }
-    .is-done .hook__cta { opacity: 1; transform: none; }
-    .hook__cta:hover, .hook__cta:focus-visible { background: var(--c-mist); color: var(--c-night); }
-    /* with the plate running, the sand itself rushes in and becomes the button's fill */
-    .has-sand .hook__cta { transition: opacity 600ms ease, transform 600ms cubic-bezier(0.23, 1, 0.32, 1), color 260ms ease, border-color 260ms ease; }
-    .has-sand .hook__cta:hover, .has-sand .hook__cta:focus-visible { background: none; color: var(--c-night); border-color: var(--c-sand); transition-delay: 0s, 0s, 220ms, 220ms; }
+    /* Recent Work is a Matte key (.m-key in matte.css), a size up for the front page. Its holder carries the entrance,
+       so the key keeps its own press travel. */
+    .hook__go { margin-top: 28px; pointer-events: auto; opacity: 0; transform: translateY(8px);
+      transition: opacity 600ms ease, transform 600ms cubic-bezier(0.23, 1, 0.32, 1); }
+    .is-done .hook__go { opacity: 1; transform: none; }
+    .matte .hook__cta { height: 44px; padding: 0 22px; font-size: 12px; text-decoration: none; }
+    /* under the pointer the key stays as it is: with the plate running the grains rush in and hide behind it, and the
+       iron filings in its paint stand up to the pointer (filings.js, attached at the foot of the page) */
     @media (prefers-reduced-motion: reduce) {
       .word { opacity: 1; transform: none; filter: none; animation: none !important; }
-      .hook__cta { opacity: 1; transform: none; transition: none; }
+      .hook__go { opacity: 1; transform: none; transition: none; }
     }
-    /* Sound switch and tuning knob, ported from the Chladni lab (tinkering/chladni) */
-    .dock { --accent: #bdbdbd; --accent-glow: rgba(189, 189, 189, 0.55); --d-line: rgba(255, 255, 255, 0.08); --d-muted: #979797; --d-fg: #eaeaea;
-      margin-top: 36px; display: inline-flex; align-items: center; gap: 18px; padding: 12px 22px 12px 18px; pointer-events: auto; text-align: left;
-      border-radius: 22px; background: linear-gradient(180deg, rgba(10, 16, 24, 0.62), rgba(4, 8, 14, 0.72)); border: 1px solid rgba(255, 255, 255, 0.1);
-      box-shadow: 0 1px 0 rgba(255, 255, 255, 0.1) inset, 0 -1px 0 rgba(0, 0, 0, 0.25) inset, 0 18px 40px rgba(0, 0, 0, 0.35);   /* glass: the sand shows through, blurred */
-      backdrop-filter: blur(14px) saturate(1.3); -webkit-backdrop-filter: blur(14px) saturate(1.3); user-select: none; -webkit-user-select: none;
+    /* Sound switch and tuning knob as a matte black hi-fi faceplate: an opaque body with panel seams, printed legends
+       and one copper accent. The controls came from the Chladni lab (tinkering/chladni). */
+    .dock { --accent: #e08a3c; --d-muted: #8a8a8c; --d-print: #b4b4b6; --d-fg: #ebe8e1;
+      margin-top: 36px; display: inline-flex; align-items: stretch; pointer-events: auto; text-align: left; border-radius: 16px;
+      background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.1' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .9 -.42'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='.16'/%3E%3C/svg%3E"),
+        linear-gradient(180deg, #212122, #171718);                 /* a fine speckle in the paint, like powder coat */
+      box-shadow: 0 1px 0 rgba(255, 255, 255, 0.1) inset, 0 -1px 0 rgba(0, 0, 0, 0.6) inset, 0 0 0 1px #080808, 0 26px 46px rgba(0, 0, 0, 0.55), 0 5px 10px rgba(0, 0, 0, 0.4);
+      user-select: none; -webkit-user-select: none;
       opacity: 0; transform: translateY(8px); transition: opacity 600ms ease, transform 600ms cubic-bezier(0.23, 1, 0.32, 1); }
     .is-done .dock { opacity: 1; transform: none; }
     .dock button { appearance: none; border: 0; padding: 0; font: inherit; color: inherit; cursor: pointer; }
     .dock :focus-visible { outline: 2px solid var(--c-ochre); outline-offset: 3px; }
-    .dock__sep { width: 1px; align-self: stretch; background: var(--d-line); }
-    .cap { font: 400 12px/1 var(--font-mono); letter-spacing: .02em; color: var(--d-muted); }
-    /* the sound switch: a slide in a recessed slot. Its thumb is machined like the knob, so the two read as one instrument */
-    .switch { display: flex; align-items: center; gap: 14px; }
-    .toggle { position: relative; width: 40px; height: 72px; border-radius: 20px; touch-action: manipulation;
-      background: linear-gradient(180deg, #0b0b0b, #1c1c1c);
-      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.85) inset, 0 0 0 1px rgba(0, 0, 0, 0.7) inset, 0 1px 0 rgba(255, 255, 255, 0.1); }
-    .toggle::before { content: ""; position: absolute; left: 50%; top: 16px; bottom: 16px; width: 2px; margin-left: -1px; border-radius: 1px;
-      background: rgba(255, 255, 255, 0.07); }                 /* the groove the thumb rides in */
-    .toggle__thumb { position: absolute; left: 5px; top: 5px; width: 30px; height: 30px; border-radius: 50%; transform: translateY(32px);
-      background: repeating-conic-gradient(from 0deg, #2c2c2c 0deg 6deg, #4c4c4c 6deg 12deg);
-      box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.8), 0 4px 8px rgba(0, 0, 0, 0.6);
-      transition: transform 260ms cubic-bezier(0.34, 1.3, 0.64, 1), scale 120ms ease-out; }
-    .toggle__thumb::after { content: ""; position: absolute; inset: 4px; border-radius: 50%;
-      background: conic-gradient(from 20deg, #cccccc, #7f7f7f, #ebebeb, #767676, #c7c7c7, #878787, #e4e4e4, #7d7d7d, #cccccc);
-      box-shadow: 0 1px 0 rgba(255, 255, 255, 0.4) inset, 0 -2px 4px rgba(0, 0, 0, 0.35) inset; }
-    .toggle[aria-checked="true"] .toggle__thumb { transform: none; }
+    .dock__sep { width: 2px; background: linear-gradient(90deg, #0a0a0a 50%, rgba(255, 255, 255, 0.055) 50%); }   /* a seam between panels */
+    .cap { font: 400 10px/1 var(--font-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--d-print); }
+    /* the sound switch: a slide in a recessed slot, off to the left and on to the right, with a lamp under the on side */
+    .switch { display: grid; align-content: center; gap: 11px; padding: 0 20px; }
+    .toggle { position: relative; width: 56px; height: 28px; border-radius: 14px; touch-action: manipulation; background: #0b0b0b;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.9) inset, 0 0 0 1px #050505 inset, 0 1px 0 rgba(255, 255, 255, 0.08); }
+    .toggle__thumb { position: absolute; left: 3px; top: 3px; width: 22px; height: 22px; border-radius: 50%;
+      background: radial-gradient(circle at 50% 30%, #3b3b3d, #252526 75%);
+      box-shadow: 0 1px 0 rgba(255, 255, 255, 0.16) inset, 0 -1px 1px rgba(0, 0, 0, 0.5) inset, 0 2px 4px rgba(0, 0, 0, 0.8);
+      transition: transform 220ms cubic-bezier(0.34, 1.3, 0.64, 1), scale 120ms ease-out; }
+    .toggle[aria-checked="true"] .toggle__thumb { transform: translateX(28px); }
     .toggle:active .toggle__thumb { scale: 0.94; }
-    .switch__side { display: grid; gap: 9px; min-width: 46px; }
-    .state { display: flex; align-items: center; gap: 7px; font: 400 14px/1 var(--font-sans); color: var(--d-muted); }
-    .lamp { width: 8px; height: 8px; border-radius: 50%; background: radial-gradient(circle at 40% 35%, #505050, #1f1f1f);
-      box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.7); transition: background 0.2s, box-shadow 0.2s; }
-    .is-sounding .lamp { background: radial-gradient(circle at 40% 35%, #f3f3f3, #bdbdbd 50%, #7b7b7b);
-      box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.5), 0 0 10px 2px var(--accent-glow), 0 0 22px 6px rgba(189, 189, 189, calc(0.15 + var(--res, 0) * 0.35)); }
-    /* the knob */
-    .knob-wrap { position: relative; width: 116px; height: 116px; margin: -6px 0; }
-    .dial { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
-    .dial .track { fill: none; stroke: rgba(255, 255, 255, 0.08); stroke-width: 2; stroke-linecap: round; }
-    .dial .value { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linecap: round; opacity: 0.85; }
-    .dial .tick { fill: rgba(255, 255, 255, 0.22); transition: fill 0.2s; }
-    .dial .tick.is-near { fill: var(--accent); }
-    .dial .pos { fill: #fff; filter: drop-shadow(0 0 4px var(--accent-glow)); }
-    .knob { position: absolute; left: 50%; top: 50%; width: 76px; height: 76px; margin: -38px 0 0 -38px; border-radius: 50%; cursor: grab; touch-action: none;
-      background: repeating-conic-gradient(from 0deg, #2c2c2c 0deg 3deg, #4c4c4c 3deg 6deg);
-      box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.8), 0 10px 22px rgba(0, 0, 0, 0.6), 0 2px 3px rgba(0, 0, 0, 0.5); }
+    .state { display: flex; align-items: center; gap: 7px; justify-self: end; font: 400 10px/1 var(--font-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--d-muted); }
+    .lamp { width: 6px; height: 6px; border-radius: 50%; background: #2b2b2c;
+      box-shadow: 0 1px 1px rgba(0, 0, 0, 0.8) inset, 0 0 0 1px #080808; transition: background 0.2s, box-shadow 0.2s; }
+    .is-sounding .lamp { background: var(--accent);
+      box-shadow: 0 0 0 1px #080808, 0 0 calc(4px + var(--res, 0) * 5px) rgba(224, 138, 60, 0.75); }
+    .is-sounding .state { color: var(--d-print); }
+    /* the knob: a flat matte cap with a white dot, sitting on a copper ring that fills as the pitch rises */
+    .knob-wrap { position: relative; width: 116px; height: 116px; margin: 8px 14px; }
+    .dial { position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+    .dial .track { fill: none; stroke: #0a0a0a; stroke-width: 3; stroke-linecap: round; }
+    .dial .value { fill: none; stroke: var(--accent); stroke-width: 1.75; stroke-linecap: round; }
+    .dial .tick { fill: rgba(255, 255, 255, 0.26); transition: fill 0.2s; }
+    .dial .tick.is-near { fill: #fff; }
+    .dial .pos { display: none; }
+    .knob { position: absolute; left: 50%; top: 50%; width: 80px; height: 80px; margin: -40px 0 0 -40px; border-radius: 50%; cursor: grab; touch-action: none;
+      background: repeating-conic-gradient(from 0deg, #171718 0deg 2deg, #262627 2deg 4deg);      /* the knurled side */
+      box-shadow: 0 0 0 1px #060606, 0 16px 18px -4px rgba(0, 0, 0, 0.8), 0 3px 4px rgba(0, 0, 0, 0.6); }
+    .knob::after { content: ""; position: absolute; inset: 5px; border-radius: 50%; pointer-events: none;   /* the cap; its light stays put while the grip turns */
+      background: radial-gradient(circle at 50% 22%, #2f2f30, #1e1e1f 68%);
+      box-shadow: 0 1px 0 rgba(255, 255, 255, 0.13) inset, 0 -1px 1px rgba(0, 0, 0, 0.55) inset, 0 0 0 1px rgba(0, 0, 0, 0.55); }
     .knob:active { cursor: grabbing; }
-    .knob__face { position: absolute; inset: 6px; border-radius: 50%;
-      background: radial-gradient(circle at 50% 50%, transparent 0 46%, rgba(0, 0, 0, 0.25) 47% 48%, transparent 49%),
-        conic-gradient(from 20deg, #cccccc, #7f7f7f, #ebebeb, #767676, #c7c7c7, #878787, #e4e4e4, #7d7d7d, #cccccc);
-      box-shadow: 0 1px 0 rgba(255, 255, 255, 0.4) inset, 0 -2px 4px rgba(0, 0, 0, 0.35) inset; }
-    .knob__grip { position: absolute; inset: 0; border-radius: 50%; will-change: transform; }
-    .knob__mark { position: absolute; left: 50%; top: 9px; width: 3px; height: 15px; margin-left: -1.5px; border-radius: 2px; background: #1c1c1c; box-shadow: 0 1px 0 rgba(255, 255, 255, 0.5); }
-    .is-sounding .knob__mark { background: var(--accent); box-shadow: 0 0 6px var(--accent-glow); }
-    .freq { display: flex; align-items: baseline; gap: 5px; min-width: 76px; font: 400 26px/1 var(--font-sans); letter-spacing: -0.02em; color: var(--d-fg); font-variant-numeric: tabular-nums; }
+    .knob__grip { position: absolute; inset: 0; z-index: 1; border-radius: 50%; will-change: transform; }
+    .knob__mark { position: absolute; left: 50%; top: 12px; width: 5px; height: 5px; margin-left: -2.5px; border-radius: 50%; background: #efece6; }
+    /* the display: a recessed black window */
+    .readout { display: grid; align-content: center; gap: 10px; padding: 0 18px; }
+    .freq { position: relative; display: flex; align-items: flex-end; justify-content: space-between; width: 128px; height: 60px; padding: 0 10px 9px; border-radius: 5px;
+      background: linear-gradient(180deg, #040404, #0b0b0b);
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.95) inset, 0 0 0 1px #000, 0 1px 0 rgba(255, 255, 255, 0.08);
+      font: 400 25px/1 var(--font-mono); letter-spacing: -0.02em; color: var(--d-fg); font-variant-numeric: tabular-nums; }
+    .freq::before { content: "Freq"; position: absolute; left: 10px; top: 9px; font: 400 9px/1 var(--font-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--d-muted); }
     number-flow { font-variant-numeric: tabular-nums; }
-    .freq small { font-size: 13px; letter-spacing: 0; color: var(--d-muted); }
-    .readout { display: grid; gap: 12px; min-width: 84px; }
-    .hops { display: flex; gap: 6px; }
-    .dock .hop { flex: 1; background: none; display: inline-flex; align-items: center; justify-content: center; height: 28px; border-radius: 8px;
-      border: 1px solid rgba(255, 255, 255, 0.16); color: var(--d-muted); transition: color 150ms, border-color 150ms, background 150ms, scale 120ms ease-out; }
-    .dock .hop:hover { color: var(--d-fg); border-color: rgba(255, 255, 255, 0.32); background: rgba(255, 255, 255, 0.05); }
-    .dock .hop:active { scale: 0.96; }
+    .freq small { padding-bottom: 2px; font: 400 9px/1 var(--font-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--d-muted); }
+    /* the jump keys: two low soft keys that sink when pressed */
+    .hops { display: flex; gap: 8px; }
+    .dock .hop { flex: 1; display: inline-flex; align-items: center; justify-content: center; height: 28px; margin-bottom: 3px; border-radius: 6px; color: var(--d-print);
+      background: linear-gradient(180deg, #2c2c2d, #202021);
+      box-shadow: 0 1px 0 rgba(255, 255, 255, 0.11) inset, 0 0 0 1px #070707, 0 3px 0 #0c0c0c, 0 6px 7px rgba(0, 0, 0, 0.5);
+      transition: color 150ms, transform 90ms ease-out, box-shadow 90ms ease-out; }
+    .dock .hop:hover { color: #fff; }
+    .dock .hop:active { transform: translateY(2px); box-shadow: 0 1px 0 rgba(255, 255, 255, 0.08) inset, 0 0 0 1px #070707, 0 1px 0 #0c0c0c, 0 2px 3px rgba(0, 0, 0, 0.5); }
     .hop svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
-    .hook__cta { margin-top: 28px; }
     .hook__inner { display: flex; flex-direction: column; align-items: center; }
     /* Phones. The controls shrink as a whole (zoom keeps the knob's pointer maths true), and turned sideways
        the controls and Recent Work sit side by side under the sentence so everything fits on one screen. */
     @media (max-width: 600px) {
-      .dock { zoom: .82; margin-top: 30px; gap: 14px; padding: 10px 18px 10px 14px; }
-      .hook__cta { margin-top: 22px; padding: 14px 20px; }
+      .dock { zoom: .82; margin-top: 30px; }
+      .hook__go { margin-top: 22px; }
     }
-    @media (max-width: 380px) { .freq { display: none; } .readout { min-width: 64px; } }
+    @media (max-width: 380px) { .freq { display: none; } }
     @media (max-height: 520px) and (orientation: landscape) {
       .hook__inner { flex-flow: row wrap; justify-content: center; align-items: center; column-gap: 20px; }
       .hook__text { flex-basis: 100%; max-width: 22em; }
       .dock { zoom: .66; margin-top: 18px; }
-      .hook__cta { margin-top: 18px; padding: 13px 18px; }
+      .hook__go { margin-top: 18px; }
     }
-    @media (prefers-reduced-motion: reduce) { .dock { opacity: 1; transform: none; transition: none; } .toggle__thumb { transition: none; } }
+    @media (prefers-reduced-motion: reduce) { .dock { opacity: 1; transform: none; transition: none; } .toggle__thumb, .dock .hop { transition: none; } }
   </style>
 </head>
 <body>
@@ -125,13 +137,11 @@
       <h1 class="hook__text"><span class="hook__name">I’m Brian.</span> I design human-in-the-loop agentic systems for high-stakes, regulated industries.</h1>
       <section class="dock" aria-label="Plate controls">
         <div class="switch">
+          <span class="cap" aria-hidden="true">Sound</span>
           <button class="toggle" id="power" type="button" role="switch" aria-checked="false" aria-label="Sound">
             <span class="toggle__thumb"></span>
           </button>
-          <div class="switch__side" aria-hidden="true">
-            <span class="cap">Sound</span>
-            <span class="state"><span class="lamp"></span>On</span>
-          </div>
+          <span class="state" aria-hidden="true"><span class="lamp"></span>On</span>
         </div>
         <span class="dock__sep"></span>
         <div class="knob-wrap">
@@ -142,9 +152,10 @@
             <circle class="pos" id="dial-pos" r="2.6"/>
           </svg>
           <div class="knob" id="knob" role="slider" tabindex="0" aria-label="Frequency" aria-valuemin="200" aria-valuemax="800" aria-valuenow="440" aria-valuetext="440 hertz">
-            <div class="knob__grip" id="grip"><span class="knob__face"></span><span class="knob__mark"></span></div>
+            <div class="knob__grip" id="grip"><span class="knob__mark"></span></div>
           </div>
         </div>
+        <span class="dock__sep"></span>
         <div class="readout">
           <div class="freq" aria-hidden="true"><number-flow id="hz">440</number-flow><small>Hz</small></div>
           <div class="hops">
@@ -157,7 +168,9 @@
           </div>
         </div>
       </section>
-      <a class="hook__cta" href="work.html">Recent Work <span aria-hidden="true">→</span></a>
+      <div class="hook__go matte matte--dark">
+        <a class="hook__cta m-key" href="work.html">Recent Work <svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2 6h8M6.5 2.5 10 6l-3.5 3.5"/></svg></a>
+      </div>
     </div>
   </main>
 
@@ -170,8 +183,20 @@
     hz.spinTiming = { duration: 360, easing: 'cubic-bezier(0.23, 1, 0.32, 1)' };
     hz.opacityTiming = { duration: 200, easing: 'ease-out' };
   </script>
-  <script src="cover/covers.js"></script>
+  <script src="cover/covers.js" data-skin="matte" data-lab="tinkering/dissolve-lab/" data-lab-name="Dissolve Lab"></script>
+  <script src="cover/dissolve-versions.js"></script>
+  <script src="cover/dissolve.js"></script>
   <script src="cover/boom.js"></script>
+  <script src="filings-versions.js"></script>
+  <script src="filings.js"></script>
+  <script>
+    // Iron filings on the cover's keys: Recent Work, the two figure hops, and the Covers menu key.
+    // They take the version the Button Lab put on the site, or the effect's defaults when that is off.
+    if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      const filings = Filings.activeConfig();
+      for (const el of document.querySelectorAll('.hook__cta, .dock .hop, .covers__toggle')) Filings.attach(el, filings);
+    }
+  </script>
   <script>
   (() => {
     const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -310,21 +335,15 @@
     addEventListener('pointerup', (e) => lift(e, true));
     addEventListener('pointercancel', (e) => lift(e, false));
 
-    // ---- Recent Work: hover it and every grain rushes in to fill the button --------------------
+    // ---- Recent Work: hover it and every grain rushes in under the key, which lights --------------------
     const cta = document.querySelector('.hook__cta');
-    let gather = false, tgt = null, rushUntil = 0;
-    function startGather() {
-      const r = cta.getBoundingClientRect(), rad = r.height / 2 - 1.5, cy = r.top + r.height / 2;
-      const x0 = r.left + 1.5, w = r.width - 3, xa = r.left + r.height / 2, xb = r.right - r.height / 2;
+    let gather = false, tgt = null, from = null, gatherAt = 0, rushUntil = 0;
+    const GATHER_MS = 100;                                         // every grain is under the key this soon after the pointer arrives
+    function startGather(now = performance.now()) {
+      const r = cta.getBoundingClientRect(), x0 = r.left + 2, w = r.width - 4, y0 = r.top + 2, h = r.height - 4;
       if (!tgt || tgt.length !== N * 2) tgt = new Float32Array(N * 2);
-      for (let i = 0; i < N; i++) {                              // a spot for each grain, somewhere inside the pill
-        let x, y, dx;
-        do {
-          x = x0 + Math.random() * w; y = cy + (Math.random() * 2 - 1) * rad;
-          dx = x < xa ? xa - x : x > xb ? x - xb : 0;
-        } while (dx * dx + (y - cy) * (y - cy) > rad * rad);
-        tgt[2 * i] = x; tgt[2 * i + 1] = y;
-      }
+      for (let i = 0; i < N; i++) { tgt[2 * i] = x0 + Math.random() * w; tgt[2 * i + 1] = y0 + Math.random() * h; }   // a spot for each grain, under the key
+      from = Float32Array.from(shown); gatherAt = now;             // each grain sets off from where it shows now
       gather = true;
     }
     function endGather() { if (gather) { gather = false; rushUntil = performance.now() + 1600; } }
@@ -336,8 +355,47 @@
       cta.addEventListener('blur', endGather);
     }
 
+    // ---- leaving: press Recent Work. The sand winks out at once, the sentence and the key rise away, and the panel
+    //      dissolves into particles that fall upward, slowly and then in a rush (cover/dissolve.js). Its timing and feel are
+    //      the active version from the Dissolve Lab (tinkering/dissolve-lab/). Then the work page opens. ----
+    let leaving = null;
+    const inLab = new URLSearchParams(location.search).has('lab') && parent !== window;   // shown inside the Dissolve Lab, which supplies the settings and replays it
+    if (inLab) document.documentElement.classList.add('is-lab');
+    function startLeave(hold) {
+      const c = { ...(window.Dissolve ? Dissolve.activeConfig() : { textDelay: 0, keyDelay: 60, textOut: 320, rise: 56 }), ...(inLab && parent.dissolveLab ? parent.dissolveLab.config() : {}) };
+      const rate = inLab && parent.dissolveLab ? parent.dissolveLab.rate() : 1, root = document.documentElement, started = performance.now();
+      gather = false;
+      root.style.setProperty('--leave-out', c.textOut / rate); root.style.setProperty('--leave-rise', c.rise);
+      root.style.setProperty('--leave-text-delay', c.textDelay / rate); root.style.setProperty('--leave-key-delay', c.keyDelay / rate);
+      root.classList.add('is-leaving');
+      const go = () => {
+        if (hold) return;
+        if (!inLab) { location.href = cta.href; return; }
+        parent.dissolveLab.done((performance.now() - started) * rate);   // in the lab: report, pause, and put the cover back
+        setTimeout(endLeave, 600);
+      };
+      leaving = { at: started, rate, c, fx: window.Dissolve ? Dissolve.run(dock, c, { onDone: go, hold }) : null };
+      if (leaving.fx) leaving.fx.rate = rate; else setTimeout(go, 400);   // without the script, the panel simply stays while the rest clears
+    }
+    function endLeave() {                                           // back from the work page, or the lab replaying: put everything back
+      if (!leaving) return;
+      leaving.fx && leaving.fx.restore(); leaving = null;
+      document.documentElement.classList.remove('is-leaving');
+      off.fill(0); ovel.fill(0);
+    }
+    if (!reduced || inLab) {
+      cta.addEventListener('click', (e) => {
+        if (leaving || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button) return;   // a new tab or window opens as usual
+        e.preventDefault();
+        startLeave();
+        if (!inLab) try { sessionStorage.setItem('arrive', 'cover'); } catch (err) { /* the work page simply appears */ }
+      });
+      addEventListener('pageshow', (e) => { if (e.persisted) endLeave(); });
+    }
+    if (inLab) window.coverLab = { play() { endLeave(); startLeave(); } };   // the lab's Play key
+
     // ---- sand ------------------------------------------------------------------------------
-    const REST = 0.11, DAMP = 0.86, HEAL = 0.004, RUSH = 0.02, GATHER = 0.04, PULSE = 2.9, MOUSE_R = 130, PULSE_SPEED = 1100, PULSE_BAND = 90;
+    const REST = 0.11, DAMP = 0.86, HEAL = 0.004, RUSH = 0.02, PULSE = 2.9, MOUSE_R = 130, PULSE_SPEED = 1100, PULSE_BAND = 90;
     function step(k, now) {
       const K = 0.07 * S, inv = 1 / CELL, mr = finger ? Math.min(MOUSE_R, 0.24 * Math.min(W, H)) : MOUSE_R, R2 = mr * mr;
       const far = Math.hypot(W, H);
@@ -348,7 +406,7 @@
       }
       const damp = Math.pow(DAMP, k);
       const rushing = now < rushUntil, heal = rushing ? RUSH : HEAL, od = gather ? Math.pow(0.72, k) : rushing ? Math.pow(0.8, k) : damp;
-      const g = gather && tgt && tgt.length === N * 2;
+      const g = gather && tgt && from && tgt.length === N * 2 && from.length === N * 2;
       for (let p = 0; p < N; p++) {
         const ix = 2 * p, iy = ix + 1;
         let x = pos[ix], y = pos[iy];
@@ -367,11 +425,11 @@
         let ox = off[ix], oy = off[iy], px = 0, py = 0, gx = 0, gy = 0;
         const sx = x + ox, sy = y + oy;
         if (g) {
-          // each grain is pulled to its spot in the button, some quicker than others
-          const kg = GATHER * (0.6 + 0.7 * (((p * 2654435761) >>> 0) / 4294967296)) * k;
-          const ovx = (ovel[ix] + (tgt[ix] - sx) * kg) * od, ovy = (ovel[iy] + (tgt[iy] - sy) * kg) * od;
-          gx = sx + ovx * k; gy = sy + ovy * k;                 // where the grain shows, whatever the plate does underneath
-          ovel[ix] = ovx; ovel[iy] = ovy;
+          // each grain runs straight to its spot under the key, some a little sooner than others, all inside GATHER_MS
+          const dur = GATHER_MS * (0.6 + 0.4 * (((p * 2654435761) >>> 0) / 4294967296));
+          const t = Math.min(1, (now - gatherAt) / dur), e = 1 - (1 - t) * (1 - t) * (1 - t);
+          gx = from[ix] + (tgt[ix] - from[ix]) * e; gy = from[iy] + (tgt[iy] - from[iy]) * e;   // where the grain shows, whatever the plate does underneath
+          ovel[ix] = 0; ovel[iy] = 0;
         } else {
         if (mouse.on) {
           const dx = sx - mouse.x, dy = sy - mouse.y, d2 = dx * dx + dy * dy;
@@ -411,14 +469,14 @@
     const prog = gl.createProgram();
     gl.attachShader(prog, sh(gl.VERTEX_SHADER, `
       attribute vec2 aPos; attribute float aSeed;
-      uniform vec2 uRes; uniform float uDpr, uDim; uniform vec4 uRect;
+      uniform vec2 uRes; uniform float uDpr, uDim, uFade; uniform vec4 uRect;
       varying float vA, vSeed;
       void main() {
         gl_Position = vec4(aPos.x / uRes.x * 2.0 - 1.0, 1.0 - aPos.y / uRes.y * 2.0, 0.0, 1.0);
         gl_PointSize = (1.2 + 1.3 * fract(aSeed * 7.13)) * uDpr;
         // the sand goes quiet behind the sentence
         float d = max(max(uRect.x - aPos.x, aPos.x - uRect.z), max(uRect.y - aPos.y, aPos.y - uRect.w));
-        vA = mix(1.0 - 0.93 * uDim, 1.0, smoothstep(-10.0, 100.0, d));
+        vA = mix(1.0 - 0.93 * uDim, 1.0, smoothstep(-10.0, 100.0, d)) * uFade;
         vSeed = aSeed;
       }`));
     gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, `
@@ -457,7 +515,12 @@
       if (i + dir < 0 || i + dir >= NOTES.length) dir = -dir;
       auto = { from: NOTES[i], to: NOTES[i + dir], start, dur: CYCLE * 1000 };
     }
+    let advancedAt = null;
     function advance(now) {
+      // while the pointer is on Recent Work (the sand gathered under it) or the cover is leaving, the pitch holds still:
+      // the drift's clock stops, so the readout and the knob freeze and pick up where they were afterwards
+      if ((gather || leaving) && advancedAt !== null) { const dt = now - advancedAt; if (auto) auto.start += dt; touched += dt; }
+      advancedAt = now;
       if (!reduced) {
         if (!auto && !drag && now - touched > IDLE) {
           // pick the drift back up: settle on the nearest note first
@@ -544,18 +607,27 @@
     }
     $('power').addEventListener('click', () => setOn(!on));
 
-    // ---- the knob: one full turn is an octave; the ring shows the whole range, a dot per figure --
+    // ---- the knob: its dot, the end of the copper ring and the lit scale dot all sit at one angle.
+    //      The scale is evenly spaced: one dot per figure, plus one at each end of the range --
     const knob = $('knob'), grip = $('grip');
-    const ARC = 300, R = 53, C = 58;
-    const toUnit = (f) => Math.log(f / F_MIN) / Math.log(F_MAX / F_MIN);
-    const polar = (u) => { const a = (-ARC / 2 + u * ARC - 90) * Math.PI / 180; return [C + R * Math.cos(a), C + R * Math.sin(a)]; };
+    const ARC = 300, R = 44, R_TICK = 54, C = 58;                    // the copper ring hugs the knob; the printed dots sit outside it
+    const STOPS = [F_MIN, ...NOTES, F_MAX], LAST = STOPS.length - 1;
+    const toUnit = (f) => {                                          // 0 to 1 round the arc; each stop is an equal step from the last
+      let i = 0; while (i < LAST - 1 && f >= STOPS[i + 1]) i++;
+      return Math.min(1, Math.max(0, (i + Math.log(f / STOPS[i]) / Math.log(STOPS[i + 1] / STOPS[i])) / LAST));
+    };
+    const fromUnit = (u) => {
+      const x = Math.min(1, Math.max(0, u)) * LAST, i = Math.min(LAST - 1, Math.floor(x));
+      return STOPS[i] * Math.pow(STOPS[i + 1] / STOPS[i], x - i);
+    };
+    const polar = (u, r = R) => { const a = (-ARC / 2 + u * ARC - 90) * Math.PI / 180; return [C + r * Math.cos(a), C + r * Math.sin(a)]; };
     const arcPath = (u0, u1) => {
       const [x0, y0] = polar(u0), [x1, y1] = polar(u1);
       return `M${x0.toFixed(2)} ${y0.toFixed(2)} A${R} ${R} 0 ${(u1 - u0) * ARC > 180 ? 1 : 0} 1 ${x1.toFixed(2)} ${y1.toFixed(2)}`;
     };
     $('dial-track').setAttribute('d', arcPath(0, 1));
-    const ticks = NOTES.map((n) => {
-      const [x, y] = polar(toUnit(n));
+    const ticks = STOPS.map((n, i) => {
+      const [x, y] = polar(i / LAST, R_TICK);
       const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
       c.setAttribute('class', 'tick'); c.setAttribute('cx', x.toFixed(2)); c.setAttribute('cy', y.toFixed(2)); c.setAttribute('r', '1.1');
       $('dial-ticks').appendChild(c);
@@ -572,14 +644,14 @@
     knob.addEventListener('pointermove', (e) => {
       if (!drag) return;
       const dx = e.clientX - drag.cx, dy = e.clientY - drag.cy;
-      let oct = 0;
+      let du = 0;
       if (Math.hypot(dx, dy) > 12) {                                // turn it like a real knob, by circling it…
         const a = Math.atan2(dy, dx);
-        if (drag.a !== null) { let d = a - drag.a; if (d > Math.PI) d -= 2 * Math.PI; else if (d < -Math.PI) d += 2 * Math.PI; oct = d / (2 * Math.PI); }
+        if (drag.a !== null) { let d = a - drag.a; if (d > Math.PI) d -= 2 * Math.PI; else if (d < -Math.PI) d += 2 * Math.PI; du = d * 180 / Math.PI / ARC; }   // the dot follows the pointer round
         drag.a = a;
-      } else { oct = (drag.y - e.clientY) / 260; drag.a = null; }   // …or, right over its centre, by dragging up and down
+      } else { du = (drag.y - e.clientY) / 420; drag.a = null; }   // …or, right over its centre, by dragging up and down
       drag.y = e.clientY;
-      if (oct) setFreq(freq * Math.pow(2, oct));
+      if (du) setFreq(fromUnit(toUnit(freq) + du));
     });
     const endDrag = () => { drag = null; touched = performance.now(); };
     knob.addEventListener('pointerup', endDrag);
@@ -609,12 +681,12 @@
         knob.setAttribute('aria-valuenow', hz); knob.setAttribute('aria-valuetext', `${hz} hertz`);
       }
       const u = toUnit(freq), [px, py] = polar(u);
-      grip.style.transform = `rotate(${(Math.log2(freq / F_MIN) * 360) % 360}deg)`;
+      grip.style.transform = `rotate(${(-ARC / 2 + u * ARC).toFixed(2)}deg)`;
       $('dial-value').setAttribute('d', arcPath(0, Math.max(0.0005, u)));
       $('dial-pos').setAttribute('cx', px.toFixed(2)); $('dial-pos').setAttribute('cy', py.toFixed(2));
       dock.style.setProperty('--res', (on ? strength : 0).toFixed(2));
       let near = -1;
-      NOTES.forEach((n, i) => { if (Math.abs(Math.log2(n / freq)) < 0.02) near = i; });
+      STOPS.forEach((n, i) => { if (Math.abs(Math.log2(n / freq)) < 0.02) near = i; });
       if (near !== shownR.near) {
         if (shownR.near >= 0) ticks[shownR.near].classList.remove('is-near');
         if (near >= 0) ticks[near].classList.add('is-near');
@@ -628,7 +700,7 @@
     const runFF = () => {
       hook.classList.add('is-in', 'is-done');
       document.querySelectorAll('.word').forEach((w) => { w.style.animationDelay = '0s'; w.style.animationDuration = '1ms'; });
-      document.querySelector('.hook__cta').style.transition = 'none'; dock.style.transition = 'none';
+      document.querySelector('.hook__go').style.transition = 'none'; dock.style.transition = 'none';
       const pq = (q.get('pulse') || '').split(',').map(Number);
       if (pq.length === 3) pulses.push({ x: pq[0], y: pq[1], t: t0 + FF - pq[2] * 1000 });
       const mq = (q.get('mouse') || '').split(',').map(Number);
@@ -636,8 +708,8 @@
       hopFrom(NOTES.indexOf(freq), t0);
       const gq = parseFloat(q.get('gather'));                   // &gather=0.4 hovers the button for the last 0.4s; &gather=-0.3 left it 0.3s ago
       for (let ms = 0; ms < FF; ms += 16.667) {
-        if (gq > 0 && !gather && ms >= FF - gq * 1000) { startGather(); cta.style.cssText += ';background:none;color:var(--c-night);border-color:var(--c-sand)'; }
-        if (gq < 0 && !gather && !rushUntil && ms >= FF + gq * 1000 - 1500) startGather();
+        if (gq > 0 && !gather && ms >= FF - gq * 1000) { startGather(t0 + ms); cta.classList.add('is-lit'); }
+        if (gq < 0 && !gather && !rushUntil && ms >= FF + gq * 1000 - 1500) startGather(t0 + ms);
         if (gq < 0 && gather && ms >= FF + gq * 1000) { gather = false; rushUntil = t0 + ms + 1600; }
         advance(t0 + ms); step(1, t0 + ms);
       }
@@ -648,19 +720,23 @@
       // headless Chrome resizes the window once after load; run the fast-forward again at the final size
       addEventListener('resize', () => { seedGrains(N); off.fill(0); t0 = performance.now() - FF; auto = null; gather = false; rushUntil = 0; pulses.length = 0; freq = NOTES[3]; runFF(); }, { once: true });
     }
+    const leaveHold = (parseFloat(q.get('leave')) || 0) * 1000;   // &leave=0.6 holds the leaving animation 0.6s in, for screenshots
+    if (leaveHold) setTimeout(() => startLeave(leaveHold), 400);   // after headless Chrome's late resize
     let last = performance.now();
     function frame(now) {
       const k = Math.max(0.2, Math.min(2.5, (now - last) / 16.667)); last = now;
       advance(now);
       readout(); updateAudio(k);
       step(k, now);
+      let fade = 1;
+      if (leaving) fade = 0;                                        // the sand winks out the instant the key is pressed
 
       gl.clear(gl.COLOR_BUFFER_BIT);
       gl.bindBuffer(gl.ARRAY_BUFFER, posBuf); gl.bufferSubData(gl.ARRAY_BUFFER, 0, shown);
       gl.enableVertexAttribArray(aPos); gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
       gl.bindBuffer(gl.ARRAY_BUFFER, seedBuf);
       gl.enableVertexAttribArray(aSeed); gl.vertexAttribPointer(aSeed, 1, gl.FLOAT, false, 0, 0);
-      gl.uniform2f(loc('uRes'), W, H); gl.uniform1f(loc('uDpr'), dpr);
+      gl.uniform2f(loc('uRes'), W, H); gl.uniform1f(loc('uDpr'), dpr); gl.uniform1f(loc('uFade'), fade);
       gl.uniform4f(loc('uRect'), rect[0], rect[1], rect[2], rect[3]);
       gl.uniform1f(loc('uDim'), Math.max(0, Math.min(1, (now - t0 - TEXT_AT + 300) / 900)));
       gl.drawArrays(gl.POINTS, 0, N);

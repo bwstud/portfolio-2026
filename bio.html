@@ -13,50 +13,30 @@
   <script src="buttons.js"></script>
   <link rel="alternate" type="text/plain" href="llms.txt" title="Plain-text version for agents">
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="tinkering/matte-lab/matte.css?v=12">   <!-- the Matte system: the nav keys and the menu -->
+  <link rel="stylesheet" href="matte-page.css">                          <!-- the page shared with the work page: rail nav, off-black ground -->
   <style>
     /* Bio: a page of its own, laid out like the work page (work.html), with the same nav rail.
        Colours, spacing and type come from the tokens in styles.css. */
-    .home { max-width: 76rem; margin: 0 auto; padding: 0 max(var(--space-4), 4vw) var(--space-9); }
-    .home a { text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
-    .mono { font: 400 var(--text-2xs)/1.5 "Söhne Mono", ui-monospace, Menlo, monospace; color: var(--muted); }
+    .home { padding-bottom: var(--space-9); }
     .top { padding-top: var(--space-7); }
     .page h1 { font: 600 clamp(32px, 4vw, 56px)/1.05 "Söhne Breit", sans-serif; letter-spacing: -.01em; text-wrap: balance; margin: 0; }
     .page__body { margin-top: var(--space-6); max-width: 40rem; }
     .page__body.is-empty { opacity: .6; }
-    /* Wide screens: the nav is a rail down the left of the page, its buttons stacked and all one
-       width. The column stays centred when there's room beside the rail and moves right when there isn't. */
-    @media (min-width: 1100px) {
-      .nav { position: fixed; inset: 0 auto auto 0; height: auto; flex-direction: column; justify-content: flex-start; align-items: flex-start;
-        gap: var(--chip-gap); padding: var(--rail-top, 152px) 0 0 var(--space-5); background: none; backdrop-filter: none; -webkit-backdrop-filter: none; }
-      .nav__start, .nav__links { flex-direction: column; align-items: stretch; align-self: stretch; }
-      .nav .chip { width: 100%; justify-content: flex-start; }
-      /* Controls and the light/dark switch leave the rail for the top right corner, at their own sizes */
-      .nav .dropdown--controls, .nav .theme-toggle.chip { position: fixed; top: var(--space-6); }
-      .nav .theme-toggle.chip { right: var(--space-5); width: var(--chip-h); justify-content: center; }
-      .nav .dropdown--controls { right: calc(var(--space-5) + var(--chip-h) + var(--chip-gap)); }
-      .nav .dropdown--controls .chip { width: auto; }
-      .nav .dropdown__menu { left: auto; right: 0; }
-      .home { margin-left: max(150px, calc((100% - 76rem) / 2)); margin-right: auto; }
-      .top { padding-top: var(--rail-top, 152px); }   /* the heading level with the rail's first button */
-    }
-    /* Phones: one row, with the links in the Menu panel (styles.css and nav.js) */
-    /* Between phone and rail the row can't hold every button, so it wraps */
-    @media (min-width: 601px) and (max-width: 1099px) {
-      .nav { height: auto; min-height: var(--nav-h); flex-wrap: wrap; row-gap: var(--space-2); padding-block: var(--space-3); }
-    }
+    @media (min-width: 1100px) { .top { padding-top: var(--rail-top, 152px); } }   /* the heading level with the rail's first button */
   </style>
 </head>
 <body>
-  <header class="nav">
+  <header class="nav matte">
     <div class="nav__start">
       <a class="chip" href="work.html"><svg class="chip__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 12h.01"/><path d="M16 6V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><path d="M22 13a18.15 18.15 0 0 1-20 0"/><rect width="20" height="14" x="2" y="6" rx="2"/></svg>Work</a>
     </div>
     <nav class="nav__links">
       <a class="chip" href="bio.html" aria-current="page"><svg class="chip__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Bio</a>
       <a class="chip" href="how-i-work.html"><svg class="chip__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="8" height="8" x="3" y="3" rx="2"/><path d="M7 11v4a2 2 0 0 0 2 2h4"/><rect width="8" height="8" x="13" y="13" rx="2"/></svg>How I Work</a>
-      <a class="chip" href="https://www.linkedin.com/in/bwstudwell" target="_blank" rel="noopener"><svg class="chip__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect width="4" height="12" x="2" y="9"/><circle cx="4" cy="4" r="2"/></svg>LinkedIn</a>
-      <a class="chip" href="work.html#contact"><svg class="chip__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="10" r="3"/><path d="M7 20.662V19a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v1.662"/></svg>Contact</a>
       <a class="chip" href="tinkering/"><svg class="chip__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12.99 6.74 1.93 3.44"/><path d="M19.136 12a10 10 0 0 1-14.271 0"/><path d="m21 21-2.16-3.84"/><path d="m3 21 8.02-14.26"/><circle cx="12" cy="5" r="2"/></svg>Rigs and Jigs</a>
+      <a class="chip" href="work.html#contact"><svg class="chip__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="10" r="3"/><path d="M7 20.662V19a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v1.662"/></svg>Contact</a>
+      <a class="chip" href="https://www.linkedin.com/in/bwstudwell" target="_blank" rel="noopener"><svg class="chip__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect width="4" height="12" x="2" y="9"/><circle cx="4" cy="4" r="2"/></svg>LinkedIn</a>
       <a class="chip" href="llms.txt" download="brian.md" title="Download a Markdown summary to give to your agent">brian.md<svg class="chip__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/></svg></a>
       <div class="dropdown dropdown--controls">
         <button class="dropdown__toggle chip" aria-expanded="false" aria-controls="controls-menu" aria-label="Controls">
@@ -69,6 +49,8 @@
           <li><a href="tinkering/domino-run/lab/">Domino Lab</a></li>
           <li><a href="tinkering/kaleidoscopes/lab/">Kaleidoscope Lab</a></li>
           <li><a href="tinkering/button-lab/">Button Lab</a></li>
+          <li><a href="tinkering/matte-lab/">Matte Lab</a></li>
+          <li><a href="tinkering/dissolve-lab/">Dissolve Lab</a></li>
         </ul>
       </div>
       <button class="theme-toggle chip" type="button" aria-label="Light mode" aria-pressed="false">
@@ -85,5 +67,7 @@
 
   <script src="nav.js"></script>
   <script src="spark.js" defer></script>
+  <script src="filings-versions.js"></script>
+  <script src="filings.js"></script>
 </body>
 </html>

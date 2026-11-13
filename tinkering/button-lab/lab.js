@@ -22,6 +22,7 @@
     { key: 'fontWeight', name: 'Weight', min: 300, max: 800, step: 100 },
     { key: 'tracking', name: 'Letter spacing', min: -0.05, max: 0.2, step: 0.005, unit: 'em' },
     { key: 'uppercase', name: 'Uppercase', bool: true },
+    { key: 'mono', name: 'Mono type', bool: true },
     { key: 'labelLift', name: 'Label lift', min: -3, max: 3, step: 0.25, unit: 'px', hint: 'Raises the label above true centre so it looks centred. Icons stay put' },
     { group: 'Fill' },
     { key: 'angle', name: 'Gradient angle', min: 0, max: 360, step: 1, unit: '°', hint: '180 runs top colour to bottom colour, straight down' },

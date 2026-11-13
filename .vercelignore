@@ -7,10 +7,13 @@
 !cover
 !llms.txt
 !styles.css
+!matte-page.css
 !nav.js
 !spark.js
 !buttons.js
 !button-versions.js
+!filings.js
+!filings-versions.js
 !split-flap.js
 !split-flap-versions.js
 !halftone.js

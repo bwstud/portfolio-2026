@@ -1,0 +1,74 @@
+/* The Matte page: what the work page and the Rigs and Jigs page share. Load after styles.css and matte.css.
+   The signal colour, the page column, the nav as a rail of Matte keys, the off-black speckled ground,
+   and the footer on its field of Slate. Each page adds its own content styles on top. */
+:root { --signal: #e08a3c; }                              /* Matte's copper: status and Result, nothing else */
+:root[data-theme="light"] { --signal: #8b5625; }           /* the same copper, darkened to read on paper */
+
+
+.home, .foot-col { max-width: 76rem; margin: 0 auto; padding: 0 max(var(--space-4), 4vw); }
+.home { position: relative; z-index: 1; }   /* above the halftone's canvas, which reaches up behind the last project */
+.home a, .foot-col a { text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
+.mono { font: 400 var(--text-2xs)/1.5 "Söhne Mono", ui-monospace, Menlo, monospace; color: var(--muted); }
+
+
+/* Wide screens: the nav is a rail down the left of the page, its buttons stacked and all one
+   width. The column stays centred when there's room beside the rail and moves right when there isn't. */
+@media (min-width: 1100px) {
+  .nav { position: fixed; inset: 0 auto auto 0; height: auto; flex-direction: column; justify-content: flex-start; align-items: flex-start;
+    gap: var(--chip-gap); padding: var(--rail-top, 152px) 0 0 var(--space-5);   /* first button level with the top of the board */ background: none; backdrop-filter: none; -webkit-backdrop-filter: none; }
+  .nav__start, .nav__links { flex-direction: column; align-items: stretch; align-self: stretch; }
+  .nav .chip { width: 100%; justify-content: flex-start; }
+  /* Controls and the light/dark switch leave the rail for the top right corner, at their own sizes */
+  .nav .dropdown--controls, .nav .theme-toggle.chip { position: fixed; top: var(--space-6); }
+  .nav .theme-toggle.chip { right: var(--space-5); width: var(--chip-h); justify-content: center; }
+  .nav .dropdown--controls { right: calc(var(--space-5) + var(--chip-h) + var(--chip-gap)); }
+  .nav .dropdown--controls .chip { width: auto; }
+  .nav .dropdown__menu { left: auto; right: 0; }
+  .home, .foot-col { margin-left: max(150px, calc((100% - 76rem) / 2)); margin-right: auto; }
+}
+/* Phones: the buttons flow as one wrapping run, so the row never runs off the side */
+@media (max-width: 600px) {
+  .nav { justify-content: flex-start; gap: var(--space-2) 6px; padding-block: var(--space-3); }
+  .nav__start, .nav__links { display: contents; }
+}
+/* Between phone and rail the row can't hold every button, so it wraps */
+@media (min-width: 601px) and (max-width: 1099px) {
+  .nav { height: auto; min-height: var(--nav-h); flex-wrap: wrap; row-gap: var(--space-2); padding-block: var(--space-3); }
+}
+
+/* ---- Matte: the page's controls are the Matte system's parts (tinkering/matte-lab/matte.css).
+        The nav buttons are Matte keys through the Button Lab's active version, "Matte" (button-versions.js);
+        here the Controls menu is a small panel and the split-flap board sits in a powder-coated housing. Both finishes follow the page's light and dark switch. ---- */
+.nav.matte .chip:focus-visible { outline: 2px solid var(--m-signal); outline-offset: 3px; }
+.nav.matte .dropdown__menu { min-width: 200px; padding: 5px; border: 0; border-radius: var(--radius-md, 10px);
+  background: linear-gradient(180deg, var(--m-body-hi), var(--m-body-lo));
+  box-shadow: 0 1px 0 var(--m-shine) inset, 0 0 0 1px var(--m-edge), var(--m-drop); -webkit-backdrop-filter: none; backdrop-filter: none; }
+.nav.matte .dropdown__menu a { padding: 10px; border-radius: 4px; color: var(--m-print); font: 400 var(--m-text-legend)/1 var(--m-font); letter-spacing: 0.1em; text-transform: uppercase; }
+.nav.matte .dropdown__menu a:hover { background: color-mix(in srgb, var(--m-print) 12%, transparent); color: var(--m-print-hi); }
+
+/* the page itself, in the dark theme: off-black with the same fine speckle as a Matte body, in place of Night.
+   Everything mixed from Night (lines, surfaces, muted text) follows, so the greys stay neutral. */
+:root:not([data-theme="light"]) { --c-night: #0d0d0e; }
+:root:not([data-theme="light"]) body { background: var(--ground)
+  url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.1' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .126 -.059'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E"); }
+
+.foot { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-6); }
+.foot h2 { font: 400 var(--text-2xs)/1.5 "Söhne Mono", monospace; color: var(--c-mist); margin: 0 0 var(--space-2); }
+.foot p, .foot ul { margin: 0; padding: 0; list-style: none; font-size: var(--text-md); line-height: 1.55; }
+.foot li { padding: 2px 0; }
+
+/* The page ends on a solid field of Slate, and the footer sits on it. The ground dissolves
+   into the field through the halftone at its top edge. The band classes and colours are the
+   ones in styles.css; halftone.js draws the dots. Slate is the same in both themes, so the
+   footer's text is Paper and Mist in both: about 7:1 and 6:1 against it. */
+.endband { display: block; --band-from: var(--ground); --band-to: var(--c-slate); color: var(--c-paper); pointer-events: auto;
+  padding-block: calc(var(--halftone-below) + 144px) var(--space-8); }   /* stray dots fall well past --halftone-below; the text starts under all of them */
+.endband a:focus-visible { outline: 2px solid var(--c-paper); outline-offset: 2px; }
+/* halftone.js draws on a canvas wider than the page that reaches --halftone-reach above the
+   field's edge. The frame clips the canvas to the page's width; it is that much taller than
+   the field and pulled up over the space left under the last project, so the dots above the
+   edge show. Nothing in that overlap takes clicks. */
+.endframe { overflow: clip; pointer-events: none; padding-top: var(--halftone-reach);
+  margin-top: calc(var(--space-8) + var(--halftone-above) - var(--halftone-reach)); }
+
+@media (max-width: 760px) { .foot { grid-template-columns: minmax(0, 1fr); } }

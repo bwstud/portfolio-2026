@@ -192,6 +192,7 @@
       canvas.style.height = reach * 2 + 'px';
       el.append(canvas);
       if ($('edge').checked) el.append(Object.assign(document.createElement('div'), { className: 'preview__edge' }));
+      canvas.style.background = `rgb(${colour(from[1]).join(' ')})`;   // the canvas paints only the "to" colour; here the band above is behind it
       seams.push({ canvas, r: Halftone.renderer(canvas), from: colour(from[1]), to: colour(to[1]) });
       return el;
     };

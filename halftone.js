@@ -285,7 +285,7 @@
     for (let i = 0; i < 256; i++) for (let k = 0; k < 3; k++) lut[i * 3 + k] = from[k] + (to[k] - from[k]) * i / 255;
     for (let i = 0, n = m.data.length; i < n; i++) {
       const l = m.data[i] * 3, j = i * 4;
-      d[j] = lut[l]; d[j + 1] = lut[l + 1]; d[j + 2] = lut[l + 2]; d[j + 3] = 255;
+      d[j] = to[0]; d[j + 1] = to[1]; d[j + 2] = to[2]; d[j + 3] = m.data[i];   // only the "to" colour is painted: whatever lies behind shows as "from"
     }
     ctx.putImageData(img, 0, 0);
   }
@@ -463,13 +463,13 @@ void main() {
     a = clamp(0.5 + best * s * uSharp, 0.0, 1.0);
   }
   a = floor(a * 255.0) / 255.0;   // match the 8-bit mask the fallback draws
-  outColor = vec4(mix(uFrom, uTo, a) / 255.0, 1.0);
+  outColor = vec4(uTo / 255.0 * a, a);   // only the "to" colour is painted (premultiplied): whatever lies behind the canvas shows as "from"
 }`;
   const VERT = `#version 300 es
 void main() { vec2 p = vec2((gl_VertexID << 1) & 2, gl_VertexID & 2); gl_Position = vec4(p * 2.0 - 1.0, 0.0, 1.0); }`;
 
   function glRenderer(canvas) {
-    const gl = canvas.getContext('webgl2', { antialias: false, alpha: false, depth: false, stencil: false });
+    const gl = canvas.getContext('webgl2', { antialias: false, alpha: true, depth: false, stencil: false });
     if (!gl) return null;
     const shader = (type, src) => {
       const sh = gl.createShader(type);

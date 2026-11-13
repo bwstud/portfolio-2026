@@ -8,6 +8,7 @@
     height: 36, padX: 16, radius: 18, border: 1, gap: 10,
     // Type
     fontSize: 14, fontWeight: 500, tracking: 0, uppercase: false,
+    mono: false,    // set the label in the site's mono face, as Matte's printed legends are
     labelLift: 0,   // px the label sits above true centre, to centre it optically
     // Fill: the gradient runs from top to bottom colour at this angle (180 = straight down)
     angle: 180,
@@ -57,7 +58,7 @@
       '--chip-h': px(c.height), '--chip-px': px(c.padX), '--chip-radius': px(c.radius),
       '--chip-bw': px(c.border), '--chip-gap': px(c.gap),
       '--chip-fs': px(c.fontSize), '--chip-fw': String(c.fontWeight), '--chip-ls': c.tracking + 'em',
-      '--chip-tt': c.uppercase ? 'uppercase' : 'none', '--chip-lift': px(c.labelLift),
+      '--chip-tt': c.uppercase ? 'uppercase' : 'none', '--chip-ff': c.mono ? 'var(--font-mono)' : 'inherit', '--chip-lift': px(c.labelLift),
       '--chip-angle': c.angle + 'deg',
       '--chip-top-d': token(c.topD), '--chip-bottom-d': token(c.bottomD), '--chip-edge-d': token(c.edgeD), '--chip-text-d': token(c.textD),
       '--chip-top-l': token(c.topL), '--chip-bottom-l': token(c.bottomL), '--chip-edge-l': token(c.edgeL), '--chip-text-l': token(c.textL),

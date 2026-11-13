@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Xmastreemagochi · Brian Studwell</title>
+  <meta name="description" content="Pick a fir at the Troop 31 lot in Rochester, bring it home, water it, sweep up after it, decorate it, and keep the cat out of it until January 1.">
+  <style>
+    @font-face {
+      font-family: "Geist";
+      font-weight: 100 900;
+      font-display: swap;
+      src: url("../../fonts/Geist-Variable.woff2") format("woff2");
+    }
+    :root {
+      --bg: #120d0a;
+      --panel: rgba(26, 19, 15, 0.86);
+      --panel-solid: #1c1511;
+      --line: rgba(255, 236, 210, 0.1);
+      --line-strong: rgba(255, 236, 210, 0.22);
+      --fg: #f4ece1;
+      --muted: #bcae9c;
+      --faint: #85776a;
+      --accent: #e9b45c;
+      --accent-ink: #20160c;
+      --red: #e0574a;
+      --green: #7fc58a;
+      --water: #6fb6e0;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    [hidden] { display: none !important; }
+    html, body {
+      height: 100%; overflow: hidden; background: var(--bg); color: var(--fg);
+      font: 13px/1.45 "Geist", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    button, input, select { font: inherit; color: inherit; }
+    button { cursor: pointer; background: none; border: 0; }
+    :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    #scene { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+    body[data-cursor="pour"] #scene { cursor: none; }
+    body[data-cursor="sweep"] #scene { cursor: none; }
+    body[data-cursor="place"] #scene { cursor: copy; }
+    body[data-cursor="remove"] #scene { cursor: not-allowed; }
+    body[data-cursor="pointer"] #scene { cursor: pointer; }
+
+    .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
+    .label { font-size: 12px; font-weight: 600; color: var(--muted); }
+    .muted { color: var(--muted); }
+    .faint { color: var(--faint); }
+
+    /* top bar */
+    .top { position: fixed; z-index: 5; top: 14px; left: 16px; right: 16px; display: flex; align-items: center; gap: 14px; pointer-events: none; }
+    .top > * { pointer-events: auto; }
+    .back { color: var(--muted); text-decoration: none; }
+    .back:hover { color: var(--fg); }
+    .title { font-weight: 650; letter-spacing: -0.01em; }
+    .spacer { flex: 1; }
+    .clock { padding: 7px 12px; font-variant-numeric: tabular-nums; color: var(--muted); display: flex; gap: 10px; align-items: center; }
+    .clock b { color: var(--fg); font-weight: 600; }
+    .chip { padding: 7px 12px; border-radius: 999px; border: 1px solid var(--line-strong); background: var(--panel); }
+    .chip:hover { border-color: var(--accent); }
+
+    /* buttons */
+    .btn { padding: 9px 14px; border-radius: 10px; border: 1px solid var(--line-strong); background: rgba(255,255,255,.03); transition: border-color .15s, background .15s; text-align: left; }
+    .btn:hover { border-color: var(--accent); }
+    .btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 650; }
+    .btn.primary:hover { filter: brightness(1.08); }
+    .btn.small { padding: 6px 10px; font-size: 12px; }
+    .btn[aria-pressed="true"] { border-color: var(--accent); background: rgba(233,180,92,.14); }
+    .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .stack { display: grid; gap: 10px; }
+
+    /* welcome */
+    .overlay { position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; padding: 16px;
+      background: radial-gradient(ellipse at 50% 30%, rgba(60,30,14,.55), rgba(10,7,5,.92)); }
+    .card { width: min(460px, 100%); padding: 26px; display: grid; gap: 16px; }
+    .card h1 { font-size: 30px; line-height: 1.1; letter-spacing: -0.02em; font-weight: 700; }
+    .card p { color: var(--muted); }
+    .field { display: grid; gap: 6px; }
+    .field input { padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line-strong); background: rgba(0,0,0,.25); }
+    .field input:focus { border-color: var(--accent); outline: none; }
+    .tabs { display: flex; gap: 4px; padding: 3px; border-radius: 10px; background: rgba(0,0,0,.25); }
+    .tabs button { flex: 1; padding: 7px; border-radius: 8px; color: var(--muted); }
+    .tabs button[aria-selected="true"] { background: rgba(255,255,255,.08); color: var(--fg); }
+    .error { color: var(--red); min-height: 1.2em; }
+    .divider { height: 1px; background: var(--line); }
+
+    .ended { position: fixed; inset: 0; z-index: 30; display: grid; place-items: center; background: #0b0807; }
+    .ended p { font-size: clamp(28px, 6vw, 56px); font-weight: 600; letter-spacing: -0.02em; }
+
+    /* status */
+    .status { position: fixed; z-index: 4; top: 62px; left: 16px; width: 250px; padding: 14px; display: grid; gap: 10px; }
+    .status h2 { font-size: 15px; font-weight: 650; }
+    .meter { display: grid; gap: 4px; }
+    .meter .bar { height: 7px; border-radius: 99px; background: rgba(255,255,255,.08); overflow: hidden; }
+    .meter .bar i { display: block; height: 100%; width: 50%; border-radius: inherit; background: var(--water); transition: width .4s; }
+    .meter.thirst .bar i { background: var(--green); }
+    .meter .top-line { display: flex; justify-content: space-between; font-size: 12px; }
+    .status .note { font-size: 12px; color: var(--muted); }
+
+    /* tool rail */
+    .tools { position: fixed; z-index: 4; left: 16px; bottom: 16px; display: flex; gap: 6px; padding: 6px; }
+    .tool { display: grid; justify-items: center; gap: 3px; padding: 8px 10px; min-width: 62px; border-radius: 10px; color: var(--muted); font-size: 11.5px; }
+    .tool svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+    .tool:hover { color: var(--fg); background: rgba(255,255,255,.05); }
+    .tool[aria-pressed="true"] { color: var(--accent-ink); background: var(--accent); }
+
+    /* side panel */
+    .side { position: fixed; z-index: 4; top: 62px; right: 16px; bottom: 16px; width: 330px; padding: 16px; display: flex; flex-direction: column; gap: 12px; overflow: hidden; }
+    .side h3 { font-size: 16px; font-weight: 650; }
+    .side .scroll { flex: 1; min-height: 0; overflow-y: auto; display: grid; gap: 12px; align-content: start; padding-right: 4px; margin-right: -4px; }
+    .side .scroll::-webkit-scrollbar { width: 6px; } .side .scroll::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 9px; }
+    .facts { display: grid; gap: 8px; }
+    .fact { display: grid; gap: 2px; padding: 9px 10px; border-radius: 10px; background: rgba(255,255,255,.03); border: 1px solid var(--line); }
+    .fact b { font-weight: 600; font-size: 12px; color: var(--muted); }
+    .fact.hot { border-color: var(--accent); }
+    .price { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; }
+    .options { display: grid; gap: 6px; }
+    .opt { display: grid; gap: 2px; padding: 9px 11px; border-radius: 10px; border: 1px solid var(--line); background: rgba(255,255,255,.02); text-align: left; }
+    .opt:hover { border-color: var(--line-strong); }
+    .opt[aria-pressed="true"] { border-color: var(--accent); background: rgba(233,180,92,.1); }
+    .opt small { color: var(--muted); }
+    .swatches { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+    .swatch { aspect-ratio: 1; border-radius: 10px; border: 2px solid transparent; background-size: cover; background-position: center; position: relative; overflow: hidden; }
+    .swatch[aria-pressed="true"] { border-color: var(--accent); }
+    .swatch span { position: absolute; left: 0; right: 0; bottom: 0; font-size: 10px; padding: 3px 4px; background: rgba(0,0,0,.55); line-height: 1.2; }
+    .swatch.none { background: repeating-linear-gradient(45deg, #2a221c 0 6px, #221a15 6px 12px); }
+    .orn-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+    .orn { aspect-ratio: 1; border-radius: 10px; border: 1px solid var(--line); background: rgba(255,255,255,.03) center/86% no-repeat; }
+    .orn:hover { border-color: var(--line-strong); }
+    .orn[aria-pressed="true"] { border-color: var(--accent); background-color: rgba(233,180,92,.12); }
+    .colors { display: flex; gap: 6px; flex-wrap: wrap; }
+    .color { width: 26px; height: 26px; border-radius: 50%; border: 2px solid rgba(255,255,255,.2); }
+    .color[aria-pressed="true"] { border-color: var(--fg); box-shadow: 0 0 0 2px var(--accent); }
+    .slider { display: grid; gap: 4px; }
+    .slider .top-line { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); }
+    input[type=range] { width: 100%; accent-color: var(--accent); }
+    .seg { display: flex; gap: 3px; padding: 3px; border-radius: 10px; background: rgba(0,0,0,.25); }
+    .seg button { flex: 1; padding: 6px 4px; border-radius: 8px; color: var(--muted); font-size: 12px; }
+    .seg button[aria-pressed="true"] { background: rgba(255,255,255,.1); color: var(--fg); }
+    .steps { display: flex; gap: 6px; }
+    .steps span { flex: 1; height: 4px; border-radius: 9px; background: var(--line-strong); }
+    .steps span.on { background: var(--accent); }
+    .tree-item { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; }
+
+    /* hints and toasts */
+    .hint { position: fixed; z-index: 4; left: 50%; bottom: 18px; transform: translateX(-50%); padding: 9px 14px; color: var(--muted); max-width: calc(100% - 32px); text-align: center; }
+    .toasts { position: fixed; z-index: 8; left: 50%; top: 66px; transform: translateX(-50%); display: grid; gap: 6px; justify-items: center; pointer-events: none; width: min(520px, calc(100% - 32px)); }
+    .toast { padding: 10px 14px; background: var(--panel-solid); border: 1px solid var(--line-strong); border-radius: 12px; animation: toast .25s ease-out; text-align: center; }
+    .toast.cat { border-color: var(--accent); background: #2c1d10; font-weight: 600; }
+    @keyframes toast { from { opacity: 0; transform: translateY(-6px); } }
+    .fade { position: fixed; inset: 0; z-index: 15; background: #0b0807; display: grid; place-items: center; opacity: 0; pointer-events: none; transition: opacity .6s; }
+    .fade.on { opacity: 1; pointer-events: auto; }
+    .fade p { color: var(--muted); font-size: 16px; }
+    .cursor-tool { position: fixed; z-index: 6; pointer-events: none; width: 26px; height: 26px; margin: -13px 0 0 -13px; border-radius: 50%; border: 2px solid var(--accent); }
+
+    @media (max-width: 760px) {
+      .top { top: calc(10px + env(safe-area-inset-top)); left: 12px; right: 12px; gap: 8px; }
+      .title { display: none; }
+      .back { font-size: 12px; }
+      .clock { padding: 6px 10px; font-size: 12px; gap: 6px; }
+      .clock span:first-child, .clock .sunline { display: none; }
+      .chip { padding: 6px 10px; font-size: 12px; max-width: 46vw; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .status { width: auto; left: 12px; right: 12px; top: calc(52px + env(safe-area-inset-top)); padding: 9px 12px; grid-template-columns: 1fr 1fr; gap: 4px 12px; }
+      .status h2 { grid-column: 1 / -1; font-size: 13px; }
+      .status .note { display: none; }
+      .tools { left: 12px; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom)); overflow-x: auto; scrollbar-width: none; }
+      .tools::-webkit-scrollbar { display: none; }
+      .tool { min-width: 58px; white-space: nowrap; padding: 7px 8px; }
+      .side { top: auto; left: 12px; right: 12px; width: auto; height: 42svh; bottom: calc(86px + env(safe-area-inset-bottom)); padding: 12px; gap: 10px; }
+      .hint { bottom: calc(90px + env(safe-area-inset-bottom)); font-size: 12px; }
+      body:has(.side:not([hidden])) .hint { display: none; }
+      .toasts { top: calc(112px + env(safe-area-inset-top)); }
+      .card { padding: 20px; }
+      .card h1 { font-size: 26px; }
+    }
+    @media (prefers-reduced-motion: reduce) { .toast { animation: none; } .fade { transition: none; } }
+  </style>
+</head>
+<body>
+  <canvas id="scene"></canvas>
+
+  <header class="top">
+    <a class="back" href="../">← Tinkering</a>
+    <span class="title">Xmastreemagochi</span>
+    <span class="spacer"></span>
+    <span class="clock panel" id="clock"></span>
+    <button class="chip" id="accountBtn" hidden></button>
+  </header>
+
+  <div class="toasts" id="toasts" aria-live="polite"></div>
+
+  <!-- welcome -->
+  <section class="overlay" id="welcome">
+    <div class="card panel">
+      <h1>Xmastreemagochi</h1>
+      <p>Pick a fir at Boy Scout Troop 31's lot on East Avenue, bring it home to a corner by the window, and keep it alive until January 1. Water it, sweep up after it, decorate it, and keep the cat out of it.</p>
+      <div class="stack" id="authBox">
+        <div class="tabs" role="tablist">
+          <button role="tab" aria-selected="true" data-auth="login">Sign in</button>
+          <button role="tab" aria-selected="false" data-auth="signup">Create account</button>
+        </div>
+        <form class="stack" id="authForm">
+          <label class="field"><span class="label">Username</span><input name="username" autocomplete="username" required minlength="3" maxlength="24"></label>
+          <label class="field"><span class="label">Password</span><input name="password" type="password" autocomplete="current-password" required minlength="8"></label>
+          <div class="error" id="authError"></div>
+          <button class="btn primary" type="submit" id="authSubmit">Sign in</button>
+        </form>
+        <p class="faint" style="font-size:12px">Your trees are saved to your account, so they're there on any device.</p>
+      </div>
+      <p class="muted" id="noAccounts" hidden>Accounts aren't switched on for this server yet, so your trees will be saved in this browser.</p>
+      <div class="divider"></div>
+      <button class="btn" id="guestBtn">Play without an account <span class="faint">· saved in this browser</span></button>
+    </div>
+  </section>
+
+  <section class="ended" id="ended" hidden><p>See you next year.</p></section>
+
+  <div class="fade" id="fade"><p id="fadeText"></p></div>
+
+  <!-- room status -->
+  <aside class="status panel" id="status" hidden>
+    <h2 id="treeName"></h2>
+    <div class="meter" id="waterMeter">
+      <div class="top-line"><span>Water in the stand</span><span id="waterText"></span></div>
+      <div class="bar"><i></i></div>
+    </div>
+    <div class="meter thirst" id="thirstMeter">
+      <div class="top-line"><span>Hydration</span><span id="thirstText"></span></div>
+      <div class="bar"><i></i></div>
+    </div>
+    <div class="note" id="statusNote"></div>
+  </aside>
+
+  <nav class="tools panel" id="tools" hidden>
+    <button class="tool" data-tool="look" aria-pressed="true"><svg viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>Look</button>
+    <button class="tool" data-tool="water"><svg viewBox="0 0 24 24"><path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/></svg>Water</button>
+    <button class="tool" data-tool="sweep"><svg viewBox="0 0 24 24"><path d="M14 3l-4 9"/><path d="M6 12h8l2 9H4z"/><path d="M8 16v5M12 16v5"/></svg>Sweep</button>
+    <button class="tool" data-tool="lights"><svg viewBox="0 0 24 24"><path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-4 10.5c.7.7 1 1.5 1 2.5h6c0-1 .3-1.8 1-2.5A6 6 0 0 0 12 3z"/></svg>Lights</button>
+    <button class="tool" data-tool="ornaments"><svg viewBox="0 0 24 24"><circle cx="12" cy="14" r="7"/><path d="M10 5h4v2h-4zM12 3v2"/></svg>Ornaments</button>
+    <button class="tool" data-tool="setup"><svg viewBox="0 0 24 24"><path d="M4 20h16"/><path d="M7 20l2-6h6l2 6"/><path d="M12 14V4"/></svg>Setup</button>
+    <button class="tool" data-tool="trees"><svg viewBox="0 0 24 24"><path d="M12 2l5 7h-3l4 6h-4l3 5H7l3-5H6l4-6H7z"/></svg>Trees</button>
+  </nav>
+
+  <aside class="side panel" id="side" hidden></aside>
+  <div class="hint panel" id="hint" hidden></div>
+
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.min.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+      }
+    }
+  </script>
+  <script type="module" src="main.js"></script>
+</body>
+</html>

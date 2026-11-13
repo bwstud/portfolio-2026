@@ -15,3 +15,7 @@ tinkering/taxidermy/source/
 
 # Font order downloads (invoice, duplicate files): local only
 fonts/Klim-Order-*/
+
+# lighting lab: what Blender's live link writes
+tinkering/lighting-lab/scenes/live.glb
+tinkering/lighting-lab/scenes/.live-tmp.glb

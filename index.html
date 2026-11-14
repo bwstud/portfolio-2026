@@ -519,7 +519,9 @@
     function advance(now) {
       // while the pointer is on Recent Work (the sand gathered under it) or the cover is leaving, the pitch holds still:
       // the drift's clock stops, so the readout and the knob freeze and pick up where they were afterwards
-      if ((gather || leaving) && advancedAt !== null) { const dt = now - advancedAt; if (auto) auto.start += dt; touched += dt; }
+      // The same goes for a long gap between frames (the tab was in the background): without it the drift would
+      // run through every hop it missed, one a frame, and the knob would thrash.
+      if (advancedAt !== null) { const dt = now - advancedAt; if (gather || leaving || dt > 250) { if (auto) auto.start += dt; touched += dt; } }
       advancedAt = now;
       if (!reduced) {
         if (!auto && !drag && now - touched > IDLE) {

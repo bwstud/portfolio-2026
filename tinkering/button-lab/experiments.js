@@ -134,9 +134,9 @@
   });
   list();
 
-  // ?filings=x,y holds the magnet at a spot on the key, for screenshots; &pulse=ms adds a press there, frozen that many ms later.
+  // ?filings=x,y holds the magnet at a spot on the key, for screenshots; &pulse=ms adds a press there, frozen that many ms later (&down: still held).
   // &try switches on "Try it on the buttons above".
   const q = new URLSearchParams(location.search), spot = (q.get('filings') || '').split(',').map(Number);
-  if (spot.length === 2) bench.hold(spot[0], spot[1], q.has('pulse') ? Number(q.get('pulse')) : null);
+  if (spot.length === 2) bench.hold(spot[0], spot[1], q.has('pulse') ? Number(q.get('pulse')) : null, q.has('down'));   // &down: the press is still held
   if (q.has('try')) { $('xp-try').checked = true; $('xp-try').dispatchEvent(new Event('change')); }
 })();

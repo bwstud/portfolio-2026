@@ -2,8 +2,9 @@
    Lying flat, a filing is a speck. As the magnet nears, it stands up along the field: straight up right under the
    magnet (seen end-on, a point), leaning away further out (seen as a spike), and flat again beyond the magnet's
    reach. Filings are also drawn in a little toward the magnet, and settle back slowly when it leaves.
-   A press reverses the magnet for a moment: a ring of repulsion travels out from the press, shoving filings outward
-   and throwing them over; behind it the field is dead for a while, then the magnet comes back.
+   A press reverses the magnet for as long as the button is held: a ring of repulsion travels out from the press,
+   shoving filings outward and throwing them over, and behind it they stay pushed away, lying pointed outward.
+   On release the field comes back over most of a second.
 
    This is how a Matte key answers the pointer (tinkering/design-system/): with this file loaded, Matte.init() puts it on
    every plain .m-key. The iron takes two Matte tokens where they are set: --m-iron, a colour that replaces the
@@ -13,7 +14,7 @@
    Tuned in the Button Lab (tinkering/button-lab/, Experiments), which saves versions to filings-versions.js.
    On a page that loads this file, every nav button gets the version named "active" there, unless that is "off".
 
-   Filings.attach(element, config, options) puts the effect on one element and returns { wake(), hold(), press(), remove() }.
+   Filings.attach(element, config, options) puts the effect on one element and returns { wake(), hold(), press(), release(), remove() }.
    Options, for a control whose painted face is only part of it (a knob's cap, a switch's thumb):
      face(element)  the face, in the element's own px: { x, y, w, h, round }. It is asked every frame, so it may move.
      pulse          false for a control that is dragged, not pressed: a press sends no pulse.
@@ -120,8 +121,12 @@
       const k = dt / 16.7;
       magnet.power += ((magnet.on ? 1 : 0) - magnet.power) * (magnet.on ? 0.22 : 0.07);
       const R = cfg.reach, L = cfg.length;
-      for (const p of pulses) { p.rad = (clock - p.born) / 1000 * cfg.speed; p.force = Math.max(0, 1 - p.rad / FAR); p.dead = Math.min(1, (clock - p.born) / 900); }
-      pulses = pulses.filter((p) => p.force > 0 || p.dead < 1);
+      for (const p of pulses) {
+        if (p.holding) { p.x = magnet.x; p.y = magnet.y; }                   // while the button is down the reversed magnet follows the pointer
+        p.rad = (clock - p.born) / 1000 * cfg.speed; p.force = Math.max(0, 1 - p.rad / FAR);
+        p.dead = p.holding ? 0 : Math.min(1, (clock - p.freed) / 900);       // the field stays dead until the release, then comes back
+      }
+      pulses = pulses.filter((p) => p.holding || p.force > 0 || p.dead < 1);
       let busy = sliding || magnet.on || magnet.power > 0.004 || pulses.length > 0;
       ctx.setTransform(dpr, 0, 0, dpr, (MARGIN + fx) * dpr, (MARGIN + fy) * dpr);
       ctx.clearRect(-MARGIN - fx, -MARGIN - fy, EW + MARGIN * 2, EH + MARGIN * 2);
@@ -135,6 +140,11 @@
         for (const p of pulses) {
           const px = f.x - p.x, py = f.y - p.y, pd = Math.hypot(px, py) || 0.001, off = (pd - p.rad) / WAVE;
           if (pd < p.rad) s *= p.dead * p.dead;                              // the ring has passed: the field is dead here, and comes back slowly
+          if (p.holding && pd < p.rad) {                                     // and while the press is held it stays reversed: filings are kept shoved away, thrown outward
+            const g = Math.max(0, 1 - pd / (R * 1.6));
+            f.kx += px / pd * cfg.push * g * 0.08 * k; f.ky += py / pd * cfg.push * g * 0.08 * k;
+            if (g > hit) { hit = g; hx = px / pd; hy = py / pd; }
+          }
           const w = Math.exp(-off * off) * p.force;
           if (w > 0.01) {
             f.kx += px / pd * cfg.push * w * 0.3 * k; f.ky += py / pd * cfg.push * w * 0.3 * k;
@@ -198,14 +208,18 @@
       press(cx, cy) {                                                // a press on this button
         if (held || !magnet.on || opts.pulse === false) return;
         const r = el.getBoundingClientRect();
-        pulses.push({ x: cx - r.left - fx, y: cy - r.top - fy, born: clock, rad: 0, force: 1, dead: 0 }); wake();
+        pulses.push({ x: cx - r.left - fx, y: cy - r.top - fy, born: clock, freed: clock, holding: true, rad: 0, force: 1, dead: 0 }); wake();
       },
-      hold(x, y, pulseAfter) {                                       // a frozen frame, for screenshots: the magnet at a spot, and a press there this many ms ago
+      release() {                                                    // the button came up: the field starts to return
+        for (const p of pulses) if (p.holding) { p.holding = false; p.freed = clock; }
+        if (!held) wake();
+      },
+      hold(x, y, pulseAfter, down) {                                 // a frozen frame, for screenshots: the magnet at a spot, and a press there this many ms ago (down: still held)
         cancelAnimationFrame(raf); raf = 0; held = true; seeded = -1;
         magnet.x = x; magnet.y = y; magnet.on = true; magnet.power = 1;
         for (let i = 0; i < 20; i++) tick(16);
         if (pulseAfter != null) {
-          pulses.push({ x, y, born: clock, rad: 0, force: 1, dead: 0 });
+          pulses.push({ x, y, born: clock, freed: clock, holding: !!down, rad: 0, force: 1, dead: 0 });
           for (let t = 0; t < pulseAfter; t += 16) tick(16);
         }
       },
@@ -221,8 +235,10 @@
 
   addEventListener('pointermove', (e) => { if (e.pointerType !== 'touch') for (const i of all) i.move(e.clientX, e.clientY); }, { passive: true });
   addEventListener('pointerdown', (e) => { if (e.pointerType !== 'touch') for (const i of all) i.press(e.clientX, e.clientY); }, { passive: true });
+  for (const up of ['pointerup', 'pointercancel']) addEventListener(up, () => { for (const i of all) i.release(); }, { passive: true });
+  addEventListener('dragend', () => { for (const i of all) i.release(); });   // a dragged link sends no pointerup
   document.documentElement.addEventListener('pointerleave', () => { for (const i of all) i.leave(); });
-  addEventListener('blur', () => { for (const i of all) i.leave(); });
+  addEventListener('blur', () => { for (const i of all) { i.release(); i.leave(); } });
   document.addEventListener('themechange', () => { for (const i of all) i.reshade(); });
 
   // the site's nav buttons

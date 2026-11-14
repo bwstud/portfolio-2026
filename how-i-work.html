@@ -13,7 +13,7 @@
   <script src="buttons.js"></script>
   <link rel="alternate" type="text/plain" href="llms.txt" title="Plain-text version for agents">
   <link rel="stylesheet" href="styles.css">
-  <link rel="stylesheet" href="tinkering/matte-lab/matte.css?v=12">   <!-- the Matte system: the nav keys and the menu -->
+  <link rel="stylesheet" href="matte.css?v=12">   <!-- the Matte system: the nav keys and the menu -->
   <link rel="stylesheet" href="matte-page.css">                          <!-- the page shared with the work page: rail nav, off-black ground -->
   <style>
     /* How I Work: a page of its own, laid out like the work page (work.html), with the same nav rail.
@@ -35,6 +35,7 @@
       <a class="chip" href="bio.html"><svg class="chip__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Bio</a>
       <a class="chip" href="how-i-work.html" aria-current="page"><svg class="chip__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="8" height="8" x="3" y="3" rx="2"/><path d="M7 11v4a2 2 0 0 0 2 2h4"/><rect width="8" height="8" x="13" y="13" rx="2"/></svg>How I Work</a>
       <a class="chip" href="tinkering/"><svg class="chip__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12.99 6.74 1.93 3.44"/><path d="M19.136 12a10 10 0 0 1-14.271 0"/><path d="m21 21-2.16-3.84"/><path d="m3 21 8.02-14.26"/><circle cx="12" cy="5" r="2"/></svg>Rigs and Jigs</a>
+      <a class="chip" href="tinkering/design-system/"><svg class="chip__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 17a4 4 0 0 1-8 0V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2Z"/><path d="M16.7 13H19a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2H7"/><path d="M7 17h.01"/><path d="m11 8 2.3-2.3a2.4 2.4 0 0 1 3.404.004L18.6 7.6a2.4 2.4 0 0 1 .026 3.434L9.9 19.8"/></svg>Design System</a>
       <a class="chip" href="work.html#contact"><svg class="chip__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="10" r="3"/><path d="M7 20.662V19a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v1.662"/></svg>Contact</a>
       <a class="chip" href="https://www.linkedin.com/in/bwstudwell" target="_blank" rel="noopener"><svg class="chip__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect width="4" height="12" x="2" y="9"/><circle cx="4" cy="4" r="2"/></svg>LinkedIn</a>
       <a class="chip" href="llms.txt" download="brian.md" title="Download a Markdown summary to give to your agent">brian.md<svg class="chip__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/></svg></a>
@@ -43,13 +44,11 @@
           <svg class="chip__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 8h4"/><path d="M12 21v-9"/><path d="M12 8V3"/><path d="M17 16h4"/><path d="M19 12V3"/><path d="M19 21v-5"/><path d="M3 14h4"/><path d="M5 10V3"/><path d="M5 21v-7"/></svg><span class="chip__label">Controls</span>
         </button>
         <ul class="dropdown__menu" id="controls-menu">
-          <li><a href="tinkering/design-system/">Design System</a></li>
           <li><a href="tinkering/split-flap-lab/">Split-Flap Lab</a></li>
           <li><a href="tinkering/halftone-lab/">Halftone Lab</a></li>
           <li><a href="tinkering/domino-run/lab/">Domino Lab</a></li>
           <li><a href="tinkering/kaleidoscopes/lab/">Kaleidoscope Lab</a></li>
           <li><a href="tinkering/button-lab/">Button Lab</a></li>
-          <li><a href="tinkering/matte-lab/">Matte Lab</a></li>
           <li><a href="tinkering/dissolve-lab/">Dissolve Lab</a></li>
         </ul>
       </div>

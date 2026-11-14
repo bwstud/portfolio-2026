@@ -5,7 +5,7 @@
    A press reverses the magnet for a moment: a ring of repulsion travels out from the press, shoving filings outward
    and throwing them over; behind it the field is dead for a while, then the magnet comes back.
 
-   This is how a Matte key answers the pointer (tinkering/matte-lab/): with this file loaded, Matte.init() puts it on
+   This is how a Matte key answers the pointer (tinkering/design-system/): with this file loaded, Matte.init() puts it on
    every plain .m-key. The iron takes two Matte tokens where they are set: --m-iron, a colour that replaces the
    tuned one (the light finish sets a dark iron), and --m-iron-lift, what tips and resting specks lean toward
    (255, paler, on a dark body; 0, darker, on a grey one).

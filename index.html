@@ -9,7 +9,7 @@
   <link rel="alternate" type="text/plain" href="llms.txt" title="Plain-text version for agents">
   <link rel="stylesheet" href="styles.css">
   <link rel="prefetch" href="work.html">   <!-- so the work page is ready when the sand has gone -->
-  <link rel="stylesheet" href="tinkering/matte-lab/matte.css?v=12">   <!-- the Matte system: the Recent Work key and the Covers menu -->
+  <link rel="stylesheet" href="matte.css?v=12">   <!-- the Matte system: the Recent Work key and the Covers menu -->
   <style>
     /* The front page. Sand on a vibrating plate fills the page, the pattern drifts from one figure to
        the next, and the sentence arrives over it. Recent Work opens the site (work.html).
@@ -519,7 +519,9 @@
     function advance(now) {
       // while the pointer is on Recent Work (the sand gathered under it) or the cover is leaving, the pitch holds still:
       // the drift's clock stops, so the readout and the knob freeze and pick up where they were afterwards
-      if ((gather || leaving) && advancedAt !== null) { const dt = now - advancedAt; if (auto) auto.start += dt; touched += dt; }
+      // The same goes for a long gap between frames (the tab was in the background): without it the drift would
+      // run through every hop it missed, one a frame, and the knob would thrash.
+      if (advancedAt !== null) { const dt = now - advancedAt; if (gather || leaving || dt > 250) { if (auto) auto.start += dt; touched += dt; } }
       advancedAt = now;
       if (!reduced) {
         if (!auto && !drag && now - touched > IDLE) {

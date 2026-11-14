@@ -1,6 +1,6 @@
 /* Matte: a design system drawn from 80s and 90s matte black electronics.
    Opaque powder-coated bodies, machined seams, printed legends, recessed wells and one warm accent.
-   Everything lives under .matte and is built from the tokens below; the Matte Lab (index.html) tunes them.
+   Everything lives under .matte and is built from the tokens below; the design system page (tinkering/design-system/) shows and tunes them.
    Light always falls from the top, so highlights sit on upper edges and shadows fall down. */
 
 .matte {

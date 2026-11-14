@@ -24,15 +24,18 @@
   .nav .dropdown--controls { right: calc(var(--space-5) + var(--chip-h) + var(--chip-gap)); }
   .nav .dropdown--controls .chip { width: auto; }
   .nav .dropdown__menu { left: auto; right: 0; }
-  .home, .foot-col { margin-left: max(150px, calc((100% - 76rem) / 2)); margin-right: auto; }
+  .home, .foot-col { margin-left: max(164px, calc((100% - 76rem) / 2)); margin-right: auto; }
 }
 /* Phones: one row, with the links in the Menu panel (styles.css and nav.js) */
+/* Below the rail the nav spans the window. The iron filings' canvas reaches past each key (filings.js), and past
+   the window's edge on the last one, which made the page scroll sideways; the bar clips it there. */
+@media (max-width: 1099px) { .nav { overflow-x: clip; } }
 /* Between phone and rail the row can't hold every button, so it wraps */
 @media (min-width: 601px) and (max-width: 1099px) {
   .nav { height: auto; min-height: var(--nav-h); flex-wrap: wrap; row-gap: var(--space-2); padding-block: var(--space-3); }
 }
 
-/* ---- Matte: the page's controls are the Matte system's parts (tinkering/matte-lab/matte.css).
+/* ---- Matte: the page's controls are the Matte system's parts (matte.css).
         The nav buttons are Matte keys through the Button Lab's active version, "Matte" (button-versions.js);
         here the Controls menu is a small panel and the split-flap board sits in a powder-coated housing. Both finishes follow the page's light and dark switch. ---- */
 .nav.matte .chip:focus-visible { outline: 2px solid var(--m-signal); outline-offset: 3px; }
@@ -68,3 +71,25 @@
   margin-top: calc(var(--space-8) + var(--halftone-above) - var(--halftone-reach)); }
 
 @media (max-width: 760px) { .foot { grid-template-columns: minmax(0, 1fr); } }
+
+/* ---- The card: one experiment on the Rigs and Jigs wall, and the design system's specimen of it. ---- */
+/* a card is a Matte body, speckle and all, with the picture set into it like a screen in its well */
+.cards.matte .card { position: relative; isolation: isolate; border: 0; border-radius: var(--m-radius); overflow: visible; padding: 10px;
+  color: var(--m-print); text-decoration: none;
+  background: linear-gradient(180deg, var(--m-body-hi), var(--m-body-lo));
+  box-shadow: 0 1px 0 var(--m-shine) inset, 0 -1px 0 rgb(0 0 0 / calc(0.6 * var(--m-shade))) inset, 0 0 0 1px var(--m-edge), var(--m-drop);
+  transition: transform var(--dur-3) var(--ease-out); }
+.cards.matte .card::before { content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit; pointer-events: none;
+  opacity: calc(var(--m-speckle) * var(--m-speckle-gain)); filter: var(--m-speckle-ink);
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.1' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .9 -.42'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E"); }
+.cards.matte a.card:hover, .cards.matte a.card:focus-visible { transform: translateY(-2px); }
+.cards.matte a.card:focus-visible { outline: 2px solid var(--m-signal); outline-offset: 3px; }
+.cards.matte .card__thumb { border-radius: calc(var(--m-radius) - 8px); background: var(--m-well);
+  box-shadow: 0 1px 0 rgb(255 255 255 / calc(0.08 * var(--m-gloss))), 0 0 0 1px var(--m-edge); }
+.cards.matte .card__body { padding: var(--space-4) 6px 6px; }
+.cards.matte .card__title { color: var(--m-print-hi); font: 600 var(--text-heading)/1.2 "Söhne Breit", sans-serif; }
+.cards.matte .card__desc { color: var(--m-print); font-size: var(--text-sm); line-height: 1.5; }
+.cards.matte .card__meta { margin-top: var(--space-2); color: var(--m-print-dim); font: 400 var(--m-text-legend)/1.5 var(--m-font); letter-spacing: 0.1em; text-transform: uppercase; }
+.cards.matte .card--soon { background: none; box-shadow: 0 0 0 1px var(--line-strong); color: var(--m-print-dim); font: 400 var(--m-text-legend)/1 var(--m-font); letter-spacing: 0.1em; text-transform: uppercase; }
+.cards.matte .card--soon::before { content: none; }
+@media (prefers-reduced-motion: reduce) { .cards.matte .card { transition: none; } }

@@ -21,3 +21,9 @@ tools/.xmas-local-db.json
 # lighting lab: what Blender's live link writes
 tinkering/lighting-lab/scenes/live.glb
 tinkering/lighting-lab/scenes/.live-tmp.glb
+
+# Local agent tooling (skills installed per machine, Impeccable triage)
+.agents/
+.claude/
+.impeccable/
+skills-lock.json

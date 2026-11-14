@@ -38,8 +38,19 @@
     const name = Number.isFinite(x) && Number.isFinite(y) ? soundAt(x, y) : names[Math.floor(Math.random() * names.length)];
     const a = players[name].cloneNode();       // a fresh copy each time, so quick clicks overlap instead of cutting off
     a.volume = VOLUME;
-    a.play().catch(() => {});                  // the browser may refuse if this wasn't a real click
+    live.add(a); a.addEventListener('ended', () => live.delete(a));
+    a.play().catch(() => live.delete(a));      // the browser may refuse if this wasn't a real click
     return name;
+  };
+  // boomHush() cuts every boom still ringing: a very short fade, so it stops without a click
+  const live = new Set();
+  window.boomHush = () => {
+    for (const a of live) {
+      live.delete(a);
+      const from = a.volume, at = performance.now();
+      const fade = () => { const t = (performance.now() - at) / 50; if (t >= 1) { a.pause(); return; } a.volume = from * (1 - t); requestAnimationFrame(fade); };
+      fade();
+    }
   };
 
   // A mouse plays on the press. A finger plays as it lifts: phones only let a page start sound once a

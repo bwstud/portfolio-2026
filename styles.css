@@ -91,7 +91,7 @@
 
   /* Motion. Duration steps up with the distance travelled; exits run one step shorter than entrances.
      The rules are in docs/design-system-research.md, section 6. The site's older transitions still use
-     their own values; Matte (tinkering/matte-lab) is the first thing built on these. */
+     their own values; Matte (matte.css) is the first thing built on these. */
   --dur-0: 0ms;      /* focus rings, errors: anything a person is waiting on */
   --dur-1: 60ms;     /* a part going down under a finger */
   --dur-2: 110ms;    /* a part coming back up; hover colour */

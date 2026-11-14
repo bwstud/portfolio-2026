@@ -190,11 +190,15 @@
   <script src="filings-versions.js"></script>
   <script src="filings.js"></script>
   <script>
-    // Iron filings on the cover's keys: Recent Work, the two figure hops, and the Covers menu key.
+    // Iron filings on the cover's keys (Recent Work, the two figure hops, the Covers menu key), the Sound switch's thumb
+    // and the tuning knob's cap, as Matte's own switch and knob have them (matte.js). The knob takes no press pulse.
     // They take the version the Button Lab put on the site, or the effect's defaults when that is off.
     if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
       const filings = Filings.activeConfig();
       for (const el of document.querySelectorAll('.hook__cta, .dock .hop, .covers__toggle')) Filings.attach(el, filings);
+      const power = document.getElementById('power'), knob = document.getElementById('knob');
+      Filings.attach(power, filings, { z: 1, face: () => ({ x: power.getAttribute('aria-checked') === 'true' ? power.offsetWidth - 25 : 3, y: 3, w: 22, h: 22, round: true }) });
+      Filings.attach(knob, filings, { z: 1, pulse: false, face: () => ({ x: 5, y: 5, w: knob.offsetWidth - 10, h: knob.offsetHeight - 10, round: true }) });   // above the cap, under the grip's mark
     }
   </script>
   <script>
@@ -338,7 +342,7 @@
     // ---- Recent Work: hover it and every grain rushes in under the key, which lights --------------------
     const cta = document.querySelector('.hook__cta');
     let gather = false, tgt = null, from = null, gatherAt = 0, rushUntil = 0;
-    const GATHER_MS = 100;                                         // every grain is under the key this soon after the pointer arrives
+    const GATHER_MS = 300;                                         // every grain is under the key this soon after the pointer arrives
     function startGather(now = performance.now()) {
       const r = cta.getBoundingClientRect(), x0 = r.left + 2, w = r.width - 4, y0 = r.top + 2, h = r.height - 4;
       if (!tgt || tgt.length !== N * 2) tgt = new Float32Array(N * 2);

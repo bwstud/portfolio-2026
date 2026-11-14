@@ -237,6 +237,15 @@
   addEventListener('pointerdown', (e) => { if (e.pointerType !== 'touch') for (const i of all) i.press(e.clientX, e.clientY); }, { passive: true });
   for (const up of ['pointerup', 'pointercancel']) addEventListener(up, () => { for (const i of all) i.release(); }, { passive: true });
   addEventListener('dragend', () => { for (const i of all) i.release(); });   // a dragged link sends no pointerup
+  // A finger has no hover, so it is the magnet while it is on the glass: a tap brings the filings up under it, and a
+  // finger dragged across the page raises them on each button it passes over. Touch events, not pointer events: those
+  // stop the moment the page starts to scroll, and these keep coming. The field lingers a moment after the finger
+  // lifts, so a quick tap still shows. No pulse: on a phone the press and the lift are the same gesture.
+  let lifted = 0;
+  const finger = (e) => { const t = e.touches[0]; if (!t) return; clearTimeout(lifted); for (const i of all) i.move(t.clientX, t.clientY); };
+  const unfinger = (e) => { if (e.touches.length) return; clearTimeout(lifted); lifted = setTimeout(() => { for (const i of all) i.leave(); }, 420); };
+  addEventListener('touchstart', finger, { passive: true }); addEventListener('touchmove', finger, { passive: true });
+  addEventListener('touchend', unfinger, { passive: true }); addEventListener('touchcancel', unfinger, { passive: true });
   document.documentElement.addEventListener('pointerleave', () => { for (const i of all) i.leave(); });
   addEventListener('blur', () => { for (const i of all) { i.release(); i.leave(); } });
   document.addEventListener('themechange', () => { for (const i of all) i.reshade(); });

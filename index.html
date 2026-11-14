@@ -187,6 +187,8 @@
   <script src="cover/dissolve-versions.js"></script>
   <script src="cover/dissolve.js"></script>
   <script src="cover/boom.js"></script>
+  <script src="halftone.js"></script>          <!-- for its cursor wake (Halftone.stir), which the vapor rides -->
+  <script src="cover/materials.js"></script>   <!-- what the plate is covered in, and the Controls menu that picks it -->
   <script src="filings-versions.js"></script>
   <script src="filings.js"></script>
   <script>
@@ -244,7 +246,11 @@
     const IDLE = 3500;                                        // ms after the knob is let go before the drift takes over again
     const CELL = 4;                                           // field grid, in CSS px
 
-    let W, H, dpr, S, gw, gh, U, FX, FY, tabs;
+    // what the plate is covered in (cover/materials.js): grains run the simulation below, fields are drawn by a shader alone
+    const MATS = window.CoverMaterials;
+    let mat = MATS.current;
+    const grainOf = (m) => m.grains || MATS.LIST[0].grains;       // a field keeps the sand's numbers ticking over underneath
+    let W, H, dpr, S, gw, gh, U, FX, FY, tabs, fig = null;
     let N = 0, pos, vel, off, ovel, shown, seedBuf, posBuf;   // pos: where a grain lies on the plate; off: how far the cursor or a pulse has knocked it
     let rect = [0, 0, 0, 0];
 
@@ -255,20 +261,21 @@
 
     function resize() {
       const oldW = W, oldH = H;
-      W = innerWidth; H = innerHeight; dpr = Math.min(devicePixelRatio || 1, 2);
+      W = innerWidth; H = innerHeight; dpr = Math.min(devicePixelRatio || 1, mat.field ? mat.field.dpr : 2);
       canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr);
       gl.viewport(0, 0, canvas.width, canvas.height);
       S = Math.max(W, H) / 2;
       gw = Math.ceil(W / CELL) + 1; gh = Math.ceil(H / CELL) + 1;
       U = new Float32Array(gw * gh); FX = new Float32Array(gw * gh); FY = new Float32Array(gw * gh);
       tabs = {};
-      const want = Math.max(18000, Math.min(120000, Math.round(W * H / 11)));
+      const want = wantGrains();
       if (!N || want > N * 1.4 || want < N / 1.4) seedGrains(want);
       else if (oldW) for (let i = 0; i < N; i++) { pos[2 * i] *= W / oldW; pos[2 * i + 1] *= H / oldH; }   // keep the figure through a resize
       measure();
       if (gather) startGather();                               // the button has moved: give the grains new spots
     }
 
+    const wantGrains = () => Math.max(18000, Math.min(160000, Math.round(W * H / grainOf(mat).per)));
     function seedGrains(n) {
       N = n;
       pos = new Float32Array(N * 2); vel = new Float32Array(N * 2);
@@ -314,13 +321,13 @@
     const pulses = [];
     addEventListener('pointermove', (e) => { if (e.pointerType === 'mouse') { mouse.x = e.clientX; mouse.y = e.clientY; mouse.on = true; } });
     document.documentElement.addEventListener('pointerleave', () => { mouse.on = false; });
-    window.boomOn?.(window, (e) => !e.target.closest?.('a, button, .covers, .dock'));   // the same presses that send a pulse
+    window.boomOn?.(window, (e) => !e.target.closest?.('a, button, .covers, .mats, .dock'));   // the same presses that send a pulse
     const pulse = (x, y) => { pulses.push({ x, y, t: performance.now() }); if (pulses.length > 4) pulses.shift(); };
     // A mouse sends its pulse on the press. A finger parts the sand as it drags, like the cursor does,
     // and sends the pulse only if it lifts close to where it landed: a tap, the same moment its boom plays.
     let finger = null;
     addEventListener('pointerdown', (e) => {
-      if (e.target.closest('a, button, .covers, .dock')) return;
+      if (e.target.closest('a, button, .covers, .mats, .dock')) return;
       if (e.pointerType === 'mouse') { pulse(e.clientX, e.clientY); return; }
       if (finger) return;                                        // one finger at a time
       finger = { id: e.pointerId, x: e.clientX, y: e.clientY };
@@ -342,6 +349,7 @@
     // ---- Recent Work: hover it and every grain rushes in under the key, which lights --------------------
     const cta = document.querySelector('.hook__cta');
     let gather = false, tgt = null, from = null, gatherAt = 0, rushUntil = 0;
+    let hushed = false, hush = () => {};                           // filled in where the sound is set up
     const GATHER_MS = 300;                                         // every grain is under the key this soon after the pointer arrives
     function startGather(now = performance.now()) {
       const r = cta.getBoundingClientRect(), x0 = r.left + 2, w = r.width - 4, y0 = r.top + 2, h = r.height - 4;
@@ -357,6 +365,12 @@
       cta.addEventListener('pointerleave', endGather);
       cta.addEventListener('focus', () => { if (cta.matches(':focus-visible')) startGather(); });
       cta.addEventListener('blur', endGather);
+      // and the page goes silent while the pointer is on the key: the tone is cut and so is any boom still ringing.
+      // The tone comes back when the pointer leaves, if the Sound switch is still on.
+      cta.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse') hush(true); });
+      cta.addEventListener('pointerleave', () => hush(false));
+      cta.addEventListener('focus', () => { if (cta.matches(':focus-visible')) hush(true); });
+      cta.addEventListener('blur', () => hush(false));
     }
 
     // ---- leaving: press Recent Work. The sand winks out at once, the sentence and the key rise away, and the panel
@@ -400,8 +414,9 @@
 
     // ---- sand ------------------------------------------------------------------------------
     const REST = 0.11, DAMP = 0.86, HEAL = 0.004, RUSH = 0.02, PULSE = 2.9, MOUSE_R = 130, PULSE_SPEED = 1100, PULSE_BAND = 90;
+    const WANDER = (1 - DAMP) / DAMP;                       // a nudge to a grain's speed carries it this many times less far than the same nudge to its place
     function step(k, now) {
-      const K = 0.07 * S, inv = 1 / CELL, mr = finger ? Math.min(MOUSE_R, 0.24 * Math.min(W, H)) : MOUSE_R, R2 = mr * mr;
+      const G = grainOf(mat), K = 0.07 * S * G.pull, wander = WANDER * G.wander, inv = 1 / CELL, mr = finger ? Math.min(MOUSE_R, 0.24 * Math.min(W, H)) : MOUSE_R, R2 = mr * mr;
       const far = Math.hypot(W, H);
       const live = [];
       for (const p of pulses) {
@@ -455,11 +470,13 @@
         }
         }
 
-        const vx = (vel[ix] + ax * k) * damp, vy = (vel[iy] + ay * k) * damp;
+        // grains wander where the plate moves and rest where it doesn't. The nudge goes into a grain's speed, not its
+        // place, so it glides in a new direction instead of hopping on the spot; WANDER keeps how far it strays the same
+        const jit = (0.9 + 5 * u * grip) * wander;
+        const vx = (vel[ix] + ax * k + (Math.random() - 0.5) * jit) * damp, vy = (vel[iy] + ay * k + (Math.random() - 0.5) * jit) * damp;
         vel[ix] = vx; vel[iy] = vy;
-        const jit = 0.9 + 5 * u * grip;                       // grains hop where the plate moves, rest where it doesn't
-        x += vx * k + (Math.random() - 0.5) * jit;
-        y += vy * k + (Math.random() - 0.5) * jit;
+        x += vx * k;
+        y += vy * k;
         if (x < -6) x = -6; else if (x > W + 6) x = W + 6;
         if (y < -6) y = -6; else if (y > H + 6) y = H + 6;
         pos[ix] = x; pos[iy] = y;
@@ -473,11 +490,18 @@
     const prog = gl.createProgram();
     gl.attachShader(prog, sh(gl.VERTEX_SHADER, `
       attribute vec2 aPos; attribute float aSeed;
-      uniform vec2 uRes; uniform float uDpr, uDim, uFade; uniform vec4 uRect;
-      varying float vA, vSeed;
+      ${MATS.PLATE}
+      uniform float uDpr, uDim, uFade; uniform mediump float uShape; uniform vec2 uSize; uniform vec4 uRect;
+      varying float vA, vSeed; varying vec2 vDir;
       void main() {
         gl_Position = vec4(aPos.x / uRes.x * 2.0 - 1.0, 1.0 - aPos.y / uRes.y * 2.0, 0.0, 1.0);
-        gl_PointSize = (1.2 + 1.3 * fract(aSeed * 7.13)) * uDpr;
+        gl_PointSize = (uSize.x + uSize.y * fract(aSeed * 7.13)) * uDpr;
+        vDir = vec2(1.0, 0.0);
+        if (uShape > 1.5) {                                      // a sliver lies along the still line, give or take
+          vec2 g = plate(aPos).yz;
+          float a = atan(g.y, g.x) + 1.5708 + (fract(aSeed * 91.7) - 0.5) * 1.5;
+          vDir = vec2(cos(a), sin(a));
+        }
         // the sand goes quiet behind the sentence
         float d = max(max(uRect.x - aPos.x, aPos.x - uRect.z), max(uRect.y - aPos.y, aPos.y - uRect.w));
         vA = mix(1.0 - 0.93 * uDim, 1.0, smoothstep(-10.0, 100.0, d)) * uFade;
@@ -485,14 +509,17 @@
       }`));
     gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, `
       precision mediump float;
-      varying float vA, vSeed;
+      varying float vA, vSeed; varying vec2 vDir;
+      uniform mediump float uShape; uniform float uTime; uniform vec3 uC1, uC2, uC3;
       void main() {
         vec2 c = gl_PointCoord - 0.5;
-        float a = smoothstep(0.25, 0.12, dot(c, c)) * vA * (0.55 + 0.45 * vSeed);
-        vec3 sand = vec3(0.78, 0.718, 0.6), mist = vec3(0.855, 0.894, 0.89), ochre = vec3(0.875, 0.753, 0.424);
-        vec3 col = mix(sand, mist, fract(vSeed * 3.7));
-        col = mix(col, ochre, step(0.9, fract(vSeed * 11.3)));
-        gl_FragColor = vec4(col * a, a);
+        float body = smoothstep(0.25, 0.12, dot(c, c)), lift = 1.0;                                 // a round grain
+        if (uShape > 1.5) body = smoothstep(0.5, 0.36, abs(dot(c, vDir))) * smoothstep(0.24, 0.1, abs(dot(c, vec2(-vDir.y, vDir.x))));   // a sliver
+        else if (uShape > 0.5) { body = step(max(abs(c.x), abs(c.y)), 0.4); lift = 0.8 + 0.9 * step(0.94, fract(vSeed * 57.0 + uTime * 0.35)); }   // a crystal, and now and then one catches the light
+        float a = body * vA * (0.55 + 0.45 * vSeed);
+        vec3 col = mix(uC1, uC2, fract(vSeed * 3.7));
+        col = mix(col, uC3, step(0.9, fract(vSeed * 11.3)));
+        gl_FragColor = vec4(min(col * lift, 1.0) * a, a);
       }`));
     gl.linkProgram(prog); gl.useProgram(prog);
     if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) console.error('hook: shader', gl.getProgramInfoLog(prog), gl.getAttachedShaders(prog).map((s) => gl.getShaderInfoLog(s)).join('|'));
@@ -501,6 +528,48 @@
     const aPos = gl.getAttribLocation(prog, 'aPos'), aSeed = gl.getAttribLocation(prog, 'aSeed');
     gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
     gl.clearColor(4 / 255, 10 / 255, 19 / 255, 1);
+
+    // ---- field materials: one full-page shader each, built the first time it is picked ----------------------
+    const quad = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, quad); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+    const fieldProgs = {};
+    function fieldProg(m) {
+      if (fieldProgs[m.id]) return fieldProgs[m.id];
+      const p = gl.createProgram();
+      gl.attachShader(p, sh(gl.VERTEX_SHADER, 'attribute vec2 aP; void main() { gl_Position = vec4(aP, 0.0, 1.0); }'));
+      gl.attachShader(p, sh(gl.FRAGMENT_SHADER, MATS.fragment(m)));
+      gl.bindAttribLocation(p, 0, 'aP'); gl.linkProgram(p);
+      if (!gl.getProgramParameter(p, gl.LINK_STATUS)) console.error('hook: material', m.id, gl.getProgramInfoLog(p), gl.getAttachedShaders(p).map((s) => gl.getShaderInfoLog(s)).join('|'));
+      const u = {};
+      return (fieldProgs[m.id] = { p, loc: (n) => (n in u ? u[n] : (u[n] = gl.getUniformLocation(p, n))) });
+    }
+    // the cursor's wake, for materials that ride it: Halftone.stir keeps a grid of how far the air has carried each point,
+    // and the shader reads it as a texture (a byte each way, 150px either side of nothing)
+    let wake = null, wakeTex = null, wakeBytes = null;
+    function stirUp(cfg, dt) {
+      if (!window.Halftone || reduced) return false;
+      if (!wake) {
+        wake = Halftone.stir(canvas, 12); wakeTex = gl.createTexture();
+        gl.bindTexture(gl.TEXTURE_2D, wakeTex);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      }
+      wake.resize(W, H);
+      wake.step(dt, cfg);
+      const n = wake.cols * wake.rows, d = wake.data;
+      if (!wakeBytes || wakeBytes.length !== n * 4) wakeBytes = new Uint8Array(n * 4);
+      for (let c = 0; c < n; c++) { wakeBytes[4 * c] = 128 + d[2 * c] * (127 / 150); wakeBytes[4 * c + 1] = 128 + d[2 * c + 1] * (127 / 150); }
+      gl.bindTexture(gl.TEXTURE_2D, wakeTex);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, wake.cols, wake.rows, 0, gl.RGBA, gl.UNSIGNED_BYTE, wakeBytes);
+      return true;
+    }
+    function setMaterial(m) {
+      mat = m;
+      resize();                                                  // a field may be drawn at a lower pixel count
+      if (!m.field) { const want = wantGrains(); if (Math.abs(want - N) > N * 0.05) seedGrains(want); if (gather) startGather(); }
+    }
+    const matsNav = MATS.menu(setMaterial);
+    if (!reduced && window.Filings) Filings.attach(matsNav.querySelector('.mats__toggle'), Filings.activeConfig());
 
     resize();
     addEventListener('resize', resize);
@@ -549,7 +618,8 @@
       while (i < NOTES.length - 2 && freq >= NOTES[i + 1]) i++;
       const w = smooth(Math.max(0, Math.min(1, Math.log(freq / NOTES[i]) / Math.log(NOTES[i + 1] / NOTES[i]))));
       strength = Math.abs(2 * w - 1);
-      field(FIGURES[i], FIGURES[i + 1], w);
+      fig = [FIGURES[i], FIGURES[i + 1], w];
+      if (!mat.field) field(FIGURES[i], FIGURES[i + 1], w);
     }
     function setFreq(f) {                                           // from the knob
       freq = Math.min(F_MAX, Math.max(F_MIN, f));
@@ -595,7 +665,7 @@
     function updateAudio(k) {
       // how fast the sand is being asked to move: pitch change, plus any pulse in flight
       const rate = Math.abs(Math.log2(freq / lastF)) / k; lastF = freq;
-      motion += (Math.min(1, rate * 60 + (pulses.some((p) => performance.now() - p.t < 700) ? 0.6 : 0)) - motion) * 0.15;
+      motion += (Math.min(1, rate * 60 + (pulses.some((p) => performance.now() - p.t < 700) ? 0.15 : 0)) - motion) * 0.15;
       if (!audio) return;
       const t = audio.ctx.currentTime;
       audio.osc.frequency.setTargetAtTime(freq, t, 0.012);
@@ -609,8 +679,13 @@
       dock.classList.toggle('is-sounding', v);
       const a = startAudio();
       if (a.ctx.state === 'suspended') a.ctx.resume();
-      a.master.gain.setTargetAtTime(v ? 1 : 0, a.ctx.currentTime, v ? 0.03 : 0.05);
+      a.master.gain.setTargetAtTime(v && !hushed ? 1 : 0, a.ctx.currentTime, v ? 0.03 : 0.05);
     }
+    hush = (v) => {                                                 // Recent Work under the pointer: cut the tone and any boom still ringing
+      hushed = v;
+      if (v) window.boomHush?.();
+      if (audio) audio.master.gain.setTargetAtTime(on && !v ? 1 : 0, audio.ctx.currentTime, v ? 0.012 : 0.05);
+    };
     $('power').addEventListener('click', () => setOn(!on));
 
     // ---- the knob: its dot, the end of the copper ring and the lit scale dot all sit at one angle.
@@ -728,24 +803,53 @@
     }
     const leaveHold = (parseFloat(q.get('leave')) || 0) * 1000;   // &leave=0.6 holds the leaving animation 0.6s in, for screenshots
     if (leaveHold) setTimeout(() => startLeave(leaveHold), 400);   // after headless Chrome's late resize
-    let last = performance.now();
+    let last = performance.now(), pulled = 0;
     function frame(now) {
       const k = Math.max(0.2, Math.min(2.5, (now - last) / 16.667)); last = now;
       advance(now);
       readout(); updateAudio(k);
-      step(k, now);
+      if (!mat.field) step(k, now);
       let fade = 1;
       if (leaving) fade = 0;                                        // the sand winks out the instant the key is pressed
+      // a field has no grains to send under the key, so the whole plate is drawn in under it: quickly in, slower back out
+      pulled += ((gather ? 1 : 0) - pulled) * (1 - Math.exp(-k * 16.667 / (gather ? GATHER_MS / 4 : 220)));
+      const dim = Math.max(0, Math.min(1, (now - t0 - TEXT_AT + 300) / 900));
 
       gl.clear(gl.COLOR_BUFFER_BIT);
-      gl.bindBuffer(gl.ARRAY_BUFFER, posBuf); gl.bufferSubData(gl.ARRAY_BUFFER, 0, shown);
-      gl.enableVertexAttribArray(aPos); gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
-      gl.bindBuffer(gl.ARRAY_BUFFER, seedBuf);
-      gl.enableVertexAttribArray(aSeed); gl.vertexAttribPointer(aSeed, 1, gl.FLOAT, false, 0, 0);
-      gl.uniform2f(loc('uRes'), W, H); gl.uniform1f(loc('uDpr'), dpr); gl.uniform1f(loc('uFade'), fade);
-      gl.uniform4f(loc('uRect'), rect[0], rect[1], rect[2], rect[3]);
-      gl.uniform1f(loc('uDim'), Math.max(0, Math.min(1, (now - t0 - TEXT_AT + 300) / 900)));
-      gl.drawArrays(gl.POINTS, 0, N);
+      if (mat.field) {
+        const f = fieldProg(mat), u = f.loc;
+        gl.useProgram(f.p);
+        gl.bindBuffer(gl.ARRAY_BUFFER, quad);
+        gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+        gl.uniform2f(u('uRes'), W, H); gl.uniform1f(u('uDpr'), canvas.width / W); gl.uniform1f(u('uS'), S);
+        gl.uniform3f(u('uA'), fig[0][0], fig[0][1], fig[0][2]); gl.uniform3f(u('uB'), fig[1][0], fig[1][1], fig[1][2]); gl.uniform1f(u('uW'), fig[2]);
+        gl.uniform1f(u('uTime'), ((now - t0) / 1000) % 3600); gl.uniform1f(u('uDim'), dim); gl.uniform1f(u('uFade'), fade);
+        gl.uniform1f(u('uGather'), pulled < 0.002 ? 0 : pulled);
+        const kr = cta.getBoundingClientRect(); gl.uniform2f(u('uKey'), kr.left + kr.width / 2, kr.top + kr.height / 2);
+        gl.uniform4f(u('uRect'), rect[0], rect[1], rect[2], rect[3]);
+        const stirred = mat.field.stir && !finger && stirUp(mat.field.stir, k * 16.667 / 1000);   // a finger still parts it
+        gl.uniform1i(u('uStir'), 0);
+        gl.uniform3f(u('uStirSize'), stirred ? wake.cols * wake.cell : 1, stirred ? wake.rows * wake.cell : 1, stirred ? 1 : 0);
+        gl.uniform3f(u('uMouse'), mouse.x, mouse.y, mouse.on && !stirred ? 1 : 0);
+        const far = Math.hypot(W, H), pu = new Float32Array(16);
+        pulses.forEach((p, i) => { const r = (now - p.t) / 1000 * PULSE_SPEED; if (i < 4 && r < far) pu.set([p.x, p.y, r, Math.max(0, 1 - r / far) ** 1.5], i * 4); });
+        gl.uniform4fv(u('uPulse[0]'), pu);
+        gl.drawArrays(gl.TRIANGLES, 0, 3);
+      } else {
+        const G = mat.grains;
+        gl.useProgram(prog);
+        gl.bindBuffer(gl.ARRAY_BUFFER, posBuf); gl.bufferSubData(gl.ARRAY_BUFFER, 0, shown);
+        gl.enableVertexAttribArray(aPos); gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
+        gl.bindBuffer(gl.ARRAY_BUFFER, seedBuf);
+        gl.enableVertexAttribArray(aSeed); gl.vertexAttribPointer(aSeed, 1, gl.FLOAT, false, 0, 0);
+        gl.uniform2f(loc('uRes'), W, H); gl.uniform1f(loc('uDpr'), dpr); gl.uniform1f(loc('uFade'), fade);
+        gl.uniform4f(loc('uRect'), rect[0], rect[1], rect[2], rect[3]);
+        gl.uniform1f(loc('uDim'), dim);
+        gl.uniform1f(loc('uShape'), G.shape); gl.uniform2f(loc('uSize'), G.size[0], G.size[1]); gl.uniform1f(loc('uTime'), ((now - t0) / 1000) % 3600);
+        gl.uniform3fv(loc('uC1'), G.tints[0]); gl.uniform3fv(loc('uC2'), G.tints[1]); gl.uniform3fv(loc('uC3'), G.tints[2]);
+        if (fig) { gl.uniform1f(loc('uS'), S); gl.uniform3fv(loc('uA'), fig[0]); gl.uniform3fv(loc('uB'), fig[1]); gl.uniform1f(loc('uW'), fig[2]); }
+        gl.drawArrays(gl.POINTS, 0, N);
+      }
       requestAnimationFrame(frame);
     }
     requestAnimationFrame(frame);

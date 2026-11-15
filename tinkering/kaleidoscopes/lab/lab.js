@@ -220,13 +220,30 @@ function buildField(f) {
   undo.addEventListener('click', () => { state.draft.params[f.key] = baseParams()[f.key]; changed(); });
   top.append(label);
 
-  let input;
+  let input, num = null;
   if (f.type === 'range') {
     input = document.createElement('input');
     input.type = 'range';
     Object.assign(input, { min: f.min, max: f.max, step: f.step });
     input.addEventListener('input', () => { state.draft.params[f.key] = Number(input.value); changed(); });
-    top.append(value, undo);
+    // a number field beside the slider: type a value in place of dragging. A number inside the slider's range takes
+    // effect as it is typed; leaving the field (or Enter) tidies it, bringing anything outside to the nearest end.
+    num = document.createElement('input');
+    num.type = 'number';
+    num.className = 'field__num';
+    Object.assign(num, { min: f.min, max: f.max, step: f.step });
+    num.setAttribute('aria-label', f.label + ', typed');
+    num.addEventListener('input', () => {
+      const v = num.valueAsNumber;
+      if (Number.isFinite(v) && v >= f.min && v <= f.max) { state.draft.params[f.key] = v; changed(); }
+    });
+    num.addEventListener('change', () => {
+      const v = num.valueAsNumber;
+      if (Number.isFinite(v)) state.draft.params[f.key] = Math.min(f.max, Math.max(f.min, v));
+      num.value = state.draft.params[f.key];
+      changed();
+    });
+    top.append(value, num, undo);
     wrap.append(top, input);
   } else if (f.type === 'select') {
     input = document.createElement('select');
@@ -248,7 +265,7 @@ function buildField(f) {
     help.textContent = f.help;
     wrap.append(help);
   }
-  inputs[f.key] = { wrap, input, value, undo, f };
+  inputs[f.key] = { wrap, input, num, value, undo, f };
   return wrap;
 }
 
@@ -272,9 +289,11 @@ function renderEditor() {
 function syncFields() {
   const p = state.draft.params, base = baseParams();
   for (const key of Object.keys(FIELDS)) {
-    const { wrap, input, value, undo, f } = inputs[key];
+    const { wrap, input, num, value, undo, f } = inputs[key];
     if (String(input.value) !== String(p[key])) input.value = p[key];
-    if (f.type === 'range') value.textContent = f.format ? f.format(p[key]) : p[key];
+    // the number field holds the value; the text beside it stays only where it says more than the number (a format)
+    if (num && document.activeElement !== num && String(num.value) !== String(p[key])) num.value = p[key];
+    if (f.type === 'range') value.textContent = f.format ? f.format(p[key]) : '';
     if (f.type === 'select') value.textContent = '';
     const diff = p[key] !== base[key];
     wrap.classList.toggle('is-changed', diff && state.sel.origin !== 'new');

@@ -23,6 +23,7 @@
       .xp__key:active { transform: translateY(2px); box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.08), 0 0 0 1px #070707, 0 2px 0 #0c0c0c, 0 4px 6px rgb(0 0 0 / 0.5); }
       .xp__tune { display: grid; grid-template-columns: auto 160px 5em; gap: 8px 12px; align-items: center; color: var(--muted); font-size: 12px; }
       .xp__tune output { color: var(--fg); font-variant-numeric: tabular-nums; }
+      .xp__tune input[type="number"] { width: 64px; padding: 2px 4px; text-align: right; background: var(--bg); border: 1px solid var(--line); border-radius: 4px; color: var(--fg); font-variant-numeric: tabular-nums; }   /* type a value in place of dragging */
       .xp__tune input[type="color"] { width: 44px; height: 24px; padding: 0; border: 1px solid var(--line); border-radius: 4px; background: none; }
       .xp__saved { display: grid; gap: 10px; width: 280px; font-size: 12px; color: var(--muted); }
       .xp__saved h3 { margin: 0; font-size: 12px; font-weight: 600; color: var(--fg); }
@@ -73,12 +74,20 @@
   const cfg = Filings.activeConfig();                              // one live object: the key and the previews all read it
   const tune = $('xp-tune');
   tune.innerHTML = TUNE.map(([key, label, min, max, step]) =>
-    `<label for="xp-${key}">${label}</label><input id="xp-${key}" type="range" min="${min}" max="${max}" step="${step}"><output></output>`).join('')
+    `<label for="xp-${key}">${label}</label><input id="xp-${key}" type="range" min="${min}" max="${max}" step="${step}"><input type="number" min="${min}" max="${max}" step="${step}" aria-label="${label}, typed">`).join('')
     + `<label for="xp-color">Filing colour</label><input id="xp-color" type="color"><output></output>`;
-  function show() { for (const k of KEYS) { const input = $('xp-' + k); input.value = cfg[k]; input.nextElementSibling.textContent = cfg[k]; } Filings.wake(); }
+  // beside each slider is a number field showing the same value (beside the colour, its hex as text)
+  const readout = (input, v) => { const next = input.nextElementSibling; if (next.matches('input')) next.value = v; else next.textContent = v; };
+  function show() { for (const k of KEYS) { const input = $('xp-' + k); input.value = cfg[k]; readout(input, cfg[k]); } Filings.wake(); }
   for (const k of KEYS) {
-    const input = $('xp-' + k);
-    input.addEventListener('input', () => { cfg[k] = k === 'color' ? input.value : Number(input.value); input.nextElementSibling.textContent = input.value; Filings.wake(); });
+    const input = $('xp-' + k), num = input.nextElementSibling.matches('input') ? input.nextElementSibling : null;
+    input.addEventListener('input', () => { cfg[k] = k === 'color' ? input.value : Number(input.value); readout(input, input.value); Filings.wake(); });
+    if (!num) continue;
+    // typed: a number inside the slider's range takes effect as it is typed; leaving the field (or Enter) tidies it,
+    // bringing anything outside the range to its nearest end and an empty field back to the current value
+    const lo = Number(input.min), hi = Number(input.max);
+    num.addEventListener('input', () => { const v = num.valueAsNumber; if (Number.isFinite(v) && v >= lo && v <= hi) { cfg[k] = v; input.value = v; Filings.wake(); } });
+    num.addEventListener('change', () => { const v = num.valueAsNumber; if (Number.isFinite(v)) cfg[k] = Math.min(hi, Math.max(lo, v)); input.value = cfg[k]; num.value = cfg[k]; Filings.wake(); });
   }
   show();
 

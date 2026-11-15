@@ -1732,19 +1732,31 @@ function renderLab() {
     row.className = 'param';
     const id = `p-${p.key}`;
     const fmt = v => (p.type === 'toggle' ? (v ? 'On' : 'Off') : p.type === 'color' ? '' : (+v).toFixed(p.step >= 1 ? 0 : p.step >= 0.1 ? 1 : p.step >= 0.01 ? 2 : 3));
-    row.innerHTML = `<div class="param__head"><label for="${id}">${esc(p.label)}</label><output>${fmt(PARAMS[p.key])}</output><span class="unit">${esc(p.unit ?? '')}</span><button class="param__reset" title="Back to default (${esc(String(p.value))})" aria-label="Reset ${esc(p.label)}">↺</button></div>
+    row.innerHTML = `<div class="param__head"><label for="${id}">${esc(p.label)}</label>${p.type === 'color' || p.type === 'toggle' ? `<output>${fmt(PARAMS[p.key])}</output>` : `<input type="number" class="param__num" min="${p.min}" max="${p.max}" step="${p.step}" value="${+fmt(PARAMS[p.key])}" aria-label="${esc(p.label)}, typed">`}<span class="unit">${esc(p.unit ?? '')}</span><button class="param__reset" title="Back to default (${esc(String(p.value))})" aria-label="Reset ${esc(p.label)}">↺</button></div>
       ${p.type === 'color' ? `<input type="color" id="${id}" value="${PARAMS[p.key]}">` : p.type === 'toggle' ? `<label class="check" style="margin-top:4px"><input type="checkbox" id="${id}" ${PARAMS[p.key] ? 'checked' : ''}> On</label>` : `<input type="range" id="${id}" min="${p.min}" max="${p.max}" step="${p.step}" value="${PARAMS[p.key]}">`}
       ${p.note ? `<p class="note">${esc(p.note)}</p>` : ''}`;
-    const input = row.querySelector('input');
-    const out = row.querySelector('output');
+    const input = row.querySelector(`#${CSS.escape(id)}`);
+    const out = row.querySelector('output'), num = row.querySelector('.param__num');
     const mark = () => row.classList.toggle('is-changed', PARAMS[p.key] !== DEFAULTS[p.key]);
     mark();
     input.addEventListener(p.type === 'color' ? 'input' : p.type === 'toggle' ? 'change' : 'input', () => {
       PARAMS[p.key] = p.type === 'color' ? input.value : p.type === 'toggle' ? (input.checked ? 1 : 0) : +input.value;
-      out.textContent = fmt(PARAMS[p.key]);
+      if (out) out.textContent = fmt(PARAMS[p.key]);
+      if (num) num.value = +fmt(PARAMS[p.key]);
       mark();
       applyParam(p);
     });
+    // a number field beside the slider: type a value in place of dragging. A number inside the slider's range takes
+    // effect as it is typed; leaving the field (or Enter) tidies it, bringing anything outside to the nearest end.
+    if (num) {
+      const take = v => { PARAMS[p.key] = v; input.value = v; mark(); applyParam(p); labCount(); };
+      num.addEventListener('input', () => { const v = num.valueAsNumber; if (Number.isFinite(v) && v >= p.min && v <= p.max) take(v); });
+      num.addEventListener('change', () => {
+        const v = num.valueAsNumber;
+        if (Number.isFinite(v)) take(Math.min(p.max, Math.max(p.min, v)));
+        num.value = +fmt(PARAMS[p.key]);
+      });
+    }
     row.querySelector('.param__reset').onclick = () => {
       PARAMS[p.key] = DEFAULTS[p.key];
       renderLab();

@@ -25,10 +25,11 @@
     .side .m-panel { display: flex; }
     .group { display: grid; gap: 14px; justify-items: stretch; }
     .group h2 { margin: 0; }
-    .row { display: grid; grid-template-columns: 1fr 52px; align-items: center; gap: 4px 10px; }
+    .row { display: grid; grid-template-columns: 1fr 68px; align-items: center; gap: 4px 10px; }
     .row .m-legend:first-child { grid-column: 1 / -1; }
     .row .m-fader { width: 100%; }
-    .row output { text-align: right; font-variant-numeric: tabular-nums; }
+    /* every fader has a number field beside it: type a value in place of dragging */
+    .matte .row__num { width: 100%; height: 24px; padding: 0 6px; text-align: right; font-size: 11px; font-variant-numeric: tabular-nums; }
     .saved { display: grid; gap: 10px; }
     .saved__row { display: flex; gap: 8px; align-items: center; }
     .saved__row .m-input { flex: 1; min-width: 0; }
@@ -128,10 +129,24 @@
         ${rows.map(([key, label, min, max, step]) => `
           <label class="row"><span class="m-legend m-legend--dim">${label}</span>
             <input class="m-fader" type="range" id="f-${key}" min="${min}" max="${max}" step="${step}">
-            <output class="m-legend" id="o-${key}"></output></label>`).join('')}
+            <input class="m-input row__num" type="number" id="o-${key}" min="${min}" max="${max}" step="${step}" aria-label="${label}, typed"></label>`).join('')}
       </div></div>`).join('');
-    function show() { for (const k of KEYS) { $('f-' + k).value = config[k]; $('o-' + k).textContent = config[k]; } }
-    for (const k of KEYS) $('f-' + k).addEventListener('input', (e) => { config[k] = Number(e.target.value); $('o-' + k).textContent = config[k]; });
+    const RANGE = Object.fromEntries(GROUPS.flatMap(([, rows]) => rows.map(([key, , min, max]) => [key, [min, max]])));
+    function show() { for (const k of KEYS) { $('f-' + k).value = config[k]; $('o-' + k).value = config[k]; } }
+    for (const k of KEYS) {
+      $('f-' + k).addEventListener('input', (e) => { config[k] = Number(e.target.value); $('o-' + k).value = config[k]; });
+      // typed: a number inside the fader's range takes effect as it is typed; leaving the field (or Enter) tidies it,
+      // bringing anything outside the range to its nearest end and an empty field back to the current value
+      $('o-' + k).addEventListener('input', (e) => {
+        const v = e.target.valueAsNumber;
+        if (Number.isFinite(v) && v >= RANGE[k][0] && v <= RANGE[k][1]) { config[k] = v; $('f-' + k).value = v; }
+      });
+      $('o-' + k).addEventListener('change', (e) => {
+        const v = e.target.valueAsNumber;
+        if (Number.isFinite(v)) config[k] = Math.min(RANGE[k][1], Math.max(RANGE[k][0], v));
+        $('f-' + k).value = config[k]; e.target.value = config[k];
+      });
+    }
     show();
 
     // ---- playing it ----

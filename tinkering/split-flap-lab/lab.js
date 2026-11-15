@@ -110,14 +110,69 @@
   const stage = $('stage');
   const flap = SplitFlap.mount($('fit'), engineConfig());
 
+  /* The finish. Plain is the board as split-flap.js draws it. Work page adds what work.html puts on it, from the
+     same stylesheet (board.css): the Matte housing, greyscale flaps, the column labels, a lamp beside each row and the
+     lit row in view. It is the lab's view only and is never saved with a board; it needs the frame, so Flat stays plain. */
+  const FINISH_STORE = 'split-flap-lab/finish';
+  let finish = 'site', chosen = 0;
+  try { if (localStorage.getItem(FINISH_STORE) === 'plain') finish = 'plain'; } catch (e) { /* private mode */ }
+  const boardEl = $('board'), keysEl = $('keys'), headEl = boardEl.querySelector('.board__head');
+  const onSite = () => finish === 'site' && cfg.frame;
+  const boardRows = () => [...$('fit').querySelectorAll('.sf-row')];
+  function wearFinish() {
+    const site = onSite();
+    boardEl.classList.toggle('board', site);
+    boardEl.classList.toggle('matte', site);
+    $('fit').classList.toggle('board__flap', site);
+    stage.classList.toggle('is-site', site);
+  }
+  // the labels, lamps and lit row, placed against the board as it now stands (the work page's script does the same)
+  function placeFinish() {
+    const site = onSite(), rowEls = boardRows();
+    const lines = Array.isArray(cfg.lines) ? cfg.lines : [];
+    const project = k => !!(lines[k - cfg.padY] || '').split('|')[0].trim();   // a row with a name on it
+    if (chosen >= rowEls.length || !project(chosen)) chosen = Math.max(0, rowEls.findIndex((_, k) => project(k)));
+    rowEls.forEach((row, k) => row.classList.toggle('is-chosen', site && k === chosen));
+    if (!site) return;
+    const kinds = rowEls.map((_, k) => project(k) ? 'BUTTON' : 'SPAN');
+    if (kinds.join() !== [...keysEl.children].map(key => key.tagName).join()) {
+      keysEl.replaceChildren(...kinds.map((kind, k) => {
+        const key = document.createElement(kind);
+        if (kind === 'BUTTON') {
+          key.type = 'button';
+          key.innerHTML = '<span class="m-led" aria-hidden="true"></span>';
+          key.setAttribute('aria-label', 'Row ' + (k + 1));
+          key.addEventListener('click', () => { chosen = k; placeFinish(); });
+          key.addEventListener('pointerenter', () => boardRows()[k]?.classList.add('is-hover'));
+          key.addEventListener('pointerleave', () => boardRows()[k]?.classList.remove('is-hover'));
+        }
+        return key;
+      }));
+    }
+    const first = cfg.padY * flap.grid.cols + cfg.padX, from = headEl.getBoundingClientRect().left;
+    const x = col => flap.cell(Math.min(first + col, flap.grid.cols * flap.grid.rows - 1)).getBoundingClientRect().left - from;
+    const longest = Math.min(cfg.statusCols, Math.max(0, ...lines.map(l => (l.split('|')[1] || '').trim().length)));
+    headEl.style.setProperty('--project-x', x(0) + 'px');
+    headEl.style.setProperty('--released-x', x(cfg.nameCols + cfg.statusCols - longest) + 'px');
+    const plate = keysEl.getBoundingClientRect();
+    keysEl.style.setProperty('--lamp-x', (flap.cell(first).getBoundingClientRect().left - plate.left) / 2 + 'px');
+    [...keysEl.children].forEach((key, k) => {
+      const row = rowEls[k].getBoundingClientRect(), box = key.getBoundingClientRect();
+      key.setAttribute('aria-pressed', k === chosen);
+      key.style.setProperty('--lamp-y', (row.top + row.bottom) / 2 - box.top + 'px');
+    });
+  }
+
   // shrink the board when it would be taller than the stage
   function fitBoard() {
+    wearFinish();
     const { cols, rows } = flap.grid, style = getComputedStyle(stage);
-    // the stand-in record under the board takes its share of the stage
-    const room = stage.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom) - $('record').offsetHeight - 24;
+    // the stand-in record under the board takes its share of the stage, and so do the labels over the board
+    const room = stage.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom) - $('record').offsetHeight - 24 - headEl.offsetHeight;
     const gap = cfg.frame ? cfg.frameGap : cfg.gap, plate = cfg.frame ? cfg.framePad * 2 : 0;
     const tile = (room - plate - (rows - 1) * gap) / (rows * cfg.tileRatio);
-    $('fit').style.maxWidth = Math.max(cols * tile + (cols - 1) * gap + plate, 120) + 'px';
+    boardEl.style.maxWidth = Math.max(cols * tile + (cols - 1) * gap + plate, 120) + 'px';
+    placeFinish();
   }
 
   let queued = false;
@@ -271,6 +326,17 @@
   }));
   rows.push({ p: { key: 'frame' }, sync: syncFrame });
   syncFrame();
+
+  // Plain or Work page, beside it
+  const finishButtons = [...document.querySelectorAll('#finish-switch button')];
+  const syncFinish = () => finishButtons.forEach(button => button.setAttribute('aria-pressed', button.dataset.finish === finish));
+  finishButtons.forEach(button => button.addEventListener('click', () => {
+    finish = button.dataset.finish;
+    try { localStorage.setItem(FINISH_STORE, finish); } catch (e) { /* private mode */ }
+    syncFinish();
+    fitBoard();
+  }));
+  syncFinish();
 
   function checkDrum() {
     const row = rows.find(r => r.p.key === 'lines');

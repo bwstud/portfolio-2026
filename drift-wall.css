@@ -1,0 +1,69 @@
+/* Drift wall: a wall of screenshot tiles laid well back in an isometric view, its columns running from the top left to the
+   bottom right and drifting slowly past each other. The far and near tiles are out of focus. drift-wall.js builds it inside any element with data-wall.
+   Only transforms move. Every length is a share of the wall's height (cqh), so the same picture holds at any size.
+   The structure (columns of repeated tiles, the lean toward the pointer) follows React Bits' Drift Wall. */
+.wall { position: relative; display: block; width: 100%; aspect-ratio: 16 / 11; }
+.wall > img { display: none; }   /* the still image is the fallback when the script doesn't run */
+
+.wall__stage {
+  position: absolute; inset: 0; overflow: hidden; container-type: size;
+  /* the edges fall away into the page: a softer fade than the reference's, which read too dark here */
+  -webkit-mask-image: radial-gradient(ellipse 78% 82% at 50% 46%, #000 68%, transparent 100%), linear-gradient(to top, #000 78%, transparent 100%);
+  -webkit-mask-composite: source-in;
+  mask-image: radial-gradient(ellipse 78% 82% at 50% 46%, #000 68%, transparent 100%), linear-gradient(to top, #000 78%, transparent 100%);
+  mask-composite: intersect;
+}
+.wall__scene {
+  --wall-tile-w: 33.3cqh;
+  --wall-tile-h: 21.65cqh;   /* the screenshots' own shape, 720 by 468 */
+  --wall-gap: 3cqh;
+  position: absolute; inset: 0;   /* no perspective: a true isometric view, where far tiles are as big as near ones */
+}
+.wall__plane {
+  position: absolute; top: 50%; left: 50%; height: 240cqh; display: flex;
+  transform-style: preserve-3d; transform-origin: 50% 50%; will-change: transform;
+  /* Laid back 66 degrees, a low look across the wall, and turned 45, so a column runs down and to the right and a line of
+     text climbs to the right. --wall-px and --wall-py are the few degrees the wall leans toward the pointer. */
+  transform: translate(-50%, -50%) scale(1.5) rotateX(calc(66deg + var(--wall-py, 0deg))) rotateY(var(--wall-px, 0deg)) rotateZ(-45deg);
+}
+.wall__col { flex: none; width: calc(var(--wall-tile-w) + var(--wall-gap)); }
+.wall__track { display: flex; flex-direction: column; will-change: transform; }
+.wall__tile { position: relative; flex: none; display: block; width: 100%; height: calc(var(--wall-tile-h) + var(--wall-gap)); }
+.wall__inner {
+  position: absolute; inset: calc(var(--wall-gap) / 2); display: block; overflow: hidden;
+  border-radius: 1.6cqh; background: #0b0c0d; box-shadow: 0 0 0 1px rgb(255 255 255 / 0.06), -1.2cqh 1.6cqh 3.5cqh rgb(0 0 0 / 0.5);
+}
+.wall__inner img { display: block; width: 100%; height: 100%; object-fit: cover; user-select: none; -webkit-user-drag: none; }
+
+/* Depth of field. With the wall turned 45 degrees, everything on one level of the picture is the same distance away, so
+   focus is a matter of height: a sharp band below the middle, the far tiles above it blurring more the farther they are,
+   and the nearest tiles along the bottom a little soft. Each layer blurs what is behind it, the layers add up, and
+   each one's mask fades it out toward the sharp band. */
+.wall__dof, .wall__dof i { position: absolute; inset: 0; display: block; pointer-events: none; }
+.wall__dof i { -webkit-backdrop-filter: blur(var(--b)); backdrop-filter: blur(var(--b)); -webkit-mask-image: var(--m); mask-image: var(--m); }
+.wall__dof i:nth-child(1) { --b: 0.2cqh;  --m: linear-gradient(to bottom, #000 28%, transparent 46%); }
+.wall__dof i:nth-child(2) { --b: 0.45cqh; --m: linear-gradient(to bottom, #000 12%, transparent 32%); }
+.wall__dof i:nth-child(3) { --b: 0.9cqh;  --m: linear-gradient(to bottom, #000 0%, transparent 18%); }
+.wall__dof i:nth-child(4) { --b: 0.25cqh; --m: linear-gradient(to top, #000 8%, transparent 26%); }
+.wall__dof i:nth-child(5) { --b: 0.5cqh;  --m: linear-gradient(to top, #000 0%, transparent 12%); }
+
+/* Each track holds its tiles three times over, so sliding it by one set loops without a seam. */
+@media (prefers-reduced-motion: no-preference) {
+  .wall__track { animation: wall-drift var(--wall-dur, 90s) linear infinite; animation-delay: var(--wall-delay, 0s); }
+  .wall__col:nth-child(even) .wall__track { animation-direction: reverse; }
+  .wall.is-paused .wall__track, .wall.is-offscreen .wall__track { animation-play-state: paused; }
+}
+@keyframes wall-drift { to { transform: translate3d(0, -33.3333%, 0); } }
+
+/* Pause and play: anything that moves by itself for more than five seconds needs a way to stop it. */
+.wall__pause {
+  position: absolute; right: 10px; bottom: 10px; width: 30px; height: 30px; padding: 0; display: grid; place-items: center;
+  border: 1px solid rgb(255 255 255 / 0.18); border-radius: 50%; background: rgb(8 10 10 / 0.6); color: #fff; cursor: pointer;
+  opacity: 0.55; transition: opacity 160ms ease-out, background-color 160ms ease-out;
+}
+.wall__pause:hover, .wall__pause:focus-visible, .wall.is-paused .wall__pause { opacity: 1; }
+.wall__pause:focus-visible { outline: 2px solid var(--signal, #fff); outline-offset: 2px; }
+.wall__pause svg { width: 12px; height: 12px; fill: currentColor; }
+.wall__pause .wall__play, .wall.is-paused .wall__pause .wall__stop { display: none; }
+.wall.is-paused .wall__pause .wall__play { display: block; }
+@media (prefers-reduced-motion: reduce) { .wall__pause { display: none; } }   /* nothing moves, so nothing to pause */

@@ -6,6 +6,8 @@
   <title>Split-Flap Lab · Brian Studwell</title>
   <meta name="robots" content="noindex">
   <link rel="stylesheet" href="../../styles.css">
+  <link rel="stylesheet" href="../../matte.css">
+  <link rel="stylesheet" href="../../board.css">   <!-- the board's finish on the work page, for the "Work page" switch -->
   <style>
     :root { --dock-h: 248px; --panel-w: 320px; }
     /* black and white: the accent is the page's own text colour, so it flips with light/dark */
@@ -29,12 +31,19 @@
     .head h1 { font-size: 15px; font-weight: 600; }
 
     .head__frame, .head__mode { width: 148px; }
+    .head__finish { width: 176px; }
     .head__mode { margin-left: auto; }
 
     /* Stage */
     .stage { grid-area: stage; display: flex; align-items: center; justify-content: center; min-width: 0; padding: 24px 48px; overflow: hidden; }
     .stage__fit { display: flex; justify-content: center; width: 100%; }
     .stage { flex-direction: column; gap: 24px; }
+    /* The board's wrapper; the script sets its max-width so the board fits the stage. With the "Work page" finish it takes
+       the classes board.css styles (the Matte housing, labels and lamps) and the stage takes the work page's ground. */
+    .stage__board { width: 100%; }
+    .stage__board:not(.matte) .board__head, .stage__board:not(.matte) .board__keys { display: none; }
+    :root:not([data-theme="light"]) .stage.is-site { background: #0d0d0e
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.1' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .126 -.059'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E"); }
     .record { width: min(100%, 720px); height: 132px; flex: none; display: grid; grid-template-columns: 5fr 7fr; gap: 24px; padding: 20px;
       background: var(--surface); border: 1px solid var(--line); border-radius: 6px; will-change: transform, opacity; }
     .record div { display: flex; flex-direction: column; gap: 9px; justify-content: center; }
@@ -149,6 +158,11 @@
       <button type="button" data-frame="false" aria-pressed="false">Flat</button>
       <button type="button" data-frame="true" aria-pressed="true">Framed</button>
     </div>
+    <!-- Plain is the board as split-flap.js draws it; Work page adds what work.html puts on it (board.css) -->
+    <div class="seg head__finish" id="finish-switch" role="group" aria-label="Board finish">
+      <button type="button" data-finish="plain" aria-pressed="false">Plain</button>
+      <button type="button" data-finish="site" aria-pressed="true">Work page</button>
+    </div>
     <div class="seg head__mode" id="mode-switch" role="group" aria-label="Light or dark mode">
       <button type="button" data-mode="dark" aria-pressed="true">Dark</button>
       <button type="button" data-mode="light" aria-pressed="false">Light</button>
@@ -156,7 +170,13 @@
   </header>
 
   <main class="stage" id="stage">
-    <div class="stage__fit" id="fit"></div>
+    <div class="stage__board" id="board">
+      <div class="board__head" aria-hidden="true"><span>Project</span><span>Released</span></div>
+      <div class="board__stage">
+        <div class="stage__fit" id="fit"></div>
+        <div class="board__keys" id="keys" role="group" aria-label="Choose a row"></div>
+      </div>
+    </div>
     <!-- a stand-in for the home page's project panel, so its entrance can be tuned against the board -->
     <div class="record" id="record" aria-hidden="true"><div><i style="width: 22%"></i><b style="width: 78%"></b><b style="width: 52%"></b><i style="width: 64%"></i></div><span></span></div>
   </main>

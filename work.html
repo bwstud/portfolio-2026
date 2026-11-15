@@ -91,8 +91,10 @@
       @keyframes bay-resolve { from { opacity: 0; filter: blur(var(--record-blur, 0px)); } }
     }
     /* ---- The project sheet. Pressing a project's wall of screens pulls a sheet in from the right, over the page, where
-       the project's details live. It stops short of the nav rail (--sheet-left), so the page it came from still shows
-       at its edge. A modal <dialog>: Escape, the Close key or a press on the dimmed page puts it away. ---- */
+       the project's details live. It covers the nav and stops just short of the window's left edge (--sheet-left), so
+       a sliver of the page it came from still shows. Move the pointer onto that sliver and the sheet scoots over
+       (--sheet-peek) for a look at what is behind it: far enough to show the whole nav rail. A modal <dialog>: Escape,
+       the Close key or a press on the page beside it puts it away. ---- */
     .bay__media { position: relative; }
     .bay__open { position: absolute; inset: 0; z-index: 0; padding: 0; border: 0; background: none; cursor: pointer; border-radius: var(--radius-sm); }
     .bay__open:focus-visible { outline: 2px solid var(--signal); outline-offset: 2px; }
@@ -103,19 +105,40 @@
     .bay__open:hover span, .bay__open:focus-visible span { opacity: 1; translate: 0 0; }
     @media (hover: none) { .bay__open span { opacity: 1; translate: 0 0; } }
 
-    .sheet { --sheet-left: 0px; --sheet-ms: 520ms; position: fixed; inset: 0 0 0 auto; width: calc(100vw - var(--sheet-left)); max-width: none; height: 100dvh; max-height: none;
+    .sheet { --sheet-left: 0px; --sheet-ms: var(--sheet-leave-ms, 520ms); position: fixed; inset: 0 0 0 auto; width: calc(100vw - var(--sheet-left)); max-width: none; height: 100dvh; max-height: none;
       margin: 0; padding: 0; border: 0; overflow: hidden; color: var(--fg); background: color-mix(in srgb, var(--ground) 95%, #fff);
       box-shadow: -1px 0 0 var(--line-strong), -30px 0 80px rgb(0 0 0 / 0.55); translate: 100% 0;
-      transition: translate var(--sheet-ms) cubic-bezier(0.3, 0, 0, 1), overlay var(--sheet-ms) allow-discrete, display var(--sheet-ms) allow-discrete; }
-    .sheet[open] { translate: 0 0; display: grid; grid-template-columns: minmax(0, 1fr); }
+      transition: translate var(--sheet-move, var(--sheet-ms)) var(--sheet-ease, var(--sheet-ease-leave, cubic-bezier(0.3, 0, 0, 1))), overlay var(--sheet-ms) allow-discrete, display var(--sheet-ms) allow-discrete; }
+    /* A move takes its pace and its curve from the state it is going to: the closed sheet above holds the departure's,
+       the open one here the arrival's, and once it has arrived the peek's two take over below. */
+    .sheet[open] { --sheet-ms: var(--sheet-arrive-ms, 700ms); --sheet-ease: var(--sheet-ease-arrive, cubic-bezier(0.42, 0, 0.58, 1)); translate: 0 0; display: grid; grid-template-columns: minmax(0, 1fr); }
+    /* once it has arrived, the scoot over and the slide back each have their own pace, quicker than the arrival.
+       These and the other numbers here are the Peek Lab's (tinkering/peek-lab/): the script at the foot of the page
+       sets the properties from the version saved as active in sheet-versions.js. */
+    .sheet.is-settled { --sheet-move: var(--sheet-back-ms, 300ms); --sheet-ease: var(--sheet-ease-back, cubic-bezier(0.3, 0, 0, 1)); }
+    .sheet.is-settled.is-peek { --sheet-move: var(--sheet-out-ms, 300ms); --sheet-ease: var(--sheet-ease-out, cubic-bezier(0.3, 0, 0, 1)); }
+    .sheet[open].is-peek { translate: var(--sheet-peek, 0px) 0; }
+    .sheet.is-settled::backdrop { transition-duration: var(--sheet-move); }
+    .sheet[open].is-peek::backdrop { background: rgb(0 0 0 / var(--sheet-peek-dim, 0)); }   /* the dimming lifts for the look behind */
+    .sheet.has-cue.is-peek::backdrop { cursor: none; }               /* the cue below stands in for the pointer */
+    .sheet.has-cue.is-peek.is-over-nav::backdrop { cursor: pointer; }
     @starting-style { .sheet[open] { translate: 100% 0; } }
     .sheet::backdrop { background: rgb(0 0 0 / 0); transition: background var(--sheet-ms) ease-out, overlay var(--sheet-ms) allow-discrete, display var(--sheet-ms) allow-discrete; }
-    .sheet[open]::backdrop { background: rgb(0 0 0 / 0.5); }
+    .sheet[open]::backdrop { background: rgb(0 0 0 / var(--sheet-dim, 0.5)); }
     @starting-style { .sheet[open]::backdrop { background: rgb(0 0 0 / 0); } }
     html:has(.sheet[open]) { overflow: hidden; }   /* the page behind holds still */
-    @media (min-width: 760px) { .sheet { --sheet-left: 40px; border-radius: 16px 0 0 0; } }
-    @media (min-width: 1100px) { .sheet { --sheet-left: calc(var(--space-5) + var(--rail-w) + var(--space-4) + 1px); } }   /* from the rail's divider */
-    @media (prefers-reduced-motion: reduce) { .sheet, .sheet::backdrop { transition: none; } }
+    @media (min-width: 760px) { .sheet { --sheet-left: var(--sheet-rest, 40px); --sheet-peek: 8px; border-radius: var(--sheet-radius, 16px) 0 0 0; } }
+    @media (min-width: 1100px) { .sheet { --sheet-peek: calc(var(--space-5) + var(--rail-w) + var(--space-4) + 1px + var(--sheet-past, 0px) - var(--sheet-left)); } }   /* over to the rail's divider, or a little past it */
+    /* The cue: a small round key with a return arrow that rides on the pointer while it is over the page beside the
+       sheet, saying what a press there does. A popover of its own, so it sits above the sheet's dimming. */
+    .sheet-cue { position: fixed; inset: 0 auto auto 0; margin: 0; padding: 0; border: 0; width: var(--cue-size, 40px); height: var(--cue-size, 40px); border-radius: 50%; overflow: visible; pointer-events: none;
+      display: grid; place-items: center; color: var(--m-print-hi, #fff); background: linear-gradient(180deg, var(--m-cap-hi, #2e2e30), var(--m-cap, #1f1f21));
+      box-shadow: 0 1px 0 var(--m-shine, rgb(255 255 255 / 0.11)) inset, 0 0 0 1px var(--m-edge, #070707), 0 6px 14px rgb(0 0 0 / 0.5);
+      translate: calc(var(--x, -100px) - 50%) calc(var(--y, -100px) - 50%); opacity: 0; scale: 0.6; transition: opacity 160ms ease-out, scale 160ms ease-out; }
+    .sheet-cue:not(:popover-open) { display: none; }
+    .sheet-cue.is-on { opacity: 1; scale: 1; }
+    .sheet-cue svg { width: 40%; height: 40%; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+    @media (prefers-reduced-motion: reduce) { .sheet, .sheet::backdrop, .sheet-cue { transition: none; } }
 
     .sheet__close { position: absolute; top: var(--space-5); right: var(--space-5); z-index: 1; }
     .sheet__scroll { overflow-y: auto; overscroll-behavior: contain; height: 100dvh; padding: var(--space-7) var(--space-5) var(--space-8); }
@@ -187,6 +210,7 @@
           <li><a href="tinkering/kaleidoscopes/lab/">Kaleidoscope Lab</a></li>
           <li><a href="tinkering/button-lab/">Button Lab</a></li>
           <li><a href="tinkering/dissolve-lab/">Dissolve Lab</a></li>
+          <li><a href="tinkering/peek-lab/">Peek Lab</a></li>
         </ul>
       </div>
     </nav>
@@ -281,6 +305,7 @@
       <div class="sheet__body"></div>
     </div>
   </dialog>
+  <div class="sheet-cue matte" id="sheet-cue" popover="manual" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M6 3.5 2.5 7 6 10.5"/><path d="M2.5 7h7a4 4 0 0 1 0 8H8" transform="translate(0 -1.5)"/></svg></div>
   <div class="endframe">
     <footer class="project--band endband">
       <div class="foot-col">
@@ -312,6 +337,7 @@
   <script src="filings.js"></script>
   <script src="split-flap.js"></script>
   <script src="split-flap-versions.js"></script>
+  <script src="sheet-versions.js"></script>   <!-- the project sheet's peek, as tuned in the Peek Lab -->
   <script src="drift-wall.js"></script>
   <script src="halftone.js"></script>
   <script src="halftone-versions.js"></script>
@@ -415,7 +441,11 @@
       }
       // a short wait either way: passing over the board doesn't open it, and slipping off its edge doesn't shut it
       const foldSoon = (on, ms) => { clearTimeout(foldTimer); foldTimer = setTimeout(() => setFold(on), ms); };
-      stageEl.addEventListener('pointerenter', e => { if (e.pointerType !== 'touch') { over = true; foldSoon(false, 70); } });
+      // Not while the project sheet is over the page, or on its way out: the pointer was on the sheet then (on its Close
+      // key, which lies over the board), and finding itself on the board as the sheet leaves is no reason to open. It
+      // opens the next time the pointer comes onto it.
+      const sheetUp = () => document.documentElement.classList.contains('has-sheet');
+      stageEl.addEventListener('pointerenter', e => { if (e.pointerType !== 'touch' && !sheetUp()) { over = true; foldSoon(false, 70); } });
       stageEl.addEventListener('pointerleave', e => {
         if (e.pointerType === 'touch') return;
         over = false;
@@ -656,11 +686,136 @@
         open.setAttribute('aria-haspopup', 'dialog');
         open.setAttribute('aria-label', 'Open the ' + bay.querySelector('.bay__name').textContent + ' project');
         open.append(make('span', '', 'Open project'));
-        open.addEventListener('click', () => { fill(bay); sheet.showModal(); scroller.scrollTop = 0; });
+        open.addEventListener('click', () => { fill(bay); show(); });
         media.append(open);
       });
-      sheet.querySelector('.sheet__close').addEventListener('click', () => sheet.close());
-      sheet.addEventListener('click', e => { if (e.target === sheet) sheet.close(); });   // a press on the dimmed page beside the sheet
+      /* The peek. While the pointer is over the page showing beside the sheet, the sheet scoots over to show more of it
+         (the whole nav rail, where there is one), the dimming lifts and a return arrow rides on the pointer. Back over
+         the sheet, it slides home. A press out there puts the sheet away; on a nav button, it also goes where that
+         button goes (the page behind a modal dialog can't be pressed itself, so the script finds the button).
+
+         Its numbers are tuned in the Peek Lab and saved in sheet-versions.js; the active version is applied here. */
+      const TUNE = {
+        rest: 40,          // px of page left showing beside the sheet at rest
+        past: 0,           // px the peek goes past the nav rail's divider (negative stops short of it)
+        outMs: 300,        // the scoot over
+        backMs: 300,       // the slide back
+        outDelay: 0,       // ms the pointer must stay beside the sheet before it scoots
+        backDelay: 0,      // ms after the pointer returns before it slides back
+        // an easing curve for each of the three moves, as cubic-bezier handles
+        outX1: 0.3, outY1: 0, outX2: 0, outY2: 1,               // the scoot over
+        backX1: 0.3, backY1: 0, backX2: 0, backY2: 1,           // the slide back
+        arriveX1: 0.42, arriveY1: 0, arriveX2: 0.58, arriveY2: 1,   // the arrival
+        leaveX1: 0.3, leaveY1: 0, leaveX2: 0, leaveY2: 1,       // the departure
+        arriveMs: 700,     // the arrival
+        // Two more shapers for the arrival, on top of its curve; 1 leaves the curve as it is. arriveEnd draws out the
+        // slow down: the distance still to go is raised to that power, so the sheet creeps for longer before it rests.
+        // arriveStart does the same to the start (arriveCurve below).
+        arriveStart: 1,
+        arriveEnd: 1,
+        leaveMs: 520,      // the departure
+        dim: 0.5,          // how dark the page beside the sheet is at rest
+        peekDim: 0,        // and during the peek
+        cue: 40,           // px across the return arrow that rides on the pointer; 0 for none
+        radius: 16,        // the sheet's top left corner
+      };
+      let tune = { ...TUNE };
+      // The arrival's progress, 0 to 1, at each of `steps` even moments, when a shaper is set; null when the plain
+      // curve is all there is. One smooth curve, with no join in it: the bezier's progress b becomes 1 - (1 - b^start)^end.
+      function arriveCurve(steps = 100) {
+        const start = tune.arriveStart, end = tune.arriveEnd;
+        if (!(start > 0) || !(end > 0) || (start === 1 && end === 1)) return null;
+        const x1 = tune.arriveX1, y1 = tune.arriveY1, x2 = tune.arriveX2, y2 = tune.arriveY2;
+        const at = (a, b, u) => 3 * a * u * (1 - u) ** 2 + 3 * b * u * u * (1 - u) + u ** 3;
+        const pow = (v, p) => Math.sign(v) * Math.abs(v) ** p;   // a curve that goes past either end keeps its sign
+        return Array.from({ length: steps + 1 }, (_, i) => {
+          const t = i / steps;
+          let lo = 0, hi = 1;
+          for (let n = 0; n < 24; n++) { const mid = (lo + hi) / 2; if (at(x1, x2, mid) < t) lo = mid; else hi = mid; }   // the bezier is given by its own parameter: find the one for this moment
+          return 1 - pow(1 - pow(at(y1, y2, (lo + hi) / 2), start), end);
+        });
+      }
+      function applyTune(config) {
+        tune = { ...TUNE, ...config };
+        const set = (name, value) => document.documentElement.style.setProperty(name, value);
+        set('--sheet-rest', tune.rest + 'px'); set('--sheet-past', tune.past + 'px'); set('--sheet-radius', tune.radius + 'px');
+        set('--sheet-out-ms', tune.outMs + 'ms'); set('--sheet-back-ms', tune.backMs + 'ms');
+        set('--sheet-arrive-ms', tune.arriveMs + 'ms'); set('--sheet-leave-ms', tune.leaveMs + 'ms');
+        ['out', 'back', 'arrive', 'leave'].forEach(move => set('--sheet-ease-' + move, `cubic-bezier(${tune[move + 'X1']}, ${tune[move + 'Y1']}, ${tune[move + 'X2']}, ${tune[move + 'Y2']})`));
+        const curve = arriveCurve();   // a shaped arrival is handed to the stylesheet as its sampled curve
+        if (curve) set('--sheet-ease-arrive', `linear(${curve.map(y => +y.toFixed(4)).join(', ')})`);
+        set('--sheet-dim', tune.dim); set('--sheet-peek-dim', tune.peekDim); set('--cue-size', tune.cue + 'px');
+      }
+      const saved = window.SHEET_VERSIONS, active = saved && saved.versions.find(v => v.id === saved.active);
+      applyTune(active ? active.config : {});
+
+      const cue = document.getElementById('sheet-cue'), canCue = !!(cue && cue.showPopover);
+      const chips = () => [...document.querySelectorAll('.nav .chip')].filter(chip => chip.offsetParent);
+      const chipAt = (x, y) => chips().find(chip => { const b = chip.getBoundingClientRect(); return x >= b.left && x < b.right && y >= b.top && y < b.bottom; });
+      let settle = 0, gone = 0, want = false, held = false, peekTimer = 0;
+      // the cue follows the pointer at once; the sheet itself moves after the waits the lab sets
+      function peek(on, e) {
+        const nav = on && e ? chipAt(e.clientX, e.clientY) : null;
+        sheet.classList.toggle('is-over-nav', !!nav);
+        if (canCue) {
+          if (e) { cue.style.setProperty('--x', e.clientX + 'px'); cue.style.setProperty('--y', e.clientY + 'px'); }
+          cue.classList.toggle('is-on', on && !nav && tune.cue > 0);
+        }
+        if (on === want) return;
+        want = on;
+        clearTimeout(peekTimer);
+        const move = () => sheet.classList.toggle('is-peek', want || held);
+        const wait = on ? tune.outDelay : tune.backDelay;
+        if (wait > 0) peekTimer = setTimeout(move, wait); else move();
+      }
+      function show() {
+        clearTimeout(peekTimer); want = false;
+        sheet.classList.remove('is-peek', 'is-settled', 'is-over-nav');
+        sheet.classList.toggle('has-cue', canCue && tune.cue > 0);
+        clearTimeout(gone);
+        document.documentElement.classList.add('has-sheet');   // the board keeps shut under it (see the board's script)
+        sheet.showModal();
+        scroller.scrollTop = 0;
+        if (canCue) { try { cue.showPopover(); } catch (e) { /* already showing */ } }
+        clearTimeout(settle);
+        settle = setTimeout(() => { sheet.classList.add('is-settled'); sheet.classList.toggle('is-peek', want || held); }, tune.arriveMs + 40);   // after the arrival, the quicker scoot
+      }
+      function hide() {
+        clearTimeout(settle); clearTimeout(peekTimer);
+        want = false;
+        sheet.classList.remove('is-peek', 'is-over-nav', 'is-settled');   // it leaves at the pace it arrived
+        if (canCue) { cue.classList.remove('is-on'); try { cue.hidePopover(); } catch (e) { /* not showing */ } }
+        if (sheet.open) sheet.close();
+        clearTimeout(gone);
+        gone = setTimeout(() => document.documentElement.classList.remove('has-sheet'), tune.leaveMs + 80);   // once it has left
+      }
+      sheet.addEventListener('close', hide);     // Escape closes it without coming through here first
+      const beside = e => e.clientX < sheet.getBoundingClientRect().left;
+      document.addEventListener('pointermove', e => { if (sheet.open && e.pointerType !== 'touch') peek(beside(e), e); });
+      document.documentElement.addEventListener('pointerleave', () => { if (sheet.open) peek(false); });
+      sheet.querySelector('.sheet__close').addEventListener('click', hide);
+      sheet.addEventListener('click', e => {      // a press on the page beside the sheet
+        if (e.target !== sheet || !beside(e)) return;
+        const chip = chipAt(e.clientX, e.clientY);
+        hide();
+        if (chip && !lab) chip.click();
+      });
+
+      // The Peek Lab shows this page in a frame (work.html?lab) with the first project's sheet open, and drives it:
+      // its faders' settings, opening and closing the sheet, and holding the peek without a pointer.
+      const lab = new URLSearchParams(location.search).has('lab');
+      if (lab) {
+        const first = document.querySelector('.bay .bay__open');
+        window.sheetLab = {
+          TUNE,
+          apply: applyTune,
+          arriveCurve,
+          open() { if (!sheet.open && first) first.click(); },
+          close: hide,
+          hold(on) { held = on; if (sheet.classList.contains('is-settled')) sheet.classList.toggle('is-peek', want || held); },
+        };
+        addEventListener('load', () => { try { parent.peekLab && parent.peekLab.ready(); } catch (e) { /* opened on its own */ } });
+      }
     })();
   </script>
 </body>

@@ -24,3 +24,18 @@ treat it as one continuous record.
 - **Commit and push:** commit the log with the work it describes. A log-only commit goes on
   the current branch with a message starting `Work log:`, and is pushed straight away so the
   other machine can pull it.
+
+## Tuning labs
+
+Every control in a tuning lab that sets a number (a slider, fader, knob, stepper or drag handle) must also
+take a typed value: a number field beside it, kept in step with it both ways. This holds for new labs and
+for controls added to existing ones.
+
+- A typed number inside the control's range takes effect as it is typed. Leaving the field, or Enter,
+  tidies it: a value outside the range goes to the nearest end, and an empty field goes back to the
+  current value.
+- A typed value need not sit on the slider's step. Keep the number as typed; the slider shows the
+  nearest position.
+- Give the field an accessible name (the control's label plus ", typed" is the pattern in use).
+
+The Split-Flap, Halftone, Button, Dissolve, Peek, Kaleidoscope and Domino labs all follow this.

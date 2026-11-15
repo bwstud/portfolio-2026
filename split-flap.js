@@ -47,8 +47,8 @@
     recordDrop: 24,             // px it starts above its resting place; negative starts below
     recordLeadMs: 450,          // it starts this long before the board's last flap lands
     recordBlur: 0,              // px of blur it starts with
-    // Touch: hover(index) lifts a resting module's lower flap; spinCell(..., { flips }) turns it
-    liftDeg: 36,                // how far the lower flap swings up under the cursor
+    // Touch: hover(index, t, { half, amount }) lifts a resting module's upper or lower flap, part or all of the way; spinCell(..., { flips }) turns it
+    liftDeg: 36,                // how far a flap swings out under the cursor, at its fullest
     liftMs: 160,                // how long it takes to lift and to drop back
 
     recordEase: [0.23, 1, 0.32, 1],   // how it settles: a named ease or a cubic-bezier array
@@ -363,16 +363,27 @@
       const a = leaf.deg * Math.PI / 180, cos = Math.cos(a), sin = Math.sin(a);
       const eye = th * cfg.eye, dir = leaf.half === 'top' ? -1 : 1;
       const proj = d => { const sc = eye / (eye - d * sin); return { y: hinge + dir * d * cos * sc, sc }; };
-      // shading: the falling top leaf turns away from the light, the landing bottom leaf faces it
-      g.fillStyle = leaf.half === 'top' ? `rgba(0, 0, 0, ${cfg.topShade * sin})` : `rgba(255, 255, 255, ${cfg.bottomShine * sin})`;
       for (let k = 0; k < slices; k++) {
         const d0 = k / slices * h, d1 = (k + 1) / slices * h;
         const p0 = proj(d0), p1 = proj(d1), w = tw * (p0.sc + p1.sc) / 2;
         const sy = leaf.half === 'top' ? h - d1 : h + d0;
-        const x = cx - w / 2, y = Math.min(p0.y, p1.y), sh = Math.abs(p1.y - p0.y) + 1;
-        g.drawImage(img, 0, sy, tw, h / slices, x, y, w, sh);
-        g.fillRect(x, y, w, sh);
+        const x = cx - w / 2, y = Math.min(p0.y, p1.y), span = Math.abs(p1.y - p0.y), hs = h / slices;
+        // Each strip runs about a pixel past its share, under the next one, so no seam shows between them. It takes
+        // that much more of the picture with it rather than stretching: stretched, every strip sat a little out of
+        // step with the one below and the grain showed a line at each join.
+        const edge = leaf.half === 'top' ? h : th;   // the picture's half ends here; a strip takes nothing from past it
+        const more = span > 0 ? Math.max(0, Math.min(hs / span, hs, edge - (sy + hs))) : 0;
+        g.drawImage(img, 0, sy, tw, hs + more, x, y, w, span * (hs + more) / hs);
       }
+      // shading: the falling top leaf turns away from the light, the landing bottom leaf faces it. Laid over the whole
+      // leaf in one piece: shaded strip by strip, the pixel where two strips overlap took it twice and showed as a line.
+      const near = proj(0), far = proj(h);
+      g.fillStyle = leaf.half === 'top' ? `rgba(0, 0, 0, ${cfg.topShade * sin})` : `rgba(255, 255, 255, ${cfg.bottomShine * sin})`;
+      g.beginPath();
+      g.moveTo(cx - tw * near.sc / 2, near.y); g.lineTo(cx + tw * near.sc / 2, near.y);
+      g.lineTo(cx + tw * far.sc / 2, far.y); g.lineTo(cx - tw * far.sc / 2, far.y);
+      g.closePath();
+      g.fill();
       if (leaf.deg > cfg.edgeMinDeg) {   // light catching the leaf's free edge
         const e = proj(h);
         g.fillStyle = `rgba(255, 255, 255, ${cfg.edgeLight * sin})`;
@@ -394,13 +405,17 @@
     function drawModule(m, t) {
       const moving = t > m.start - cfg.shutterMs && t < flapEnd(m, cfg) + cfg.shutterMs;
       if (!moving) {
-        const st = stateAt(m, t), up = liftAt(m, t), key = st.top + st.bottom + (up > 0 ? up.toFixed(3) : '');
+        const st = stateAt(m, t), up = liftAt(m, t), key = st.top + st.bottom + (up !== 0 ? up.toFixed(3) : '');
         if (m.drawn === key) return;
-        // a resting module under the cursor: its lower flap swings up, showing the leaf behind it
+        // A resting module under the cursor. Its lower flap swings up, showing the lower half of the leaf before it on
+        // the drum; or its upper flap swings forward, showing the upper half of the leaf after it.
+        const at = cfg.chars.indexOf(st.top), len = cfg.chars.length;
         if (up > 0) {
-          const n = m.seq.length - 1, at = cfg.chars.indexOf(st.top), len = cfg.chars.length;
+          const n = m.seq.length - 1;
           const behind = n > 0 ? m.seq[n - 1] : cfg.chars[(at - 1 + len) % len];
           drawState(m.ctx, { top: st.top, bottom: behind, leaf: { half: 'bottom', ch: st.bottom, deg: cfg.liftDeg * up } });
+        } else if (up < 0) {
+          drawState(m.ctx, { top: cfg.chars[(at + 1) % len], bottom: st.bottom, leaf: { half: 'top', ch: st.top, deg: cfg.liftDeg * -up } });
         } else drawState(m.ctx, st);
         m.drawn = key;
         return;
@@ -419,19 +434,22 @@
       m.ctx.globalAlpha = 1;
     }
 
-    // how far a module's lower flap is lifted at time t, 0 to 1
+    // how far a module's flap is lifted at time t: 0 to 1 for the lower flap, 0 to -1 for the upper
     function liftAt(m, t) {
       const l = m.lift;
       if (!l) return 0;
       const u = cfg.liftMs > 0 ? Math.min(Math.max((t - l.t0) / cfg.liftMs, 0), 1) : 1;
       return l.from + (l.to - l.from) * (1 - (1 - u) ** 3);
     }
-    // lift one module's lower flap (index as in spinCell) and let every other one drop; null drops all.
+    // Lift one module's flap (index as in spinCell) and let every other one drop; null drops all. half is 'top' or
+    // 'bottom', the flap to lift, and amount is how far, from 0 (resting) to 1 (liftDeg). Calling again for the same
+    // module moves its flap to the new amount, through rest if the other flap is asked for.
     // Returns the time the motion ends, so the caller knows how long to keep seeking.
-    function hover(index, t) {
+    function hover(index, t, { half = 'bottom', amount = 1 } = {}) {
       const on = index === null || index === undefined ? null : mods.at(index);
+      const want = Math.min(Math.max(amount, 0), 1) * (half === 'top' ? -1 : 1);
       mods.forEach(m => {
-        const to = m === on ? 1 : 0;
+        const to = m === on ? want : 0;
         if ((m.lift ? m.lift.to : 0) !== to) m.lift = { from: liftAt(m, t), to, t0: t };
       });
       return t + cfg.liftMs;
@@ -510,7 +528,7 @@
       seek,
       spinTo,
       spinCell,
-      hover,                          // lift the lower flap of the module under the cursor
+      hover,                          // lift the upper or lower flap of the module under the cursor
       get chars() { return cfg.chars; },
       get count() { return mods.length; },
       cell: index => mods.at(index).el,   // a module's element, for placing things over it

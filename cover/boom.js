@@ -20,8 +20,26 @@
   const VOLUME = 0.7;
 
   const BASE = new URL('sounds/', document.currentScript.src);          // the sounds sit beside this script, wherever the page is
-  const players = {};
-  [CENTRE, ...INNER, ...OUTER].forEach((name) => { const a = new Audio(new URL(`${name}.mp3`, BASE)); a.preload = 'auto'; players[name] = a; });   // fetched up front so the first click isn't late
+  const NAMES = [CENTRE, ...INNER, ...OUTER];
+
+  // The sounds play through Web Audio: each file is fetched up front, decoded the first time it is wanted and kept, and
+  // every boom is a fresh source on that one decoded copy. They used to be <audio> elements, cloned for every press;
+  // a phone plays those through its media player, one stream per element, and there the booms came out slowed and
+  // rough. One context for the page (boomContext(), which the cover's tone shares) keeps everything at one sample rate.
+  const AC = window.AudioContext || window.webkitAudioContext;
+  let ctx = null, out = null;
+  window.boomContext = () => {
+    if (!ctx && AC) {
+      ctx = new AC();
+      out = ctx.createGain(); out.gain.value = VOLUME; out.connect(ctx.destination);
+      try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) { /* older Safari */ }   // as before, the ringer switch doesn't silence them
+    }
+    return ctx;
+  };
+  const files = {}, buffers = {};
+  const file = (name) => files[name] || (files[name] = fetch(new URL(`${name}.mp3`, BASE)).then((r) => r.arrayBuffer()));
+  const buffer = (name) => buffers[name] || (buffers[name] = file(name).then((data) => new Promise((ok, no) => ctx.decodeAudioData(data.slice(0), ok, no))));
+  if (AC) NAMES.forEach((name) => file(name).catch(() => { delete files[name]; }));   // fetched up front so the first click isn't late
 
   // which sound lives at a point in the window
   function soundAt(x, y) {
@@ -34,22 +52,27 @@
   }
 
   window.boom = (x, y) => {
-    const names = Object.keys(players);
-    const name = Number.isFinite(x) && Number.isFinite(y) ? soundAt(x, y) : names[Math.floor(Math.random() * names.length)];
-    const a = players[name].cloneNode();       // a fresh copy each time, so quick clicks overlap instead of cutting off
-    a.volume = VOLUME;
-    live.add(a); a.addEventListener('ended', () => live.delete(a));
-    a.play().catch(() => live.delete(a));      // the browser may refuse if this wasn't a real click
+    const name = Number.isFinite(x) && Number.isFinite(y) ? soundAt(x, y) : NAMES[Math.floor(Math.random() * NAMES.length)];
+    if (!window.boomContext()) return name;                             // no Web Audio: silent
+    if (ctx.state !== 'running') ctx.resume().catch(() => {});          // the browser holds it until a real press; this is one
+    buffer(name).then((data) => {
+      const source = ctx.createBufferSource(), gain = ctx.createGain(), voice = { source, gain };
+      source.buffer = data;                    // a fresh source each time, so quick clicks overlap instead of cutting off
+      source.connect(gain).connect(out);
+      live.add(voice); source.onended = () => { live.delete(voice); gain.disconnect(); };
+      source.start();
+    }).catch(() => { delete buffers[name]; });
     return name;
   };
   // boomHush() cuts every boom still ringing: a very short fade, so it stops without a click
   const live = new Set();
   window.boomHush = () => {
-    for (const a of live) {
-      live.delete(a);
-      const from = a.volume, at = performance.now();
-      const fade = () => { const t = (performance.now() - at) / 50; if (t >= 1) { a.pause(); return; } a.volume = from * (1 - t); requestAnimationFrame(fade); };
-      fade();
+    for (const voice of live) {
+      live.delete(voice);
+      const t = ctx.currentTime;
+      voice.gain.gain.setValueAtTime(voice.gain.gain.value, t);
+      voice.gain.gain.linearRampToValueAtTime(0, t + 0.05);
+      voice.source.stop(t + 0.06);
     }
   };
 

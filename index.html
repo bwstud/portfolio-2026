@@ -119,6 +119,7 @@
     @media (max-width: 600px) {
       .dock { zoom: .82; margin-top: 30px; }
       .hook__go { margin-top: 22px; }
+      .matte .hook__cta { zoom: 2; }   /* a trial: the key at twice its size on a phone, everything about it scaled together */
     }
     @media (max-width: 380px) { .freq { display: none; } }
     @media (max-height: 520px) and (orientation: landscape) {
@@ -646,7 +647,7 @@
     let audio = null, on = false, lastF = freq, motion = 0;
     function startAudio() {
       if (audio) return audio;
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const ctx = window.boomContext?.() || new (window.AudioContext || window.webkitAudioContext)();   // one context for the page: the booms' (cover/boom.js)
       const master = ctx.createGain(); master.gain.value = 0;
       const comp = ctx.createDynamicsCompressor(); comp.threshold.value = -14; comp.ratio.value = 3;
       master.connect(comp).connect(ctx.destination);

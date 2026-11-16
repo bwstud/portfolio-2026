@@ -6,6 +6,9 @@
   <title>Fold Dojo · Brian Studwell</title>
   <meta name="description" content="Five origami models folded step by step in simulated paper. Watch each fold, or fold it yourself with hints.">
   <style>
+    @layer base, matte;
+    @import url("../../matte.css") layer(matte);   /* the Matte system, under this page's own layout rules */
+    @import url("../rig.css") layer(matte);        /* and what the rigs share on top of it */
     @font-face {
       font-family: "Geist";
       font-weight: 100 900;
@@ -27,27 +30,23 @@
       --mountain: #b2b2b2;
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    @layer base {
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      button, input, select { font: inherit; color: inherit; }
+      button { cursor: pointer; background: none; border: 0; }
+      button:disabled { cursor: default; }
+    }
     html, body {
       height: 100%; overflow: hidden;
       background: var(--bg); color: var(--fg);
       font: 13px/1.45 "Geist", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
       -webkit-font-smoothing: antialiased;
     }
-    button, input, select { font: inherit; color: inherit; }
-    button { cursor: pointer; background: none; border: 0; }
-    button:disabled { cursor: default; }
-    :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
     [hidden] { display: none !important; }
 
     #scene { position: fixed; inset: 0; display: block; width: 100%; height: 100%; touch-action: none; }
 
-    .panel {
-      position: fixed; z-index: 2;
-      background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
-      backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
-    }
-    .label { font-size: 12px; font-weight: 620; color: var(--soft); }
+    .panel { position: fixed; z-index: 2; border-radius: 12px; }   /* a Matte body (.m-body); its labels are Matte legends */
 
     /* ---------- header ---------- */
     .top {
@@ -55,24 +54,15 @@
       display: flex; align-items: center; gap: 14px; pointer-events: none;
     }
     .top > * { pointer-events: auto; }
-    .back { color: var(--muted); text-decoration: none; }
-    .back:hover { color: var(--fg); }
     .brand { font-size: 15px; font-weight: 650; }
     .brand span { color: var(--muted); font-weight: 450; margin-left: 6px; }
     .modes {
       position: absolute; left: 50%; transform: translateX(-50%);
-      display: flex; padding: 3px; border-radius: 10px; background: var(--panel); border: 1px solid var(--line);
-      backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+      display: flex;                                          /* a Matte segmented control */
     }
-    .modes button { padding: 5px 12px; border-radius: 7px; color: var(--muted); font-weight: 540; }
-    .modes button:hover { color: var(--fg); }
-    .modes button[aria-pressed="true"] { background: rgba(255, 255, 255, 0.12); color: var(--fg); }
     .short { display: none; }
     .modes button, .back, .drawer-toggle { white-space: nowrap; }
-    .drawer-toggle {
-      display: none; padding: 6px 11px; border-radius: 8px;
-      border: 1px solid var(--line-strong); background: var(--panel);
-    }
+    .drawer-toggle { display: none; }                       /* a Matte key */
     .drawer-toggle:first-of-type { margin-left: auto; }
 
     /* ---------- library (left) ---------- */
@@ -80,86 +70,62 @@
       top: 50px; left: 16px; bottom: 16px; width: 272px;
       display: flex; flex-direction: column; overflow: hidden;
     }
-    .tabs { display: flex; gap: 2px; padding: 8px 8px 0; flex: none; }
-    .tabs button { flex: 1; padding: 6px 8px; border-radius: 7px; color: var(--muted); font-weight: 560; }
-    .tabs button[aria-selected="true"] { color: var(--fg); background: rgba(255, 255, 255, 0.07); }
-    .tabs .count { color: var(--accent); margin-left: 4px; font-weight: 600; }
+    .tabs { display: flex; gap: 2px; padding: 6px 8px 0; flex: none; }   /* Matte tabs */
+    .tabs button { flex: 1; }
+    .tabs .count { color: var(--m-signal); margin-left: 6px; }
     .pane { overflow-y: auto; padding: 8px 10px 12px; flex: 1; min-height: 0; }
-    .item {
-      display: block; width: 100%; text-align: left;
-      padding: 8px 10px; border-radius: 8px; border: 1px solid transparent;
-    }
+    .item { display: block; width: 100%; text-align: left; padding: 8px 10px; }   /* a row in a Matte list: the chosen one carries a signal mark */
     .item + .item { margin-top: 2px; }
-    .item:hover { background: rgba(255, 255, 255, 0.04); }
-    .item[aria-pressed="true"] { background: rgba(181, 181, 181, 0.1); border-color: rgba(181, 181, 181, 0.35); }
-    .item__name { display: block; font-weight: 580; }
-    .item[aria-pressed="true"] .item__name { color: var(--accent); }
-    .item__sum { display: block; color: var(--soft); font-size: 12px; margin-top: 1px; }
-    .item__meta { display: block; color: var(--faint); font-size: 11.5px; margin-top: 2px; }
-    .about { border-top: 1px solid var(--line); padding: 12px 18px 16px; max-height: 40%; overflow-y: auto; flex: none; }
+    .item__name { display: block; font-weight: 580; color: var(--m-print-hi); }
+    .item__sum { display: block; color: var(--m-print); font-size: 12px; margin-top: 1px; }
+    .item__meta { display: block; color: var(--m-print-dim); font-size: 11.5px; margin-top: 2px; }
+    .about { border-top: 1px solid var(--m-well); box-shadow: 0 1px 0 rgb(255 255 255 / 0.055) inset; padding: 12px 18px 16px; max-height: 40%; overflow-y: auto; flex: none; }
     .about__name { font-size: 14px; font-weight: 620; margin-bottom: 6px; }
     .about p { color: var(--soft); }
     .about p + p { margin-top: 7px; }
     .empty { color: var(--muted); padding: 10px 8px; }
     .piece { display: flex; align-items: stretch; gap: 4px; border-radius: 9px; }
     .piece + .piece { margin-top: 6px; }
-    .piece__open { flex: 1; display: flex; gap: 10px; text-align: left; padding: 6px; border-radius: 9px; min-width: 0; }
-    .piece__open:hover { background: rgba(255, 255, 255, 0.05); }
+    .piece__open { flex: 1; padding: 6px; min-width: 0; }   /* a row in a Matte list */
     .piece img { width: 76px; height: 52px; object-fit: cover; border-radius: 6px; flex: none; background: #1c1c1c; }
-    .piece b { display: block; font-weight: 570; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .piece small { display: block; color: var(--muted); font-size: 11.5px; line-height: 1.35; }
-    .piece__del { width: 26px; color: var(--faint); font-size: 16px; border-radius: 7px; }
-    .piece__del:hover { color: var(--fg); background: rgba(255, 255, 255, 0.06); }
+    .piece b { display: block; font-weight: 570; color: var(--m-print-hi); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .piece small { display: block; color: var(--m-print-dim); font-size: 11.5px; line-height: 1.35; }
+    .piece__del { width: 26px; height: auto; font-size: 16px; }   /* a quiet Matte key */
 
     /* ---------- options (right) ---------- */
     .options {
       top: 50px; right: 16px; width: 272px; max-height: calc(100% - 66px);
       overflow-y: auto; padding: 14px 16px 16px;
     }
-    .opt + .opt { margin-top: 14px; padding-top: 13px; border-top: 1px solid var(--line); }
-    .opt .label { margin-bottom: 8px; display: flex; justify-content: space-between; gap: 8px; }
-    .opt .label output { color: var(--muted); font-weight: 450; }
-    .sub { margin: 10px 0 6px; color: var(--muted); font-size: 12px; }
+    .opt + .opt { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--m-well); box-shadow: 0 1px 0 rgb(255 255 255 / 0.055) inset; }   /* a seam between groups */
+    .opt .label { margin-bottom: 10px; display: flex; justify-content: space-between; gap: 8px; }
+    .opt .label output { color: var(--m-lit); letter-spacing: 0.02em; text-transform: none; }
+    .sub { margin: 12px 0 8px; color: var(--m-print-dim); font-size: 12px; }
     .patterns { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
-    .pat { aspect-ratio: 1; border-radius: 6px; overflow: hidden; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14); }
+    .pat { aspect-ratio: 1; border-radius: var(--m-radius-well); overflow: hidden; box-shadow: 0 0 0 1px var(--m-edge), 0 1px 0 rgb(255 255 255 / 0.08); }   /* a pattern set in the body; the one in use is ringed in the signal colour */
     .pat canvas { width: 100%; height: 100%; display: block; }
-    .pat[aria-pressed="true"] { outline: 2px solid var(--fg); outline-offset: 1px; }
-    .swatches { display: grid; grid-template-columns: repeat(9, 1fr); gap: 6px; }
-    .swatch { aspect-ratio: 1; border-radius: 50%; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.2); }
-    .swatch[aria-pressed="true"] { outline: 2px solid var(--fg); outline-offset: 2px; }
+    .pat[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--m-body), 0 0 0 4px var(--m-signal); }
+    .swatches { display: grid; grid-template-columns: repeat(9, 1fr); gap: 7px; }
+    .swatch { width: auto; height: auto; aspect-ratio: 1; }     /* a colour set in the body (.m-dot) */
     .is-dim { opacity: 0.4; }
-    .seg { display: flex; border: 1px solid var(--line-strong); border-radius: 8px; overflow: hidden; }
-    .seg button { flex: 1; padding: 6px 4px; font-size: 12px; color: var(--soft); }
-    .seg button + button { border-left: 1px solid var(--line); }
-    .seg button[aria-pressed="true"] { background: rgba(255, 255, 255, 0.12); color: var(--fg); }
-    .note { color: var(--faint); font-size: 11.5px; margin-top: 6px; }
+    .seg button { padding: 0 4px; letter-spacing: 0.06em; }      /* a Matte segmented control */
+    .note { color: var(--m-print-dim); font-size: 11.5px; margin-top: 8px; }
     .rows { display: grid; gap: 2px; }
-    .row { display: block; text-align: left; padding: 6px 8px; border-radius: 8px; border: 1px solid transparent; }
-    .row:hover { background: rgba(255, 255, 255, 0.04); }
-    .row[aria-pressed="true"] { border-color: var(--line-strong); background: rgba(255, 255, 255, 0.05); }
-    .row b { display: block; font-weight: 550; }
-    .row b span { color: var(--muted); font-weight: 450; margin-left: 4px; }
-    .row small { display: block; color: var(--muted); font-size: 11.5px; line-height: 1.3; }
+    .row { display: block; text-align: left; padding: 6px 8px; }   /* a row in a Matte list */
+    .row b { display: block; font-weight: 550; color: var(--m-print-hi); }
+    .row b span { color: var(--m-print-dim); font-weight: 450; margin-left: 4px; }
+    .row small { display: block; color: var(--m-print-dim); font-size: 11.5px; line-height: 1.3; }
     .row--swatch { display: flex; align-items: center; gap: 10px; }
-    .row--swatch canvas { width: 34px; height: 18px; border-radius: 4px; flex: none; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12); }
-    .views { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
-    .btn {
-      padding: 6px 4px; border-radius: 7px; border: 1px solid var(--line-strong);
-      background: rgba(255, 255, 255, 0.03); text-align: center; font-size: 12px;
-    }
-    .btn:hover { background: rgba(255, 255, 255, 0.08); }
-    .zoomrow { display: flex; align-items: center; gap: 10px; margin-top: 10px; color: var(--muted); font-size: 12px; }
+    .row--swatch canvas { width: 34px; height: 18px; border-radius: 4px; flex: none; box-shadow: 0 0 0 1px var(--m-edge); }
+    .views { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+    .btn { min-width: 0; padding: 0 4px; }                       /* a Matte key */
+    .zoomrow { display: flex; align-items: center; gap: 12px; margin-top: 12px; }
     .zoomrow input { flex: 1; }
-    input[type="range"] { width: 100%; accent-color: var(--accent); }
-    .toggles { margin-top: 10px; display: grid; gap: 6px; }
-    .toggles label { display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--soft); }
-    .toggles input { accent-color: var(--accent); }
-    .toggles .dim { color: #828282; }
-    .hint-text { margin-top: 10px; color: var(--faint); font-size: 11.5px; }
-    .chips { display: flex; flex-wrap: wrap; gap: 5px; }
-    .chip { padding: 5px 10px; border-radius: 999px; border: 1px solid var(--line-strong); font-size: 12px; color: var(--soft); }
-    .chip:hover { background: rgba(255, 255, 255, 0.06); }
-    .chip[aria-pressed="true"] { background: rgba(255, 255, 255, 0.13); color: var(--fg); border-color: transparent; }
+    .m-fader { width: 100%; }
+    .toggles { margin-top: 12px; display: grid; gap: 9px; justify-items: start; }   /* Matte tick boxes */
+    .toggles .dim { color: var(--m-print-dim); }
+    .hint-text { margin-top: 10px; color: var(--m-print-dim); font-size: 11.5px; }
+    .chips { display: flex; flex-wrap: wrap; gap: 8px 6px; }     /* Matte keys; the one in use stays down */
 
     .viewer-opts { display: none; }
     .is-viewer .folding-opts { display: none; }
@@ -172,40 +138,26 @@
       padding: 14px 16px 12px;
     }
     .step__meta { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
-    .step__count { color: var(--accent); font-size: 12px; font-weight: 620; }
-    .step__time { color: var(--faint); font-size: 11px; font-variant-numeric: tabular-nums; }
+    .step__count { color: var(--m-signal); }                     /* a Matte legend in the signal colour */
+    .step__time { color: var(--m-print-dim); }
     .step__title { font-size: 16px; font-weight: 620; margin-top: 3px; }
     .step__text { color: #cccccc; margin-top: 4px; min-height: 3em; }
-    .feedback { color: var(--accent); margin-top: 6px; font-size: 12.5px; min-height: 1.4em; }
+    .feedback { color: var(--m-signal); margin-top: 6px; font-size: 12.5px; min-height: 1.4em; }
     .feedback:empty { display: none; }
     .steps { display: flex; gap: 3px; margin: 12px 0 10px; }
     .steps button {
       flex: 1; height: 16px; padding: 6px 0; background-clip: content-box;
-      background-color: rgba(255, 255, 255, 0.12); position: relative;
+      background-color: var(--m-meter-off); position: relative;   /* the steps as a Matte meter: segments that light as they play */
     }
-    .steps button::after { content: ""; position: absolute; left: 0; top: 6px; bottom: 6px; width: var(--fill, 0%); background: var(--accent); }
-    .steps button:hover { background-color: rgba(255, 255, 255, 0.22); }
-    .transport { display: flex; align-items: center; gap: 6px; }
-    .tbtn {
-      width: 34px; height: 34px; border-radius: 9px; display: grid; place-items: center;
-      border: 1px solid var(--line-strong); background: rgba(255, 255, 255, 0.03);
-    }
-    .tbtn:hover { background: rgba(255, 255, 255, 0.09); }
-    .tbtn svg { width: 16px; height: 16px; fill: currentColor; }
-    .tbtn--play { width: 44px; background: var(--accent); color: var(--accent-ink); border-color: transparent; }
-    .tbtn--play:hover { background: #c2c2c2; }
-    .tbtn:disabled { opacity: 0.35; }
-    .speed { margin-left: auto; display: flex; align-items: center; gap: 8px; color: var(--muted); }
-    .speed .seg button { padding: 6px 8px; font-variant-numeric: tabular-nums; }
-    .pill {
-      padding: 7px 13px; border-radius: 9px; border: 1px solid var(--line-strong);
-      background: rgba(255, 255, 255, 0.03); font-weight: 540;
-    }
-    .pill:hover { background: rgba(255, 255, 255, 0.09); }
-    .pill:disabled { opacity: 0.35; }
-    .pill--go { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
-    .pill--go:hover { background: #c2c2c2; }
-    .fold-controls, .done-controls { display: none; gap: 6px; align-items: center; flex-wrap: wrap; }
+    .steps button::after { content: ""; position: absolute; left: 0; top: 6px; bottom: 6px; width: var(--fill, 0%); background: var(--m-meter-on); }
+    .steps button:hover { background-color: color-mix(in srgb, var(--m-print) 40%, var(--m-meter-off)); }
+    .transport { display: flex; align-items: center; gap: 8px; }
+    .tbtn { width: 38px; min-width: 0; padding: 0; }             /* Matte keys; Play is the primary */
+    .tbtn svg { width: 14px; height: 14px; }
+    .tbtn--play { width: 48px; }
+    .speed { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+    .speed .seg button { padding: 0 8px; letter-spacing: 0.04em; font-variant-numeric: tabular-nums; }
+    .fold-controls, .done-controls { display: none; gap: 8px; align-items: center; flex-wrap: wrap; }   /* large Matte keys; the way forward is the primary */
     .is-fold .watch-controls { display: none; }
     .is-fold .fold-controls { display: flex; }
     .is-done .watch-controls, .is-done .fold-controls { display: none; }
@@ -217,20 +169,11 @@
     .is-viewer .stage:not(.viewer-card) { display: none; }
     .is-viewer .viewer-card { display: block; }
     .viewer-card h2 { font-size: 16px; font-weight: 620; }
-    .viewer-card p { color: var(--muted); margin-top: 2px; }
-    .save { display: flex; gap: 6px; margin-top: 12px; }
-    .save input {
-      flex: 1; min-width: 0; padding: 7px 10px; border-radius: 9px; border: 1px solid var(--line-strong);
-      background: rgba(0, 0, 0, 0.25);
-    }
-    .save input::placeholder { color: var(--faint); }
-    .viewer-actions { display: flex; gap: 6px; margin-top: 8px; }
-
-    .toast {
-      position: fixed; z-index: 5; left: 50%; top: 58px; transform: translateX(-50%);
-      background: #1f1f1f; border: 1px solid var(--line-strong); border-radius: 9px; padding: 8px 14px;
-      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
-    }
+    .viewer-card p { color: var(--m-print-dim); margin-top: 2px; }
+    .save { display: flex; gap: 8px; margin-top: 12px; }
+    .save input { flex: 1; min-width: 0; width: auto; }          /* a Matte input */
+    .viewer-actions { display: flex; gap: 8px; margin-top: 10px; }
+    .toast { position: fixed; z-index: 5; left: 50%; top: 58px; transform: translateX(-50%); }   /* a Matte toast */
 
     .no-ui .panel, .no-ui .top, .no-ui .toast { display: none !important; }
 
@@ -251,8 +194,8 @@
       .about { max-height: 150px; }
       .stage, .viewer-card { left: 16px; right: 16px; transform: none; width: auto; min-width: 0; }
       .speed > span { display: none; }
-      .tbtn { width: 32px; height: 32px; }
-      .speed .seg button { padding: 6px 5px; font-size: 11px; }
+      .tbtn { width: 34px; }
+      .speed .seg button { padding: 0 5px; }
       .step__title { font-size: 15px; }
       .step__text { min-height: 0; }
     }
@@ -261,7 +204,7 @@
       .long { display: none; }
       .short { display: inline; }
       .top { gap: 8px; }
-      .modes button { padding: 5px 9px; }
+      .matte .modes button { padding: 0 9px; }
     }
   </style>
   <script type="importmap">
@@ -273,22 +216,22 @@
     }
   </script>
 </head>
-<body>
+<body class="matte">
   <canvas id="scene" aria-label="3D view of a sheet of paper being folded on a table"></canvas>
 
   <header class="top">
-    <a class="back" href="../" aria-label="Back to Rigs and Jigs">←<span class="long"> Rigs and Jigs</span></a>
+    <a class="back m-legend" href="../" aria-label="Back to Rigs and Jigs">←<span class="long"> Rigs and Jigs</span></a>
     <div class="brand">Fold Dojo<span>origami, one fold at a time</span></div>
-    <div class="modes" role="group" aria-label="Mode">
+    <div class="modes m-seg" role="group" aria-label="Mode">
       <button data-mode="watch" aria-pressed="true">Watch</button>
       <button data-mode="fold" aria-pressed="false"><span class="long">Fold it yourself</span><span class="short">Fold</span></button>
     </div>
-    <button class="drawer-toggle" data-drawer="library" aria-expanded="false">Designs</button>
-    <button class="drawer-toggle" data-drawer="options" aria-expanded="false">Paper</button>
+    <button class="drawer-toggle m-key" data-drawer="library" aria-expanded="false">Designs</button>
+    <button class="drawer-toggle m-key" data-drawer="options" aria-expanded="false">Paper</button>
   </header>
 
-  <aside class="panel library" id="library" aria-label="Designs and saved pieces">
-    <div class="tabs" role="tablist">
+  <aside class="panel library m-body" id="library" aria-label="Designs and saved pieces">
+    <div class="tabs m-tabs" role="tablist">
       <button role="tab" data-tab="designs" aria-selected="true">Designs</button>
       <button role="tab" data-tab="saved" aria-selected="false">Saved<span class="count" id="saved-count"></span></button>
     </div>
@@ -297,126 +240,126 @@
     <div class="about" id="about" aria-live="polite"></div>
   </aside>
 
-  <aside class="panel options" id="options" aria-label="Paper, surface and camera">
+  <aside class="panel options m-body" id="options" aria-label="Paper, surface and camera">
     <div class="folding-opts">
       <section class="opt">
-        <div class="label">Pattern <output id="pattern-name"></output></div>
+        <div class="label m-legend">Pattern <output id="pattern-name"></output></div>
         <div class="patterns" id="patterns"></div>
         <div id="colors-wrap">
           <div class="sub">Colour</div>
           <div class="swatches" id="colors"></div>
         </div>
         <div class="sub">Other side</div>
-        <div class="seg" id="back" role="group" aria-label="Other side of the paper"></div>
+        <div class="seg m-seg m-seg--fill" id="back" role="group" aria-label="Other side of the paper"></div>
         <div id="color2-wrap" hidden>
           <div class="sub">Second colour</div>
           <div class="swatches" id="colors2"></div>
         </div>
       </section>
       <section class="opt">
-        <div class="label">Size</div>
-        <div class="seg" id="sizes" role="group" aria-label="Paper size"></div>
+        <div class="label m-legend">Size</div>
+        <div class="seg m-seg m-seg--fill" id="sizes" role="group" aria-label="Paper size"></div>
         <p class="note" id="size-note"></p>
       </section>
       <section class="opt">
-        <div class="label">Weight</div>
+        <div class="label m-legend">Weight</div>
         <div class="rows" id="weights"></div>
       </section>
       <section class="opt">
-        <div class="label">Surface</div>
+        <div class="label m-legend">Surface</div>
         <div class="rows" id="surfaces"></div>
       </section>
     </div>
 
     <div class="viewer-opts">
       <section class="opt">
-        <div class="label">Setting</div>
+        <div class="label m-legend">Setting</div>
         <div class="chips" id="envs"></div>
       </section>
       <section class="opt">
-        <div class="label">Display</div>
-        <div class="seg" id="displays" role="group" aria-label="How the piece is displayed"></div>
+        <div class="label m-legend">Display</div>
+        <div class="seg m-seg m-seg--fill" id="displays" role="group" aria-label="How the piece is displayed"></div>
         <div class="toggles">
-          <label><input type="checkbox" id="turntable"> Turntable</label>
+          <label class="m-check"><input type="checkbox" id="turntable"> Turntable</label>
         </div>
       </section>
       <section class="opt">
-        <div class="label">Background blur</div>
-        <input type="range" id="blur" min="0" max="0.6" step="0.01" aria-label="Background blur">
+        <div class="label m-legend">Background blur</div>
+        <input class="m-fader" type="range" id="blur" min="0" max="0.6" step="0.01" aria-label="Background blur">
       </section>
     </div>
 
     <section class="opt">
-      <div class="label">Camera</div>
+      <div class="label m-legend">Camera</div>
       <div class="views">
-        <button class="btn" data-view="front">Front</button>
-        <button class="btn" data-view="top">Top</button>
-        <button class="btn" data-view="side">Side</button>
-        <button class="btn" data-view="low">Low</button>
+        <button class="btn m-key" data-view="front">Front</button>
+        <button class="btn m-key" data-view="top">Top</button>
+        <button class="btn m-key" data-view="side">Side</button>
+        <button class="btn m-key" data-view="low">Low</button>
       </div>
-      <div class="zoomrow"><span>Zoom</span><input class="zoom" type="range" min="0.35" max="2" step="0.01" value="1" aria-label="Zoom (lower is closer)"></div>
+      <div class="zoomrow"><span class="m-legend">Zoom</span><input class="zoom m-fader" type="range" min="0.35" max="2" step="0.01" value="1" aria-label="Zoom (lower is closer)"></div>
       <div class="toggles folding-opts">
-        <label><input type="checkbox" id="follow"> Follow the paper</label>
-        <label><input type="checkbox" id="lines"> Show fold lines</label>
-        <label><input type="checkbox" id="orbit"> Slowly orbit</label>
-        <label><input type="checkbox" id="show-ao"> Contact shadows <span class="dim">(slower)</span></label>
+        <label class="m-check"><input type="checkbox" id="follow"> Follow the paper</label>
+        <label class="m-check"><input type="checkbox" id="lines"> Show fold lines</label>
+        <label class="m-check"><input type="checkbox" id="orbit"> Slowly orbit</label>
+        <label class="m-check"><input type="checkbox" id="show-ao"> Contact shadows <span class="dim">(slower)</span></label>
       </div>
       <p class="hint-text">Drag to orbit. Right-drag or two fingers to pan. Scroll or pinch to zoom.</p>
     </section>
   </aside>
 
-  <section class="panel stage" aria-label="Step by step">
+  <section class="m-body panel stage" aria-label="Step by step">
     <div class="step__meta">
-      <span class="step__count" id="step-count"></span>
-      <span class="step__time" id="step-time"></span>
+      <span class="step__count m-legend" id="step-count"></span>
+      <span class="step__time m-value" id="step-time"></span>
     </div>
     <h2 class="step__title" id="step-title"></h2>
     <p class="step__text" id="step-text" aria-live="polite"></p>
     <p class="feedback" id="feedback" aria-live="polite"></p>
     <div class="steps" id="steps"></div>
     <div class="transport watch-controls">
-      <button class="tbtn" id="restart" title="Restart (R)" aria-label="Restart">
+      <button class="tbtn m-key m-key--solid" id="restart" title="Restart (R)" aria-label="Restart">
         <svg viewBox="0 0 16 16"><path d="M8 3a5 5 0 1 1-4.6 3h1.7A3.5 3.5 0 1 0 8 4.5V7L4.5 3.75 8 .5z"/></svg>
       </button>
-      <button class="tbtn" id="prev" title="Previous step (←)" aria-label="Previous step">
+      <button class="tbtn m-key m-key--solid" id="prev" title="Previous step (←)" aria-label="Previous step">
         <svg viewBox="0 0 16 16"><path d="M3 3h2v10H3zM14 3v10L6 8z"/></svg>
       </button>
-      <button class="tbtn tbtn--play" id="play" title="Play or pause (space)" aria-label="Play">
+      <button class="tbtn tbtn--play m-key m-key--primary m-key--solid" id="play" title="Play or pause (space)" aria-label="Play">
         <svg viewBox="0 0 16 16" id="play-icon"><path d="M4 2.5v11L13.5 8z"/></svg>
       </button>
-      <button class="tbtn" id="next" title="Next step (→)" aria-label="Next step">
+      <button class="tbtn m-key m-key--solid" id="next" title="Next step (→)" aria-label="Next step">
         <svg viewBox="0 0 16 16"><path d="M11 3h2v10h-2zM2 3v10l8-5z"/></svg>
       </button>
       <div class="speed">
-        <span>Speed</span>
-        <div class="seg" id="speeds" role="group" aria-label="Playback speed"></div>
+        <span class="m-legend">Speed</span>
+        <div class="seg m-seg" id="speeds" role="group" aria-label="Playback speed"></div>
       </div>
     </div>
     <div class="fold-controls">
-      <button class="pill" id="undo">Undo</button>
+      <button class="pill m-key m-key--lg" id="undo">Undo</button>
       <span class="spacer"></span>
-      <button class="pill" id="hint">Hint</button>
-      <button class="pill pill--go" id="showme">Show me</button>
+      <button class="pill m-key m-key--lg" id="hint">Hint</button>
+      <button class="pill pill--go m-key m-key--lg m-key--primary" id="showme">Show me</button>
     </div>
     <div class="done-controls">
-      <button class="pill pill--go" id="view-finished">Open in the viewer</button>
-      <button class="pill" id="fold-again">Fold it again</button>
+      <button class="pill pill--go m-key m-key--lg m-key--primary" id="view-finished">Open in the viewer</button>
+      <button class="pill m-key m-key--lg" id="fold-again">Fold it again</button>
     </div>
   </section>
 
-  <section class="panel stage viewer-card" aria-label="Finished piece">
+  <section class="m-body panel stage viewer-card" aria-label="Finished piece">
     <h2 id="viewer-title"></h2>
     <p id="viewer-sub"></p>
     <form class="save" id="save-form">
-      <input id="save-name" maxlength="40" aria-label="Name for this piece">
-      <button class="pill pill--go" type="submit">Save piece</button>
+      <input class="m-input" id="save-name" maxlength="40" aria-label="Name for this piece">
+      <button class="pill pill--go m-key m-key--lg m-key--primary" type="submit">Save piece</button>
     </form>
     <div class="viewer-actions">
-      <button class="pill" id="back-to-folding">Back to folding</button>
+      <button class="pill m-key m-key--lg" id="back-to-folding">Back to folding</button>
     </div>
   </section>
 
-  <div class="toast" id="toast" role="status" hidden></div>
+  <div class="toast m-toast m-toast--still" id="toast" role="status" hidden></div>
 
   <script type="module" src="app.js"></script>
 </body>

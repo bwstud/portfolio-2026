@@ -69,8 +69,9 @@
    the top slot together and keeps the last row exactly on the plate's rising lower edge; the row in view rides on top
    and the others slide in under it like cards into a stack, fading only as they come to rest. A browser that can't register the number folds without the movement. */
 @property --fold { syntax: "<number>"; inherits: true; initial-value: 0; }
-.board.can-fold { transition: --fold 480ms cubic-bezier(0.3, 0, 0, 1); }                         /* opening */
-.board.can-fold.is-folded { --fold: 1; transition-duration: 640ms; }                             /* folding, a little slower */
+/* Both curves leave at full speed, so the board is seen to move on the frame the pointer arrives or goes. */
+.board.can-fold { transition: --fold 260ms cubic-bezier(0.16, 1, 0.3, 1); }                      /* opening: quick, and most of the way there at once */
+.board.can-fold.is-folded { --fold: 1; transition: --fold 520ms cubic-bezier(0.2, 0.7, 0.2, 1); }   /* folding, slower */
 .board.can-fold .sf-board { height: calc(var(--plate-h) - var(--fold) * (var(--rows) - 1) * var(--pitch)); }
 .board.can-fold .sf-row { flex: none; position: relative; }
 .board.can-fold .sf-row, .board.can-fold .board__keys > * { translate: 0 calc(var(--fold) * var(--k, 0) * -1 * var(--pitch)); }
@@ -90,7 +91,7 @@
 /* Folded, the edges of two more leaves show under the plate's lower edge, each set in from the one above like the
    rest of a stack: there is more under here. They slide out from under the plate as it closes. */
 .board.can-fold .board__stage { isolation: isolate; }
-.board.can-fold .board__stage::before, .board.can-fold .board__stage::after { content: ""; position: absolute; top: 100%; z-index: -1; pointer-events: none;
+.board.can-fold .board__stage::before, .board.can-fold .board__stage::after { content: ""; position: absolute; top: 100%; z-index: -1;   /* they take the pointer: a leaf is part of the board, and coming onto one opens it */
   border-radius: 0 0 var(--m-radius) var(--m-radius); opacity: var(--fold);
   background: linear-gradient(180deg, color-mix(in srgb, var(--m-body-lo) 60%, #000), var(--m-body-hi) 70%);   /* in the plate's shadow at the top, catching light at its lip */
   box-shadow: 0 -1px 0 var(--m-shine) inset, 0 0 0 1px var(--m-edge), 0 3px 5px rgb(0 0 0 / calc(0.5 * var(--m-shade))); }

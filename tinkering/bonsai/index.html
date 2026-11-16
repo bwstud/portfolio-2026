@@ -5,6 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Bonsai · Brian Studwell</title>
   <style>
+    @layer base, matte;
+    @import url("../../matte.css") layer(matte);   /* the Matte system, under this page's own layout rules */
+    @import url("../rig.css") layer(matte);        /* and what the rigs share on top of it */
+    @import url("../rig-gui.css");                  /* lil-gui worn as Matte: outside the layer, as lil-gui's own styles are */
     @font-face {
       font-family: "Geist";
       font-weight: 100 900;
@@ -25,7 +29,11 @@
       --cut: #9a9a9a;
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    @layer base {
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      button, input, select { font: inherit; color: inherit; }
+      button { cursor: pointer; background: none; border: 0; }
+    }
     [hidden] { display: none !important; }
     html, body {
       height: 100%; overflow: hidden;
@@ -33,9 +41,6 @@
       font: 13px/1.45 "Geist", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
       -webkit-font-smoothing: antialiased;
     }
-    button, input, select { font: inherit; color: inherit; }
-    button { cursor: pointer; background: none; border: 0; }
-    :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
     #scene { position: fixed; inset: 0; display: block; width: 100%; height: 100%; touch-action: none; }
     body[data-tool="select"] #scene { cursor: grab; }
@@ -43,13 +48,7 @@
     body:not([data-tool="select"]) #scene { cursor: crosshair; }
     body.is-bending #scene { cursor: grabbing; }
 
-    .panel {
-      position: fixed; z-index: 2;
-      background: var(--panel);
-      border: 1px solid var(--line); border-radius: 12px;
-      backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
-    }
-    .label { font-size: 12px; font-weight: 600; color: var(--muted); }
+    .panel { position: fixed; z-index: 2; border-radius: 12px; }   /* a Matte body (.m-body); its labels are Matte legends */
 
     /* ---------- header ---------- */
     .top {
@@ -57,16 +56,9 @@
       display: flex; align-items: center; gap: 14px; pointer-events: none;
     }
     .top > * { pointer-events: auto; }
-    .back { color: var(--muted); text-decoration: none; }
-    .back:hover { color: var(--fg); }
     .brand { font-size: 15px; font-weight: 650; letter-spacing: 0.01em; }
     .brand span { color: var(--muted); font-weight: 450; margin-left: 6px; }
     .top .spacer { flex: 1; }
-    .ghost {
-      padding: 6px 11px; border-radius: 8px; border: 1px solid var(--line-strong);
-      background: var(--panel); color: var(--fg);
-    }
-    .ghost:hover { background: rgba(255, 255, 255, 0.08); }
 
     /* ---------- setup ---------- */
     .setup {
@@ -74,7 +66,7 @@
       display: flex; flex-direction: column; overflow: hidden;
     }
     .setup__head { padding: 16px 16px 10px; flex: none; }
-    .setup__summary { margin-top: 8px; color: var(--accent); font-size: 12.5px; }
+    .setup__summary { margin-top: 8px; color: var(--m-signal); font-size: 12.5px; }
     .tabs.setup__tabs { flex: none; position: static; background: none; padding-top: 0; }
     .setup__scroll { overflow-y: auto; padding: 12px 16px 12px; flex: 1; }
     .setup h2 { font-size: 17px; font-weight: 640; }
@@ -84,57 +76,41 @@
     .choices { display: grid; gap: 6px; }
     .choices--pots { grid-template-columns: 1fr 1fr; }
     .choices--settings { grid-template-columns: 1fr 1fr; }
-    .choice {
-      display: block; width: 100%; text-align: left; padding: 9px 11px;
-      border-radius: 9px; border: 1px solid var(--line); background: rgba(255, 255, 255, 0.02);
-    }
-    .choice:hover { background: rgba(255, 255, 255, 0.05); }
-    .choice[aria-pressed="true"] { border-color: rgba(184, 184, 184, 0.55); background: rgba(184, 184, 184, 0.09); }
-    .choice b { display: block; font-weight: 580; }
-    .choice i { display: block; font-style: italic; color: var(--muted); font-size: 12px; }
-    .choice small { display: block; color: #b3b3b3; font-size: 12px; margin-top: 4px; line-height: 1.4; }
+    .choice { display: block; width: 100%; text-align: left; padding: 9px 11px; }   /* a row in a Matte list: the chosen one carries a signal mark */
+    .choice b { display: block; font-weight: 580; color: var(--m-print-hi); }
+    .choice i { display: block; font-style: italic; color: var(--m-print-dim); font-size: 12px; }
+    .choice small { display: block; color: var(--m-print); font-size: 12px; margin-top: 4px; line-height: 1.4; }
     .choice svg { display: block; width: 100%; height: 30px; margin-bottom: 6px; }
     .choice--compact small { display: none; }
     .setup__foot {
-      border-top: 1px solid var(--line); padding: 12px 16px 14px; flex: none;
-      display: flex; gap: 8px; align-items: center;
+      border-top: 1px solid var(--m-well); box-shadow: 0 1px 0 rgb(255 255 255 / 0.055) inset; padding: 14px 16px 13px; flex: none;
+      display: flex; gap: 10px; align-items: center;
     }
-    .primary {
-      padding: 9px 14px; border-radius: 9px; background: var(--accent); color: var(--accent-ink);
-      font-weight: 620;
-    }
-    .primary:hover { background: #c7c7c7; }
-    .setup__foot .note { color: var(--faint); font-size: 12px; margin-left: auto; text-align: right; }
+    .setup__foot .note { color: var(--m-print-dim); font-size: 12px; margin-left: auto; text-align: right; }
 
     /* ---------- tools ---------- */
     .tools {
       left: 16px; bottom: 16px;
-      display: flex; flex-direction: column; gap: 3px; padding: 6px;
+      display: flex; flex-direction: column; gap: 5px; padding: 9px 9px 7px;
     }
-    .tool {
-      position: relative; width: 40px; height: 40px; border-radius: 9px;
-      display: grid; place-items: center; color: #c8c8c8;
+    .tool { position: relative; width: 40px; min-width: 0; height: 38px; padding: 0; }   /* a Matte key: the tool in hand stays down */
+    .tool svg { width: 20px; height: 20px; stroke-width: 1.6; }
+    .tool .tip {                                               /* a Matte tooltip: a strip of label tape */
+      position: absolute; left: 54px; top: 50%; transform: translateY(-50%);
+      white-space: nowrap; padding: 6px 8px; border-radius: 3px;
+      background: var(--m-glass); box-shadow: 0 0 0 1px var(--m-edge), 0 6px 12px rgb(0 0 0 / 0.5); color: var(--m-lit);
+      pointer-events: none; opacity: 0; transition: opacity 0.12s;
     }
-    .tool svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
-    .tool:hover { background: rgba(255, 255, 255, 0.07); color: var(--fg); }
-    .tool[aria-pressed="true"] { background: rgba(184, 184, 184, 0.16); color: var(--accent); }
-    .tool:disabled { opacity: 0.3; cursor: default; }
-    .tool .tip {
-      position: absolute; left: 50px; top: 50%; transform: translateY(-50%);
-      white-space: nowrap; padding: 5px 9px; border-radius: 7px;
-      background: #1c1c1c; border: 1px solid var(--line-strong); color: var(--fg);
-      font-size: 12px; pointer-events: none; opacity: 0; transition: opacity 0.12s;
-    }
-    .tool .tip kbd { color: var(--muted); font: inherit; margin-left: 6px; }
+    .tool .tip kbd { color: var(--m-glass-dim); font: inherit; margin-left: 8px; }
     .tool:hover .tip, .tool:focus-visible .tip { opacity: 1; }
-    .tools hr { border: 0; border-top: 1px solid var(--line); margin: 4px 6px; }
+    .tools hr { border: 0; height: 2px; margin: 2px 2px 5px; background: linear-gradient(180deg, var(--m-well) 50%, rgb(255 255 255 / 0.055) 50%); }   /* a seam */
 
     .toolhint {
       position: fixed; z-index: 2; left: 74px; bottom: 140px;
       max-width: 240px; color: #d5d5d5; font-size: 12.5px; line-height: 1.45;
       text-shadow: 0 1px 8px rgba(0, 0, 0, 0.8); pointer-events: none;
     }
-    .toolhint b { color: var(--accent); font-weight: 600; display: block; margin-bottom: 2px; }
+    .toolhint b { color: var(--m-signal); font-weight: 600; display: block; margin-bottom: 2px; }
     .toolhint .warn { color: #cccccc; display: block; margin-top: 6px; }
 
     /* ---------- side panel ---------- */
@@ -144,66 +120,44 @@
     }
     .side, .setup__scroll { scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, 0.18) transparent; }
     .sec { padding: 12px 16px; }
-    .sec + .sec { border-top: 1px solid var(--line); }
-    .sec__head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 8px; }
-    .sec__head h3 { font-size: 13.5px; font-weight: 620; }
-    .sec__head .meta { color: var(--faint); font-size: 12px; }
+    .sec + .sec { border-top: 1px solid var(--m-well); box-shadow: 0 1px 0 rgb(255 255 255 / 0.055) inset; }                           /* a seam between sections */
+    .sec__head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+    .sec__head h3, details.look > summary h3 { font: 400 var(--m-text-legend-lg)/1.2 var(--m-font); letter-spacing: 0.1em; text-transform: uppercase; color: var(--m-print-hi); }   /* a section's name, as a larger legend */
+    .sec__head .meta { color: var(--m-print-dim); font-size: 12px; }
     .facts { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; }
-    .facts dt { color: var(--muted); }
+    .facts dt { color: var(--m-print-dim); }
     .facts dd { text-align: right; font-variant-numeric: tabular-nums; }
-    .facts dd.warn { color: #cccccc; }
+    .facts dd.warn { color: var(--m-warn); }
     .say { color: #c3c3c3; margin-top: 8px; font-size: 12.5px; }
     .say + .say { margin-top: 6px; }
     .row { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
-    .btn {
-      padding: 6px 10px; border-radius: 8px; border: 1px solid var(--line-strong);
-      background: rgba(255, 255, 255, 0.03); font-size: 12.5px;
-    }
-    .btn:hover { background: rgba(255, 255, 255, 0.08); }
-    .btn:disabled { opacity: 0.4; cursor: default; }
-    .btn--accent { border-color: rgba(184, 184, 184, 0.5); color: var(--accent); }
-    .seg { display: flex; border: 1px solid var(--line-strong); border-radius: 8px; overflow: hidden; }
-    .seg button { flex: 1; padding: 6px 8px; font-size: 12.5px; }
-    .seg button + button { border-left: 1px solid var(--line); }
-    .seg button[aria-pressed="true"] { background: rgba(255, 255, 255, 0.12); color: var(--fg); }
-    .field { margin-top: 12px; }
-    .field > .label { display: flex; justify-content: space-between; margin-bottom: 6px; }
-    .field > .label output { color: var(--fg); font-weight: 500; }
-    input[type="range"] { width: 100%; accent-color: var(--accent); }
-    .mini-pots { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
-    .mini-pots button { padding: 4px; border-radius: 7px; border: 1px solid var(--line); }
-    .mini-pots button[aria-pressed="true"] { border-color: rgba(184, 184, 184, 0.6); }
-    .mini-pots svg { display: block; width: 100%; height: 20px; }
+    /* Matte keys (the one that acts is in the accent), segmented controls and faders */
+    .seg button { padding: 0 6px; letter-spacing: 0.06em; }
+    .field { margin-top: 14px; }
+    .field > .label { display: flex; justify-content: space-between; margin-bottom: 8px; }
+    .field > .label output { color: var(--m-lit); letter-spacing: 0.02em; }
+    .m-fader { width: 100%; }
 
-    .tabs { display: flex; gap: 2px; padding: 8px 10px 0; border-bottom: 1px solid var(--line); position: sticky; top: 0; background: #161616; z-index: 1; }
-    .tabs button { padding: 7px 10px 9px; color: var(--muted); border-bottom: 2px solid transparent; margin-bottom: -1px; font-weight: 560; }
-    .tabs button:hover { color: var(--fg); }
-    .tabs button[aria-selected="true"] { color: var(--fg); border-bottom-color: var(--accent); }
+    .tabs { display: flex; gap: 2px; padding: 4px 8px 0; border-bottom: 1px solid var(--m-well); position: sticky; top: 0; border-radius: 12px 12px 0 0; background: var(--m-body-hi); z-index: 1; }   /* Matte tabs */
+    .tabs button { flex: 1; }
     .choices--two { grid-template-columns: 1fr 1fr; }
     .choices--two .choice { padding: 7px 9px; }
     .choices--two .choice small { display: none; }
     .choices--two .choice svg { height: 22px; margin-bottom: 4px; }
-    #views button { padding: 7px 6px; }
     details.look > summary { cursor: pointer; list-style: none; display: flex; justify-content: space-between; }
     details.look > summary::-webkit-details-marker { display: none; }
-    details.look > summary h3 { font-size: 13.5px; font-weight: 620; }
     details.look > summary .caret { color: var(--muted); transition: transform 0.2s; }
     details.look[open] > summary .caret { transform: rotate(90deg); }
     .look__intro { color: var(--muted); font-size: 12px; margin: 6px 0 8px; }
 
     /* lil-gui, restyled to sit inside the panel */
-    /* lil-gui sets its own colours on every folder, so hand the panel's down to them */
-    #look .lil-gui .lil-gui, #light .lil-gui .lil-gui { --background-color: inherit; --widget-color: inherit; --hover-color: inherit; --focus-color: inherit; --number-color: inherit; --string-color: inherit; --title-background-color: inherit; --text-color: inherit; }
+    /* its finish is Matte (rig-gui.css); here it has no body of its own, as it sits in the panel's */
     #look .lil-gui.root, #light .lil-gui.root {
-      --background-color: transparent; --widget-color: #232323; --hover-color: #2d2d2d; --focus-color: #363636;
-      --number-color: #b8b8b8; --string-color: #d9d9d9; --text-color: #e5e5e5; --title-background-color: transparent;
-      --font-family: "Geist", -apple-system, sans-serif; --font-size: 12px; --input-font-size: 12px;
-      --widget-height: 22px; --padding: 4px; --name-width: 44%;
-      width: 100%; border: 0;
+      --widget-height: 22px; --padding: 4px; --spacing: 5px; --name-width: 44%;
+      width: 100%; background: none; box-shadow: none; border-radius: 0;
     }
-    #look .lil-gui .title, #light .lil-gui .title { text-transform: none; font-weight: 600; letter-spacing: 0; }
     #look .lil-gui.root > .title, #light .lil-gui.root > .title { display: none; }
-    .gui-host .gui-help { color: var(--faint); font-size: 11.5px; line-height: 1.35; padding: 0 4px 6px; }
+    .gui-host .gui-help { color: var(--m-print-dim); font-size: 11.5px; line-height: 1.35; padding: 0 4px 6px; }
 
     /* ---------- timeline ---------- */
     .timeline {
@@ -211,23 +165,15 @@
       width: min(760px, calc(100% - 140px)); padding: 12px 14px 10px;
     }
     .tl__row { display: flex; align-items: center; gap: 10px; }
-    .tbtn {
-      width: 34px; height: 34px; border-radius: 9px; display: grid; place-items: center; flex: none;
-      border: 1px solid var(--line-strong); background: rgba(255, 255, 255, 0.03);
-    }
-    .tbtn:hover { background: rgba(255, 255, 255, 0.09); }
-    .tbtn svg { width: 16px; height: 16px; fill: currentColor; }
-    .tbtn--play { width: 44px; background: var(--accent); color: var(--accent-ink); border-color: transparent; }
-    .tbtn--play:hover { background: #c7c7c7; }
+    .tbtn { width: 48px; min-width: 0; padding: 0; }           /* the primary Matte key */
+    .tbtn svg { width: 14px; height: 14px; }
     .date { min-width: 128px; }
     .date b { display: block; font-size: 15px; font-weight: 640; font-variant-numeric: tabular-nums; }
-    .date span { color: var(--muted); font-size: 12px; }
+    .date span { color: var(--m-print-dim); font-size: 12px; }
     .tl__row .spacer { flex: 1; }
-    .branches select {
-      background: rgba(255, 255, 255, 0.04); border: 1px solid var(--line-strong);
-      border-radius: 8px; padding: 6px 8px; max-width: 190px;
-    }
-    .busy { color: var(--accent); font-size: 12px; }
+    .branches { display: inline-flex; align-items: center; }
+    .branches select { max-width: 190px; }                     /* a Matte input */
+    .busy { color: var(--m-signal); font-size: 12px; }
 
     .track {
       position: relative; height: 34px; margin-top: 10px; cursor: pointer; touch-action: none;
@@ -240,24 +186,23 @@
     .track__reach { position: absolute; top: 10px; height: 8px; left: 0; border-radius: 4px; background: rgba(0, 0, 0, 0.45); right: 0; }
     .track__head {
       position: absolute; top: 4px; width: 2px; height: 20px; margin-left: -1px;
-      background: var(--fg); border-radius: 1px; box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.35);
+      background: var(--m-mark); border-radius: 1px; box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.35);
     }
     .track__head::after {
       content: ""; position: absolute; left: -5px; top: -4px; width: 12px; height: 12px;
-      border-radius: 50%; background: var(--fg);
+      border-radius: 50%; background: var(--m-mark);
     }
-    .mark { position: absolute; top: 20px; width: 6px; height: 6px; margin-left: -3px; border-radius: 50%; background: var(--accent); }
+    .mark { position: absolute; top: 20px; width: 6px; height: 6px; margin-left: -3px; border-radius: 50%; background: var(--m-signal); }   /* work done on the tree: a lamp on the track */
     .mark--fork { width: 2px; height: 14px; top: 6px; margin-left: -1px; border-radius: 0; background: #9fd3ff; }
-    .ticks { position: absolute; left: 0; right: 0; top: 24px; height: 12px; color: var(--faint); font-size: 10.5px; font-variant-numeric: tabular-nums; }
+    .ticks { position: absolute; left: 0; right: 0; top: 24px; height: 12px; color: var(--m-print-dim); font-size: 10.5px; font-variant-numeric: tabular-nums; }
     .ticks span { position: absolute; transform: translateX(-50%); }
 
     .wire-alert {
       left: 50%; transform: translateX(-50%); bottom: 132px; z-index: 3;
       width: min(520px, calc(100% - 32px)); padding: 12px 14px;
-      border-color: rgba(154, 154, 154, 0.45); background: rgba(24, 24, 24, 0.9);
     }
-    .wire-alert p { color: #dddddd; }
-    .wire-alert p b { color: #ababab; font-weight: 620; }
+    .wire-alert p { color: var(--m-print); }
+    .wire-alert p b { color: var(--m-warn); font-weight: 620; }
     .wire-alert .row { margin-top: 8px; }
     .no-ui .panel, .no-ui .top, .no-ui .toolhint, .no-ui .notes { display: none !important; }
 
@@ -286,24 +231,24 @@
     }
   </script>
 </head>
-<body data-tool="select">
+<body class="matte" data-tool="select">
   <canvas id="scene" aria-label="3D view of a bonsai tree in its pot"></canvas>
 
   <header class="top">
-    <a class="back" href="../">← Rigs and Jigs</a>
+    <a class="back m-legend" href="../">← Rigs and Jigs</a>
     <div class="brand">Bonsai<span>grow a tree, shape it, rewind and try again</span></div>
     <span class="spacer"></span>
-    <button class="ghost" id="new-tree" type="button" hidden>New tree</button>
+    <button class="ghost m-key" id="new-tree" type="button" hidden>New tree</button>
   </header>
 
   <!-- setup: pick a species, a setting, a container and a stand -->
-  <aside class="panel setup" id="setup" aria-label="Start a tree" hidden>
+  <aside class="panel setup m-body" id="setup" aria-label="Start a tree" hidden>
     <div class="setup__head">
       <h2>Start a tree</h2>
       <p class="lede">You're handed a three-year-old nursery starter. Choose what it is, where it lives, what it grows in and what it rests on.</p>
       <p class="setup__summary" id="setup-summary" aria-live="polite"></p>
     </div>
-    <div class="tabs setup__tabs" role="tablist" aria-label="Choices">
+    <div class="tabs setup__tabs m-tabs" role="tablist" aria-label="Choices">
       <button type="button" role="tab" data-setup-tab="species" aria-selected="true">Species</button>
       <button type="button" role="tab" data-setup-tab="setting" aria-selected="false">Setting</button>
       <button type="button" role="tab" data-setup-tab="container" aria-selected="false">Container</button>
@@ -316,53 +261,53 @@
       <div class="choices choices--pots" id="stand-list" role="tabpanel" data-setup-panel="stand" hidden></div>
     </div>
     <div class="setup__foot">
-      <button class="primary" id="begin" type="button">Begin growing</button>
-      <button class="btn" id="reroll" type="button" title="A different seedling of the same species">Another seedling</button>
+      <button class="primary m-key m-key--lg m-key--primary" id="begin" type="button">Begin growing</button>
+      <button class="btn m-key" id="reroll" type="button" title="A different seedling of the same species">Another seedling</button>
     </div>
   </aside>
 
   <!-- tools -->
-  <nav class="panel tools" id="tools" aria-label="Tools" hidden>
-    <button class="tool" data-tool="select" aria-pressed="true" aria-label="Look and inspect">
+  <nav class="panel tools m-body" id="tools" aria-label="Tools" hidden>
+    <button class="tool m-key" data-tool="select" aria-pressed="true" aria-label="Look and inspect">
       <svg viewBox="0 0 20 20"><path d="M5 3l10 6.2-4.4 1 2.6 5-1.8.9-2.6-5L5 14z"/></svg>
-      <span class="tip">Look and inspect<kbd>V</kbd></span>
+      <span class="tip m-legend">Look and inspect<kbd>V</kbd></span>
     </button>
     <hr>
-    <button class="tool" data-tool="cut" aria-pressed="false" aria-label="Concave cutter">
+    <button class="tool m-key" data-tool="cut" aria-pressed="false" aria-label="Concave cutter">
       <svg viewBox="0 0 20 20"><circle cx="5.5" cy="15" r="2.3"/><circle cx="14.5" cy="15" r="2.3"/><path d="M7 13.3L13 3.5M13 13.3L7 3.5"/><path d="M8.6 6.3q1.4 1.2 2.8 0"/></svg>
-      <span class="tip">Concave cutter<kbd>C</kbd></span>
+      <span class="tip m-legend">Concave cutter<kbd>C</kbd></span>
     </button>
-    <button class="tool" data-tool="pinch" aria-pressed="false" aria-label="Pinch">
+    <button class="tool m-key" data-tool="pinch" aria-pressed="false" aria-label="Pinch">
       <svg viewBox="0 0 20 20"><path d="M6 17V9.5a2 2 0 0 1 4 0V13"/><path d="M14 17v-5.5a2 2 0 0 0-4 0"/><path d="M8 4.5l2 2 2-2"/></svg>
-      <span class="tip">Pinch new shoots<kbd>P</kbd></span>
+      <span class="tip m-legend">Pinch new shoots<kbd>P</kbd></span>
     </button>
-    <button class="tool" data-tool="defoliate" aria-pressed="false" aria-label="Leaf trimmer">
+    <button class="tool m-key" data-tool="defoliate" aria-pressed="false" aria-label="Leaf trimmer">
       <svg viewBox="0 0 20 20"><path d="M4 16c0-7 5-11 12-12-1 7-5 12-12 12z"/><path d="M4 16l7-7"/><path d="M3 3l14 14"/></svg>
-      <span class="tip">Defoliate<kbd>D</kbd></span>
+      <span class="tip m-legend">Defoliate<kbd>D</kbd></span>
     </button>
-    <button class="tool" data-tool="wire" aria-pressed="false" aria-label="Wire">
+    <button class="tool m-key" data-tool="wire" aria-pressed="false" aria-label="Wire">
       <svg viewBox="0 0 20 20"><path d="M3 15c2-1 2-4 4-4s2 3 4 3 2-4 4-5 2 0 2 0"/><path d="M4.5 12.5l1.6 3M8.2 10.6l1.6 3.4M12 9.8l1.4 3.4"/></svg>
-      <span class="tip">Wire and bend<kbd>W</kbd></span>
+      <span class="tip m-legend">Wire and bend<kbd>W</kbd></span>
     </button>
-    <button class="tool" data-tool="guy" aria-pressed="false" aria-label="Guy wire">
+    <button class="tool m-key" data-tool="guy" aria-pressed="false" aria-label="Guy wire">
       <svg viewBox="0 0 20 20"><path d="M4 4c4 1 8 2 12 6"/><path d="M11 6.2L14.5 16"/><path d="M11 16h7"/></svg>
-      <span class="tip">Guy wire<kbd>G</kbd></span>
+      <span class="tip m-legend">Guy wire<kbd>G</kbd></span>
     </button>
-    <button class="tool" data-tool="jin" aria-pressed="false" aria-label="Jin pliers">
+    <button class="tool m-key" data-tool="jin" aria-pressed="false" aria-label="Jin pliers">
       <svg viewBox="0 0 20 20"><path d="M4 16l9-9"/><path d="M13 7l3-3M12 4.5l1 2.5 2.5 1"/><path d="M6.5 11.5l2 2"/></svg>
-      <span class="tip">Jin: make deadwood<kbd>J</kbd></span>
+      <span class="tip m-legend">Jin: make deadwood<kbd>J</kbd></span>
     </button>
     <hr>
-    <button class="tool" id="frame" aria-label="Frame the tree">
+    <button class="tool m-key" id="frame" aria-label="Frame the tree">
       <svg viewBox="0 0 20 20"><path d="M3 7V3h4M13 3h4v4M17 13v4h-4M7 17H3v-4"/><circle cx="10" cy="10" r="2"/></svg>
-      <span class="tip">Frame the tree<kbd>F</kbd></span>
+      <span class="tip m-legend">Frame the tree<kbd>F</kbd></span>
     </button>
   </nav>
   <div class="toolhint" id="toolhint" aria-live="polite" hidden></div>
 
   <!-- tree, display, light and look -->
-  <aside class="panel side" id="side" aria-label="Tree and display" hidden>
-    <div class="tabs" role="tablist" aria-label="Panels">
+  <aside class="panel side m-body" id="side" aria-label="Tree and display" hidden>
+    <div class="tabs m-tabs" role="tablist" aria-label="Panels">
       <button type="button" role="tab" data-tab="tree" aria-selected="true">Tree</button>
       <button type="button" role="tab" data-tab="display" aria-selected="false">Display</button>
       <button type="button" role="tab" data-tab="light" aria-selected="false">Light</button>
@@ -374,31 +319,31 @@
       <section class="sec" id="care">
         <div class="sec__head"><h3>Care</h3></div>
         <div class="field" style="margin-top:0">
-          <div class="label">Feeding</div>
-          <div class="seg" id="feed" role="group" aria-label="Feeding">
+          <div class="label m-legend">Feeding</div>
+          <div class="seg m-seg m-seg--fill" id="feed" role="group" aria-label="Feeding">
             <button type="button" data-level="0">None</button>
             <button type="button" data-level="1">Light</button>
             <button type="button" data-level="2">Rich</button>
           </div>
         </div>
         <div class="field">
-          <div class="label">Turn the pot</div>
+          <div class="label m-legend">Turn the pot</div>
           <div class="row" style="margin-top:0">
-            <button class="btn" type="button" id="turn-left">↺ A quarter left</button>
-            <button class="btn" type="button" id="turn-right">A quarter right ↻</button>
+            <button class="btn m-key" type="button" id="turn-left">↺ A quarter left</button>
+            <button class="btn m-key" type="button" id="turn-right">A quarter right ↻</button>
           </div>
         </div>
         <div class="field">
-          <div class="label">Wire <output id="wire-count"></output></div>
-          <div class="row" style="margin-top:0"><button class="btn" type="button" id="unwire-all">Remove all wires</button></div>
+          <div class="label m-legend">Wire <output id="wire-count"></output></div>
+          <div class="row" style="margin-top:0"><button class="btn m-key" type="button" id="unwire-all">Remove all wires</button></div>
         </div>
         <details class="field" id="repot">
-          <summary class="label" style="cursor:pointer">Repot with root pruning…</summary>
+          <summary class="label m-legend" style="cursor:pointer">Repot with root pruning…</summary>
           <div class="field">
-            <div class="label">Root pruning <output id="prune-out">20%</output></div>
-            <input type="range" id="prune" min="0" max="45" step="5" value="20" aria-label="Root pruning, percent">
+            <div class="label m-legend">Root pruning <output id="prune-out">20%</output></div>
+            <input class="m-fader" type="range" id="prune" min="0" max="45" step="5" value="20" aria-label="Root pruning, percent">
           </div>
-          <div class="row"><button class="btn btn--accent" type="button" id="do-repot">Repot now</button></div>
+          <div class="row"><button class="btn btn--accent m-key m-key--accent" type="button" id="do-repot">Repot now</button></div>
           <p class="say" id="repot-say"></p>
         </details>
       </section>
@@ -407,7 +352,7 @@
     <div class="tabpanel" data-panel="display" role="tabpanel" hidden>
       <section class="sec">
         <div class="sec__head"><h3>Camera</h3><span class="meta">keys 1–4</span></div>
-        <div class="seg" id="views" role="group" aria-label="Camera views">
+        <div class="seg m-seg m-seg--fill" id="views" role="group" aria-label="Camera views">
           <button type="button" data-view="front">Front</button>
           <button type="button" data-view="side">Side</button>
           <button type="button" data-view="back">Back</button>
@@ -447,26 +392,26 @@
   </aside>
 
   <!-- warns before a wire bites into the bark -->
-  <div class="panel wire-alert" id="wire-alert" role="alert" hidden>
+  <div class="panel wire-alert m-body" id="wire-alert" role="alert" hidden>
     <p id="wire-alert-text"></p>
     <div class="row">
-      <button class="btn" type="button" id="wire-show">Show me</button>
-      <button class="btn btn--accent" type="button" id="wire-remove">Remove them</button>
-      <button class="btn" type="button" id="wire-dismiss">Leave them on</button>
+      <button class="btn m-key" type="button" id="wire-show">Show me</button>
+      <button class="btn btn--accent m-key m-key--accent" type="button" id="wire-remove">Remove them</button>
+      <button class="btn m-key" type="button" id="wire-dismiss">Leave them on</button>
     </div>
   </div>
 
   <!-- time -->
-  <section class="panel timeline" id="timeline" aria-label="Time" hidden>
+  <section class="panel timeline m-body" id="timeline" aria-label="Time" hidden>
     <div class="tl__row">
-      <button class="tbtn tbtn--play" id="play" title="Grow or pause (space)" aria-label="Grow">
+      <button class="tbtn tbtn--play m-key m-key--primary m-key--solid" id="play" title="Grow or pause (space)" aria-label="Grow">
         <svg viewBox="0 0 16 16" id="play-icon"><path d="M4 2.5v11L13.5 8z"/></svg>
       </button>
       <div class="date"><b id="date-age">Age 3</b><span id="date-month">March</span></div>
-      <div class="seg" id="speeds" role="group" aria-label="Speed"></div>
+      <div class="seg m-seg" id="speeds" role="group" aria-label="Speed"></div>
       <span class="busy" id="busy" hidden>Growing…</span>
       <span class="spacer"></span>
-      <label class="branches"><span class="label" style="margin-right:6px">Timeline</span><select id="branch" aria-label="Timeline branch"></select></label>
+      <label class="branches"><span class="label m-legend" style="margin-right:10px">Timeline</span><select class="m-input m-input--sm" id="branch" aria-label="Timeline branch"></select></label>
     </div>
     <div class="track" id="track" role="slider" tabindex="0" aria-label="Time" aria-valuemin="3" aria-valuenow="3">
       <div class="track__seasons" id="seasons"></div>

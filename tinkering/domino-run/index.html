@@ -6,6 +6,9 @@
   <title>Domino Run · Brian Studwell</title>
   <meta name="description" content="Set up dominoes in a 3D living room, then knock them down. Group, copy and bend runs, add effects, and play the run back at any speed.">
   <style>
+    @layer base, matte;
+    @import url("../../matte.css") layer(matte);   /* the Matte system, under this page's own layout rules */
+    @import url("../rig.css") layer(matte);        /* and what the rigs share on top of it */
     @font-face {
       font-family: "Geist";
       font-weight: 100 900;
@@ -30,21 +33,22 @@
       --bad: #9b9b9b;
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    @layer base {
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      button, input, select { font: inherit; color: inherit; }
+      button { cursor: pointer; background: none; border: 0; }
+      button:disabled { cursor: default; opacity: 0.4; }
+    }
     html, body {
       height: 100%; overflow: hidden;
       background: var(--bg); color: var(--fg);
       font: 13px/1.45 "Geist", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
       -webkit-font-smoothing: antialiased;
     }
-    button, input, select { font: inherit; color: inherit; }
-    button { cursor: pointer; background: none; border: 0; }
-    button:disabled { cursor: default; opacity: 0.4; }
-    :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
     [hidden] { display: none !important; }
-    kbd {
-      font: 500 11px/1 "Geist", sans-serif; color: var(--muted);
-      padding: 2px 5px; border-radius: 4px; border: 1px solid var(--line-strong); background: rgba(255, 255, 255, 0.04);
+    kbd {                                                        /* a key cap, printed on the body */
+      font: 400 10px/1 var(--m-font); color: var(--m-print);
+      padding: 2px 5px; border-radius: 3px; box-shadow: 0 0 0 1px var(--m-edge), 0 1px 0 rgb(255 255 255 / 0.08); background: var(--m-well);
     }
 
     #scene { position: fixed; inset: 0; display: block; width: 100%; height: 100%; touch-action: none; }
@@ -53,12 +57,7 @@
     #scene.is-hover { cursor: grab; }
     #scene.is-camera { cursor: move; }
 
-    .panel {
-      position: fixed; z-index: 2;
-      background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
-      backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
-    }
-    .label { font-size: 12px; font-weight: 620; color: var(--soft); }
+    .panel { position: fixed; z-index: 2; border-radius: 12px; }   /* a Matte body (.m-body); its labels are Matte legends */
 
     /* ---------- header ---------- */
     .top {
@@ -66,85 +65,55 @@
       display: flex; align-items: center; gap: 12px; pointer-events: none;
     }
     .top > * { pointer-events: auto; }
-    .back { color: var(--muted); text-decoration: none; white-space: nowrap; }
-    .back:hover { color: var(--fg); }
+    .back { white-space: nowrap; }
     .brand { font-size: 15px; font-weight: 650; white-space: nowrap; }
-    .room-chip {
-      display: flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px;
-      border: 1px solid var(--line-strong); background: var(--panel); color: var(--soft); white-space: nowrap;
-    }
-    .room-chip:hover { color: var(--fg); }
-    .top__end { margin-left: auto; display: flex; gap: 6px; align-items: center; }
-    .hbtn {
-      display: flex; align-items: center; gap: 6px; padding: 6px 11px; border-radius: 8px; white-space: nowrap;
-      border: 1px solid var(--line-strong); background: var(--panel);
-      backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
-    }
-    .hbtn:hover:not(:disabled) { background: rgba(42, 42, 42, 0.95); }
-    .hbtn[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
-    .hbtn svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
-    .hbtn--icon { padding: 6px 8px; }
-    .store-note { color: var(--faint); font-size: 11.5px; margin-right: 4px; white-space: nowrap; }
+    .room-chip { white-space: nowrap; }                       /* a Matte key */
+    .top__end { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+    .hbtn { white-space: nowrap; }                            /* a Matte key; Lab and Sound stay down while they are on */
+    .hbtn svg { width: 14px; height: 14px; stroke-width: 1.7; }
+    .hbtn--icon { width: 34px; min-width: 0; padding: 0; }
+    .store-note { color: var(--m-print-dim); font-size: 11.5px; margin-right: 4px; white-space: nowrap; }
 
     /* ---------- left: tools and library ---------- */
     .left {
       top: 54px; left: 16px; bottom: 112px; width: 280px;
       display: flex; flex-direction: column; overflow: hidden;
     }
-    .tools { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; padding: 10px 10px 0; flex: none; }
-    .tool {
-      display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 8px 4px 6px;
-      border-radius: 9px; border: 1px solid var(--line); color: var(--soft);
-    }
-    .tool:hover { background: rgba(255, 255, 255, 0.05); color: var(--fg); }
-    .tool[aria-pressed="true"] { background: rgba(181, 181, 181, 0.12); border-color: rgba(181, 181, 181, 0.5); color: var(--accent); }
-    .tool svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
-    .tool span { font-size: 12px; font-weight: 560; }
-    .tool kbd { font-size: 10px; padding: 1px 4px; }
-    .tabs { display: flex; gap: 2px; padding: 10px 10px 0; flex: none; }
-    .tabs button { flex: 1; padding: 6px 6px; border-radius: 7px; color: var(--muted); font-weight: 560; }
-    .tabs button[aria-selected="true"] { color: var(--fg); background: rgba(255, 255, 255, 0.07); }
+    .tools { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; padding: 12px 10px 0; flex: none; }
+    .tool { gap: 4px; padding: 8px 4px 6px; }                  /* a Matte tile key: the tool in hand stays down */
+    .tool svg { width: 18px; height: 18px; stroke-width: 1.6; }
+    .tool kbd { font-size: 9px; padding: 1px 4px; }
+    .tabs { display: flex; gap: 2px; padding: 6px 8px 0; flex: none; }   /* Matte tabs */
+    .tabs button { flex: 1; padding-left: 4px; padding-right: 4px; }
     .pane { overflow-y: auto; padding: 10px 14px 14px; flex: 1; min-height: 0; }
-    .opt + .opt { margin-top: 14px; padding-top: 13px; border-top: 1px solid var(--line); }
-    .opt > .label { margin-bottom: 8px; display: flex; justify-content: space-between; gap: 8px; }
-    .opt > .label output { color: var(--muted); font-weight: 450; }
-    .applies { color: var(--accent); font-size: 11.5px; font-weight: 500; }
+    .opt + .opt { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--m-well); box-shadow: 0 1px 0 rgb(255 255 255 / 0.055) inset; }   /* a seam between groups */
+    .opt > .label { margin-bottom: 10px; display: flex; justify-content: space-between; gap: 8px; }
+    .opt > .label output { color: var(--m-lit); letter-spacing: 0.02em; text-transform: none; }
+    .applies { color: var(--m-signal); letter-spacing: 0.04em; }
     .rows { display: grid; gap: 2px; }
-    .row { display: flex; gap: 10px; align-items: center; text-align: left; padding: 5px 8px; border-radius: 8px; border: 1px solid transparent; }
-    .row:hover { background: rgba(255, 255, 255, 0.04); }
-    .row[aria-pressed="true"] { border-color: var(--line-strong); background: rgba(255, 255, 255, 0.06); }
+    .row { padding: 5px 8px; }                                  /* a row in a Matte list: the chosen one carries a signal mark */
     .row canvas { width: 20px; height: 32px; flex: none; }
-    .row b { display: block; font-weight: 560; }
-    .row small { display: block; color: var(--muted); font-size: 11.5px; line-height: 1.3; }
-    .swatches { display: grid; grid-template-columns: repeat(9, 1fr); gap: 6px; }
-    .swatch { aspect-ratio: 1; border-radius: 50%; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.22); }
-    .swatch[aria-pressed="true"] { outline: 2px solid var(--fg); outline-offset: 2px; }
-    .custom-color { display: flex; align-items: center; gap: 8px; margin-top: 9px; color: var(--muted); font-size: 12px; }
-    .custom-color input { width: 30px; height: 22px; border: 0; background: none; padding: 0; cursor: pointer; }
-    input[type="range"] { width: 100%; accent-color: var(--accent); }
-    .chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
-    .chip { padding: 4px 9px; border-radius: 999px; border: 1px solid var(--line-strong); font-size: 12px; color: var(--soft); }
-    .chip:hover { background: rgba(255, 255, 255, 0.06); }
-    .chip[aria-pressed="true"] { background: rgba(255, 255, 255, 0.14); color: var(--fg); border-color: transparent; }
-    .note { color: var(--faint); font-size: 11.5px; margin-top: 6px; }
-    .sub { margin: 12px 0 6px; color: var(--muted); font-size: 12px; font-weight: 560; }
-    .item {
-      display: flex; gap: 10px; align-items: center; width: 100%; text-align: left;
-      padding: 7px 8px; border-radius: 9px; border: 1px solid transparent;
-    }
+    .row b { display: block; font-weight: 560; color: var(--m-print-hi); }
+    .row small { display: block; color: var(--m-print-dim); font-size: 11.5px; line-height: 1.3; }
+    .swatches { display: grid; grid-template-columns: repeat(9, 1fr); gap: 7px; }
+    .swatch { width: auto; height: auto; aspect-ratio: 1; }     /* a colour set in the body (.m-dot) */
+    .custom-color { display: flex; align-items: center; gap: 10px; margin-top: 12px; color: var(--m-print); font-size: 12px; }
+    .custom-color input { width: 30px; height: 22px; border: 0; border-radius: var(--m-radius-well); background: var(--m-well); box-shadow: var(--m-well-shadow); padding: 2px; cursor: pointer; }
+    .m-fader { width: 100%; }
+    .chips { display: flex; flex-wrap: wrap; gap: 6px 5px; margin-top: 10px; }   /* small Matte keys; the one in use stays down */
+    .note { color: var(--m-print-dim); font-size: 11.5px; margin-top: 6px; }
+    .sub { margin: 14px 0 8px; }                                /* a Matte legend */
+    .item { width: 100%; padding: 7px 8px; }                    /* a row in a Matte list */
     .item + .item { margin-top: 2px; }
-    .item:hover { background: rgba(255, 255, 255, 0.05); }
-    .item[aria-pressed="true"] { background: rgba(181, 181, 181, 0.1); border-color: rgba(181, 181, 181, 0.4); }
-    .item b { display: block; font-weight: 570; }
-    .item small { display: block; color: var(--muted); font-size: 11.5px; line-height: 1.3; }
+    .item b { display: block; font-weight: 570; color: var(--m-print-hi); }
+    .item small { display: block; color: var(--m-print-dim); font-size: 11.5px; line-height: 1.3; }
     .item__body { flex: 1; min-width: 0; }
-    .item__icon { width: 34px; height: 34px; border-radius: 8px; flex: none; display: grid; place-items: center; background: rgba(255, 255, 255, 0.05); }
+    .item__icon { width: 34px; height: 34px; border-radius: var(--m-radius-well); flex: none; display: grid; place-items: center; background: var(--m-well); box-shadow: var(--m-well-shadow); }
     .item__icon svg { width: 22px; height: 22px; }
-    .item__del { width: 24px; height: 24px; color: var(--faint); border-radius: 6px; flex: none; font-size: 15px; }
-    .item__del:hover { color: var(--fg); background: rgba(255, 255, 255, 0.07); }
+    .item__del { width: 24px; height: 24px; flex: none; font-size: 15px; }   /* a quiet Matte key */
     .fx-dot { width: 12px; height: 12px; border-radius: 50%; flex: none; box-shadow: 0 0 10px currentColor; background: currentColor; }
-    .fx-count { color: var(--accent); font-size: 11.5px; font-weight: 560; white-space: nowrap; }
-    .empty { color: var(--muted); padding: 6px 2px; }
+    .fx-count { color: var(--m-signal); font-size: 11.5px; white-space: nowrap; }
+    .empty { color: var(--m-print-dim); padding: 6px 2px; }
 
     /* ---------- right: inspector, camera, lab ---------- */
     .right {
@@ -152,42 +121,30 @@
       overflow-y: auto; padding: 14px 16px 16px;
     }
     .sel__title { font-size: 14px; font-weight: 620; }
-    .sel__meta { color: var(--muted); font-size: 12px; margin-top: 2px; }
-    .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-top: 12px; }
-    .act {
-      display: flex; align-items: center; justify-content: space-between; gap: 6px;
-      padding: 6px 8px; border-radius: 7px; border: 1px solid var(--line-strong);
-      background: rgba(255, 255, 255, 0.03); font-size: 12px; text-align: left;
-    }
-    .act:hover:not(:disabled) { background: rgba(255, 255, 255, 0.08); }
-    .act kbd { font-size: 10px; padding: 1px 4px; }
+    .sel__meta { color: var(--m-print-dim); font-size: 12px; margin-top: 2px; }
+    .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 7px 6px; margin-top: 12px; }
+    .act { justify-content: space-between; gap: 6px; padding: 0 7px 0 9px; min-width: 0; font-size: 9px; letter-spacing: 0.06em; white-space: nowrap; }   /* Matte keys, each with its shortcut */
+    .act kbd { font-size: 9px; padding: 1px 4px; }
     .act--wide { grid-column: 1 / -1; }
-    .act--danger:hover:not(:disabled) { border-color: rgba(155, 155, 155, 0.6); color: #c6c6c6; }
+    .act--danger, .matte .act--danger:hover { color: var(--m-danger); }
     .fx-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
-    .fx-chip { display: flex; align-items: center; gap: 6px; padding: 3px 4px 3px 8px; border-radius: 999px; border: 1px solid var(--line-strong); font-size: 12px; }
+    .fx-chip { display: flex; align-items: center; gap: 6px; padding: 2px 3px 2px 8px; border-radius: 3px; background: var(--m-glass); box-shadow: 0 0 0 1px var(--m-edge); color: var(--m-lit); font-size: 12px; }   /* a strip of label tape */
     .fx-chip .fx-dot { width: 8px; height: 8px; box-shadow: none; }
-    .fx-chip button { width: 18px; height: 18px; border-radius: 50%; color: var(--muted); }
-    .fx-chip button:hover { color: var(--fg); background: rgba(255, 255, 255, 0.1); }
-    .tips { color: var(--soft); display: grid; gap: 7px; margin-top: 10px; }
+    .fx-chip button { width: 18px; height: 18px; border-radius: 3px; color: var(--m-glass-dim); }
+    .fx-chip button:hover { color: var(--m-lit); background: rgb(255 255 255 / 0.1); }
+    .tips { color: var(--m-print); display: grid; gap: 7px; margin-top: 10px; }
     .tips p { display: flex; gap: 8px; }
-    .tips p span:first-child { color: var(--faint); flex: none; width: 92px; }
+    .tips p span:first-child { color: var(--m-print-dim); flex: none; width: 92px; }
     .stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-top: 12px; }
-    .stat { border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; }
-    .stat b { display: block; font-size: 16px; font-weight: 620; font-variant-numeric: tabular-nums; }
-    .stat small { color: var(--muted); font-size: 11.5px; }
-    .views { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
-    .btn {
-      padding: 6px 4px; border-radius: 7px; border: 1px solid var(--line-strong);
-      background: rgba(255, 255, 255, 0.03); text-align: center; font-size: 12px;
-    }
-    .btn:hover:not(:disabled) { background: rgba(255, 255, 255, 0.08); }
-    .btn--accent { background: var(--accent); color: var(--accent-ink); border-color: transparent; font-weight: 600; }
-    .btn--accent:hover:not(:disabled) { background: #c2c2c2; }
-    .zoomrow { display: flex; align-items: center; gap: 10px; margin-top: 10px; color: var(--muted); font-size: 12px; }
-    .check { display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--soft); margin-top: 9px; }
-    .check input { accent-color: var(--accent); }
-    .run-note { border: 1px solid rgba(191, 191, 191, 0.35); background: rgba(191, 191, 191, 0.08); border-radius: 10px; padding: 10px 12px; color: var(--soft); }
-    .run-note b { color: var(--go); font-weight: 600; display: block; margin-bottom: 2px; }
+    .stat { border-radius: var(--m-radius-well); padding: 6px 8px; background: var(--m-well); box-shadow: var(--m-well-shadow); }   /* a count read from a well */
+    .stat b { display: block; font: 400 16px/1.3 var(--m-font); color: var(--m-lit); font-variant-numeric: tabular-nums; }
+    .stat small { color: var(--m-glass-dim); font-size: 11.5px; }
+    .views { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+    .btn { min-width: 0; padding: 0 6px; white-space: nowrap; }   /* a Matte key; the one that saves is the primary */
+    .zoomrow { display: flex; align-items: center; gap: 12px; margin-top: 12px; }
+    .check { margin-top: 11px; }                                /* a Matte tick box */
+    .run-note { border-radius: var(--m-radius-well); padding: 10px 12px 11px; color: var(--m-print); background: var(--m-well); box-shadow: var(--m-well-shadow); }
+    .run-note b { color: var(--m-signal); font-weight: 600; display: block; margin-bottom: 2px; }
     .run-note button { margin-top: 8px; width: 100%; }
 
     /* ---------- lab drawer ---------- */
@@ -195,117 +152,107 @@
     .lab__head { padding: 12px 14px 0; flex: none; }
     .lab__title { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
     .lab__title b { font-size: 14px; font-weight: 640; }
-    .lab__title small { color: var(--muted); font-size: 12px; }
+    .lab__title small { color: var(--m-print-dim); font-size: 12px; }
     .lab__tabs { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 10px; }
     .lab__body { overflow-y: auto; padding: 10px 14px 12px; flex: 1; min-height: 0; }
     .param { padding: 7px 0; }
-    .param + .param { border-top: 1px solid rgba(255, 255, 255, 0.05); }
-    .param__head { display: flex; align-items: baseline; gap: 6px; }
-    .param__head label { flex: 1; color: var(--soft); }
-    .param__head output { color: var(--fg); font-variant-numeric: tabular-nums; font-size: 12px; }
-    .param__num { width: 64px; padding: 1px 4px; text-align: right; font-size: 12px; font-variant-numeric: tabular-nums; color: var(--fg); background: var(--panel-solid); border: 1px solid var(--line-strong); border-radius: 5px; }   /* type a value in place of dragging */
-    .param__head .unit { color: var(--muted); font-size: 11.5px; }
-    .param.is-changed .param__head label { color: var(--accent); }
-    .param__reset { width: 18px; height: 18px; border-radius: 50%; color: var(--faint); font-size: 13px; line-height: 1; visibility: hidden; }
+    .param + .param { border-top: 1px solid var(--m-well); box-shadow: 0 1px 0 rgb(255 255 255 / 0.04) inset; }
+    .param__head { display: flex; align-items: center; gap: 6px; }
+    .param__head label { flex: 1; color: var(--m-print); }
+    .param__head output { color: var(--m-lit); font: 400 11px/1 var(--m-font); font-variant-numeric: tabular-nums; }
+    .param__num { width: 64px; height: 22px; padding: 0 5px; text-align: right; font-size: 11px; font-variant-numeric: tabular-nums; -moz-appearance: textfield; appearance: textfield; }   /* type a value in place of dragging: a Matte number well */
+    .param__head .unit { color: var(--m-print-dim); font-size: 11.5px; }
+    .param.is-changed .param__head label { color: var(--m-signal); }
+    .param__reset { width: 18px; height: 18px; border-radius: 3px; color: var(--m-print-dim); font-size: 13px; line-height: 1; visibility: hidden; }
     .param.is-changed .param__reset { visibility: visible; }
-    .param__reset:hover { color: var(--fg); background: rgba(255, 255, 255, 0.08); }
-    .param input[type="range"] { margin-top: 4px; }
-    .param input[type="color"] { width: 44px; height: 22px; border: 0; background: none; cursor: pointer; }
+    .param__reset:hover { color: var(--m-print-hi); background: color-mix(in srgb, var(--m-print) 12%, transparent); }
+    .param .m-fader { margin-top: 2px; }
+    .param input[type="color"] { width: 44px; height: 22px; border: 0; border-radius: var(--m-radius-well); background: var(--m-well); box-shadow: var(--m-well-shadow); padding: 2px; cursor: pointer; }
     .param .note { margin-top: 2px; }
-    .lab__tests { display: flex; gap: 6px; align-items: center; margin: 2px 0 8px; }
-    .lab__tests select { flex: 1; padding: 5px 6px; border-radius: 7px; background: var(--panel-solid); border: 1px solid var(--line-strong); }
-    .lab__foot { flex: none; border-top: 1px solid var(--line); padding: 10px 14px 12px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+    .lab__tests { display: flex; gap: 8px; align-items: center; margin: 2px 0 8px; }
+    .lab__tests select { flex: 1; min-width: 0; }
+    .lab__foot { flex: none; border-top: 1px solid var(--m-well); box-shadow: 0 1px 0 rgb(255 255 255 / 0.055) inset; padding: 12px 14px 10px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
     .lab__foot .btn--accent { grid-column: 1 / -1; }
-    .lab__status { grid-column: 1 / -1; color: var(--muted); font-size: 11.5px; min-height: 1.3em; }
+    .lab__status { grid-column: 1 / -1; color: var(--m-print-dim); font-size: 11.5px; min-height: 1.3em; }
 
     /* ---------- timeline ---------- */
     .timeline {
       left: 16px; right: 16px; bottom: 16px; padding: 10px 14px 12px;
       display: grid; grid-template-columns: auto 1fr auto; gap: 8px 16px; align-items: center;
     }
-    .transport { display: flex; align-items: center; gap: 6px; }
-    .tbtn {
-      width: 34px; height: 34px; border-radius: 9px; display: grid; place-items: center;
-      border: 1px solid var(--line-strong); background: rgba(255, 255, 255, 0.03); position: relative;
-    }
-    .tbtn:hover:not(:disabled) { background: rgba(255, 255, 255, 0.09); }
-    .tbtn svg { width: 16px; height: 16px; fill: currentColor; }
-    .tbtn small { position: absolute; bottom: 1px; font-size: 8.5px; font-weight: 650; color: var(--muted); }
-    .tbtn--play { width: 46px; background: var(--accent); color: var(--accent-ink); border-color: transparent; }
-    .tbtn--play:hover:not(:disabled) { background: #c2c2c2; }
+    .transport { display: flex; align-items: center; gap: 8px; }
+    .tbtn { width: 38px; min-width: 0; padding: 0; position: relative; }   /* Matte keys; Play is the primary */
+    .tbtn svg { width: 14px; height: 14px; }
+    .tbtn small { position: absolute; bottom: 2px; right: 4px; font-size: 7.5px; letter-spacing: 0; color: var(--m-print-dim); }
+    .tbtn--play { width: 50px; }
     .scrub { position: relative; height: 34px; cursor: pointer; touch-action: none; }
-    .scrub__track { position: absolute; left: 0; right: 0; top: 15px; height: 4px; border-radius: 2px; background: rgba(255, 255, 255, 0.1); }
-    .scrub__done { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 2px; background: rgba(255, 255, 255, 0.22); width: 0; }
-    .scrub__played { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 2px; background: var(--accent); width: 0; }
-    .scrub__head { position: absolute; top: 9px; width: 16px; height: 16px; margin-left: -8px; border-radius: 50%; background: var(--fg); box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5); left: 0; }
+    .scrub__track { position: absolute; left: 0; right: 0; top: 14px; height: 6px; border-radius: 3px; background: var(--m-well); box-shadow: 0 1px 2px rgb(0 0 0 / 0.9) inset, 0 1px 0 rgb(255 255 255 / 0.08); }   /* the fader's slot */
+    .scrub__done { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 3px; background: color-mix(in srgb, var(--m-print) 30%, transparent); width: 0; }
+    .scrub__played { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 3px; background: var(--m-meter-on); width: 0; }
+    .scrub__head { position: absolute; top: 4px; width: 16px; height: 26px; margin-left: -8px; border-radius: 3px; background: linear-gradient(90deg, transparent 43%, var(--m-mark) 43% 57%, transparent 57%), linear-gradient(180deg, var(--m-cap-hi), var(--m-cap)); box-shadow: 0 1px 0 rgb(255 255 255 / 0.16) inset, 0 0 0 1px var(--m-edge), 0 4px 6px rgb(0 0 0 / 0.7); left: 0; }   /* and its cap, with the white line */
     .scrub__marks { position: absolute; left: 0; right: 0; top: 4px; height: 8px; pointer-events: none; }
     .scrub__marks i { position: absolute; width: 6px; height: 6px; margin-left: -3px; border-radius: 50%; }
-    .scrub__msg { position: absolute; left: 0; right: 0; top: 23px; color: var(--muted); font-size: 11.5px; text-align: center; pointer-events: none; }
+    .scrub__msg { position: absolute; left: 0; right: 0; top: 24px; color: var(--m-print-dim); font-size: 11px; text-align: center; pointer-events: none; }
     .tl-right { display: flex; align-items: center; gap: 12px; }
-    .time { font-variant-numeric: tabular-nums; color: var(--soft); min-width: 104px; text-align: right; }
-    .time small { color: var(--muted); }
-    .speeds { display: flex; border: 1px solid var(--line-strong); border-radius: 8px; overflow: hidden; }
-    .speeds button { padding: 6px 8px; font-size: 12px; color: var(--soft); font-variant-numeric: tabular-nums; }
-    .speeds button + button { border-left: 1px solid var(--line); }
-    .speeds button[aria-pressed="true"] { background: rgba(255, 255, 255, 0.13); color: var(--fg); }
-    .tl-status { grid-column: 1 / -1; display: flex; gap: 14px; color: var(--muted); font-size: 12px; margin-top: -2px; }
-    .tl-status b { color: var(--soft); font-weight: 560; }
-    .tl-status .slow { color: #d5d5d5; }
+    .time { font: 400 12px/1 var(--m-font); font-variant-numeric: tabular-nums; color: var(--m-lit); min-width: 104px; text-align: right; }
+    .time small { color: var(--m-print-dim); }
+    .speeds button { padding: 0 8px; letter-spacing: 0.04em; font-variant-numeric: tabular-nums; }   /* a Matte segmented control */
+    .tl-status { grid-column: 1 / -1; display: flex; gap: 14px; color: var(--m-print-dim); font-size: 12px; margin-top: -2px; }
+    .tl-status b { color: var(--m-lit); font-weight: 560; }
+    .tl-status .slow { color: var(--m-signal); }
 
     /* ---------- overlays ---------- */
-    .toast {
+    .toast {                                                    /* a Matte toast: a strip of glass, shown and hidden by the page */
       position: fixed; z-index: 6; left: 50%; bottom: 128px; transform: translateX(-50%);
-      background: rgba(23, 23, 23, 0.96); border: 1px solid var(--line-strong); border-radius: 10px;
-      padding: 9px 14px; max-width: min(520px, calc(100% - 32px)); text-align: center;
+      max-width: min(520px, calc(100% - 32px)); line-height: 1.4; text-align: center;
       opacity: 0; pointer-events: none; transition: opacity 0.2s;
     }
     .toast.is-on { opacity: 1; }
-    .marquee { position: fixed; z-index: 2; border: 1px solid var(--accent); background: rgba(181, 181, 181, 0.08); pointer-events: none; }
-    .tag {
+    .marquee { position: fixed; z-index: 2; border: 1px solid var(--m-signal); background: color-mix(in srgb, var(--m-signal) 9%, transparent); pointer-events: none; }
+    .tag {                                                      /* a strip of label tape beside the pointer */
       position: fixed; z-index: 3; pointer-events: none; transform: translate(14px, -50%);
-      background: rgba(17, 17, 17, 0.9); border: 1px solid var(--line-strong); border-radius: 7px; padding: 4px 8px; font-size: 12px; white-space: nowrap;
+      background: var(--m-glass); box-shadow: 0 0 0 1px var(--m-edge), 0 6px 12px rgb(0 0 0 / 0.5); border-radius: 3px; padding: 5px 8px; color: var(--m-lit); font-size: 12px; white-space: nowrap;
     }
-    .tag.is-warn { border-color: rgba(181, 181, 181, 0.7); color: #d9d9d9; }
+    .tag.is-warn { color: var(--m-warn); }
 
     .modal-back { position: fixed; inset: 0; z-index: 8; background: rgba(6, 6, 6, 0.55); display: grid; place-items: center; padding: 16px; }
-    .modal { width: min(560px, 100%); max-height: calc(100% - 32px); overflow: auto; background: var(--panel-solid); border: 1px solid var(--line-strong); border-radius: 14px; padding: 18px 20px; }
+    .modal { width: min(560px, 100%); max-height: calc(100% - 32px); overflow: auto; border-radius: 14px; padding: 18px 20px; }   /* a Matte body above the bench */
     .modal h2 { font-size: 16px; font-weight: 640; }
-    .modal p { color: var(--soft); margin-top: 4px; }
+    .modal p { color: var(--m-print); margin-top: 4px; }
     .modal .field { margin-top: 14px; }
-    .modal .field label { display: block; color: var(--soft); margin-bottom: 6px; }
-    .modal input[type="text"] { width: 100%; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line-strong); background: rgba(255, 255, 255, 0.04); }
-    .modal__actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
-    .modal__actions .btn { padding: 7px 14px; }
+    .modal .field label { display: block; margin-bottom: 8px; }
+    .modal input[type="text"] { width: 100%; }
+    .modal__actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; }
+    .modal__actions .btn { padding: 0 16px; }
     .saves { display: grid; gap: 6px; margin-top: 14px; }
     .save { display: flex; gap: 4px; align-items: stretch; }
-    .save__open { flex: 1; display: flex; gap: 12px; text-align: left; padding: 6px; border-radius: 10px; min-width: 0; border: 1px solid var(--line); }
-    .save__open:hover { background: rgba(255, 255, 255, 0.05); }
+    .save__open { flex: 1; gap: 12px; align-items: flex-start; padding: 6px; min-width: 0; }   /* a row in a Matte list */
     .save img, .save .noimg { width: 112px; height: 70px; object-fit: cover; border-radius: 7px; flex: none; background: #1e1e1e; }
-    .save b { display: block; font-weight: 580; margin-top: 4px; }
-    .save small { display: block; color: var(--muted); font-size: 12px; }
+    .save b { display: block; font-weight: 580; margin-top: 4px; color: var(--m-print-hi); }
+    .save small { display: block; color: var(--m-print-dim); font-size: 12px; }
     .save .item__del { align-self: center; }
     .help-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 22px; margin-top: 14px; }
-    .help-grid p { display: flex; justify-content: space-between; gap: 10px; color: var(--soft); }
-    .help-grid h3 { grid-column: 1 / -1; font-size: 12px; font-weight: 620; color: var(--muted); margin-top: 8px; }
+    .help-grid p { display: flex; justify-content: space-between; gap: 10px; color: var(--m-print); }
+    .help-grid h3 { grid-column: 1 / -1; font: 400 var(--m-text-legend)/1 var(--m-font); letter-spacing: 0.1em; text-transform: uppercase; color: var(--m-print-dim); margin-top: 10px; }
 
     /* ---------- environment picker ---------- */
     .picker { position: fixed; inset: 0; z-index: 7; background: radial-gradient(ellipse at 50% 0%, #1d1d1d, #0c0c0c 70%); overflow-y: auto; }
     .picker__inner { max-width: 1060px; margin: 0 auto; padding: 72px 24px 48px; }
     .picker h1 { font-size: 30px; font-weight: 680; letter-spacing: -0.01em; }
-    .picker__intro { color: var(--soft); font-size: 15px; max-width: 620px; margin-top: 8px; }
+    .picker__intro { color: var(--m-print); font-size: 15px; max-width: 620px; margin-top: 8px; }
     .envs { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; margin-top: 28px; }
-    .env { text-align: left; border-radius: 14px; overflow: hidden; border: 1px solid var(--line); background: #141414; transition: transform 0.15s, border-color 0.15s; }
-    .env:hover:not(:disabled) { transform: translateY(-2px); border-color: rgba(181, 181, 181, 0.6); }
+    .env { text-align: left; border-radius: 14px; overflow: hidden; background: linear-gradient(180deg, var(--m-body-hi), var(--m-body-lo)); box-shadow: 0 1px 0 var(--m-shine) inset, 0 0 0 1px var(--m-edge), 0 8px 18px rgb(0 0 0 / 0.45); transition: transform 0.15s, box-shadow 0.15s; }   /* each room in a Matte housing, as on the Rigs and Jigs wall */
+    .env:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 1px 0 var(--m-shine) inset, 0 0 0 1px var(--m-signal), 0 14px 26px rgb(0 0 0 / 0.5); }
     .env:disabled { opacity: 1; }
     .env__img { aspect-ratio: 16 / 10; display: block; width: 100%; object-fit: cover; background: #222; }
     .env { display: flex; flex-direction: column; justify-content: flex-start; align-items: stretch; width: 100%; padding: 0; }
     .env__body { display: block; padding: 11px 14px 13px; }
     .env__body b { display: block; font-size: 14px; font-weight: 620; }
-    .env__body small { display: block; color: var(--muted); margin-top: 2px; line-height: 1.35; }
-    .env__soon { display: inline-block; margin-top: 8px; font-size: 11.5px; color: var(--faint); border: 1px solid var(--line); border-radius: 999px; padding: 1px 8px; }
+    .env__body small { display: block; color: var(--m-print-dim); margin-top: 2px; line-height: 1.35; }
+    .env__soon { display: inline-block; margin-top: 10px; padding: 4px 7px; border-radius: 3px; font: 400 var(--m-text-legend)/1 var(--m-font); letter-spacing: 0.1em; text-transform: uppercase; color: var(--m-print-dim); box-shadow: 0 0 0 1px color-mix(in srgb, var(--m-print) 35%, transparent) inset; }   /* a printed tag */
     .env:disabled .env__img { filter: grayscale(0.6) brightness(0.55); }
-    .env__go { display: inline-block; margin-top: 8px; font-size: 12px; color: var(--accent); font-weight: 560; }
-    .loading { position: fixed; inset: 0; z-index: 9; display: grid; place-items: center; background: rgba(13, 13, 13, 0.92); color: var(--soft); }
+    .env__go { display: inline-block; margin-top: 10px; font: 400 var(--m-text-legend)/1 var(--m-font); letter-spacing: 0.1em; text-transform: uppercase; color: var(--m-signal); }
+    .loading { position: fixed; inset: 0; z-index: 9; display: grid; place-items: center; background: rgba(13, 13, 13, 0.92); color: var(--m-print); }
     .loading b { display: block; font-weight: 600; color: var(--fg); margin-bottom: 4px; text-align: center; }
 
     /* ---------- smaller screens ---------- */
@@ -322,7 +269,7 @@
       .brand, .room-chip, .store-note, .hbtn .wide, #redo, #help, #sound { display: none; }
       .top { gap: 8px; }
       .top__end { gap: 4px; }
-      .hbtn { padding: 6px 8px; }
+      .hbtn { min-width: 34px; padding: 0 9px; }
       .timeline { grid-template-columns: 1fr; }
       .tl-right { justify-content: space-between; }
       .toast { bottom: 170px; }
@@ -337,73 +284,73 @@
     }
   </script>
 </head>
-<body>
+<body class="matte">
   <canvas id="scene" aria-label="The living room, with your dominoes"></canvas>
 
   <!-- header -->
   <header class="top">
-    <a class="back" href="../">← Rigs and Jigs</a>
+    <a class="back m-legend" href="../">← Rigs and Jigs</a>
     <span class="brand">Domino Run</span>
-    <button class="room-chip" id="room-chip" type="button" title="Choose another room">Living room <span aria-hidden="true">▾</span></button>
+    <button class="room-chip m-key" id="room-chip" type="button" title="Choose another room">Living room <span aria-hidden="true">▾</span></button>
     <div class="top__end">
       <span class="store-note" id="store-note"></span>
-      <button class="hbtn drawer-toggle" id="open-left" type="button">Build</button>
-      <button class="hbtn drawer-toggle" id="open-right" type="button">Selection</button>
-      <button class="hbtn hbtn--icon" id="undo" type="button" title="Undo (⌘Z)" aria-label="Undo"><svg viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg></button>
-      <button class="hbtn hbtn--icon" id="redo" type="button" title="Redo (⇧⌘Z)" aria-label="Redo"><svg viewBox="0 0 24 24"><path d="m15 14 5-5-5-5"/><path d="M20 9H10a6 6 0 0 0 0 12h3"/></svg></button>
-      <button class="hbtn hbtn--icon" id="sound" type="button" title="Sound on" aria-label="Sound" aria-pressed="false"><svg viewBox="0 0 24 24"><path d="M11 5 6 9H2v6h4l5 4z"/><path class="wave" d="M15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14"/></svg></button>
-      <button class="hbtn" id="open" type="button" title="Open a saved run (⌘O)"><svg viewBox="0 0 24 24"><path d="M3 7h6l2 2h10v10H3z"/></svg><span class="wide">Open</span></button>
-      <button class="hbtn" id="save" type="button" title="Save this run (⌘S)" disabled><svg viewBox="0 0 24 24"><path d="M5 3h11l3 3v15H5z"/><path d="M8 3v5h8V3M8 21v-7h8v7"/></svg><span class="wide">Save</span></button>
-      <button class="hbtn" id="lab-toggle" type="button" aria-pressed="false" title="Tune physics, room, lights and sounds"><svg viewBox="0 0 24 24"><path d="M9 3v6L4 19a1.5 1.5 0 0 0 1.3 2h13.4a1.5 1.5 0 0 0 1.3-2L15 9V3M8 3h8M7 15h10"/></svg><span class="wide">Lab</span></button>
-      <button class="hbtn hbtn--icon" id="help" type="button" title="Keyboard shortcuts (?)" aria-label="Help">?</button>
+      <button class="hbtn drawer-toggle m-key" id="open-left" type="button">Build</button>
+      <button class="hbtn drawer-toggle m-key" id="open-right" type="button">Selection</button>
+      <button class="hbtn hbtn--icon m-key" id="undo" type="button" title="Undo (⌘Z)" aria-label="Undo"><svg viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg></button>
+      <button class="hbtn hbtn--icon m-key" id="redo" type="button" title="Redo (⇧⌘Z)" aria-label="Redo"><svg viewBox="0 0 24 24"><path d="m15 14 5-5-5-5"/><path d="M20 9H10a6 6 0 0 0 0 12h3"/></svg></button>
+      <button class="hbtn hbtn--icon m-key" id="sound" type="button" title="Sound on" aria-label="Sound" aria-pressed="false"><svg viewBox="0 0 24 24"><path d="M11 5 6 9H2v6h4l5 4z"/><path class="wave" d="M15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14"/></svg></button>
+      <button class="hbtn m-key" id="open" type="button" title="Open a saved run (⌘O)"><svg viewBox="0 0 24 24"><path d="M3 7h6l2 2h10v10H3z"/></svg><span class="wide">Open</span></button>
+      <button class="hbtn m-key" id="save" type="button" title="Save this run (⌘S)" disabled><svg viewBox="0 0 24 24"><path d="M5 3h11l3 3v15H5z"/><path d="M8 3v5h8V3M8 21v-7h8v7"/></svg><span class="wide">Save</span></button>
+      <button class="hbtn m-key" id="lab-toggle" type="button" aria-pressed="false" title="Tune physics, room, lights and sounds"><svg viewBox="0 0 24 24"><path d="M9 3v6L4 19a1.5 1.5 0 0 0 1.3 2h13.4a1.5 1.5 0 0 0 1.3-2L15 9V3M8 3h8M7 15h10"/></svg><span class="wide">Lab</span></button>
+      <button class="hbtn hbtn--icon m-key" id="help" type="button" title="Keyboard shortcuts (?)" aria-label="Help">?</button>
     </div>
   </header>
 
   <!-- left: tools and library -->
-  <aside class="panel left" id="left">
+  <aside class="panel left m-body" id="left">
     <div class="tools" role="toolbar" aria-label="Tools">
-      <button class="tool" data-tool="select" aria-pressed="true" title="Select, move and group (V)">
+      <button class="tool m-key m-key--tile" data-tool="select" aria-pressed="true" title="Select, move and group (V)">
         <svg viewBox="0 0 24 24"><path d="M5 3l14 8-6 1.5L10 19z"/></svg><span>Select</span><kbd>V</kbd>
       </button>
-      <button class="tool" data-tool="place" aria-pressed="false" title="Stand one domino at a time (B)">
+      <button class="tool m-key m-key--tile" data-tool="place" aria-pressed="false" title="Stand one domino at a time (B)">
         <svg viewBox="0 0 24 24"><rect x="8" y="3" width="8" height="15" rx="1.5"/><path d="M4 21h16"/></svg><span>Place</span><kbd>B</kbd>
       </button>
-      <button class="tool" data-tool="draw" aria-pressed="false" title="Drag to lay a line of dominoes (D)">
+      <button class="tool m-key m-key--tile" data-tool="draw" aria-pressed="false" title="Drag to lay a line of dominoes (D)">
         <svg viewBox="0 0 24 24"><path d="M3 19c4-1 5-8 9-8s5 6 9 4"/><path d="M5 17v-3M9 13v-3M14 12v-3M18 15v-3"/></svg><span>Draw</span><kbd>D</kbd>
       </button>
     </div>
-    <div class="tabs" role="tablist">
+    <div class="tabs m-tabs" role="tablist">
       <button role="tab" aria-selected="true" data-tab="dominoes">Dominoes</button>
       <button role="tab" aria-selected="false" data-tab="elements">Elements</button>
       <button role="tab" aria-selected="false" data-tab="effects">Effects</button>
     </div>
     <div class="pane" data-pane="dominoes">
       <section class="opt">
-        <div class="label">Style <span class="applies" data-applies></span></div>
+        <div class="label m-legend">Style <span class="applies" data-applies></span></div>
         <div class="rows" id="styles"></div>
       </section>
       <section class="opt">
-        <div class="label">Colour <span class="applies" data-applies></span></div>
+        <div class="label m-legend">Colour <span class="applies" data-applies></span></div>
         <div class="swatches" id="colors"></div>
         <label class="custom-color"><input type="color" id="custom-color" value="#d8402f"> Any colour</label>
       </section>
       <section class="opt">
-        <div class="label">Height <output id="size-out"></output></div>
-        <input type="range" id="size" min="0" max="1" step="0.001" value="0" aria-label="Domino height">
+        <div class="label m-legend">Height <output id="size-out"></output></div>
+        <input class="m-fader" type="range" id="size" min="0" max="1" step="0.001" value="0" aria-label="Domino height">
         <div class="chips" id="size-chips"></div>
         <p class="note">From a standard toppling domino up to 12 inches. <span data-applies-note></span></p>
       </section>
       <section class="opt">
-        <div class="label">Spacing <output id="spacing-out"></output></div>
-        <input type="range" id="spacing" min="0.25" max="1" step="0.01" value="0.55" aria-label="Spacing">
+        <div class="label m-legend">Spacing <output id="spacing-out"></output></div>
+        <input class="m-fader" type="range" id="spacing" min="0.25" max="1" step="0.01" value="0.55" aria-label="Spacing">
         <p class="note">Centre to centre, as a share of the height. Place and Draw use it. Past about 0.9 the next one won’t be reached.</p>
       </section>
     </div>
     <div class="pane" data-pane="elements" hidden>
       <p class="note" style="margin-top:0">Pick one, then click to set it down. Near the end of a line, it joins on. <kbd>Q</kbd> <kbd>E</kbd> turn it.</p>
-      <div class="sub">Ready-made</div>
+      <div class="sub m-legend">Ready-made</div>
       <div id="builtins"></div>
-      <div class="sub">Saved</div>
+      <div class="sub m-legend">Saved</div>
       <div id="saved-elements"><p class="empty">Select a group and choose Save as element to keep it here.</p></div>
     </div>
     <div class="pane" data-pane="effects" hidden>
@@ -413,26 +360,26 @@
   </aside>
 
   <!-- right: selection and camera -->
-  <aside class="panel right" id="right">
+  <aside class="panel right m-body" id="right">
     <section class="opt" id="sel"></section>
     <section class="opt">
-      <div class="label">Camera</div>
+      <div class="label m-legend">Camera</div>
       <div class="views" id="views"></div>
-      <div class="zoomrow"><span>Zoom</span><input type="range" id="zoom" min="0" max="1" step="0.001" value="0.5" aria-label="Zoom"></div>
-      <label class="check"><input type="checkbox" id="follow" checked> Follow the falling dominoes</label>
+      <div class="zoomrow"><span class="m-legend">Zoom</span><input class="m-fader" type="range" id="zoom" min="0" max="1" step="0.001" value="0.5" aria-label="Zoom"></div>
+      <label class="check m-check"><input type="checkbox" id="follow" checked> Follow the falling dominoes</label>
       <p class="note">Orbit: right-drag, or hold <kbd data-mod>⌘</kbd> and drag. Pan: add <kbd>⇧</kbd> to either. Scroll to zoom.</p>
     </section>
   </aside>
 
   <!-- lab -->
-  <aside class="panel lab" id="lab" hidden>
+  <aside class="panel lab m-body" id="lab" hidden>
     <div class="lab__head">
       <div class="lab__title"><b>Lab</b><small id="lab-count"></small></div>
       <div class="chips lab__tabs" id="lab-tabs"></div>
     </div>
     <div class="lab__body">
       <div class="lab__tests">
-        <select id="lab-test" aria-label="Test layout">
+        <select class="m-input m-input--sm" id="lab-test" aria-label="Test layout">
           <option value="">Load a test layout…</option>
           <option value="line">Straight line, 40</option>
           <option value="curve">Curve and S-bend</option>
@@ -440,26 +387,26 @@
           <option value="table">Off the coffee table</option>
           <option value="mixed">Every style</option>
         </select>
-        <button class="btn" id="lab-run" type="button" style="padding:5px 10px">Run</button>
+        <button class="btn m-key" id="lab-run" type="button">Run</button>
       </div>
       <div id="lab-params"></div>
     </div>
     <div class="lab__foot">
-      <button class="btn btn--accent" id="lab-save" type="button">Save settings to the project</button>
-      <button class="btn" id="lab-revert" type="button" title="Go back to the last saved settings">Revert</button>
-      <button class="btn" id="lab-defaults" type="button" title="Put this section back to its defaults">Defaults</button>
-      <button class="btn" id="lab-copy" type="button" title="Copy changed settings as JSON">Copy</button>
+      <button class="btn btn--accent m-key m-key--primary" id="lab-save" type="button">Save settings to the project</button>
+      <button class="btn m-key" id="lab-revert" type="button" title="Go back to the last saved settings">Revert</button>
+      <button class="btn m-key" id="lab-defaults" type="button" title="Put this section back to its defaults">Defaults</button>
+      <button class="btn m-key" id="lab-copy" type="button" title="Copy changed settings as JSON">Copy</button>
       <div class="lab__status" id="lab-status"></div>
     </div>
   </aside>
 
   <!-- timeline -->
-  <footer class="panel timeline" id="timeline">
+  <footer class="panel timeline m-body" id="timeline">
     <div class="transport">
-      <button class="tbtn" id="tl-restart" type="button" title="Back to the start (Home)" aria-label="Restart"><svg viewBox="0 0 24 24"><path d="M6 5h2v14H6zM20 5v14L9 12z"/></svg></button>
-      <button class="tbtn" id="tl-back" type="button" title="Back 5 seconds (←)" aria-label="Back 5 seconds"><svg viewBox="0 0 24 24"><path d="M12 6v12L3 12zM21 6v12l-9-6z"/></svg><small>5</small></button>
-      <button class="tbtn tbtn--play" id="tl-play" type="button" title="Play (Space)" aria-label="Play"><svg viewBox="0 0 24 24" id="tl-play-icon"><path d="M7 4v16l13-8z"/></svg></button>
-      <button class="tbtn" id="tl-fwd" type="button" title="Forward 5 seconds (→)" aria-label="Forward 5 seconds"><svg viewBox="0 0 24 24"><path d="M12 6v12l9-6zM3 6v12l9-6z"/></svg><small>5</small></button>
+      <button class="tbtn m-key m-key--solid" id="tl-restart" type="button" title="Back to the start (Home)" aria-label="Restart"><svg viewBox="0 0 24 24"><path d="M6 5h2v14H6zM20 5v14L9 12z"/></svg></button>
+      <button class="tbtn m-key m-key--solid" id="tl-back" type="button" title="Back 5 seconds (←)" aria-label="Back 5 seconds"><svg viewBox="0 0 24 24"><path d="M12 6v12L3 12zM21 6v12l-9-6z"/></svg><small>5</small></button>
+      <button class="tbtn tbtn--play m-key m-key--primary m-key--solid" id="tl-play" type="button" title="Play (Space)" aria-label="Play"><svg viewBox="0 0 24 24" id="tl-play-icon"><path d="M7 4v16l13-8z"/></svg></button>
+      <button class="tbtn m-key m-key--solid" id="tl-fwd" type="button" title="Forward 5 seconds (→)" aria-label="Forward 5 seconds"><svg viewBox="0 0 24 24"><path d="M12 6v12l9-6zM3 6v12l9-6z"/></svg><small>5</small></button>
     </div>
     <div class="scrub" id="scrub" role="slider" aria-label="Timeline" aria-valuemin="0" aria-valuemax="0" aria-valuenow="0" tabindex="0">
       <div class="scrub__marks" id="marks"></div>
@@ -469,19 +416,19 @@
     </div>
     <div class="tl-right">
       <span class="time" id="time">0:00.0</span>
-      <div class="speeds" id="speeds" role="group" aria-label="Playback speed"></div>
+      <div class="speeds m-seg" id="speeds" role="group" aria-label="Playback speed"></div>
     </div>
     <div class="tl-status" id="tl-status"></div>
   </footer>
 
-  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <div class="toast m-toast m-toast--still" id="toast" role="status" aria-live="polite"></div>
   <div class="marquee" id="marquee" hidden></div>
   <div class="tag" id="tag" hidden></div>
 
   <!-- environment picker -->
   <div class="picker" id="picker" hidden>
     <div class="picker__inner">
-      <a class="back" href="../">← Rigs and Jigs</a>
+      <a class="back m-legend" href="../">← Rigs and Jigs</a>
       <h1 style="margin-top:18px">Domino Run</h1>
       <p class="picker__intro">Choose a room to build in. Set dominoes up anywhere, on the floor or the furniture, then knock them down and watch the run back at any speed.</p>
       <div class="envs" id="envs"></div>

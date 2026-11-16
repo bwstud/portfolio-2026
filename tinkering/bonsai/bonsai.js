@@ -912,7 +912,7 @@ function renderInspector() {
   const kind = i === 0 ? 'Trunk base' : f.order[i] === 0 ? 'Trunk' : (flags & 4) ? 'New shoot' : f.order[i] === 1 ? 'Primary branch' : 'Branch';
   const light = f.light[i];
   el.innerHTML = `
-    <div class="sec__head"><h3>${flags & 1 ? 'Deadwood' : kind}</h3><button class="btn" type="button" id="deselect">Done</button></div>
+    <div class="sec__head"><h3>${flags & 1 ? 'Deadwood' : kind}</h3><button class="btn m-key m-key--sm" type="button" id="deselect">Done</button></div>
     <dl class="facts">
       <dt>Thickness</dt><dd>${mm(f.radius[i])}</dd>
       <dt>Length to tip</dt><dd>${(chainLen * 100).toFixed(1)} cm</dd>
@@ -922,7 +922,7 @@ function renderInspector() {
     </dl>
     ${wire ? `<p class="say">${wire.biting ? 'The bark is swelling over the wire. Remove it now; the scar will stay.' : wire.tight >= TIGHT ? 'The branch has thickened against the wire. Remove it soon or it will bite.' : ''}
       ${wire.set >= 0.95 ? 'The bend has set. Safe to remove.' : `If removed now it springs back about ${pct(1 - wire.set)} of the way.`}</p>
-      <div class="row"><button class="btn btn--accent" type="button" id="unwire">Remove ${wire.kind === 'guy' ? 'guy wire' : 'wire'}</button></div>` : ''}
+      <div class="row"><button class="btn btn--accent m-key m-key--accent" type="button" id="unwire">Remove ${wire.kind === 'guy' ? 'guy wire' : 'wire'}</button></div>` : ''}
     ${!(flags & 1) && light > 0 && light < 0.3 ? '<p class="say">Shaded branches weaken and may be shed. Thin above it to let light in.</p>' : ''}`;
   $('deselect').onclick = () => { selected = -1; renderInspector(); updateHighlight(); };
   if (wire) $('unwire').onclick = () => { pause(); act({ t: 'unwire', wire: wire.id }); };
@@ -1300,9 +1300,9 @@ function showTab(name) {
 document.querySelectorAll('#side .tabs [role="tab"]').forEach(t => t.addEventListener('click', () => showTab(t.dataset.tab)));
 showTab(store.get('tab') || 'tree');
 
-$('place').innerHTML = SETTING_LIST.map(s => `<button class="choice" type="button" data-id="${s.id}" title="${s.note}"><b>${s.name}</b></button>`).join('');
-$('containers').innerHTML = POTS.map(p => `<button class="choice" type="button" data-id="${p.id}" title="${p.note}">${potIcon(p, POT_SWATCH[p.id])}<b>${p.name}</b></button>`).join('');
-$('stands').innerHTML = STAND_LIST.map(s => `<button class="choice" type="button" data-id="${s.id}"><b>${s.name}</b></button>`).join('');
+$('place').innerHTML = SETTING_LIST.map(s => `<button class="choice m-menu__item m-menu__item--plain" type="button" data-id="${s.id}" title="${s.note}"><b>${s.name}</b></button>`).join('');
+$('containers').innerHTML = POTS.map(p => `<button class="choice m-menu__item m-menu__item--plain" type="button" data-id="${p.id}" title="${p.note}">${potIcon(p, POT_SWATCH[p.id])}<b>${p.name}</b></button>`).join('');
+$('stands').innerHTML = STAND_LIST.map(s => `<button class="choice m-menu__item m-menu__item--plain" type="button" data-id="${s.id}"><b>${s.name}</b></button>`).join('');
 $('place').addEventListener('click', e => {
   const b = e.target.closest('button');
   if (b && frame && b.dataset.id !== frame.env.setting) act({ t: 'place', setting: b.dataset.id, light: SETTINGS[b.dataset.id].grow });
@@ -1340,13 +1340,13 @@ if (!POT[setup.pot]) setup.pot = 'namako';
 if (!SETTINGS[setup.setting]) setup.setting = 'studio';
 
 $('species-list').innerHTML = SPECIES_LIST.map(s => `
-  <button class="choice" type="button" data-id="${s.id}"><b>${s.name}</b><i>${s.latin}</i><small>${s.blurb}</small></button>`).join('');
+  <button class="choice m-menu__item m-menu__item--plain" type="button" data-id="${s.id}"><b>${s.name}</b><i>${s.latin}</i><small>${s.blurb}</small></button>`).join('');
 $('pot-list').innerHTML = POTS.map(p => `
-  <button class="choice" type="button" data-id="${p.id}">${potIcon(p, POT_SWATCH[p.id])}<b>${p.name}</b><small>${p.note}</small></button>`).join('');
+  <button class="choice m-menu__item m-menu__item--plain" type="button" data-id="${p.id}">${potIcon(p, POT_SWATCH[p.id])}<b>${p.name}</b><small>${p.note}</small></button>`).join('');
 $('setting-list').innerHTML = SETTING_LIST.map(s => `
-  <button class="choice" type="button" data-id="${s.id}"><b>${s.name}</b><small>${s.note}</small></button>`).join('');
+  <button class="choice m-menu__item m-menu__item--plain" type="button" data-id="${s.id}"><b>${s.name}</b><small>${s.note}</small></button>`).join('');
 $('stand-list').innerHTML = STAND_LIST.map(s => `
-  <button class="choice" type="button" data-id="${s.id}"><b>${s.name}</b><small>${s.note}</small></button>`).join('');
+  <button class="choice m-menu__item m-menu__item--plain" type="button" data-id="${s.id}"><b>${s.name}</b><small>${s.note}</small></button>`).join('');
 function renderSetup() {
   for (const [list, key] of [['species-list', 'species'], ['pot-list', 'pot'], ['setting-list', 'setting']]) {
     $(list).querySelectorAll('.choice').forEach(b => b.setAttribute('aria-pressed', b.dataset.id === setup[key]));

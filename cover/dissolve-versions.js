@@ -1,6 +1,6 @@
 /* Written by the Dissolve Lab. The cover plays the version named by "active". */
 window.DISSOLVE_VERSIONS = {
-  "active": "mwf78y96",
+  "active": "mwio5odh",
   "versions": [
     {
       "id": "original",
@@ -34,6 +34,40 @@ window.DISSOLVE_VERSIONS = {
         "popAt": 2480,
         "rush": 120,
         "curve": 8,
+        "reach": 0.4,
+        "crumbs": 28,
+        "size": 1,
+        "life": 1180,
+        "gravityStart": 20,
+        "gravityEnd": 12000,
+        "gravityCurve": 4.2
+      }
+    },
+    {
+      "id": "mwinrk3t",
+      "name": "Panel Dissolve Tune 3 (starts at the click)",
+      "savedAt": "2026-11-16T02:45:00.000Z",
+      "config": {
+        "popAt": 2480,
+        "rush": 120,
+        "curve": 1.6,
+        "reach": 0.4,
+        "crumbs": 28,
+        "size": 1,
+        "life": 1180,
+        "gravityStart": 20,
+        "gravityEnd": 12000,
+        "gravityCurve": 4.2
+      }
+    },
+    {
+      "id": "mwio5odh",
+      "name": "Tune 4",
+      "savedAt": "2026-11-16T02:53:31.685Z",
+      "config": {
+        "popAt": 940,
+        "rush": 120,
+        "curve": 1.6,
         "reach": 0.4,
         "crumbs": 28,
         "size": 1,

@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Bouquet · Brian Studwell</title>
   <style>
+    @layer base, matte;
+    @import url("../../matte.css") layer(matte);   /* the Matte system, under this page's own layout rules */
+    @import url("../rig.css") layer(matte);        /* and what the rigs share on top of it */
     @font-face {
       font-family: "Geist";
       font-weight: 100 900;
@@ -24,7 +27,11 @@
       --right: 296px;
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    @layer base {
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      button, input, select { font: inherit; color: inherit; }
+      button { cursor: pointer; background: none; border: 0; }
+    }
     [hidden] { display: none !important; }
     html, body {
       height: 100%; overflow: hidden;
@@ -32,9 +39,6 @@
       font: 13px/1.45 "Geist", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
       -webkit-font-smoothing: antialiased;
     }
-    button, input, select { font: inherit; color: inherit; }
-    button { cursor: pointer; background: none; border: 0; }
-    :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
     #scene { position: fixed; top: 0; bottom: 0; left: 0; right: var(--right); width: calc(100% - var(--right)); height: 100%; display: block; touch-action: none; }
     #scene.is-grab { cursor: grab; }
@@ -45,71 +49,50 @@
       display: flex; align-items: center; gap: 14px; pointer-events: none;
     }
     .top > * { pointer-events: auto; }
-    .back { color: #575757; text-decoration: none; }
-    .back:hover { color: #272727; }
+    .back { color: #575757; }                                  /* a Matte legend, in ink here: the studio behind it is pale */
+    .matte a.back:hover { color: #272727; }
     .brand { font-size: 15px; font-weight: 650; letter-spacing: 0.01em; color: #272727; }
     .brand span { color: #656565; font-weight: 450; margin-left: 6px; }
-    body.is-window .back, body.is-window .brand { color: #e5e5e5; }
+    body.is-window .back, body.is-window .brand, body.is-window.matte a.back:hover { color: #e5e5e5; }
     body.is-window .brand span { color: #afafaf; }
 
     /* ---------- settings (right) ---------- */
     .side {
       position: fixed; z-index: 3; top: 0; bottom: 0; right: 0; width: var(--right);
       padding: 14px 14px 18px; overflow-y: auto; overscroll-behavior: contain;
-      background: #121212; border-left: 1px solid var(--line);
+      /* a Matte body docked to the right edge (.m-body--rack) */
       scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
     }
-    .side__title { font-size: 13px; font-weight: 600; margin-bottom: 8px; }
-    .side__sep { height: 1px; background: var(--line); margin: 14px -14px 12px; }
-    .side__note { color: var(--muted); font-size: 12px; margin-top: 8px; }
-    .field { width: 100%; height: 30px; padding: 0 9px; border-radius: 8px; border: 1px solid var(--line-strong); background: rgba(255, 255, 255, 0.04); }
-    .swatches { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
-    .swatch {
-      display: grid; justify-items: center; gap: 6px; padding: 9px 2px 8px; border-radius: 9px;
-      border: 1px solid var(--line); color: var(--muted); font-size: 11.5px;
-    }
-    .swatch i { display: block; width: 26px; height: 26px; border-radius: 50%; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12), inset -5px -6px 10px rgba(0, 0, 0, 0.28); }
-    .swatch:hover { color: var(--fg); background: rgba(255, 255, 255, 0.04); }
-    .swatch[aria-pressed="true"] { color: var(--fg); border-color: var(--accent); background: rgba(160, 160, 160, 0.08); }
-    .seg { display: flex; gap: 2px; padding: 2px; border-radius: 9px; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--line); }
-    .seg button { flex: 1; height: 28px; border-radius: 7px; font-size: 12px; color: var(--muted); white-space: nowrap; }
-    .seg button:hover { color: var(--fg); }
-    .seg button[aria-pressed="true"] { background: rgba(255, 255, 255, 0.12); color: var(--fg); }
-    .row { display: flex; gap: 6px; align-items: center; }
-    .btn {
-      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-      height: 30px; padding: 0 11px; border-radius: 8px; border: 1px solid var(--line-strong);
-      color: var(--fg); white-space: nowrap;
-    }
-    .btn:hover { background: rgba(255, 255, 255, 0.07); }
-    .btn:disabled { opacity: 0.4; cursor: default; background: none; }
+    .side__title { margin-bottom: 10px; }                      /* a Matte legend */
+    .side__sep { height: 2px; margin: 16px -14px 14px; background: linear-gradient(180deg, var(--m-well) 50%, rgb(255 255 255 / 0.055) 50%); }   /* a seam */
+    .side__note { color: var(--m-print-dim); font-size: 12px; margin-top: 10px; }
+    .swatches { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px 6px; }
+    .swatch { gap: 6px; padding: 9px 2px 7px; font-size: 8.5px; letter-spacing: 0.04em; }   /* a Matte tile key: the rose's colour over its name */
+    .swatch i { display: block; width: 26px; height: 26px; border-radius: 50%; box-shadow: 0 0 0 1px var(--m-edge), inset -5px -6px 10px rgba(0, 0, 0, 0.28); }
+    .seg button { white-space: nowrap; }                       /* a Matte segmented control */
+    .row { display: flex; gap: 8px; align-items: center; }
+    .btn { white-space: nowrap; }                              /* a Matte key; Add a rose is the primary */
     .btn--grow { flex: 1; }
-    .btn--primary { background: #e2e2e2; color: #171717; border-color: transparent; font-weight: 600; }
-    .btn--primary:hover { background: #fff; }
-    .slider { display: grid; gap: 4px; margin-top: 10px; }
-    .slider__head { display: flex; justify-content: space-between; color: var(--muted); font-size: 12px; }
-    .slider__head b { color: var(--fg); font-weight: 500; font-variant-numeric: tabular-nums; }
-    input[type="range"] { width: 100%; accent-color: var(--accent); }
-    .keys { color: var(--faint); font-size: 11px; line-height: 1.7; }
+    .slider { display: grid; gap: 6px; margin-top: 14px; }
+    .slider__head { display: flex; justify-content: space-between; align-items: baseline; }
+    .m-fader { width: 100%; }
+    .keys { color: var(--m-print-dim); font-size: 11px; line-height: 1.7; }
     .keys kbd { font: inherit; color: var(--muted); padding: 0 4px; border: 1px solid var(--line); border-radius: 4px; }
-    .credit { color: var(--faint); font-size: 11px; line-height: 1.5; }
-    .credit a { color: var(--muted); }
+    .credit { color: var(--m-print-dim); font-size: 11px; line-height: 1.5; }
+    .credit a { color: var(--m-print); }
 
     /* ---------- the bench: the stem in hand ---------- */
     .bench {
       position: fixed; z-index: 3; left: 16px; right: calc(var(--right) + 16px); bottom: calc(14px + env(safe-area-inset-bottom));
-      display: grid; gap: 8px; padding: 10px 12px; border-radius: 14px;
-      background: var(--panel); border: 1px solid var(--line);
-      backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
-      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+      display: grid; gap: 10px; padding: 12px 14px; border-radius: 14px;   /* a Matte body (.m-body) */
     }
     .bench__row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
     .bench__name { font-weight: 600; min-width: 0; flex: 1 1 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .bench__name small { color: var(--muted); font-weight: 450; margin-left: 6px; }
-    .knob { display: grid; grid-template-columns: auto 120px 68px; align-items: center; gap: 8px; color: var(--muted); font-size: 12px; }
-    .knob output { color: var(--fg); font-variant-numeric: tabular-nums; text-align: right; }
+    .bench__name small { color: var(--m-print-dim); font-weight: 450; margin-left: 6px; }
+    .knob { display: grid; grid-template-columns: auto 120px 68px; align-items: center; gap: 10px; }   /* a Matte legend, a fader and its read-out */
+    .knob output { text-align: right; text-transform: none; }
     .bench.is-empty .knob, .bench.is-empty .bench__acts { opacity: 0.35; pointer-events: none; }
-    .say { color: var(--muted); font-size: 12px; min-height: 17px; }
+    .say { color: var(--m-print-dim); font-size: 12px; min-height: 17px; }
 
     .loading {
       position: fixed; z-index: 5; left: 0; right: var(--right); top: 45%;
@@ -124,7 +107,7 @@
 
     @media (max-width: 820px) {
       :root { --right: 0px; }
-      .side { top: auto; height: 40vh; width: 100%; border-left: 0; border-top: 1px solid var(--line); }
+      .side { top: auto; height: 40vh; width: 100%; }
       #scene { bottom: 40vh; height: auto; }
       .bench { bottom: calc(40vh + 10px); left: 10px; right: 10px; }
       .knob { grid-template-columns: auto 1fr 40px; }
@@ -140,49 +123,49 @@
     }
   </script>
 </head>
-<body>
+<body class="matte">
   <canvas id="scene" aria-label="Roses in a glass vase"></canvas>
   <header class="top">
-    <a class="back" href="../" aria-label="Back to Rigs and Jigs">←<span> Rigs and Jigs</span></a>
+    <a class="back m-legend" href="../" aria-label="Back to Rigs and Jigs">←<span> Rigs and Jigs</span></a>
     <div class="brand">Bouquet<span>arrange roses in a glass vase</span></div>
   </header>
 
-  <aside class="side" aria-label="Flowers and vase">
-    <div class="side__title">Add a rose</div>
+  <aside class="side m-body--rack" aria-label="Flowers and vase">
+    <div class="side__title m-legend">Add a rose</div>
     <div class="swatches" id="varieties" role="group" aria-label="Colour"></div>
     <p class="side__note" id="variety-note"></p>
     <div class="slider">
-      <div class="slider__head"><span>Bloom</span><b id="new-bloom-out">Half open</b></div>
-      <input type="range" id="new-bloom" min="0" max="1" step="0.01" value="0.55" aria-label="Bloom of the next rose">
+      <div class="slider__head"><span class="m-legend">Bloom</span><b class="m-value" id="new-bloom-out">Half open</b></div>
+      <input class="m-fader" type="range" id="new-bloom" min="0" max="1" step="0.01" value="0.55" aria-label="Bloom of the next rose">
     </div>
     <div class="row" style="margin-top: 12px">
-      <button class="btn btn--primary btn--grow" id="add" type="button">Add a rose</button>
+      <button class="btn btn--primary btn--grow m-key m-key--lg m-key--primary" id="add" type="button">Add a rose</button>
     </div>
     <p class="side__note">Each one is a new specimen: its own petal count, sizes, leaves and stem, grown from a seed.</p>
 
     <div class="side__sep"></div>
-    <div class="side__title">Vase</div>
-    <div class="seg" id="mechanics" role="group" aria-label="Support in the vase">
+    <div class="side__title m-legend">Vase</div>
+    <div class="seg m-seg m-seg--fill" id="mechanics" role="group" aria-label="Support in the vase">
       <button type="button" data-mech="none">Free</button>
       <button type="button" data-mech="grid" aria-pressed="true">Tape grid</button>
     </div>
     <p class="side__note" id="mech-note"></p>
     <div class="slider">
-      <div class="slider__head"><span>Water</span><b id="water-out">Two thirds</b></div>
-      <input type="range" id="water" min="0.2" max="0.9" step="0.01" value="0.66" aria-label="Water level">
+      <div class="slider__head"><span class="m-legend">Water</span><b class="m-value" id="water-out">Two thirds</b></div>
+      <input class="m-fader" type="range" id="water" min="0.2" max="0.9" step="0.01" value="0.66" aria-label="Water level">
     </div>
 
     <div class="side__sep"></div>
-    <div class="side__title">Light</div>
-    <div class="seg" id="lights" role="group" aria-label="Light">
+    <div class="side__title m-legend">Light</div>
+    <div class="seg m-seg m-seg--fill" id="lights" role="group" aria-label="Light">
       <button type="button" data-light="studio" aria-pressed="true">Studio</button>
       <button type="button" data-light="window">Window</button>
     </div>
 
     <div class="side__sep"></div>
     <div class="row">
-      <button class="btn btn--grow" id="clear" type="button">Empty the vase</button>
-      <button class="btn btn--grow" id="refill" type="button">Start again</button>
+      <button class="btn btn--grow m-key" id="clear" type="button">Empty the vase</button>
+      <button class="btn btn--grow m-key" id="refill" type="button">Start again</button>
     </div>
 
     <div class="side__sep"></div>
@@ -195,22 +178,22 @@
     <p class="credit">Table and studio light from <a href="https://polyhaven.com" target="_blank" rel="noopener">Poly Haven</a> (CC0). The roses, glass, water and tape are generated.</p>
   </aside>
 
-  <section class="bench is-empty" id="bench" aria-label="Selected rose">
+  <section class="bench is-empty m-body" id="bench" aria-label="Selected rose">
     <div class="bench__row">
       <div class="bench__name" id="sel-name">No rose in hand<small>pick one up</small></div>
       <span class="bench__acts row">
-        <button class="btn" id="reroll" type="button" title="Swap for another specimen of the same colour, bloom and length">New specimen</button>
-        <button class="btn" id="remove" type="button" title="Take it out of the vase (Delete)">Take out</button>
+        <button class="btn m-key" id="reroll" type="button" title="Swap for another specimen of the same colour, bloom and length">New specimen</button>
+        <button class="btn m-key" id="remove" type="button" title="Take it out of the vase (Delete)">Take out</button>
       </span>
       <span class="row">
-        <button class="btn" id="undo" type="button" title="Undo (⌘Z)" disabled>Undo</button>
-        <button class="btn" id="redo" type="button" title="Redo (⇧⌘Z)" disabled>Redo</button>
+        <button class="btn m-key" id="undo" type="button" title="Undo (⌘Z)" disabled>Undo</button>
+        <button class="btn m-key" id="redo" type="button" title="Redo (⇧⌘Z)" disabled>Redo</button>
       </span>
     </div>
     <div class="bench__row">
-      <label class="knob">Bloom <input type="range" id="sel-bloom" min="0" max="1" step="0.01" aria-label="Bloom"><output id="sel-bloom-out"></output></label>
-      <label class="knob">Cut to <input type="range" id="sel-length" min="0.26" max="0.6" step="0.005" aria-label="Stem length"><output id="sel-length-out"></output></label>
-      <label class="knob">Face <input type="range" id="sel-twist" min="-180" max="180" step="1" aria-label="Turn the face"><output id="sel-twist-out"></output></label>
+      <label class="knob m-legend">Bloom <input class="m-fader" type="range" id="sel-bloom" min="0" max="1" step="0.01" aria-label="Bloom"><output class="m-value" id="sel-bloom-out"></output></label>
+      <label class="knob m-legend">Cut to <input class="m-fader" type="range" id="sel-length" min="0.26" max="0.6" step="0.005" aria-label="Stem length"><output class="m-value" id="sel-length-out"></output></label>
+      <label class="knob m-legend">Face <input class="m-fader" type="range" id="sel-twist" min="-180" max="180" step="1" aria-label="Turn the face"><output class="m-value" id="sel-twist-out"></output></label>
     </div>
     <div class="say" id="say" aria-live="polite"></div>
   </section>

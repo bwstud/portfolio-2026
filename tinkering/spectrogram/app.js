@@ -153,8 +153,8 @@ const paint = (input) => input.style.setProperty('--p', `${((input.value - input
 
 function slider({ label, get, set, min, max, step = 0.01, log = false, fmt, disabled = false }) {
   const id = `f${++uid}`;
-  const out = el('span', { class: 'field__value' });
-  const input = el('input', { type: 'range', id });
+  const out = el('span', { class: 'field__value m-value' });
+  const input = el('input', { class: 'm-fader', type: 'range', id });
   let toS, fromS;
   if (log) {
     Object.assign(input, { min: 0, max: 1000, step: 1 });
@@ -176,14 +176,14 @@ function slider({ label, get, set, min, max, step = 0.01, log = false, fmt, disa
   input.addEventListener('input', () => { set(fromS(+input.value)); show(); });
   sync();
   const node = el('div', { class: 'field' },
-    el('div', { class: 'field__top' }, el('label', { class: 'field__label', for: id, text: label }), out),
+    el('div', { class: 'field__top' }, el('label', { class: 'field__label m-legend', for: id, text: label }), out),
     input);
   node.sync = sync;
   return node;
 }
 
 function seg(label, options, get, set) {
-  const wrap = el('div', { class: 'seg', role: 'group', 'aria-label': label });
+  const wrap = el('div', { class: 'seg m-seg m-seg--fill', role: 'group', 'aria-label': label });
   const sync = () => {
     for (const b of wrap.children) b.setAttribute('aria-pressed', String(b.dataset.v === String(get())));
   };
@@ -198,12 +198,12 @@ function seg(label, options, get, set) {
 }
 
 function field(label, control) {
-  return el('div', { class: 'field' }, el('div', { class: 'field__top' }, el('span', { class: 'field__label', text: label })), control);
+  return el('div', { class: 'field' }, el('div', { class: 'field__top' }, el('span', { class: 'field__label m-legend', text: label })), control);
 }
 
 function toggle(label, get, set) {
   const b = el('button', { class: 'switch', type: 'button', role: 'switch' },
-    el('span', { text: label }), el('span', { class: 'switch__track', 'aria-hidden': 'true' }));
+    el('span', { class: 'm-legend', text: label }), el('span', { class: 'switch__track m-switch m-switch--sm', 'aria-hidden': 'true' }));
   const sync = () => b.setAttribute('aria-checked', String(!!get()));
   b.addEventListener('click', () => { set(!get()); sync(); });
   sync();
@@ -213,7 +213,7 @@ function toggle(label, get, set) {
 function group(title, end, ...kids) {
   return el('section', { class: 'group' },
     el('div', { class: 'group__head' },
-      el('h3', { class: 'group__title', text: title }),
+      el('h3', { class: 'group__title m-legend m-legend--lg', text: title }),
       end ? el('div', { class: 'group__end' }, end) : null),
     ...kids);
 }
@@ -222,7 +222,7 @@ function hint(text) { return el('p', { class: 'hint', text }); }
 
 function choices(cls, options, get, set) {
   return el('div', { class: cls }, ...options.map(([id, name, title]) => el('button', {
-    class: 'btn', type: 'button', text: name, title, 'aria-pressed': String(get() === id), onclick: () => set(id),
+    class: 'btn m-key', type: 'button', text: name, title, 'aria-pressed': String(get() === id), onclick: () => set(id),
   })));
 }
 
@@ -280,16 +280,16 @@ function sourceControls() {
       k.push(hint('Frequency modulation grows sidebands either side of the carrier, spaced by the modulator. Whole-number ratios sound like notes; others sound like bells.'));
       break;
     case 'phone':
-      k.push(field('Number to dial', el('input', { class: 'text', type: 'text', value: p.number, maxlength: 20, inputmode: 'tel', 'aria-label': 'Number to dial', oninput: (e) => { p.number = e.target.value; } })));
+      k.push(field('Number to dial', el('input', { class: 'text m-input m-input--sm', type: 'text', value: p.number, maxlength: 20, inputmode: 'tel', 'aria-label': 'Number to dial', oninput: (e) => { p.number = e.target.value; } })));
       sl({ label: 'Dialling speed', min: 0.4, max: 3, log: true, get: () => p.speed, set: (v) => { p.speed = v; }, fmt: fmtX });
       k.push(hint('Each key on a phone sends two tones at once, one for its row and one for its column. You can read the number back off the picture.'));
       break;
     case 'message':
-      k.push(field('Message', el('input', { class: 'text', type: 'text', value: p.text, maxlength: 32, 'aria-label': 'Message', oninput: (e) => { p.text = e.target.value; } })));
+      k.push(field('Message', el('input', { class: 'text m-input m-input--sm', type: 'text', value: p.text, maxlength: 32, 'aria-label': 'Message', oninput: (e) => { p.text = e.target.value; } })));
       sl({ label: 'Lowest', min: 100, max: 20000, log: true, get: () => p.low, set: (v) => { p.low = Math.min(v, p.high - 100); }, fmt: fmtHz });
       sl({ label: 'Highest', min: 200, max: 23000, log: true, get: () => p.high, set: (v) => { p.high = Math.max(v, p.low + 100); }, fmt: fmtHz });
       sl({ label: 'Time per letter', min: 0.2, max: 3, log: true, get: () => p.perChar, set: (v) => { p.perChar = v; }, fmt: fmtS });
-      k.push(el('div', { class: 'row' }, el('button', { class: 'btn', type: 'button', text: 'Fit the view to the message', onclick: () => {
+      k.push(el('div', { class: 'row' }, el('button', { class: 'btn m-key', type: 'button', text: 'Fit the view to the message', onclick: () => {
         Object.assign(V, { scale: 'linear', fmin: Math.max(0, p.low - (p.high - p.low) * 0.2), fmax: Math.min(24000, p.high + (p.high - p.low) * 0.2) });
         renderView();
       } })));
@@ -311,7 +311,7 @@ function sourceControls() {
       break;
     case 'file':
       k.push(hint(p.data ? `Playing ${p.name}, ${fmtClock(p.data.length / SR)} long, on a loop.` : 'Choose an audio file, or drop one on the picture. It stays on this computer.'));
-      k.push(el('div', { class: 'row' }, el('button', { class: 'btn', type: 'button', text: p.data ? 'Choose another file' : 'Choose a file', onclick: () => $('file').click() })));
+      k.push(el('div', { class: 'row' }, el('button', { class: 'btn m-key', type: 'button', text: p.data ? 'Choose another file' : 'Choose a file', onclick: () => $('file').click() })));
       break;
     case 'mic':
       k.push((micText = hint(mic ? 'Listening. Talk, whistle or play something near the microphone.' : 'Asking for the microphone…')));
@@ -326,7 +326,7 @@ function renderSound() {
   const panel = $('panel-sound');
   panel.replaceChildren();
   panel.append(group('Presets', null,
-    el('div', { class: 'presets' }, ...PRESETS.map((pr) => el('button', { class: 'preset', type: 'button', text: pr.name, onclick: () => applyPreset(pr) })))));
+    el('div', { class: 'presets' }, ...PRESETS.map((pr) => el('button', { class: 'preset m-key', type: 'button', text: pr.name, onclick: () => applyPreset(pr) })))));
   panel.append(group('Source', null, choices('sources', SOURCE_LIST, () => S.source, (v) => setSource(v))));
   const ctl = sourceControls();
   if (ctl.length) panel.append(group(SOURCES[S.source]?.name || 'Microphone', null, ...ctl));
@@ -468,7 +468,7 @@ function renderStyle() {
   const panel = $('panel-style');
   panel.replaceChildren();
   const pals = el('div', { class: 'swatches swatches--pal' }, ...PALETTES.map((p) => el('button', {
-    class: 'swatch', type: 'button', 'aria-pressed': String(ST.palette === p.id),
+    class: 'swatch m-key m-key--tile', type: 'button', 'aria-pressed': String(ST.palette === p.id),
     onclick: () => { ST.palette = p.id; paletteChanged(); renderStyle(); },
   }, el('span', { class: 'swatch__bar', style: `--g:${gradientCss(p.stops || ST.custom)}`, 'aria-hidden': 'true' }), p.name)));
   const custom = ST.palette === 'custom'

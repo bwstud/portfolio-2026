@@ -105,7 +105,7 @@
     Matte.init();
     // The sheet's settings and their starting values: the same list as TUNE in work.html, which is what the site
     // falls back to. A version stores only what differs from these.
-    const DEFAULTS = { rest: 40, past: 0, outMs: 300, backMs: 300, outDelay: 0, backDelay: 0, outX1: 0.3, outY1: 0, outX2: 0, outY2: 1, backX1: 0.3, backY1: 0, backX2: 0, backY2: 1, arriveX1: 0.42, arriveY1: 0, arriveX2: 0.58, arriveY2: 1, leaveX1: 0.3, leaveY1: 0, leaveX2: 0, leaveY2: 1, arriveMs: 700, arriveStart: 1, arriveEnd: 1, leaveMs: 520, dim: 0.5, peekDim: 0, cue: 40, radius: 16 };
+    const DEFAULTS = { rest: 40, past: 0, outMs: 300, backMs: 300, outDelay: 0, backDelay: 0, outX1: 0.3, outY1: 0, outX2: 0, outY2: 1, backX1: 0.3, backY1: 0, backX2: 0, backY2: 1, arriveX1: 0.42, arriveY1: 0, arriveX2: 0.58, arriveY2: 1, leaveX1: 0.3, leaveY1: 0, leaveX2: 0, leaveY2: 1, arriveMs: 700, arriveStart: 1, arriveEnd: 1, leaveMs: 520, dim: 0.5, peekDim: 0, cue: 40, radius: 16, blur: 14, focusMs: 900, focusWait: 0 };
     // [key, label, min, max, step], in groups. A group with a third entry has an easing curve, drawn from the four
     // handles whose keys start with it.
     const handles = (move) => [[move + 'X1', 'First handle, across', 0, 1, 0.01], [move + 'Y1', 'First handle, up', -1, 2, 0.01],
@@ -132,6 +132,11 @@
         ['arriveStart', 'Slow start, drawn out', 1, 10, 0.1],
         ...handles('arrive'),
       ], 'arrive'],
+      ['The pictures coming into focus', [
+        ['blur', 'Blur they start with, px', 0, 60, 1],
+        ['focusMs', 'Takes, ms', 0, 5000, 10],
+        ['focusWait', 'Waits before starting, ms', 0, 3000, 10],
+      ]],
       ['Leaving', [['leaveMs', 'Takes, ms', 120, 1500, 10], ...handles('leave')], 'leave'],
     ];
     const CURVES = GROUPS.filter((g) => g[2]).map((g) => g[2]);
@@ -154,7 +159,7 @@
     const page = () => { try { return $('page').contentWindow.sheetLab; } catch (e) { return null; } };
     let slow = false;
     // slow motion stretches every time by four, on the stage only: what is saved is the faders' values
-    const staged = () => slow ? { ...config, outMs: config.outMs * 4, backMs: config.backMs * 4, arriveMs: config.arriveMs * 4, leaveMs: config.leaveMs * 4, outDelay: config.outDelay * 4, backDelay: config.backDelay * 4 } : config;
+    const staged = () => slow ? { ...config, outMs: config.outMs * 4, backMs: config.backMs * 4, arriveMs: config.arriveMs * 4, focusMs: config.focusMs * 4, focusWait: config.focusWait * 4, leaveMs: config.leaveMs * 4, outDelay: config.outDelay * 4, backDelay: config.backDelay * 4 } : config;
     function push() {
       for (const m of CURVES) {
         const svg = $('curve-' + m);

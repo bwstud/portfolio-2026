@@ -186,7 +186,7 @@ function renderSide(def) {
     ${def.ask?.length ? `<h3>Bring these to Claude</h3><ul class="ask">${def.ask.map(a => `<li>${a}</li>`).join('')}</ul>` : ''}
     ${def.more ? `<h3>Go deeper</h3><div class="lesson">${def.more}</div>` : ''}
     <h3>Your notes</h3>
-    <div class="notes"><textarea id="notes" placeholder="What clicked, what didn't, what you want to ask. Saved in this browser.">${note.replace(/</g, '&lt;')}</textarea></div>
+    <div class="notes"><textarea class="m-input" id="notes" placeholder="What clicked, what didn't, what you want to ask. Saved in this browser.">${note.replace(/</g, '&lt;')}</textarea></div>
   `;
   side.scrollTop = 0;
   $('notes').addEventListener('input', e => { saved.notes[def.id] = e.target.value; persist(); });
@@ -195,7 +195,7 @@ function renderSide(def) {
   box.onchange = () => { saved.done[def.id] = box.checked; persist(); renderNav(def.id); };
   const i = LESSONS.findIndex(l => l.id === def.id);
   const prev = LESSONS[i - 1], next = LESSONS[i + 1];
-  $('pager').innerHTML = `${prev ? `<a class="btn" href="#${prev.id}">← Back</a>` : ''}${next ? `<a class="btn primary" href="#${next.id}">Next: ${next.short || next.title}</a>` : ''}`;
+  $('pager').innerHTML = `${prev ? `<a class="btn m-key" href="#${prev.id}">← Back</a>` : ''}${next ? `<a class="btn primary m-key m-key--primary" href="#${next.id}">Next: ${next.short || next.title}</a>` : ''}`;
   for (const a of $('pager').querySelectorAll('a')) a.style.textDecoration = 'none';
 }
 

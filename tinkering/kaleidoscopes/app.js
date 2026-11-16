@@ -33,7 +33,7 @@ function scopeTiles() {
   for (const cfg of state.configs) {
     const b = document.createElement('button');
     b.type = 'button';
-    b.className = 'tile';
+    b.className = 'tile m-key m-key--tile m-key--plain';
     b.dataset.id = cfg.id;
     b.title = cfg.about || cfg.name;
     b.setAttribute('aria-pressed', String(cfg === state.config));
@@ -83,7 +83,7 @@ function pictureTiles() {
   for (const g of GALLERY) {
     const b = document.createElement('button');
     b.type = 'button';
-    b.className = 'tile tile--pic';
+    b.className = 'tile tile--pic m-key m-key--tile m-key--plain';
     b.dataset.id = g.id;
     b.title = `${g.title}, ${g.by}`;
     b.setAttribute('aria-pressed', 'false');

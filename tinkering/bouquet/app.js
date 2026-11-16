@@ -704,7 +704,7 @@ function buildVarietyUi() {
   const box = $('varieties');
   for (const [id, V] of Object.entries(VARIETIES)) {
     const b = document.createElement('button');
-    b.type = 'button'; b.className = 'swatch'; b.dataset.variety = id;
+    b.type = 'button'; b.className = 'swatch m-key m-key--tile'; b.dataset.variety = id;
     b.innerHTML = `<i style="background: radial-gradient(circle at 35% 30%, ${V.petals.edge}, ${V.petals.face} 55%, ${V.petals.back})"></i>${V.name}`;
     b.addEventListener('click', () => setVariety(id));
     box.appendChild(b);

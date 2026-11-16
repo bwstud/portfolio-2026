@@ -502,7 +502,7 @@ function buildShots() {
 function venueButtons(el, onPick) {
   el.innerHTML = '';
   for (const [id, v] of Object.entries(VENUES)) {
-    const b = document.createElement('button'); b.type = 'button'; b.className = 'venue'; b.dataset.venue = id;
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'venue m-key m-key--tile'; b.dataset.venue = id;
     b.innerHTML = `<i style="background:${v.swatch}"></i><b>${v.name}</b><small>${v.city.split(',')[0]} · ${v.cap.toLocaleString()}</small>`;
     b.title = v.note;
     b.addEventListener('click', () => onPick(id));
@@ -523,7 +523,7 @@ const SRC = [
 function sourceButtons(el, detail, live) {
   el.innerHTML = '';
   for (const [id, label, icon] of SRC) {
-    const b = document.createElement('button'); b.type = 'button'; b.dataset.src = id;
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'm-key m-key--tile'; b.dataset.src = id;
     b.innerHTML = `<svg viewBox="0 0 20 20">${icon}</svg>${label}`;
     b.addEventListener('click', () => { S.srcTab = id; syncSourceUI(); if (live && id === 'demo' && S.source.kind !== 'demo') setSource({ kind: 'demo' }, { rebuild: true }); if (live && id === 'silent' && S.source.kind !== 'silent') setSource({ kind: 'silent', duration: 210 }); });
     el.append(b);
@@ -545,7 +545,7 @@ function sourceDetail(el, live) {
     drop.addEventListener('dragleave', () => drop.classList.remove('is-over'));
     drop.addEventListener('drop', e => { e.preventDefault(); drop.classList.remove('is-over'); take(e.dataTransfer.files[0]); });
   } else if (tab === 'link') {
-    el.innerHTML = `<div class="row" style="flex-wrap:nowrap"><input class="text" type="url" placeholder="Paste a YouTube or Spotify link" aria-label="Song link"><button class="btn btn--accent" type="button">Load</button></div><p class="hint">These play in their own players, which don't let the page hear the audio. The show follows the beat grid: tap the tempo in, or let the mic listen.</p>`;
+    el.innerHTML = `<div class="row" style="flex-wrap:nowrap"><input class="text m-input m-input--sm" type="url" placeholder="Paste a YouTube or Spotify link" aria-label="Song link"><button class="btn btn--accent m-key m-key--accent" type="button">Load</button></div><p class="hint">These play in their own players, which don't let the page hear the audio. The show follows the beat grid: tap the tempo in, or let the mic listen.</p>`;
     const input = el.querySelector('input'), go = el.querySelector('button');
     if (S.source.url) input.value = S.source.url;
     const load = () => { const l = A.parseLink(input.value); if (!l) { setStatus('That doesn’t look like a YouTube video or a Spotify track link.', true); return; } pendingSource = { ...l, url: input.value.trim() }; if (live) setSource(pendingSource, { rebuild: true }); else setStatus(`Ready: ${l.kind === 'youtube' ? 'YouTube video' : 'Spotify track'}`); };
@@ -593,7 +593,7 @@ function tap() {
     }
   } else $('tempo-say').textContent = `Keep tapping… ${taps.length}`;
   clearTimeout(tapT); tapT = setTimeout(() => { if (taps.length >= 4) commit('Tap tempo'); taps = []; }, 2200);
-  const dot = $('beatdot'); dot.style.background = 'var(--accent)'; setTimeout(() => { dot.style.background = ''; }, 90);
+  const dot = $('beatdot'); dot.style.background = 'var(--m-signal)'; setTimeout(() => { dot.style.background = ''; }, 90);
 }
 
 /* ---------- UI: the cue editor ---------- */
@@ -639,7 +639,7 @@ function renderCue() {
     wrap.className = 'group' + (openGroups.has(g.id) ? ' is-open' : '');
     const lvl = g.id === 'atmos' ? `Haze ${Math.round(val.haze * 100)}%` : val.level > 0.001 ? `${Math.round(val.level * 100)}%` : 'Off';
     const head = document.createElement('button'); head.type = 'button';
-    head.innerHTML = `<span class="dot" style="background:${g.id === 'atmos' || val.level > 0.001 ? 'var(--accent)' : ''}"></span><b>${g.name}</b><span class="lv">${lvl}</span><span class="caret">›</span>`;
+    head.innerHTML = `<span class="dot" style="${g.id === 'atmos' || val.level > 0.001 ? 'background:var(--m-signal);box-shadow:0 0 5px var(--m-signal)' : ''}"></span><b>${g.name}</b><span class="lv">${lvl}</span><span class="caret">›</span>`;
     head.setAttribute('aria-expanded', openGroups.has(g.id));
     head.addEventListener('click', () => { wrap.classList.toggle('is-open'); const o = wrap.classList.contains('is-open'); o ? openGroups.add(g.id) : openGroups.delete(g.id); head.setAttribute('aria-expanded', o); });
     const body = document.createElement('div');
@@ -647,7 +647,7 @@ function renderCue() {
     if (mine.length) {
       const gi = custom.indexOf.bind(custom);
       const pick = document.createElement('div'); pick.className = 'field';
-      pick.innerHTML = `<div class="label">Settings for</div><div class="seg seg--groups"></div>`;
+      pick.innerHTML = `<div class="label m-legend">Settings for</div><div class="seg seg--groups m-seg m-seg--wrap"></div>`;
       seg(pick.querySelector('.seg'), [['', `All ${g.name.toLowerCase()}`], ...mine.map(x => [x.id, x.name])], target, v => { groupTarget[g.id] = v; renderCue(); });
       // the group's colour from the plan, on its chip
       [...pick.querySelectorAll('.seg button')].slice(1).forEach((b, k) => b.style.setProperty('--hue', GROUP_HUES[gi(mine[k]) % GROUP_HUES.length]));
@@ -656,7 +656,7 @@ function renderCue() {
         const n = Object.keys(own).length;
         body.insertAdjacentHTML('beforeend', `<p class="hint">Only what you change here applies to ${mine.find(x => x.id === target).name}; the rest follows all ${g.name.toLowerCase()}. ${n ? `${n} setting${n === 1 ? '' : 's'} of its own.` : ''}</p>`);
         if (n) {
-          const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.style.marginTop = '8px'; b.textContent = `Match all ${g.name.toLowerCase()}`;
+          const b = document.createElement('button'); b.type = 'button'; b.className = 'btn m-key'; b.style.marginTop = '8px'; b.textContent = `Match all ${g.name.toLowerCase()}`;
           b.addEventListener('click', () => { editLook(L => { delete L.groups[target]; if (!Object.keys(L.groups).length) delete L.groups; }, `${g.name}: match all`); renderCue(); });
           body.append(b);
         }
@@ -666,11 +666,11 @@ function renderCue() {
       const fl = document.createElement('div'); fl.className = 'field';
       const mark = own && f.key in own ? ' <span class="own">own</span>' : '';
       if (f.type === 'seg') {
-        fl.innerHTML = `<div class="label"><span>${f.label}${mark}</span></div><div class="seg"></div>`;
+        fl.innerHTML = `<div class="label m-legend"><span>${f.label}${mark}</span></div><div class="seg m-seg m-seg--wrap"></div>`;
         seg(fl.querySelector('.seg'), f.options, val[f.key], v => { editLook(L => write(L, f.key, v), `${g.name}${who}: ${f.label.toLowerCase()}`); if (target) renderCue(); else refreshHead(); });
       } else {
         const show = v => f.key === 'count' ? String(v) : `${Math.round(v * 100)}%`;
-        fl.innerHTML = `<div class="label"><span>${f.label}${mark}</span> <output>${show(val[f.key])}</output></div><input type="range" min="${f.min}" max="${f.max}" step="${f.step}" value="${val[f.key]}" aria-label="${g.name}${who} ${f.label}">`;
+        fl.innerHTML = `<div class="label m-legend"><span>${f.label}${mark}</span> <output>${show(val[f.key])}</output></div><input class="m-fader" type="range" min="${f.min}" max="${f.max}" step="${f.step}" value="${val[f.key]}" aria-label="${g.name}${who} ${f.label}">`;
         const inp = fl.querySelector('input'), out = fl.querySelector('output');
         inp.addEventListener('input', () => { const v = Number(inp.value); out.textContent = show(v); editLook(L => write(L, f.key, v)); refreshHead(); });
         inp.addEventListener('change', () => { commit(`${g.name}${who}: ${f.label.toLowerCase()}`); if (target && !mark) renderCue(); });
@@ -690,7 +690,7 @@ function renderCue() {
 function buildPresets() {
   const el = $('presets'); el.innerHTML = '';
   for (const [id, p] of Object.entries(PRESETS)) {
-    const b = document.createElement('button'); b.type = 'button';
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'm-key m-key--tile';
     const cols = p.look.palette || PALETTES.ice.colors;
     b.innerHTML = `<i style="background:${id === 'blackout' ? '#0c0d10' : grad(cols)}"></i>${p.name}`;
     b.addEventListener('click', () => {
@@ -799,7 +799,7 @@ function syncClock(t, beat) {
   $('barbeat').textContent = barBeat(beat);
   $('playhead').style.left = `${xOf(beat)}px`;
   $('beatdot').style.opacity = transport?.playing ? 0.35 + 0.65 * Math.exp(-fract(beat) * 5) : 0.35;
-  if (!$('beatdot').style.background) $('beatdot').style.background = 'rgba(255,255,255,0.7)';
+  if (!$('beatdot').style.background) $('beatdot').style.background = 'var(--m-lit)';
 }
 function syncPlay() {
   const p = !!transport?.playing;
@@ -817,7 +817,7 @@ function renderVersions() {
     const tot = Math.max(1, v.prog.cues.at(-1)?.at || 1);
     const strip = v.prog.cues.map((c, k) => { const nx = v.prog.cues[k + 1]?.at ?? tot + 8; return `<span style="flex:${Math.max(0.5, nx - c.at)};background:${cueColours(c)}"></span>`; }).join('');
     const when = new Date(v.savedAt).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
-    d.innerHTML = `<div><b></b><small>${VENUES[v.venue]?.name || v.venue} · ${v.prog.cues.length} cues · ${when}</small></div><div class="row"><button class="btn" type="button" data-load>Load</button><button class="btn btn--danger" type="button" data-del aria-label="Delete">✕</button></div><div class="strip">${strip}</div>`;
+    d.innerHTML = `<div><b></b><small>${VENUES[v.venue]?.name || v.venue} · ${v.prog.cues.length} cues · ${when}</small></div><div class="row"><button class="btn m-key" type="button" data-load>Load</button><button class="btn btn--danger m-key" type="button" data-del aria-label="Delete">✕</button></div><div class="strip">${strip}</div>`;
     d.querySelector('b').textContent = v.name;
     d.querySelector('[data-load]').addEventListener('click', () => loadVersion(v));
     d.querySelector('[data-del]').addEventListener('click', () => {

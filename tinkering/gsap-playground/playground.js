@@ -233,7 +233,7 @@ function open(id) {
   els.lesson.innerHTML = `
     <header class="lesson__head">
       <h1 class="lesson__title">${l.title}</h1>
-      <span class="chip" title="Official GSAP skill installed for Claude">${l.skill}</span>
+      <span class="chip m-tag m-tag--print" title="Official GSAP skill installed for Claude">${l.skill}</span>
     </header>
     <div class="lesson__notes">${l.notes}</div>
     <h2 class="lesson__sub">Try this</h2>

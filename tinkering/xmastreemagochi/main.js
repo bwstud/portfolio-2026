@@ -57,7 +57,7 @@ addEventListener('resize', () => {
 /* ---------- UI helpers ---------- */
 function toast(text, kind = '', ms = 4200) {
   const el = document.createElement('div');
-  el.className = `toast ${kind}`;
+  el.className = `toast m-toast ${kind}`;
   el.textContent = text;
   $('#toasts').prepend(el);
   while ($('#toasts').children.length > 3) $('#toasts').lastChild.remove();
@@ -271,16 +271,16 @@ function renderInspect() {
         ${facts.map(([k, v]) => {
           const test = TESTS[k];
           const done = view.tested[k];
-          return `<div class="fact ${done ? 'hot' : ''}"><b>${k}</b>${test && !done ? `<button class="btn small" data-test="${k}">${test}</button>` : `<span>${done || v}</span>`}</div>`;
+          return `<div class="fact ${done ? 'hot' : ''}"><b>${k}</b>${test && !done ? `<button class="btn small m-key" data-test="${k}">${test}</button>` : `<span>${done || v}</span>`}</div>`;
         }).join('')}
       </div>
       <div class="row">
-        <button class="btn small" data-act="close">${view.close ? 'Step back' : 'Look closely at the needles'}</button>
-        <button class="btn small" data-act="spin">Turn it around</button>
+        <button class="btn small m-key" data-act="close">${view.close ? 'Step back' : 'Look closely at the needles'}</button>
+        <button class="btn small m-key" data-act="spin">Turn it around</button>
       </div>
     </div>
-    <button class="btn primary" data-act="buy">Take it home · $${s.price}</button>
-    <button class="btn" data-act="back">Back to the lot</button>`;
+    <button class="btn primary m-key m-key--lg m-key--primary" data-act="buy">Take it home · $${s.price}</button>
+    <button class="btn m-key" data-act="back">Back to the lot</button>`;
 }
 
 function testTree(name) {
@@ -536,19 +536,19 @@ function renderSide() {
     side.innerHTML = `
       <h3>${t.setupDone ? 'Stand and skirt' : 'Set up your tree'}</h3>
       <div class="steps">${[0, 1, 2].map(i => `<span class="${i <= step ? 'on' : ''}"></span>`).join('')}</div>
-      <div class="seg">${['Stand', 'Skirt', 'Turn'].map((n, i) => `<button data-step="${i}" aria-pressed="${i === step}">${n}</button>`).join('')}</div>
+      <div class="seg m-seg m-seg--fill">${['Stand', 'Skirt', 'Turn'].map((n, i) => `<button data-step="${i}" aria-pressed="${i === step}">${n}</button>`).join('')}</div>
       <div class="scroll">
         ${step === 0 ? `<p class="muted">Pick a stand. Bigger wells mean fewer trips with the watering can.</p>
-          <div class="options">${Object.entries(STANDS).map(([id, s]) => `<button class="opt" data-stand="${id}" aria-pressed="${t.standId === id}"><span>${s.name}</span><small>${s.note}</small></button>`).join('')}</div>` : ''}
+          <div class="options">${Object.entries(STANDS).map(([id, s]) => `<button class="opt m-menu__item m-menu__item--plain" data-stand="${id}" aria-pressed="${t.standId === id}"><span>${s.name}</span><small>${s.note}</small></button>`).join('')}</div>` : ''}
         ${step === 1 ? `<p class="muted">A skirt hides the stand and catches needles.</p>
           <div class="swatches">${SKIRTS.map(s => `<button class="swatch ${s.id === 'none' ? 'none' : ''}" data-skirt="${s.id}" aria-pressed="${t.skirtId === s.id}" style="${s.id !== 'none' ? `background-image:url(${swatch(s.id)})` : ''}"><span>${s.name}</span></button>`).join('')}</div>` : ''}
         ${step === 2 ? `<p class="muted">Every tree has a good side. ${t.spec.bare > 0.3 ? 'This one is thin on one side: turn that to the wall.' : 'This one is fairly even.'}</p>
-          <label class="slider"><span class="top-line"><span>Turn the tree</span><span>${Math.round(((t.turn * 180) / Math.PI + 360) % 360)}°</span></span><input type="range" min="0" max="360" step="1" value="${Math.round(((t.turn * 180) / Math.PI + 360) % 360)}" data-turn></label>
-          ${t.spec.bare > 0.3 ? '<button class="btn small" data-act="bareToWall">Thin side to the corner</button>' : ''}` : ''}
+          <label class="slider"><span class="top-line"><span class="m-legend">Turn the tree</span><span class="m-value">${Math.round(((t.turn * 180) / Math.PI + 360) % 360)}°</span></span><input class="m-fader" type="range" min="0" max="360" step="1" value="${Math.round(((t.turn * 180) / Math.PI + 360) % 360)}" data-turn></label>
+          ${t.spec.bare > 0.3 ? '<button class="btn small m-key" data-act="bareToWall">Thin side to the corner</button>' : ''}` : ''}
       </div>
       <div class="row">
-        ${step > 0 ? '<button class="btn" data-step="' + (step - 1) + '">Back</button>' : ''}
-        ${step < 2 ? `<button class="btn primary" data-step="${step + 1}" ${!t.standId ? 'disabled' : ''}>Next</button>` : '<button class="btn primary" data-act="setupDone">Done</button>'}
+        ${step > 0 ? '<button class="btn m-key" data-step="' + (step - 1) + '">Back</button>' : ''}
+        ${step < 2 ? `<button class="btn primary m-key m-key--lg m-key--primary" data-step="${step + 1}" ${!t.standId ? 'disabled' : ''}>Next</button>` : '<button class="btn primary m-key m-key--lg m-key--primary" data-act="setupDone">Done</button>'}
       </div>`;
   } else if (tool === 'water') {
     const cap = STANDS[t.standId].capacity;
@@ -580,21 +580,21 @@ function renderLights() {
   }[V.method];
   $('#side').innerHTML = `<h3>Lights and garland</h3>
     <div class="scroll">
-      <div class="options">${Object.entries(STRANDS).map(([id, s]) => `<button class="opt" data-strand="${id}" aria-pressed="${V.type === id}"><span>${s.name}</span><small>${s.note}</small></button>`).join('')}</div>
-      <div class="label">How to hang it</div>
-      <div class="seg">${[['spiral', 'Wrap'], ['swags', 'Swags'], ['drops', 'Drops'], ['draw', 'Hand-place']].map(([id, n]) => `<button data-method="${id}" aria-pressed="${V.method === id}">${n}</button>`).join('')}</div>
+      <div class="options">${Object.entries(STRANDS).map(([id, s]) => `<button class="opt m-menu__item m-menu__item--plain" data-strand="${id}" aria-pressed="${V.type === id}"><span>${s.name}</span><small>${s.note}</small></button>`).join('')}</div>
+      <div class="label m-legend">How to hang it</div>
+      <div class="seg m-seg m-seg--fill">${[['spiral', 'Wrap'], ['swags', 'Swags'], ['drops', 'Drops'], ['draw', 'Hand-place']].map(([id, n]) => `<button data-method="${id}" aria-pressed="${V.method === id}">${n}</button>`).join('')}</div>
       ${V.method === 'draw' ? `<p class="muted">Click points on the tree to run the strand through the branches. ${V.draw.length} points so far.</p>` : ''}
-      ${V.method === 'spiral' ? `<div class="seg"><button data-dir="1" aria-pressed="${V.dir === 1}">Clockwise</button><button data-dir="-1" aria-pressed="${V.dir === -1}">Counter-clockwise</button></div>` : ''}
-      ${sliders.map(([k, n, a, b, s]) => `<label class="slider"><span class="top-line"><span>${n}</span><span>${V[k]}</span></span><input type="range" min="${a}" max="${b}" step="${s}" value="${V[k]}" data-lp="${k}"></label>`).join('')}
+      ${V.method === 'spiral' ? `<div class="seg m-seg m-seg--fill"><button data-dir="1" aria-pressed="${V.dir === 1}">Clockwise</button><button data-dir="-1" aria-pressed="${V.dir === -1}">Counter-clockwise</button></div>` : ''}
+      ${sliders.map(([k, n, a, b, s]) => `<label class="slider"><span class="top-line"><span class="m-legend">${n}</span><span class="m-value">${V[k]}</span></span><input class="m-fader" type="range" min="${a}" max="${b}" step="${s}" value="${V[k]}" data-lp="${k}"></label>`).join('')}
       <p class="faint">${len.toFixed(1)} m of ${T.kind === 'garland' ? 'garland' : 'wire'}: about ${Math.max(1, Math.ceil(len / T.length))} strand${Math.ceil(len / T.length) > 1 ? 's' : ''} of ${T.length} m.</p>
       <div class="row">
-        <button class="btn primary" data-act="addStrand">${V.method === 'draw' ? 'Finish strand' : 'Hang it'}</button>
-        <button class="btn" data-act="undoStrand" ${t.strands.length ? '' : 'disabled'}>Take down last</button>
-        <button class="btn" data-act="clearStrands" ${t.strands.length ? '' : 'disabled'}>Take down all</button>
+        <button class="btn primary m-key m-key--lg m-key--primary" data-act="addStrand">${V.method === 'draw' ? 'Finish strand' : 'Hang it'}</button>
+        <button class="btn m-key" data-act="undoStrand" ${t.strands.length ? '' : 'disabled'}>Take down last</button>
+        <button class="btn m-key" data-act="clearStrands" ${t.strands.length ? '' : 'disabled'}>Take down all</button>
       </div>
       <div class="divider"></div>
-      <div class="row"><button class="btn" data-act="lightsOn" aria-pressed="${t.lights.on}">${t.lights.on ? 'Lights on' : 'Lights off'}</button></div>
-      <div class="seg">${LIGHT_MODES.map(m => `<button data-lmode="${m.id}" aria-pressed="${t.lights.mode === m.id}">${m.name}</button>`).join('')}</div>
+      <div class="row"><button class="btn m-key" data-act="lightsOn" aria-pressed="${t.lights.on}">${t.lights.on ? 'Lights on' : 'Lights off'}</button></div>
+      <div class="seg m-seg m-seg--fill">${LIGHT_MODES.map(m => `<button data-lmode="${m.id}" aria-pressed="${t.lights.mode === m.id}">${m.name}</button>`).join('')}</div>
       <p class="faint">${R.strands.bulbCount.toLocaleString()} bulbs on the tree.</p>
     </div>`;
 }
@@ -619,28 +619,28 @@ function renderOrnaments() {
   const o = ORN[V.id];
   const thumbs = getThumbs();
   $('#side').innerHTML = `<h3>Ornaments</h3>
-    <div class="seg"><button data-omode="hang" aria-pressed="${V.mode === 'hang'}">Hang</button><button data-omode="remove" aria-pressed="${V.mode === 'remove'}">Take off</button></div>
+    <div class="seg m-seg m-seg--fill"><button data-omode="hang" aria-pressed="${V.mode === 'hang'}">Hang</button><button data-omode="remove" aria-pressed="${V.mode === 'remove'}">Take off</button></div>
     <div class="scroll">
-      ${groups.map(g => `<div class="label">${g}</div><div class="orn-grid">${ORNAMENTS.filter(x => x.group === g).map(x => `<button class="orn" title="${esc(x.name)}" data-orn="${x.id}" aria-pressed="${V.id === x.id}" style="background-image:url(${thumbs[x.id]})"></button>`).join('')}</div>`).join('')}
+      ${groups.map(g => `<div class="label m-legend">${g}</div><div class="orn-grid">${ORNAMENTS.filter(x => x.group === g).map(x => `<button class="orn" title="${esc(x.name)}" data-orn="${x.id}" aria-pressed="${V.id === x.id}" style="background-image:url(${thumbs[x.id]})"></button>`).join('')}</div>`).join('')}
     </div>
     <div class="fact"><b>${o.name}${o.fragile ? ' · glass' : ''}</b><span>${o.note}</span>
-      ${o.colors ? `<div class="colors" style="margin-top:6px">${o.colors.map((c, i) => `<button class="color" data-ocolor="${i}" aria-pressed="${V.c === i}" style="background:#${c.toString(16).padStart(6, '0')}" aria-label="Color ${i + 1}"></button>`).join('')}</div>` : ''}
+      ${o.colors ? `<div class="colors" style="margin-top:6px">${o.colors.map((c, i) => `<button class="color m-dot" data-ocolor="${i}" aria-pressed="${V.c === i}" style="background:#${c.toString(16).padStart(6, '0')}" aria-label="Color ${i + 1}"></button>`).join('')}</div>` : ''}
     </div>
     <p class="faint">${o.topper ? 'Click the top of the tree to set it.' : 'Click a branch to hang it.'} ${activeTree().ornaments.length} on the tree.</p>
-    <button class="btn" data-act="clearOrnaments" ${activeTree().ornaments.length || activeTree().topper ? '' : 'disabled'}>Take everything off</button>`;
+    <button class="btn m-key" data-act="clearOrnaments" ${activeTree().ornaments.length || activeTree().topper ? '' : 'disabled'}>Take everything off</button>`;
 }
 
 function renderTrees() {
   const now = clock.now();
   $('#side').innerHTML = `<h3>Your trees</h3>
     <div class="scroll"><div class="options">
-      ${game.trees.map(t => `<button class="opt tree-item" data-tree="${t.id}" aria-pressed="${t.id === game.activeTreeId}">
+      ${game.trees.map(t => `<button class="opt tree-item m-menu__item m-menu__item--plain" data-tree="${t.id}" aria-pressed="${t.id === game.activeTreeId}">
         <span>${treeName(t)}</span><span class="faint">${t.spec.heightFt} ft</span>
         <small>${t.standId ? thirstLabel(t) : 'Not set up yet'}</small><small>${t.ornaments.length} ornaments</small>
       </button>`).join('')}
     </div>
     <p class="faint">Each tree lives in its own corner by the window. They all drink, whether you're looking or not.</p></div>
-    <button class="btn primary" data-act="toLot">Buy another tree at the lot</button>`;
+    <button class="btn primary m-key m-key--lg m-key--primary" data-act="toLot">Buy another tree at the lot</button>`;
 }
 
 /* side panel events */

@@ -1,4 +1,4 @@
-/* The Matte page: what the work page and the Rigs and Jigs page share. Load after styles.css and matte.css.
+/* The Matte page: what the work page and the Experiments page share. Load after styles.css and matte.css.
    The signal colour, the page column, the nav as a rail of Matte keys, the off-black speckled ground,
    and the footer on its field of Slate. Each page adds its own content styles on top. */
 :root { --signal: #e08a3c; }                              /* Matte's copper: status and Result, nothing else */
@@ -29,6 +29,10 @@
   .nav__start, .nav__links { flex-direction: column; align-items: stretch; align-self: auto; width: var(--rail-w); }
   .nav__links { flex: 1; }
   .nav .chip { width: 100%; justify-content: flex-start; }
+  /* LinkedIn and brian.md have no lamp (they leave the site or download), but keep the lamp's room empty, so every
+     label in the rail starts on one line. brian.md's icon comes after its label, so it keeps the icon's room too. */
+  .nav a.chip:is([target], [download])::before { content: ""; flex: none; width: 5px; margin-right: 2px; }
+  .nav a.chip[download] { padding-left: calc(var(--chip-px) + var(--chip-fs) + 1px + 6px); }   /* the icon (styles.css) and the gap after it */
   /* A hairline between the rail and the page, from the top of the rail's first button to the bottom of its last. It
      belongs to the page, not the rail, so that it lies under the footer: the halftone's dots close over it. */
   body::before { content: ""; position: fixed; top: var(--rail-top, var(--space-6)); bottom: var(--space-6); width: 1px;
@@ -101,7 +105,7 @@
 /* beside the rail, the bison starts past its hairline, so the wall doesn't run under the nav and the animal centres in the page */
 @media (min-width: 1100px) { .bison-run { margin-left: calc(var(--space-5) + var(--rail-w) + var(--space-4) + 1px); } }
 
-/* ---- The card: one experiment on the Rigs and Jigs wall, and the design system's specimen of it. ---- */
+/* ---- The card: one experiment on the Experiments wall, and the design system's specimen of it. ---- */
 /* a card is a Matte body, speckle and all, with the picture set into it like a screen in its well */
 .cards.matte .card { position: relative; isolation: isolate; border: 0; border-radius: var(--m-radius); overflow: visible; padding: 10px;
   color: var(--m-print); text-decoration: none;

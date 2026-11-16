@@ -241,7 +241,7 @@
     .picker h1 { font-size: 30px; font-weight: 680; letter-spacing: -0.01em; }
     .picker__intro { color: var(--m-print); font-size: 15px; max-width: 620px; margin-top: 8px; }
     .envs { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; margin-top: 28px; }
-    .env { text-align: left; border-radius: 14px; overflow: hidden; background: linear-gradient(180deg, var(--m-body-hi), var(--m-body-lo)); box-shadow: 0 1px 0 var(--m-shine) inset, 0 0 0 1px var(--m-edge), 0 8px 18px rgb(0 0 0 / 0.45); transition: transform 0.15s, box-shadow 0.15s; }   /* each room in a Matte housing, as on the Rigs and Jigs wall */
+    .env { text-align: left; border-radius: 14px; overflow: hidden; background: linear-gradient(180deg, var(--m-body-hi), var(--m-body-lo)); box-shadow: 0 1px 0 var(--m-shine) inset, 0 0 0 1px var(--m-edge), 0 8px 18px rgb(0 0 0 / 0.45); transition: transform 0.15s, box-shadow 0.15s; }   /* each room in a Matte housing, as on the Experiments wall */
     .env:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 1px 0 var(--m-shine) inset, 0 0 0 1px var(--m-signal), 0 14px 26px rgb(0 0 0 / 0.5); }
     .env:disabled { opacity: 1; }
     .env__img { aspect-ratio: 16 / 10; display: block; width: 100%; object-fit: cover; background: #222; }
@@ -289,7 +289,7 @@
 
   <!-- header -->
   <header class="top">
-    <a class="back m-legend" href="../">← Rigs and Jigs</a>
+    <a class="back m-legend" href="../">← Experiments</a>
     <span class="brand">Domino Run</span>
     <button class="room-chip m-key" id="room-chip" type="button" title="Choose another room">Living room <span aria-hidden="true">▾</span></button>
     <div class="top__end">
@@ -428,7 +428,7 @@
   <!-- environment picker -->
   <div class="picker" id="picker" hidden>
     <div class="picker__inner">
-      <a class="back m-legend" href="../">← Rigs and Jigs</a>
+      <a class="back m-legend" href="../">← Experiments</a>
       <h1 style="margin-top:18px">Domino Run</h1>
       <p class="picker__intro">Choose a room to build in. Set dominoes up anywhere, on the floor or the furniture, then knock them down and watch the run back at any speed.</p>
       <div class="envs" id="envs"></div>

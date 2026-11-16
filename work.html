@@ -11,9 +11,17 @@
   <script>try { if (localStorage.getItem('theme') === 'light') { document.documentElement.dataset.theme = 'light'; document.querySelector('meta[name="color-scheme"]').content = 'light'; } } catch (e) {}</script>
   <!-- arriving from the cover's sand: the page builds itself in. One visit only, so a reload or any other way in is plain. -->
   <script>try { if (sessionStorage.getItem('arrive') === 'cover') { sessionStorage.removeItem('arrive'); document.documentElement.classList.add('from-cover'); } } catch (e) {}</script>
+  <!-- Where the board will be (wide screens): the page's content is kept out of sight until the board has mounted, picked
+       the record in view and, on a return visit, folded, so nothing shows in one place and then jumps to another.
+       The board's script lifts it; the timer makes sure it is lifted whatever happens. -->
+  <script>if (matchMedia('(min-width: 1100px)').matches) { document.documentElement.classList.add('board-pending'); setTimeout(() => document.documentElement.classList.remove('board-pending'), 2000); }</script>
   <script src="button-versions.js"></script>
   <script src="buttons.js"></script>
   <link rel="alternate" type="text/plain" href="llms.txt" title="Plain-text version for agents">
+  <!-- the Söhne faces are asked for at once, so the headings never wait on the stylesheet to find them -->
+  <link rel="preload" href="fonts/soehne-breit-halbfett.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="fonts/soehne-buch.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="fonts/soehne-mono-buch.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="matte.css?v=12">   <!-- the Matte system: the nav keys, the menu and the board's housing -->
   <link rel="stylesheet" href="board.css">   <!-- the project board's finish, shared with the Split-Flap Lab -->
@@ -54,6 +62,8 @@
     .has-board .rows { display: none; }
     /* The board spans the content column, edge to edge, whatever its module count. */
     .has-board .board { display: block; }
+    .board.is-instant, .board.is-instant * { transition: none !important; }   /* a return visit: it starts folded, without folding */
+    .board-pending main { visibility: hidden; }                                /* until the board has settled the layout (see the head) */
     /* the board's own look (housing, labels, lamps, lit row) is in board.css, which the Split-Flap Lab shares */
 
     /* A project's record */
@@ -93,6 +103,9 @@
       @keyframes bay-fade { from { opacity: 0; } }
       @keyframes bay-resolve { from { opacity: 0; filter: blur(var(--record-blur, 0px)); } }
     }
+    /* reduced motion: a record fades in, with no slide, drop or blur */
+    @media (prefers-reduced-motion: reduce) { .has-board .bay { animation: bay-still 200ms ease-out both; } }
+    @keyframes bay-still { from { opacity: 0; } }
     /* ---- The project sheet. Pressing a project's wall of screens pulls a sheet in from the right, over the page, where
        the project's details live. It covers the nav and stops just short of the window's left edge (--sheet-left), so
        a sliver of the page it came from still shows. Move the pointer onto that sliver and the sheet scoots over
@@ -105,8 +118,9 @@
     /* what the press does, said in the corner of the wall when the pointer or the focus is on it */
     .bay__open span { position: absolute; left: 12px; bottom: 12px; padding: 7px 10px; border-radius: 4px; background: rgb(8 10 10 / 0.72); color: #fff;
       font: 400 var(--text-2xs)/1 var(--font-mono); letter-spacing: 0.1em; text-transform: uppercase; opacity: 0; translate: 0 4px; transition: opacity 160ms ease-out, translate 160ms ease-out; }
-    .bay__open:hover span, .bay__open:focus-visible span { opacity: 1; translate: 0 0; }
-    @media (hover: none) { .bay__open span { opacity: 1; translate: 0 0; } }
+    .bay__open:focus-visible span { opacity: 1; translate: 0 0; }
+    @media (hover: hover) and (pointer: fine) { .bay__open:hover span { opacity: 1; translate: 0 0; } }
+    @media (hover: none), (pointer: coarse) { .bay__open span { opacity: 1; translate: 0 0; } }   /* no hover to bring it up, so it stays */
 
     .sheet { --sheet-left: 0px; --sheet-ms: var(--sheet-leave-ms, 520ms); position: fixed; inset: 0 0 0 auto; width: calc(100vw - var(--sheet-left)); max-width: none; height: 100dvh; max-height: none;
       margin: 0; padding: 0; border: 0; overflow: hidden; color: var(--fg); background: color-mix(in srgb, var(--ground) 95%, #fff);
@@ -137,15 +151,24 @@
     .sheet-cue { position: fixed; inset: 0 auto auto 0; margin: 0; padding: 0; border: 0; width: var(--cue-size, 40px); height: var(--cue-size, 40px); border-radius: 50%; overflow: visible; pointer-events: none;
       display: grid; place-items: center; color: var(--m-print-hi, #fff); background: linear-gradient(180deg, var(--m-cap-hi, #2e2e30), var(--m-cap, #1f1f21));
       box-shadow: 0 1px 0 var(--m-shine, rgb(255 255 255 / 0.11)) inset, 0 0 0 1px var(--m-edge, #070707), 0 6px 14px rgb(0 0 0 / 0.5);
-      translate: calc(var(--x, -100px) - 50%) calc(var(--y, -100px) - 50%); opacity: 0; scale: 0.6; transition: opacity 160ms ease-out, scale 160ms ease-out; }
+      translate: calc(var(--x, -100px) - 50%) calc(var(--y, -100px) - 50%); opacity: 0; scale: 0.9; transition: opacity 160ms ease-out, scale 160ms ease-out; }
     .sheet-cue:not(:popover-open) { display: none; }
     .sheet-cue.is-on { opacity: 1; scale: 1; }
     .sheet-cue svg { width: 40%; height: 40%; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
-    /* The sheet's pictures arrive out of focus and resolve as it slides in. They are sharp when it leaves: the blur is
-       only where they start from. */
-    .sheet[open] img { filter: blur(0px); transition: filter var(--sheet-focus-ms, 900ms) cubic-bezier(0.3, 0, 0.3, 1) var(--sheet-focus-wait, 0ms); }
-    @starting-style { .sheet[open] img { filter: blur(var(--sheet-blur, 14px)); } }
-    @media (prefers-reduced-motion: reduce) { .sheet, .sheet::backdrop, .sheet-cue, .sheet[open] img { transition: none; } }
+    /* The sheet's lead picture arrives out of focus and resolves as it slides in; it is sharp when it leaves, as the blur
+       is only where it starts from. Only the lead: blurring every screenshot while a full-screen sheet slides costs frames,
+       and the ones further down can't be seen yet anyway. The Peek Lab keeps the blur to 8px or less for the same reason. */
+    .sheet[open] .sheet__lead img { filter: blur(0px); transition: filter var(--sheet-focus-ms, 900ms) cubic-bezier(0.3, 0, 0.3, 1) var(--sheet-focus-wait, 0ms); }
+    @starting-style { .sheet[open] .sheet__lead img { filter: blur(var(--sheet-blur, 8px)); } }
+    /* Reduced motion: nothing slides, scales or blurs, but the sheet and its dimming still fade, so it doesn't snap */
+    @media (prefers-reduced-motion: reduce) {
+      .sheet { translate: 0 0; opacity: 0; transition: opacity 200ms ease-out, overlay 200ms allow-discrete, display 200ms allow-discrete; }
+      .sheet[open] { opacity: 1; }
+      @starting-style { .sheet[open] { opacity: 0; } }
+      .sheet::backdrop { transition: background 200ms ease-out, overlay 200ms allow-discrete, display 200ms allow-discrete; }
+      .sheet-cue { scale: 1; transition: opacity 160ms ease-out; }
+      .sheet[open] .sheet__lead img { transition: none; }
+    }
 
     .sheet__close { position: absolute; top: var(--space-5); right: var(--space-5); z-index: 1; }
     .sheet__scroll { overflow-y: auto; overscroll-behavior: contain; height: 100dvh; padding: var(--space-7) var(--space-5) var(--space-8); }
@@ -165,18 +188,19 @@
     /* Before and after: three pictures of the same screen in one place, and two lines to drag across them. Left of the
        first line is the redesign; left of the second, which follows behind it, is the redesign's dark mode. --a and --b
        are the lines' places, 0 at the left edge and 1 at the right; both start at 0, so the old screen shows whole. */
-    .compare { --a: 0; --b: 0; position: relative; user-select: none; -webkit-user-select: none; }
-    .compare__a { --v: var(--a); --knob-y: 38%; }
-    .compare__b { --v: var(--b); --knob-y: 64%; }
+    .compare { position: relative; container-type: inline-size; user-select: none; -webkit-user-select: none; }   /* a container, so a line can move by its width (cqw) */
+    .compare__a { --v: 0; --knob-y: 38%; }   /* the script sets --v on each line and its picture, not on .compare, so a drag restyles only those */
+    .compare__b { --v: 0; --knob-y: 64%; }
     .compare img.compare__layer { position: absolute; inset: 0; height: 100%; clip-path: inset(0 calc((1 - var(--v)) * 100%) 0 0); }
-    .compare__line { position: absolute; top: 0; bottom: 0; left: calc(var(--v) * 100%); width: 0; cursor: ew-resize; touch-action: pan-y; outline: none; }
+    .compare__line { position: absolute; top: 0; bottom: 0; left: 0; translate: calc(var(--v) * 100cqw) 0; width: 0; cursor: ew-resize; touch-action: pan-y; outline: none; }
     .compare__line::before { content: ""; position: absolute; top: 0; bottom: 0; left: -1px; width: 2px; background: #fff; box-shadow: 0 0 0 1px rgb(0 0 0 / 0.35); }
     .compare__line::after { content: ""; position: absolute; top: 0; bottom: 0; left: -14px; width: 28px; }   /* room to catch it */
     .compare__knob { position: absolute; top: var(--knob-y); left: 0; translate: -50% -50%; width: 44px; height: 44px; display: grid; place-items: center;
       border-radius: 50%; background: #fff; color: #14181c; box-shadow: 0 0 0 1px rgb(0 0 0 / 0.35), 0 6px 18px rgb(0 0 0 / 0.45); transition: scale 160ms ease-out; }
     .compare__b .compare__knob { background: #14181c; color: #fff; box-shadow: 0 0 0 1.5px #fff, 0 6px 18px rgb(0 0 0 / 0.45); }
     .compare__knob svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-    .compare__line:hover .compare__knob, .compare__line.is-held .compare__knob { scale: 1.08; }
+    .compare__line.is-held .compare__knob { scale: 1.08; }
+    @media (hover: hover) and (pointer: fine) { .compare__line:hover .compare__knob { scale: 1.08; } }
     .sheet .compare .compare__line:focus-visible { outline: none; }   /* the ring goes round the knob, not the hairline */
     .compare__line:focus-visible .compare__knob { outline: 2px solid var(--signal); outline-offset: 3px; }
     /* the line's name rides above its knob, and slides from the line's right to its left as the line crosses, so it never leaves the picture */
@@ -222,7 +246,7 @@
     <nav class="nav__links">
       <a class="chip" href="bio.html"><svg class="chip__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Bio</a>
       <a class="chip" href="how-i-work.html"><svg class="chip__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="8" height="8" x="3" y="3" rx="2"/><path d="M7 11v4a2 2 0 0 0 2 2h4"/><rect width="8" height="8" x="13" y="13" rx="2"/></svg>How I Work</a>
-      <a class="chip" href="tinkering/"><svg class="chip__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12.99 6.74 1.93 3.44"/><path d="M19.136 12a10 10 0 0 1-14.271 0"/><path d="m21 21-2.16-3.84"/><path d="m3 21 8.02-14.26"/><circle cx="12" cy="5" r="2"/></svg>Rigs and Jigs</a>
+      <a class="chip" href="tinkering/"><svg class="chip__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12.99 6.74 1.93 3.44"/><path d="M19.136 12a10 10 0 0 1-14.271 0"/><path d="m21 21-2.16-3.84"/><path d="m3 21 8.02-14.26"/><circle cx="12" cy="5" r="2"/></svg>Experiments</a>
       <a class="chip" href="tinkering/design-system/"><svg class="chip__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 17a4 4 0 0 1-8 0V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2Z"/><path d="M16.7 13H19a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2H7"/><path d="M7 17h.01"/><path d="m11 8 2.3-2.3a2.4 2.4 0 0 1 3.404.004L18.6 7.6a2.4 2.4 0 0 1 .026 3.434L9.9 19.8"/></svg>Design System</a>
       <a class="chip" href="#contact"><svg class="chip__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="10" r="3"/><path d="M7 20.662V19a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v1.662"/></svg>Contact</a>
       <a class="chip" href="https://www.linkedin.com/in/bwstudwell" target="_blank" rel="noopener"><svg class="chip__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect width="4" height="12" x="2" y="9"/><circle cx="4" cy="4" r="2"/></svg>LinkedIn</a>
@@ -395,7 +419,8 @@
       const lines = written.length ? written.slice(0, rows.length) : rows.map(r => r.name + '|' + r.status);
       // a board of modules can't be read on a small screen: those keep the rows as links, with every record on the page
       const wide = matchMedia('(min-width: 1100px)');   // narrower, the modules are too small to read
-      if (!wide.matches || !window.SplitFlap) return;
+      const unpend = () => document.documentElement.classList.remove('board-pending');   // the layout is final: show the page
+      if (!wide.matches || !window.SplitFlap) return unpend();
 
       const SHRUG = '¯\\_(ツ)_/¯';
       const PARTY = 'ヽ(⌐■_■)ノ♪♬';
@@ -546,14 +571,19 @@
         return nameCols + Math.max(0, Math.round((room - plate + gap) / (module + gap)) - base);   // the count that leaves a module nearest that size
       }
       if (nameCols > 0) cols.nameCols = fitCols();
+      // The full flip-in plays on the first visit of a session. After that the board only flutters into place, and the
+      // record comes in at once rather than waiting for it.
+      let seen = false;
+      try { seen = sessionStorage.getItem('board-seen') === '1'; sessionStorage.setItem('board-seen', '1'); } catch (e) { /* every visit gets the full one */ }
+      const REPEAT = { minFlips: 5, maxFlips: 8, staggerMs: 60 };
       const boardConfig = () => ({
-        ...cols, ...SplitFlap.activeStyle(mode()),
+        ...cols, ...(seen ? REPEAT : {}), ...SplitFlap.activeStyle(mode()),
         lines, sequence: [[SHRUG], [PARTY], [TABLE]],   // listed so the drum carries its characters
       });
 
       try {
         flap = SplitFlap.mount(document.getElementById('flap'), boardConfig());
-      } catch (e) { return; }   // no board: the links and stacked records stay
+      } catch (e) { return unpend(); }   // no board: the links and stacked records stay
 
       // The headings start where their columns' first characters do: Project at the first name
       // module, Released at the first module the longest release value reaches (they end at the right).
@@ -637,7 +667,7 @@
         : `linear(${Array.from({ length: 41 }, (_, i) => +curve(i / 40).toFixed(4)).join(', ')})`);
       root.setProperty('--record-drop', entrance.recordDrop + 'px');
       root.setProperty('--record-blur', entrance.recordBlur + 'px');
-      if (!still) document.documentElement.classList.add('is-arriving');   // the record holds back until the board resolves
+      if (!still && !seen) document.documentElement.classList.add('is-arriving');   // the first time, the record holds back until the board resolves
 
       const fromHash = () => Math.max(0, rows.findIndex(r => '#' + r.id === location.hash));
       flap.ready.then(() => {
@@ -645,6 +675,11 @@
         bays.forEach((bay, k) => bay.hidden = k !== first);
         choose(first, { remember: false });
         const settle = () => { resolved = true; if (!over) setFold(true); };
+        if (seen) {   // back again this session: the board is already folded to the row in view, with no fold to watch
+          boardEl.classList.add('is-instant'); settle();
+          requestAnimationFrame(() => requestAnimationFrame(() => boardEl.classList.remove('is-instant')));   // after the folded state has painted
+        }
+        unpend();   // one record chosen, the others hidden, and the board in its place
         if (still) { settle(); return flap.seek(Infinity); }
         run();   // the rows flip in once; choosing a row leaves the board as it is
         setTimeout(settle, flap.duration + 450);   // a beat after the last flap lands, the board folds to the row in view
@@ -681,11 +716,12 @@
         };
         const at = { a: 0, b: 0 };
         const lines = {};
+        const parts = { a: box.getElementsByClassName('compare__a'), b: box.getElementsByClassName('compare__b') };   // a line and its picture
         function set(k, v) {
           at[k] = Math.min(1, Math.max(0, v));
           if (k === 'a') at.b = Math.min(at.b, at.a); else at.a = Math.max(at.a, at.b);
           for (const key of ['a', 'b']) {
-            box.style.setProperty('--' + key, at[key].toFixed(4));
+            for (const el of parts[key]) el.style.setProperty('--v', at[key].toFixed(4));
             lines[key].setAttribute('aria-valuenow', Math.round(at[key] * 100));
             lines[key].setAttribute('aria-valuetext', Math.round(at[key] * 100) + '% shown');
           }
@@ -799,7 +835,7 @@
         peekDim: 0,        // and during the peek
         cue: 40,           // px across the return arrow that rides on the pointer; 0 for none
         radius: 16,        // the sheet's top left corner
-        blur: 14,          // px of blur the sheet's pictures start with; 0 for none
+        blur: 8,           // px of blur the sheet's lead picture starts with, 8 at most; 0 for none
         focusMs: 900,      // how long they take to come into focus
         focusWait: 0,      // ms after the sheet starts to move before they begin
       };
@@ -809,6 +845,16 @@
       function arriveCurve(steps = 100) {
         const start = tune.arriveStart, end = tune.arriveEnd;
         if (!(start > 0) || !(end > 0) || (start === 1 && end === 1)) return null;
+        return arriveProgress(steps);
+      }
+      // When the arrival looks done: the moment it has covered 90% of the way. The sheet counts as settled from then,
+      // so a peek straight after opening takes the peek's own pace, not what is left of a long, creeping arrival.
+      function arrivedMs(level = 0.9) {
+        const steps = 200, i = arriveProgress(steps).findIndex(y => y >= level);
+        return Math.round(tune.arriveMs * (i < 0 ? 1 : i / steps));
+      }
+      function arriveProgress(steps) {
+        const start = tune.arriveStart > 0 ? tune.arriveStart : 1, end = tune.arriveEnd > 0 ? tune.arriveEnd : 1;
         const x1 = tune.arriveX1, y1 = tune.arriveY1, x2 = tune.arriveX2, y2 = tune.arriveY2;
         const at = (a, b, u) => 3 * a * u * (1 - u) ** 2 + 3 * b * u * u * (1 - u) + u ** 3;
         const pow = (v, p) => Math.sign(v) * Math.abs(v) ** p;   // a curve that goes past either end keeps its sign
@@ -863,7 +909,7 @@
         scroller.scrollTop = 0;
         if (canCue) { try { cue.showPopover(); } catch (e) { /* already showing */ } }
         clearTimeout(settle);
-        settle = setTimeout(() => { sheet.classList.add('is-settled'); sheet.classList.toggle('is-peek', want || held); }, tune.arriveMs + 40);   // after the arrival, the quicker scoot
+        settle = setTimeout(() => { sheet.classList.add('is-settled'); sheet.classList.toggle('is-peek', want || held); }, arrivedMs());   // once the arrival looks done, the quicker scoot
       }
       function hide() {
         clearTimeout(settle); clearTimeout(peekTimer);

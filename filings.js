@@ -17,7 +17,13 @@
    Filings.attach(element, config, options) puts the effect on one element and returns { wake(), hold(), press(), release(), remove() }.
    Options, for a control whose painted face is only part of it (a knob's cap, a switch's thumb):
      face(element)  the face, in the element's own px: { x, y, w, h, round }. It is asked every frame, so it may move.
+                    A face of no size draws nothing (a segment that isn't the chosen one).
      pulse          false for a control that is dragged, not pressed: a press sends no pulse.
+     cut(element)   a strip of the face, in the face's px ({ x, y, w, h }), kept clear of filings so the paint under it
+                    shows on top: a fader's centre line.
+     snap           true when the face jumps rather than slides (a fader's thumb under a drag): the filings keep up with it.
+     host           an element to hold the canvas, for one that can't (an <input>): the element's parent, usually. The
+                    canvas is laid over the element from there.
      z              the canvas's z-index (default -1: over the paint, under a label). after: a child to put the canvas after.
    The config object is read live, so a lab can change it and call Filings.wake(). */
 (() => {
@@ -52,10 +58,12 @@
     const cv = document.createElement('canvas'), ctx = cv.getContext('2d');
     cv.setAttribute('aria-hidden', 'true');
     cv.style.cssText = `position:absolute;left:50%;top:50%;pointer-events:none;z-index:${opts.z ?? -1}`;   // over the paint, under the label
-    const was = { position: el.style.position, isolation: el.style.isolation };
-    if (getComputedStyle(el).position === 'static') el.style.position = 'relative';
-    el.style.isolation = 'isolate';
-    if (opts.after) opts.after.after(cv); else el.prepend(cv);
+    const box = opts.host || el;                                   // what holds the canvas
+    const was = { position: box.style.position, isolation: box.style.isolation };
+    if (getComputedStyle(box).position === 'static') box.style.position = 'relative';
+    box.style.isolation = 'isolate';
+    if (opts.after) opts.after.after(cv); else if (opts.host) box.append(cv); else el.prepend(cv);   // last in a host, so its :first-child and its siblings stay as they were
+    let at = '';                                                   // in a host: where the element sits in it
 
     let W = 0, H = 0, dpr = 1, filings = [], seeded = -1, shaded = '';   // W, H: the painted face
     let EW = 0, EH = 0, fx = 0, fy = 0, round = false;                   // the element's size; where the face sits in it; whether it is a disc
@@ -77,8 +85,14 @@
       cv.width = Math.round((EW + MARGIN * 2) * dpr); cv.height = Math.round((EH + MARGIN * 2) * dpr);
       cv.style.width = `${EW + MARGIN * 2}px`; cv.style.height = `${EH + MARGIN * 2}px`;
       cv.style.marginLeft = `${-(EW + MARGIN * 2) / 2}px`; cv.style.marginTop = `${-(EH + MARGIN * 2) / 2}px`;
+      at = ''; lay();
       seeded = -1;                                                   // lay the filings out again for the new size
       place(true);
+    }
+    function lay() {                                               // in a host, the canvas centres on the element, wherever the layout has put it
+      if (!opts.host) return;
+      const now = `${el.offsetLeft + EW / 2}px ${el.offsetTop + EH / 2}px`;
+      if (now !== at) { at = now; [cv.style.left, cv.style.top] = now.split(' '); }
     }
     function place(snap) {                                           // find the face; true while it is still sliding to where it should be
       const f = opts.face ? opts.face(el) : { x: 0, y: 0, w: EW, h: EH };
@@ -113,8 +127,9 @@
       tick(seen && now - seen < 200 ? now - seen : 16); seen = now;
     }
     function tick(dt) {
-      const sliding = held ? place(true) : place(false);
-      if (!W || !H) return;
+      const sliding = held || opts.snap ? place(true) : place(false);
+      lay();
+      if (!W || !H) { ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, cv.width, cv.height); return; }   // no face just now: nothing shows
       if (seeded !== cfg.count) seed();
       if (shaded !== cfg.color) shades();
       clock += dt;
@@ -186,11 +201,12 @@
         ctx.fillStyle = `rgb(${tipRgb} / ${(0.2 + 0.7 * up) * cfg.glow})`;
         ctx.beginPath(); ctx.arc(tips[i], tips[i + 1], r, 0, 6.283); ctx.fill();
       }
+      if (opts.cut) { const c = opts.cut(el); ctx.clearRect(c.x, c.y, c.w, c.h); }   // a mark in the paint that stays on top
       if (busy && !raf && !held) raf = requestAnimationFrame(frame);
     }
 
     const watch = new ResizeObserver(() => { size(); if (held) tick(0); else wake(); });
-    watch.observe(el);
+    watch.observe(el); if (opts.host) watch.observe(box);
     el.addEventListener('click', wake);                              // a switch's thumb may have moved
     size();
 
@@ -225,7 +241,7 @@
       },
       remove() {
         cancelAnimationFrame(raf); watch.disconnect(); cv.remove(); all.delete(inst); made.delete(el);
-        el.style.position = was.position; el.style.isolation = was.isolation;
+        box.style.position = was.position; box.style.isolation = was.isolation;
       },
     };
     all.add(inst); made.set(el, inst);

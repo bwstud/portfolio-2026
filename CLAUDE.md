@@ -25,6 +25,14 @@ treat it as one continuous record.
   the current branch with a message starting `Work log:`, and is pushed straight away so the
   other machine can pull it.
 
+## Grid
+
+The site's pages sit on a 12-column grid across the page column, defined in `matte-page.css` (`--grid-gutter`: 16px on
+phones, 24px to 1099px, 32px with the rail). Anything laid out side by side starts and ends on its columns: a record's words
+and picture (4 + 8, the picture in line with the second field), its fields and the footer (4 + 4 + 4), the Experiments cards, a reading page's text, the project sheet
+(4 + 8), the design system's specimen grids. New layout follows it. Shift+G, or `?grid` in the address, shows
+the columns (`nav.js`). The cover, the experiments themselves and the labs are full-window stages and sit outside it.
+
 ## Tuning labs
 
 Every lab page uses the Matte system (`matte.css`) for its chrome and controls: keys, faders, fields, selects,

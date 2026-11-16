@@ -23,7 +23,12 @@
     .tinkering__intro { display: none; }
 
     /* the card itself, a Matte housing, is in matte-page.css */
-    .cards { gap: var(--space-6) var(--space-5); margin: 0; padding: 0; }
+    /* the cards on the site's twelve columns: two across (six each), three (four) on a wide window, four (three) on a very wide one */
+    .tinkering .cards { grid-template-columns: repeat(12, minmax(0, 1fr)); gap: var(--space-6) var(--grid-gutter); margin: 0; padding: 0; }
+    .tinkering .cards > li { grid-column: span 6; }
+    @media (max-width: 760px) { .tinkering .cards > li { grid-column: 1 / -1; } }
+    @media (min-width: 1300px) { .tinkering .cards > li { grid-column: span 4; } }
+    @media (min-width: 1900px) { .tinkering .cards > li { grid-column: span 3; } }
   </style>
 </head>
 <body>

@@ -6,6 +6,25 @@
 
 
 .home, .foot-col { max-width: 76rem; margin: 0 auto; padding: 0 max(var(--space-4), 4vw); }
+/* The site's grid: twelve columns across the page column, on every page. Whatever a page lays out side by side (a record's
+   words and picture, the record's fields, the footer, the cards, a page's reading column) starts and ends on these
+   columns, with this one gutter between them. Shift+G, or ?grid in the address, shows them (nav.js). */
+:root { --grid-gutter: var(--space-4); }
+@media (min-width: 761px) { :root { --grid-gutter: var(--space-5); } }
+@media (min-width: 1100px) { :root { --grid-gutter: var(--space-6); } }
+.grid-overlay { position: fixed; top: 0; bottom: 0; z-index: 9999; pointer-events: none; display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--grid-gutter); }
+.grid-overlay span { background: rgb(224 138 60 / 0.08); box-shadow: inset 1px 0 rgb(224 138 60 / 0.4), inset -1px 0 rgb(224 138 60 / 0.4); }
+/* A page of reading (Bio, How I Work): the heading across the grid, the text on the first columns, as many as keep its
+   lines a comfortable length at the window's width */
+.page { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--grid-gutter); align-content: start; }
+.page > * { grid-column: 1 / -1; }
+.page > .page__body { grid-column: 1 / span 8; max-width: none; }
+@media (max-width: 760px) { .page > .page__body { grid-column: 1 / -1; } }
+@media (min-width: 1300px) { .page > .page__body { grid-column: 1 / span 7; } }
+@media (min-width: 1600px) { .page > .page__body { grid-column: 1 / span 6; } }
+@media (min-width: 1800px) { .page > .page__body { grid-column: 1 / span 5; } }
+@media (min-width: 2200px) { .page > .page__body { grid-column: 1 / span 4; } }
 .home { position: relative; z-index: 1; }   /* above the halftone's canvas, which reaches up behind the last project */
 .home a, .foot-col a { text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
 .mono { font: 400 var(--text-2xs)/1.5 "Söhne Mono", ui-monospace, Menlo, monospace; color: var(--muted); }
@@ -20,8 +39,8 @@
 @media (prefers-reduced-motion: reduce) { @view-transition { navigation: none; } }
 
 /* Wide screens: the nav is a rail down the left of the page, the full height of the window, its buttons stacked and
-   all one width (--rail-w). Controls sits at the foot of it. The column stays centred when there's room beside the
-   rail and moves right when there isn't. */
+   all one width (--rail-w). Controls sits at the foot of it. The page column starts just past the rail's hairline,
+   however wide the window, and runs to --space-5 from its right edge. */
 @media (min-width: 1100px) {
   :root { --rail-w: 156px; }
   .nav { position: fixed; inset: 0 auto 0 0; height: auto; flex-direction: column; justify-content: flex-start; align-items: flex-start;
@@ -40,7 +59,8 @@
   /* Controls is pushed to the bottom of the rail, and its menu opens upward */
   .nav .dropdown--controls { margin-top: auto; }
   .nav .dropdown--controls .dropdown__menu { top: auto; bottom: calc(100% + var(--space-3)); left: 0; right: auto; }
-  .home, .foot-col { margin-left: max(164px, calc((100% - 76rem) / 2)); margin-right: auto; }
+  .home, .foot-col { --col-pad: max(var(--space-4), min(4vw, 58px)); max-width: none; margin-left: 164px; margin-right: 0;
+    padding-left: var(--col-pad); padding-right: var(--space-5); }
 }
 /* Phones: one row, with the links in the Menu panel (styles.css and nav.js) */
 /* Below the rail the nav spans the window. The iron filings' canvas reaches past each key (filings.js), and past
@@ -67,7 +87,8 @@
 :root:not([data-theme="light"]) body { background: var(--ground)
   url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.1' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .126 -.059'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E"); }
 
-.foot { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-6); }
+.foot { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: var(--space-6) var(--grid-gutter); }
+.foot > * { grid-column: span 4; }   /* three columns of four */
 .foot h2 { font: 400 var(--text-2xs)/1.5 "Söhne Mono", monospace; color: var(--c-mist); margin: 0 0 var(--space-2); }
 .foot p, .foot ul { margin: 0; padding: 0; list-style: none; font-size: var(--text-md); line-height: 1.55; }
 .foot li { padding: 2px 0; }
@@ -90,7 +111,7 @@
 .endframe { overflow: clip; pointer-events: none; padding-top: var(--halftone-reach);
   margin-top: calc(var(--space-8) + var(--halftone-above) - var(--halftone-reach)); }
 
-@media (max-width: 760px) { .foot { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 760px) { .foot > * { grid-column: 1 / -1; } }
 
 /* The work page's end: the footer on the page's own ground, then a bison galloping in type (bison.js), as tall as the
    animal needs at the page's width, with room for its entrance's wall of characters around it. */

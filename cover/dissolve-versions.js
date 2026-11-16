@@ -1,6 +1,6 @@
 /* Written by the Dissolve Lab. The cover plays the version named by "active". */
 window.DISSOLVE_VERSIONS = {
-  "active": "mwio5odh",
+  "active": "mwjge1y1",
   "versions": [
     {
       "id": "original",
@@ -68,6 +68,24 @@ window.DISSOLVE_VERSIONS = {
         "popAt": 940,
         "rush": 120,
         "curve": 1.6,
+        "reach": 0.4,
+        "crumbs": 28,
+        "size": 1,
+        "life": 1180,
+        "gravityStart": 20,
+        "gravityEnd": 12000,
+        "gravityCurve": 4.2
+      }
+    },
+    {
+      "id": "mwjge1y1",
+      "name": "Tune 5",
+      "savedAt": "2026-11-16T16:03:51.769Z",
+      "config": {
+        "popAt": 940,
+        "rush": 120,
+        "curve": 1.6,
+        "after": 100,
         "reach": 0.4,
         "crumbs": 28,
         "size": 1,

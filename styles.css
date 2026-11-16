@@ -19,7 +19,7 @@
   font-family: "Söhne Breit";
   font-weight: 600;
   font-style: normal;
-  font-display: swap;
+  font-display: block;   /* the headings wait a moment for it rather than flash up in a stand-in sans; each page preloads it */
   src: url("fonts/soehne-breit-halbfett.woff2") format("woff2");
 }
 

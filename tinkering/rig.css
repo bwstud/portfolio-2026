@@ -1,4 +1,4 @@
-/* Matte on the rigs: what the experiments under Rigs and Jigs need on top of matte.css to wear the Matte system.
+/* Matte on the rigs: what the pages under Experiments need on top of matte.css to wear the Matte system.
    Each experiment is its own page with its own layout, so it loads Matte in a cascade layer, under its own rules:
 
      @layer base, matte;

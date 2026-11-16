@@ -104,7 +104,7 @@
     .ds-type__sample p { margin: 0; }
     .ds-type__sample .cover__name, .ds-type__sample .cover__work { text-align: left; }
     .ds-type__sample .cover__tagline { margin: 0; max-width: 60ch; text-wrap: pretty; }
-    .ds-type__sample .tinkering__title { font: 600 var(--text-page-title)/1 var(--font-display); letter-spacing: -0.03em; max-width: none; }   /* the token as documented; Rigs and Jigs now sets its own smaller heading */
+    .ds-type__sample .tinkering__title { font: 600 var(--text-page-title)/1 var(--font-display); letter-spacing: -0.03em; max-width: none; }   /* the token as documented; Experiments now sets its own smaller heading */
     .ds-type__sample .tinkering__intro { display: block; }
     /* text styles shown in the text colour; each page decides whether to set them muted */
     .ds-type__sample .cover__tagline, .ds-type__sample .tinkering__intro, .ds-type__sample .project__desc, .ds-type__sample .card__desc, .ds-type__sample .card__meta { color: var(--fg); }
@@ -183,7 +183,7 @@
     <nav class="nav__links">
       <a class="chip" href="../../bio.html"><svg class="chip__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Bio</a>
       <a class="chip" href="../../how-i-work.html"><svg class="chip__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="8" height="8" x="3" y="3" rx="2"/><path d="M7 11v4a2 2 0 0 0 2 2h4"/><rect width="8" height="8" x="13" y="13" rx="2"/></svg>How I Work</a>
-      <a class="chip" href="../"><svg class="chip__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12.99 6.74 1.93 3.44"/><path d="M19.136 12a10 10 0 0 1-14.271 0"/><path d="m21 21-2.16-3.84"/><path d="m3 21 8.02-14.26"/><circle cx="12" cy="5" r="2"/></svg>Rigs and Jigs</a>
+      <a class="chip" href="../"><svg class="chip__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12.99 6.74 1.93 3.44"/><path d="M19.136 12a10 10 0 0 1-14.271 0"/><path d="m21 21-2.16-3.84"/><path d="m3 21 8.02-14.26"/><circle cx="12" cy="5" r="2"/></svg>Experiments</a>
       <a class="chip" href="./" aria-current="page"><svg class="chip__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 17a4 4 0 0 1-8 0V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2Z"/><path d="M16.7 13H19a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2H7"/><path d="M7 17h.01"/><path d="m11 8 2.3-2.3a2.4 2.4 0 0 1 3.404.004L18.6 7.6a2.4 2.4 0 0 1 .026 3.434L9.9 19.8"/></svg>Design System</a>
       <a class="chip" href="#contact"><svg class="chip__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="10" r="3"/><path d="M7 20.662V19a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v1.662"/></svg>Contact</a>
       <a class="chip" href="https://www.linkedin.com/in/bwstudwell" target="_blank" rel="noopener"><svg class="chip__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect width="4" height="12" x="2" y="9"/><circle cx="4" cy="4" r="2"/></svg>LinkedIn</a>
@@ -317,7 +317,7 @@
         </div>
         <div class="ds-type__row">
           <div class="ds-type__spec"><strong>Page title</strong>.tinkering__title<br>--text-page-title<br>Breit 600 · 40–72px<br>line 1 · −0.03em</div>
-          <div class="ds-type__sample"><p class="tinkering__title">Rigs and Jigs</p></div>
+          <div class="ds-type__sample"><p class="tinkering__title">Experiments</p></div>
         </div>
         <div class="ds-type__row">
           <div class="ds-type__spec"><strong>Card title</strong>.card__title<br>--text-heading<br>Breit 600 · 20px</div>
@@ -848,10 +848,10 @@
       <h3 class="ds-h3">Nav button <span class="ds-status ds-status--settled">Settled</span></h3>
       <div class="ds-stage">
         <div class="nav matte ds-nav">
-          <div><span class="ds-label">Rest, lamp off</span><a class="chip"><svg class="chip__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12.99 6.74 1.93 3.44"/><path d="M19.136 12a10 10 0 0 1-14.271 0"/><path d="m21 21-2.16-3.84"/><path d="m3 21 8.02-14.26"/><circle cx="12" cy="5" r="2"/></svg>Rigs and Jigs</a></div>
-          <div><span class="ds-label">Hover</span><a class="chip is-hover"><svg class="chip__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12.99 6.74 1.93 3.44"/><path d="M19.136 12a10 10 0 0 1-14.271 0"/><path d="m21 21-2.16-3.84"/><path d="m3 21 8.02-14.26"/><circle cx="12" cy="5" r="2"/></svg>Rigs and Jigs</a></div>
-          <div><span class="ds-label">Pressed</span><a class="chip is-press"><svg class="chip__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12.99 6.74 1.93 3.44"/><path d="M19.136 12a10 10 0 0 1-14.271 0"/><path d="m21 21-2.16-3.84"/><path d="m3 21 8.02-14.26"/><circle cx="12" cy="5" r="2"/></svg>Rigs and Jigs</a></div>
-          <div><span class="ds-label">Current page, lamp lit</span><a class="chip is-current"><svg class="chip__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12.99 6.74 1.93 3.44"/><path d="M19.136 12a10 10 0 0 1-14.271 0"/><path d="m21 21-2.16-3.84"/><path d="m3 21 8.02-14.26"/><circle cx="12" cy="5" r="2"/></svg>Rigs and Jigs</a></div>
+          <div><span class="ds-label">Rest, lamp off</span><a class="chip"><svg class="chip__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12.99 6.74 1.93 3.44"/><path d="M19.136 12a10 10 0 0 1-14.271 0"/><path d="m21 21-2.16-3.84"/><path d="m3 21 8.02-14.26"/><circle cx="12" cy="5" r="2"/></svg>Experiments</a></div>
+          <div><span class="ds-label">Hover</span><a class="chip is-hover"><svg class="chip__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12.99 6.74 1.93 3.44"/><path d="M19.136 12a10 10 0 0 1-14.271 0"/><path d="m21 21-2.16-3.84"/><path d="m3 21 8.02-14.26"/><circle cx="12" cy="5" r="2"/></svg>Experiments</a></div>
+          <div><span class="ds-label">Pressed</span><a class="chip is-press"><svg class="chip__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12.99 6.74 1.93 3.44"/><path d="M19.136 12a10 10 0 0 1-14.271 0"/><path d="m21 21-2.16-3.84"/><path d="m3 21 8.02-14.26"/><circle cx="12" cy="5" r="2"/></svg>Experiments</a></div>
+          <div><span class="ds-label">Current page, lamp lit</span><a class="chip is-current"><svg class="chip__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12.99 6.74 1.93 3.44"/><path d="M19.136 12a10 10 0 0 1-14.271 0"/><path d="m21 21-2.16-3.84"/><path d="m3 21 8.02-14.26"/><circle cx="12" cy="5" r="2"/></svg>Experiments</a></div>
           <div><span class="ds-label">Leaves the site: icon after, no lamp</span><a class="chip" download>brian.md<svg class="chip__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/></svg></a></div>
           <div><span class="ds-label">Icon only</span><span class="chip theme-toggle"><svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
         <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg></span></div>
@@ -902,7 +902,7 @@
           </span>
         </a></li>
       </ul>
-      <p class="ds-notes" style="margin-top: 16px">The <a href="../">Rigs and Jigs</a> wall. A Matte body, speckle and all, with the picture set into it like a screen in its well. On hover it lifts 2px and the thumbnail zooms slightly.</p>
+      <p class="ds-notes" style="margin-top: 16px">The <a href="../">Experiments</a> wall. A Matte body, speckle and all, with the picture set into it like a screen in its well. On hover it lifts 2px and the thumbnail zooms slightly.</p>
 
       <h3 class="ds-h3">Split-flap board <span class="ds-status ds-status--settled">Settled</span></h3>
       <div class="ds-stage ds-board-stage matte">
@@ -977,7 +977,7 @@
       <ul class="ds-notes">
         <li><a href="../../">The cover</a>: the Sound switch and tuning knob panel, the Recent Work key and the Covers menu. The panel is still its own drawing of these parts, not yet built from <code>matte.css</code>.</li>
         <li><a href="../../work.html">The work page</a>: the nav rail, the split-flap board’s housing and the key for each project.</li>
-        <li><a href="../">Rigs and Jigs</a>: every card is a Matte body with its picture in a well.</li>
+        <li><a href="../">Experiments</a>: every card is a Matte body with its picture in a well.</li>
         <li><a href="../dissolve-lab/">The Dissolve Lab</a>: a working tool built only from the parts above.</li>
       </ul>
     </section>

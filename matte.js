@@ -8,11 +8,12 @@
    - .m-knob[data-options]  a rotary select: "A|B|C"; read el.option; data-for names an element to write it to.
    - .m-pop[popover]        positioned under its popovertarget. dialog.m-dialog opens from [data-dialog=id]; [data-close] closes.
    - [data-tip]             a tooltip. .m-number [data-step] steps its input. Matte.toast(text) shows a toast.
-   - .m-key, .m-knob, .m-switch, .m-push   the paint holds iron filings that stand up to the pointer and are thrown back
-                            by a press, when filings.js (site root) is loaded before this: on a plain key's face, a
-                            knob's cap, a slide switch's thumb and a push switch's cap. Coloured, quiet, pad and
-                            disabled keys and metal knobs are left alone, and so is anything with data-plain.
-                            Not run for reduced motion.
+   - .m-key, .m-knob, .m-switch, .m-push, .m-rocker, .m-fader, .m-seg   the paint holds iron filings that stand up to the
+                            pointer and are thrown back by a press, when filings.js (site root) is loaded before this: on
+                            a plain key's face, a pad, a knob's cap, a slide switch's thumb, a push switch's cap, a rocker's
+                            paddle, a fader's thumb and the chosen segment of a segmented control. A lit pad has none.
+                            Coloured, quiet and disabled keys and metal knobs are left
+                            alone, and so is anything with data-plain. Not run for reduced motion.
      Meter variations: --v, --dots, --stereo (Matte.meter(el, left, right), with peak hold), --needle (add --lamp to light it). */
 (() => {
   const NS = 'http://www.w3.org/2000/svg';
@@ -137,6 +138,7 @@
     else fill(el, level, false);
   }
 
+  const ironed = new WeakSet();                                       // controls whose filings have their listeners already
   const IRON = '.m-key:not(.m-key--pad, .m-key--accent, .m-key--primary, .m-key--danger, .m-key--quiet, [disabled], [data-plain])';
   function init(root = document) {
     wire();
@@ -159,6 +161,35 @@
           const down = el.getAttribute('aria-pressed') === 'true' || el.getAttribute('aria-checked') === 'true';
           return { x: 4, y: 4 - (down ? 0 : rise), w: el.offsetWidth - 8, h: el.offsetHeight - 8, round: true };
         } });
+      });
+      const watchAttr = (el, name, fn) => new MutationObserver(fn).observe(el, { attributes: true, attributeFilter: [name] });
+      root.querySelectorAll('.m-rocker' + ok).forEach((el) => Filings.attach(el, iron, { z: 1,      // the paddle, tipped either way (over its two faces)
+        face: () => ({ x: 3, y: 3, w: el.offsetWidth - 6, h: el.offsetHeight - 6 }) }));
+      root.querySelectorAll('.m-key--pad' + ok).forEach((el) => {                      // the whole pad while it is dark; a lit pad holds none
+        if (ironed.has(el)) return; ironed.add(el);
+        const f = Filings.attach(el, iron, { face: () => el.getAttribute('aria-pressed') === 'true' ? { x: 0, y: 0, w: 0, h: 0 } : { x: 0, y: 0, w: el.offsetWidth, h: el.offsetHeight } });
+        watchAttr(el, 'aria-pressed', () => f.wake());                                // the moment it lights, its filings are gone
+      });
+      root.querySelectorAll('.m-seg button' + ok).forEach((el) => {                   // only the chosen segment has a cap to hold iron
+        if (ironed.has(el)) return; ironed.add(el);
+        const f = Filings.attach(el, iron, { face: () => el.getAttribute('aria-checked') === 'true' ? { x: 0, y: 0, w: el.offsetWidth, h: el.offsetHeight } : { x: 0, y: 0, w: 0, h: 0 } });
+        watchAttr(el, 'aria-checked', () => f.wake());                                // however the choice is made, by Matte or a page's own script
+      });
+      root.querySelectorAll('.m-fader' + ok).forEach((el) => {                        // the thumb, wherever it has been dragged or set to
+        if (ironed.has(el) || !el.parentElement) return; ironed.add(el);
+        const T = { w: 16, h: 26 };                                                    // the thumb's size in matte.css
+        const f = Filings.attach(el, iron, { host: el.parentElement, z: 1, snap: true,   // a press throws the iron back, as on a key, and holds it off while dragging
+          cut: () => ({ x: T.w * 0.43 - 0.5, y: 0, w: T.w * 0.14 + 1, h: T.h }),     // the white centre line (43% to 57% of the thumb in matte.css), with half a px either side, stays on top
+          face: () => {
+          const min = Number(el.min || 0), max = Number(el.max || 100), u = max > min ? (Number(el.value) - min) / (max - min) : 0;
+          return { x: Math.min(1, Math.max(0, u)) * (el.offsetWidth - T.w), y: (el.offsetHeight - T.h) / 2, w: T.w, h: T.h };
+        } });
+        el.addEventListener('input', f.wake);
+        // a page that sets the value from its own script (a typed number beside the fader) moves the thumb too
+        for (const key of ['value', 'valueAsNumber']) {
+          const d = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, key);
+          Object.defineProperty(el, key, { configurable: true, get() { return d.get.call(this); }, set(v) { d.set.call(this, v); f.wake(); } });
+        }
       });
     }
     root.querySelectorAll('.m-bank, .m-seg').forEach(radios);

@@ -141,7 +141,8 @@
       requestAnimationFrame(tick);
       const dt = Math.min(100, now - (last || now)); last = now;
       const settled = enterAt !== null && now - enterAt > cfg.holdMs + cfg.resolveMs + 50;
-      if (!still.matches && settled && frames) { at = (at + dt / 1000 * cfg.fps) % frames; dirty = true; }
+      // the gallop runs through the entrance too, as in the Bison Lab, so the wall gives way to an animal already running
+      if (!still.matches && frames) { at = (at + dt / 1000 * cfg.fps) % frames; dirty = true; }
       if (!still.matches && !settled) dirty = true;   // the wall flickers
       if (!dirty) return;
       dirty = false; draw(now);

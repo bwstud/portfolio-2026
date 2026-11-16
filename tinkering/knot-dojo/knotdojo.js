@@ -546,10 +546,10 @@ function buildLibrary() {
   for (const gname of groups) {
     const g = document.createElement('div');
     g.className = 'group';
-    g.innerHTML = `<div class="label">${gname}</div>`;
+    g.innerHTML = `<div class="label m-legend">${gname}</div>`;
     for (const k of KNOTS.filter(k => k.group === gname)) {
       const b = document.createElement('button');
-      b.className = 'knot';
+      b.className = 'knot m-menu__item m-menu__item--plain';
       b.dataset.id = k.id;
       b.innerHTML = `<span class="knot__name">${k.name}</span><span class="knot__sum">${k.summary}</span>`;
       b.addEventListener('click', () => selectKnot(k));
@@ -583,7 +583,7 @@ function buildOptions() {
   const mats = $('materials');
   for (const [id, m] of Object.entries(MATERIALS)) {
     const b = document.createElement('button');
-    b.className = 'material';
+    b.className = 'material m-menu__item m-menu__item--plain';
     b.dataset.id = id;
     const sw = document.createElement('canvas');
     sw.width = 68; sw.height = 36;
@@ -602,7 +602,7 @@ function buildOptions() {
   const swatchRow = (el, keyName) => {
     for (const c of COLORS) {
       const b = document.createElement('button');
-      b.className = 'swatch';
+      b.className = 'swatch m-dot';
       b.style.background = c;
       b.dataset.color = c;
       b.setAttribute('aria-label', `Color ${c}`);
@@ -610,7 +610,7 @@ function buildOptions() {
       el.appendChild(b);
     }
     const custom = document.createElement('label');
-    custom.className = 'swatch swatch--custom';
+    custom.className = 'swatch swatch--custom m-dot';
     custom.title = 'Pick any color';
     custom.innerHTML = `<input type="color" aria-label="Custom color">`;
     custom.querySelector('input').addEventListener('input', e => setColor(keyName, e.target.value));

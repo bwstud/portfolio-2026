@@ -1,0 +1,102 @@
+/* Matte on the rigs: what the experiments under Rigs and Jigs need on top of matte.css to wear the Matte system.
+   Each experiment is its own page with its own layout, so it loads Matte in a cascade layer, under its own rules:
+
+     @layer base, matte;
+     @import url("../../matte.css") layer(matte);
+     @import url("../rig.css") layer(matte);
+     @layer base { …the page's element resets… }
+
+   The page keeps where things sit; Matte supplies what they are made of. The parts here are bridges, not new
+   parts: the same key, slot, well and lamp, reached from markup an experiment already has (a toggle that uses
+   aria-pressed, a switch drawn inside its own button, a panel that scrolls). The rigs are dark only. */
+
+@font-face { font-family: "Söhne Mono"; font-weight: 400; font-display: swap; src: url("../fonts/soehne-mono-buch.woff2") format("woff2"); }
+
+.matte {
+  --font-mono: "Söhne Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-sans: "Geist", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;   /* the rigs' text face */
+  --notes-blur: none;                 /* the note card (notes.js) is a Matte body here, not glass */
+  --m-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.1' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .144 -.067'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ---- Body: the powder-coated case as paint only, for a box that already has its own layout. Unlike .m-panel it
+        sets no display and draws its grain as a background, so it can scroll and can hold anything. ---- */
+.m-body { border-radius: var(--m-radius); background: var(--m-grain), linear-gradient(180deg, var(--m-body-hi), var(--m-body-lo));
+  box-shadow: 0 1px 0 var(--m-shine) inset, 0 -1px 0 rgb(0 0 0 / calc(0.6 * var(--m-shade))) inset, 0 0 0 1px var(--m-edge), var(--m-drop); }
+.m-body--flat { box-shadow: 0 1px 0 var(--m-shine) inset, 0 -1px 0 rgb(0 0 0 / calc(0.6 * var(--m-shade))) inset, 0 0 0 1px var(--m-edge); }
+.m-body--low { box-shadow: 0 1px 0 var(--m-shine) inset, 0 -1px 0 rgb(0 0 0 / calc(0.6 * var(--m-shade))) inset, 0 0 0 1px var(--m-edge), 0 8px 18px rgb(0 0 0 / calc(0.45 * var(--m-shade))); }   /* a small body: a shorter shadow */
+.m-body--rack { border-radius: 0; background: var(--m-grain), linear-gradient(180deg, var(--m-body-hi), var(--m-body-lo)); box-shadow: 1px 0 0 var(--m-edge) inset, 2px 0 0 rgb(255 255 255 / calc(0.055 * var(--m-gloss))) inset; }   /* a rack docked to the right edge: a seam down its left side */
+.m-body--rack-left { border-radius: 0; background: var(--m-grain), linear-gradient(180deg, var(--m-body-hi), var(--m-body-lo)); box-shadow: -1px 0 0 var(--m-edge) inset, -2px 0 0 rgb(255 255 255 / calc(0.055 * var(--m-gloss))) inset; }   /* and one docked to the left edge */
+.m-body--sm { border-radius: var(--radius-lg, 10px); }
+
+/* ---- Legend as a link (the way back), and a read-out printed beside a control ---- */
+.matte a.m-legend { text-decoration: none; transition: color var(--m-hover); }
+.matte a.m-legend:hover { color: var(--m-print-hi); }
+.m-value { font: 400 11px/1.2 var(--m-font); letter-spacing: 0.02em; color: var(--m-lit); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.m-rule { border: 0; height: 2px; margin: 0; background: linear-gradient(180deg, var(--m-well) 50%, rgb(255 255 255 / calc(0.055 * var(--m-gloss))) 50%); }   /* a seam, as a rule between groups */
+
+/* ---- Key bridges ---- */
+/* a key that toggles with aria-pressed and has no lamp of its own: it stays down and its legend lights */
+.matte .m-key[aria-pressed="true"]:not(.m-key--pad, .m-key--tile, .m-key--quiet), .matte .m-key.is-on:not(.m-key--pad, .m-key--tile, .m-key--quiet), .matte .m-key[aria-current="true"], .matte .m-key[aria-selected="true"] {
+  color: var(--m-signal); transform: translateY(2px); background: linear-gradient(180deg, var(--m-cap), var(--m-body));
+  box-shadow: 0 1px 0 rgb(255 255 255 / calc(0.06 * var(--m-gloss))) inset, 0 2px 3px rgb(0 0 0 / calc(0.55 * var(--m-shade))) inset, 0 0 0 1px var(--m-edge), 0 1px 0 var(--m-wall); }
+.matte .m-key--quiet[aria-pressed="true"], .matte .m-key--quiet.is-on { color: var(--m-signal); background: color-mix(in srgb, var(--m-print) 12%, transparent); }
+.matte .m-key--icon { width: 28px; min-width: 0; padding: 0; }                           /* a key that holds only a drawing */
+.matte .m-key--sm { height: 22px; min-width: 0; padding: 0 8px; margin-bottom: 2px; box-shadow: 0 1px 0 var(--m-shine) inset, 0 0 0 1px var(--m-edge), 0 2px 0 var(--m-wall), 0 4px 5px rgb(0 0 0 / calc(0.5 * var(--m-shade))); }
+.matte .m-key--wide { width: 100%; }
+.m-key svg.m-key__fill, .m-key--solid svg { fill: currentColor; stroke: none; }          /* a filled drawing: transport marks */
+/* a tile: a key that holds a drawing or a colour above its legend, or a few lines of text. The chosen one stays down, ringed in the signal colour */
+.matte .m-key--tile { flex-direction: column; gap: 4px; height: auto; min-width: 0; padding: 7px 4px 6px; text-align: center; line-height: 1.2; white-space: normal; }
+.matte .m-key--tile:is([aria-pressed="true"], [aria-checked="true"], [aria-selected="true"], .is-on) { color: var(--m-print-hi); transform: translateY(2px); background: linear-gradient(180deg, var(--m-cap), var(--m-body));
+  box-shadow: 0 2px 3px rgb(0 0 0 / calc(0.55 * var(--m-shade))) inset, 0 0 0 1px var(--m-signal), 0 1px 0 var(--m-wall); }
+.matte .m-key--left { justify-content: flex-start; align-items: flex-start; text-align: left; }
+.matte .m-key--plain { text-transform: none; letter-spacing: 0.02em; font-size: 11px; }  /* a legend that reads as a name, not a label */
+
+/* a pad that carries a legend, and one lit by the page's own .is-on */
+.matte .m-key--pad.m-key--label { width: auto; padding: 0 12px; }
+.matte .m-key--pad.is-on { background: linear-gradient(180deg, var(--m-pad-on-hi), var(--m-pad-on-lo)); box-shadow: 0 1px 0 rgb(255 255 255 / 0.7) inset, 0 0 0 1px var(--m-edge), 0 3px 0 var(--m-wall), 0 0 12px color-mix(in srgb, var(--m-pad-on-hi) 30%, transparent); }
+.matte .m-key--pad:is([aria-pressed="true"], .is-on) { color: #17110b; }
+.matte .m-seg--wrap { display: flex; flex-wrap: wrap; }
+.m-seam--v { align-self: stretch; }
+/* a segmented control whose buttons use aria-pressed, or mark the choice with .is-on */
+.matte .m-seg button:is([aria-pressed="true"], [aria-selected="true"], [aria-current], .is-on) { color: var(--m-print-hi); background: linear-gradient(180deg, var(--m-cap-hi), var(--m-cap));
+  box-shadow: 0 1px 0 var(--m-shine) inset, 0 0 0 1px var(--m-edge), 0 2px 3px rgb(0 0 0 / calc(0.5 * var(--m-shade))); }
+.matte .m-seg button { white-space: nowrap; }
+.matte .m-seg button:disabled { opacity: 0.4; pointer-events: none; }
+.matte .m-seg--fill { display: flex; }
+.matte .m-seg--fill button { flex: 1; padding: 0 6px; }
+
+/* ---- Switch bridges: a smaller slide switch, and one drawn as a span inside the button that owns the state.
+        Inside a button, a lamp shows in the slot the thumb has left. ---- */
+.m-switch--sm { width: 40px; height: 20px; border-radius: 10px; }
+.m-switch--sm::after { left: 2px; top: 2px; width: 16px; height: 16px; }
+.m-switch--sm[aria-checked="true"]::after { transform: translateX(20px); }
+span.m-switch { display: inline-block; }
+span.m-switch::before { content: ""; position: absolute; left: 9px; top: 50%; width: 6px; height: 6px; margin-top: -3px; border-radius: 50%; background: transparent; transition: background var(--m-light-off), box-shadow var(--m-light-off); }
+span.m-switch--sm::before { left: 6px; }
+:is([aria-checked="true"], [aria-pressed="true"]) > span.m-switch::after, input:checked + span.m-switch::after { transform: translateX(28px); }
+:is([aria-checked="true"], [aria-pressed="true"]) > span.m-switch--sm::after, input:checked + span.m-switch--sm::after { transform: translateX(20px); }
+:is([aria-checked="true"], [aria-pressed="true"]) > span.m-switch::before, input:checked + span.m-switch::before { background: var(--m-signal); box-shadow: 0 0 5px color-mix(in srgb, var(--m-signal) 75%, transparent); transition-duration: var(--m-light-on); }
+:disabled > span.m-switch { opacity: 0.4; }
+input.m-switch { appearance: none; -webkit-appearance: none; margin: 0; cursor: pointer; }   /* a tick box worn as a slide switch */
+input.m-switch:checked::after { transform: translateX(28px); }
+input.m-switch--sm:checked::after { transform: translateX(20px); }
+
+/* ---- Entry bridges: a shorter well for a dense rack ---- */
+.m-input--sm { width: auto; height: 28px; padding: 0 9px; font-size: 11px; }
+select.m-input--sm { padding-right: 26px; background-position: calc(100% - 13px) 12px, calc(100% - 8px) 12px; }
+.m-fader:disabled { opacity: 0.4; pointer-events: none; }
+.m-fader--v { writing-mode: vertical-lr; direction: rtl; width: 28px; height: 168px; }
+
+/* ---- A row in a list that can be chosen: the menu item, lit by a signal mark down its left edge ---- */
+.matte .m-menu__item:is([aria-pressed="true"], [aria-selected="true"], [aria-current="true"], [aria-checked="true"], .is-on, .is-active) { color: var(--m-print-hi); background: color-mix(in srgb, var(--m-print) 10%, transparent); box-shadow: 2px 0 0 var(--m-signal) inset; }
+.matte .m-menu__item--plain { text-transform: none; letter-spacing: 0.01em; font: 400 12px/1.35 var(--m-font-text); }
+.matte .m-menu__item--plain > :last-child:not(:first-child) { margin-left: 0; color: inherit; }   /* its last part is text, not a shortcut pushed to the far side */
+
+/* ---- A colour set in the body: a round window, ringed in the signal colour when it is the one in use ---- */
+.m-dot { display: inline-block; flex: none; width: 22px; height: 22px; border-radius: 50%; background: var(--c, var(--m-cap)); box-shadow: 0 1px 2px rgb(0 0 0 / calc(0.8 * var(--m-shade))) inset, 0 0 0 1px var(--m-edge), 0 1px 0 rgb(255 255 255 / calc(0.08 * var(--m-gloss))); }
+.matte button.m-dot { background: var(--c, var(--m-cap)); transition: box-shadow var(--m-hover); }
+.matte .m-dot:is([aria-pressed="true"], [aria-checked="true"], .is-on) { box-shadow: 0 1px 2px rgb(0 0 0 / calc(0.8 * var(--m-shade))) inset, 0 0 0 2px var(--m-body), 0 0 0 4px var(--m-signal); }
+
+/* a toast placed by the page: the same strip of glass, shown and hidden by the page's own class */
+.m-toast--still { animation: none; }

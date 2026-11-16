@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Knot Dojo · Brian Studwell</title>
   <style>
+    @layer base, matte;
+    @import url("../../matte.css") layer(matte);   /* the Matte system, under this page's own layout rules */
+    @import url("../rig.css") layer(matte);        /* and what the rigs share on top of it */
     @font-face {
       font-family: "Geist";
       font-weight: 100 900;
@@ -25,7 +28,11 @@
       --accent-ink: #131313;
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    @layer base {
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      button, input, select { font: inherit; color: inherit; }
+      button { cursor: pointer; background: none; border: 0; }
+    }
 
     html, body {
       height: 100%;
@@ -36,9 +43,6 @@
       -webkit-font-smoothing: antialiased;
     }
 
-    button, input, select { font: inherit; color: inherit; }
-    button { cursor: pointer; background: none; border: 0; }
-    :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
     #scene {
       position: fixed; inset: 0; display: block; width: 100%; height: 100%;
@@ -46,18 +50,7 @@
     }
     #scene:active { cursor: grabbing; }
 
-    .panel {
-      position: fixed; z-index: 2;
-      background: var(--panel);
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
-    }
-
-    .label {
-      font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
-      color: var(--muted);
-    }
+    .panel { position: fixed; z-index: 2; border-radius: 12px; }   /* a Matte body (.m-body); its labels are Matte legends */
 
     /* ---------- header ---------- */
     .top {
@@ -65,14 +58,9 @@
       display: flex; align-items: center; gap: 14px; pointer-events: none;
     }
     .top > * { pointer-events: auto; }
-    .back { color: var(--muted); text-decoration: none; }
-    .back:hover { color: var(--fg); }
     .brand { font-size: 15px; font-weight: 650; letter-spacing: 0.01em; }
     .brand span { color: var(--muted); font-weight: 450; margin-left: 6px; }
-    .drawer-toggle {
-      display: none; margin-left: auto; padding: 6px 11px; border-radius: 8px;
-      border: 1px solid var(--line-strong); background: var(--panel);
-    }
+    .drawer-toggle { display: none; margin-left: auto; }   /* a Matte key */
     .drawer-toggle + .drawer-toggle { margin-left: 0; }
 
     /* ---------- library (left) ---------- */
@@ -83,17 +71,11 @@
     .library__scroll { overflow-y: auto; padding: 12px 10px 14px; }
     .group + .group { margin-top: 14px; }
     .group .label { padding: 0 8px 6px; }
-    .knot {
-      display: block; width: 100%; text-align: left;
-      padding: 8px 10px; border-radius: 8px; border: 1px solid transparent;
-    }
-    .knot:hover { background: rgba(255, 255, 255, 0.04); }
-    .knot[aria-pressed="true"] { background: rgba(181, 181, 181, 0.1); border-color: rgba(181, 181, 181, 0.35); }
-    .knot__name { display: block; font-weight: 560; }
-    .knot__sum { display: block; color: var(--muted); font-size: 12px; margin-top: 1px; }
-    .knot[aria-pressed="true"] .knot__name { color: var(--accent); }
+    .knot { display: block; width: 100%; text-align: left; padding: 8px 10px; }   /* a row in a Matte list: the chosen one carries a signal mark */
+    .knot__name { display: block; font-weight: 560; color: var(--m-print-hi); }
+    .knot__sum { display: block; color: var(--m-print-dim); font-size: 12px; margin-top: 1px; }
 
-    .about { border-top: 1px solid var(--line); padding: 12px 18px 16px; max-height: 42%; overflow-y: auto; flex: none; }
+    .about { border-top: 1px solid var(--m-well); box-shadow: 0 1px 0 rgb(255 255 255 / 0.055) inset; padding: 12px 18px 16px; max-height: 42%; overflow-y: auto; flex: none; }
     .about__head { display: flex; align-items: baseline; gap: 8px; margin-bottom: 6px; }
     .about__name { font-size: 14px; font-weight: 620; }
     .about__abok { color: var(--faint); font-size: 11px; white-space: nowrap; }
@@ -107,49 +89,34 @@
       top: 50px; right: 16px; width: 264px; max-height: calc(100% - 66px);
       overflow-y: auto; padding: 14px 16px 16px;
     }
-    .opt + .opt { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line); }
-    .opt .label { margin-bottom: 8px; display: flex; justify-content: space-between; }
-    .opt .label output { color: var(--fg); font-weight: 500; letter-spacing: 0; text-transform: none; font-size: 12px; }
+    .opt + .opt { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--m-well); box-shadow: 0 1px 0 rgb(255 255 255 / 0.055) inset; }   /* a seam between groups */
+    .opt .label { margin-bottom: 10px; display: flex; justify-content: space-between; }
+    .opt .label output { color: var(--m-lit); letter-spacing: 0.02em; text-transform: none; }
 
     .materials { display: grid; gap: 4px; }
-    .material {
-      display: flex; align-items: center; gap: 10px; text-align: left;
-      padding: 6px 8px; border-radius: 8px; border: 1px solid transparent;
-    }
-    .material:hover { background: rgba(255, 255, 255, 0.04); }
-    .material[aria-pressed="true"] { border-color: var(--line-strong); background: rgba(255, 255, 255, 0.05); }
-    .material canvas { width: 34px; height: 18px; border-radius: 9px; flex: none; }
-    .material b { display: block; font-weight: 540; }
-    .material small { display: block; color: var(--muted); font-size: 11.5px; line-height: 1.3; }
+    .material { padding: 6px 8px; }                              /* a row in a Matte list */
+    .material canvas { width: 34px; height: 18px; border-radius: 9px; flex: none; box-shadow: 0 0 0 1px var(--m-edge); }
+    .material b { display: block; font-weight: 540; color: var(--m-print-hi); }
+    .material small { display: block; color: var(--m-print-dim); font-size: 11.5px; line-height: 1.3; }
 
-    .swatches { display: flex; flex-wrap: wrap; gap: 7px; }
-    .swatch {
-      width: 24px; height: 24px; border-radius: 50%;
-      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18);
-    }
-    .swatch[aria-pressed="true"] { outline: 2px solid var(--fg); outline-offset: 2px; }
+    .swatches { display: flex; flex-wrap: wrap; gap: 9px; }      /* colours set in the body (.m-dot); the one in use is ringed */
+    .swatch { width: 24px; height: 24px; cursor: pointer; }
     .swatch--custom {
       position: relative; overflow: hidden;
       background: conic-gradient(#f55, #fd5, #5d5, #5df, #55f, #f5f, #f55);
     }
     .swatch--custom input { position: absolute; inset: -6px; opacity: 0; cursor: pointer; width: 40px; height: 40px; }
-    .sub { margin-top: 10px; color: var(--muted); font-size: 11.5px; margin-bottom: 6px; }
+    .sub { margin-top: 12px; color: var(--m-print-dim); font-size: 11.5px; margin-bottom: 8px; }
     .is-dim { opacity: 0.45; }
 
-    input[type="range"] { width: 100%; accent-color: var(--accent); }
-    .range-ends { display: flex; justify-content: space-between; color: var(--faint); font-size: 11px; margin-top: 2px; }
+    .m-fader { width: 100%; }
+    .range-ends { display: flex; justify-content: space-between; color: var(--m-print-dim); font-size: 11px; margin-top: 2px; }
 
-    .views { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
-    .btn {
-      padding: 6px 4px; border-radius: 7px; border: 1px solid var(--line-strong);
-      background: rgba(255, 255, 255, 0.03); text-align: center; font-size: 12px;
-    }
-    .btn:hover { background: rgba(255, 255, 255, 0.08); }
-    .toggles { margin-top: 10px; display: grid; gap: 6px; }
-    .toggles label { display: flex; align-items: center; gap: 8px; cursor: pointer; color: #c8c8c8; }
-    .toggles input { accent-color: var(--accent); }
-    .toggles .dim { color: #828282; }
-    .hint { margin-top: 10px; color: var(--faint); font-size: 11.5px; }
+    .views { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+    .btn { min-width: 0; padding: 0 4px; }                       /* a Matte key */
+    .toggles { margin-top: 12px; display: grid; gap: 9px; justify-items: start; }   /* Matte tick boxes */
+    .toggles .dim { color: var(--m-print-dim); }
+    .hint { margin-top: 10px; color: var(--m-print-dim); font-size: 11.5px; }
 
     /* ---------- step card and transport (bottom) ---------- */
     .stage {
@@ -158,39 +125,30 @@
       padding: 14px 16px 12px;
     }
     .step__meta { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
-    .step__count { color: var(--accent); font-size: 11px; font-weight: 650; letter-spacing: 0.06em; text-transform: uppercase; }
-    .step__time { color: var(--faint); font-size: 11px; font-variant-numeric: tabular-nums; }
+    .step__count { color: var(--m-signal); }                     /* a Matte legend in the signal colour */
+    .step__time { color: var(--m-print-dim); }
     .step__title { font-size: 16px; font-weight: 620; margin-top: 3px; }
     .step__text { color: #cccccc; margin-top: 4px; min-height: 3em; }
 
     .steps { display: flex; gap: 4px; margin: 12px 0 10px; }
     .steps button {
       flex: 1; height: 16px; padding: 6px 0; background-clip: content-box;
-      background-color: rgba(255, 255, 255, 0.12); border-radius: 0;
+      background-color: var(--m-meter-off); border-radius: 0;   /* the steps as a Matte meter: segments that light as they play */
       position: relative;
     }
     .steps button::after {
       content: ""; position: absolute; left: 0; top: 6px; bottom: 6px;
-      width: var(--fill, 0%); background: var(--accent);
+      width: var(--fill, 0%); background: var(--m-meter-on);
     }
-    .steps button:hover { background-color: rgba(255, 255, 255, 0.22); }
+    .steps button:hover { background-color: color-mix(in srgb, var(--m-print) 40%, var(--m-meter-off)); }
 
-    .transport { display: flex; align-items: center; gap: 6px; }
-    .tbtn {
-      width: 34px; height: 34px; border-radius: 9px; display: grid; place-items: center;
-      border: 1px solid var(--line-strong); background: rgba(255, 255, 255, 0.03);
-    }
-    .tbtn:hover { background: rgba(255, 255, 255, 0.09); }
-    .tbtn svg { width: 16px; height: 16px; fill: currentColor; }
-    .tbtn--play { width: 44px; background: var(--accent); color: var(--accent-ink); border-color: transparent; }
-    .tbtn--play:hover { background: #c2c2c2; }
-    .tbtn:disabled { opacity: 0.35; cursor: default; }
-    .speed { margin-left: auto; display: flex; align-items: center; gap: 8px; color: var(--muted); }
-    .speed .seg { display: flex; border: 1px solid var(--line-strong); border-radius: 8px; overflow: hidden; }
-    .speed .seg button { padding: 6px 8px; font-size: 12px; font-variant-numeric: tabular-nums; }
-    .speed .seg button + button { border-left: 1px solid var(--line); }
-    .speed .seg button[aria-pressed="true"] { background: rgba(255, 255, 255, 0.12); color: var(--fg); }
-    .busy { color: var(--accent); font-size: 12px; margin-left: 6px; }
+    .transport { display: flex; align-items: center; gap: 8px; }
+    .tbtn { width: 38px; min-width: 0; padding: 0; }             /* Matte keys; Play is the primary */
+    .tbtn svg { width: 14px; height: 14px; }
+    .tbtn--play { width: 48px; }
+    .speed { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+    .speed .seg button { padding: 0 8px; letter-spacing: 0.04em; font-variant-numeric: tabular-nums; }
+    .busy { color: var(--m-signal); font-size: 12px; margin-left: 6px; }
 
     .no-ui .panel, .no-ui .top { display: none !important; }
 
@@ -212,9 +170,9 @@
       .brand span { display: none; }
       .top { gap: 10px; }
       .transport { gap: 5px; }
-      .tbtn { width: 32px; height: 32px; }
-      .tbtn--play { width: 40px; }
-      .speed .seg button { padding: 6px 5px; font-size: 11px; }
+      .tbtn { width: 34px; }
+      .tbtn--play { width: 42px; }
+      .speed .seg button { padding: 0 5px; }
       .step__title { font-size: 15px; }
       .step__text { min-height: 0; }
     }
@@ -228,28 +186,28 @@
     }
   </script>
 </head>
-<body>
+<body class="matte">
   <canvas id="scene" aria-label="3D view of a rope being tied into a knot"></canvas>
 
   <header class="top">
-    <a class="back" href="../">← Rigs and Jigs</a>
+    <a class="back m-legend" href="../">← Rigs and Jigs</a>
     <div class="brand">Knot Dojo<span>learn ten knots, step by step</span></div>
-    <button class="drawer-toggle" data-drawer="library" aria-expanded="false">Knots</button>
-    <button class="drawer-toggle" data-drawer="options" aria-expanded="false">Rope</button>
+    <button class="drawer-toggle m-key" data-drawer="library" aria-expanded="false">Knots</button>
+    <button class="drawer-toggle m-key" data-drawer="options" aria-expanded="false">Rope</button>
   </header>
 
-  <aside class="panel library" id="library" aria-label="Knot library">
+  <aside class="panel library m-body" id="library" aria-label="Knot library">
     <div class="library__scroll" id="knot-list"></div>
     <div class="about" id="about" aria-live="polite"></div>
   </aside>
 
-  <aside class="panel options" id="options" aria-label="Rope and camera options">
+  <aside class="panel options m-body" id="options" aria-label="Rope and camera options">
     <section class="opt">
-      <div class="label">Material</div>
+      <div class="label m-legend">Material</div>
       <div class="materials" id="materials"></div>
     </section>
     <section class="opt">
-      <div class="label">Color</div>
+      <div class="label m-legend">Color</div>
       <div class="swatches" id="colors"></div>
       <div id="second-wrap">
         <div class="sub">Second rope (used when joining two ropes)</div>
@@ -257,53 +215,53 @@
       </div>
     </section>
     <section class="opt">
-      <div class="label">Thickness <output id="thick-out"></output></div>
-      <input type="range" id="thick" min="6" max="14" step="1" aria-label="Rope diameter in millimetres">
+      <div class="label m-legend">Thickness <output id="thick-out"></output></div>
+      <input class="m-fader" type="range" id="thick" min="6" max="14" step="1" aria-label="Rope diameter in millimetres">
       <div class="range-ends"><span>6 mm cord</span><span>14 mm rope</span></div>
     </section>
     <section class="opt">
-      <div class="label">Camera</div>
+      <div class="label m-legend">Camera</div>
       <div class="views">
-        <button class="btn" data-view="front">Front</button>
-        <button class="btn" data-view="top">Top</button>
-        <button class="btn" data-view="side">Side</button>
-        <button class="btn" data-view="close">Close</button>
+        <button class="btn m-key" data-view="front">Front</button>
+        <button class="btn m-key" data-view="top">Top</button>
+        <button class="btn m-key" data-view="side">Side</button>
+        <button class="btn m-key" data-view="close">Close</button>
       </div>
       <div class="toggles">
-        <label><input type="checkbox" id="orbit"> Slowly orbit</label>
-        <label><input type="checkbox" id="show-path"> Show the path ahead</label>
-        <label><input type="checkbox" id="show-hands" checked> Show hands</label>
-        <label><input type="checkbox" id="show-ao"> Contact shadows <span class="dim">(slower)</span></label>
+        <label class="m-check"><input type="checkbox" id="orbit"> Slowly orbit</label>
+        <label class="m-check"><input type="checkbox" id="show-path"> Show the path ahead</label>
+        <label class="m-check"><input type="checkbox" id="show-hands" checked> Show hands</label>
+        <label class="m-check"><input type="checkbox" id="show-ao"> Contact shadows <span class="dim">(slower)</span></label>
       </div>
       <p class="hint">Drag to orbit. Right-drag or two fingers to pan. Scroll or pinch to zoom.</p>
     </section>
   </aside>
 
-  <section class="panel stage" aria-label="Step-by-step">
+  <section class="panel stage m-body" aria-label="Step-by-step">
     <div class="step__meta">
-      <span class="step__count" id="step-count"></span>
-      <span class="step__time" id="step-time"></span>
+      <span class="step__count m-legend" id="step-count"></span>
+      <span class="step__time m-value" id="step-time"></span>
     </div>
     <h2 class="step__title" id="step-title"></h2>
     <p class="step__text" id="step-text" aria-live="polite"></p>
     <div class="steps" id="steps"></div>
     <div class="transport">
-      <button class="tbtn" id="restart" title="Restart (R)" aria-label="Restart">
+      <button class="tbtn m-key m-key--solid" id="restart" title="Restart (R)" aria-label="Restart">
         <svg viewBox="0 0 16 16"><path d="M8 3a5 5 0 1 1-4.6 3h1.7A3.5 3.5 0 1 0 8 4.5V7L4.5 3.75 8 .5z"/></svg>
       </button>
-      <button class="tbtn" id="prev" title="Previous step (←)" aria-label="Previous step">
+      <button class="tbtn m-key m-key--solid" id="prev" title="Previous step (←)" aria-label="Previous step">
         <svg viewBox="0 0 16 16"><path d="M3 3h2v10H3zM14 3v10L6 8z"/></svg>
       </button>
-      <button class="tbtn tbtn--play" id="play" title="Play / pause (space)" aria-label="Play">
+      <button class="tbtn tbtn--play m-key m-key--primary m-key--solid" id="play" title="Play / pause (space)" aria-label="Play">
         <svg viewBox="0 0 16 16" id="play-icon"><path d="M4 2.5v11L13.5 8z"/></svg>
       </button>
-      <button class="tbtn" id="next" title="Next step (→)" aria-label="Next step">
+      <button class="tbtn m-key m-key--solid" id="next" title="Next step (→)" aria-label="Next step">
         <svg viewBox="0 0 16 16"><path d="M11 3h2v10h-2zM2 3v10l8-5z"/></svg>
       </button>
       <span class="busy" id="busy" hidden>Skipping ahead…</span>
       <div class="speed">
-        <span>Speed</span>
-        <div class="seg" id="speeds" role="group" aria-label="Playback speed"></div>
+        <span class="m-legend">Speed</span>
+        <div class="seg m-seg" id="speeds" role="group" aria-label="Playback speed"></div>
       </div>
     </div>
   </section>

@@ -27,3 +27,6 @@ tinkering/lighting-lab/scenes/.live-tmp.glb
 .claude/
 .impeccable/
 skills-lock.json
+
+# Bison Lab: the purchased 3DRT model the sheet is rendered from: local only
+tools/bison/model/

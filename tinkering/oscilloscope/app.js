@@ -144,8 +144,8 @@ const paint = (input) => input.style.setProperty('--p', `${(input.value - input.
 
 function slider({ label, get, set, min, max, step = 0.01, log = false, list, fmt, disabled = false }) {
   const id = `f${++uid}`;
-  const out = el('span', { class: 'field__value' });
-  const input = el('input', { type: 'range', id });
+  const out = el('span', { class: 'field__value m-value' });
+  const input = el('input', { class: 'm-fader', type: 'range', id });
   let toS, fromS;
   if (list) {
     Object.assign(input, { min: 0, max: list.length - 1, step: 1 });
@@ -171,14 +171,14 @@ function slider({ label, get, set, min, max, step = 0.01, log = false, list, fmt
   input.addEventListener('input', () => { set(fromS(+input.value)); show(); });
   sync();
   const node = el('div', { class: 'field' },
-    el('div', { class: 'field__top' }, el('label', { class: 'field__label', for: id, text: label }), out),
+    el('div', { class: 'field__top' }, el('label', { class: 'field__label m-legend', for: id, text: label }), out),
     input);
   node.sync = sync;
   return node;
 }
 
 function seg(label, options, get, set) {
-  const wrap = el('div', { class: 'seg', role: 'group', 'aria-label': label });
+  const wrap = el('div', { class: 'seg m-seg m-seg--fill', role: 'group', 'aria-label': label });
   const sync = () => {
     for (const b of wrap.children) b.setAttribute('aria-pressed', String(b.dataset.v === String(get())));
   };
@@ -193,12 +193,12 @@ function seg(label, options, get, set) {
 }
 
 function field(label, control) {
-  return el('div', { class: 'field' }, el('div', { class: 'field__top' }, el('span', { class: 'field__label', text: label })), control);
+  return el('div', { class: 'field' }, el('div', { class: 'field__top' }, el('span', { class: 'field__label m-legend', text: label })), control);
 }
 
 function toggle(label, get, set) {
   const b = el('button', { class: 'switch', type: 'button', role: 'switch' },
-    el('span', { text: label }), el('span', { class: 'switch__track', 'aria-hidden': 'true' }));
+    el('span', { class: 'm-legend', text: label }), el('span', { class: 'switch__track m-switch m-switch--sm', 'aria-hidden': 'true' }));
   const sync = () => b.setAttribute('aria-checked', String(!!get()));
   b.addEventListener('click', () => { set(!get()); sync(); });
   sync();
@@ -208,7 +208,7 @@ function toggle(label, get, set) {
 function group(title, color, end, ...kids) {
   return el('section', { class: 'group' },
     el('div', { class: 'group__head' },
-      el('h3', { class: 'group__title' }, color ? el('span', { class: 'dot', style: `--c:${color}`, 'aria-hidden': 'true' }) : null, title),
+      el('h3', { class: 'group__title m-legend m-legend--lg' }, color ? el('span', { class: 'dot', style: `--c:${color}`, 'aria-hidden': 'true' }) : null, title),
       end ? el('div', { class: 'group__end' }, end) : null),
     ...kids);
 }
@@ -376,7 +376,7 @@ function renderInputs() {
   panel.replaceChildren();
 
   panel.append(group('Presets', null, null,
-    el('div', { class: 'presets' }, ...PRESETS.map((p) => el('button', { class: 'preset', type: 'button', text: p.name, onclick: () => applyPreset(p) })))));
+    el('div', { class: 'presets' }, ...PRESETS.map((p) => el('button', { class: 'preset m-key', type: 'button', text: p.name, onclick: () => applyPreset(p) })))));
 
   panel.append(seg('Channel to edit', [['0', 'Channel 1'], ['1', 'Channel 2']], () => editCh, (v) => { editCh = v; renderInputs(); }));
 
@@ -387,7 +387,7 @@ function renderInputs() {
   const waves = el('div', { class: 'waves', role: 'group', 'aria-label': 'Waveform' });
   for (const w of WAVES) {
     waves.append(el('button', {
-      class: 'wave', type: 'button', 'aria-pressed': String(p.wave === w.id),
+      class: 'wave m-key m-key--tile', type: 'button', 'aria-pressed': String(p.wave === w.id),
       onclick: () => {
         const was = p.wave;
         p.wave = w.id;
@@ -460,7 +460,7 @@ function renderScope() {
     const tr = S.trig;
     levelField = slider({ label: 'Level', min: -10, max: 10, step: 0.01, get: () => tr.level, set: (v) => { tr.level = v; sweepChanged(); }, fmt: fmtV });
     panel.append(group('Trigger', null,
-      el('button', { class: 'tbtn', type: 'button', text: 'Set to middle', title: 'Put the level halfway between the source signal’s high and low', onclick: centreLevel }),
+      el('button', { class: 'tbtn m-key', type: 'button', text: 'Set to middle', title: 'Put the level halfway between the source signal’s high and low', onclick: centreLevel }),
       field('Mode', seg('Trigger mode', [['auto', 'Auto', 'Sweep anyway if no trigger arrives'], ['normal', 'Normal', 'Sweep only on a trigger'], ['off', 'Free run', 'Sweep continuously, no trigger']], () => tr.mode, (v) => { tr.mode = v; sweepChanged(); })),
       field('Source', seg('Trigger source', [['0', 'Channel 1'], ['1', 'Channel 2']], () => tr.source, (v) => { tr.source = v; sweepChanged(); })),
       field('Slope', seg('Trigger slope', [['rise', 'Rising'], ['fall', 'Falling']], () => tr.slope, (v) => { tr.slope = v; sweepChanged(); })),
@@ -497,7 +497,7 @@ function renderDisplay() {
       chip = el('input', { type: 'color', value: look.custom, 'aria-label': 'Custom phosphor colour' });
       chip.addEventListener('input', () => { look.custom = chip.value; look.phosphor = 'custom'; syncSw(); lookChanged(true, true); });
     } else chip = el('span', { class: 'swatch__chip', style: `--c:${ph.css}` });
-    const b = el('button', { class: 'swatch', type: 'button', 'data-v': ph.id, onclick: (e) => {
+    const b = el('button', { class: 'swatch m-key m-key--tile', type: 'button', 'data-v': ph.id, onclick: (e) => {
       if (ph.id === 'custom' && e.target !== chip) chip.click();
       look.phosphor = ph.id; syncSw(); lookChanged(true, true);
     } }, chip, el('span', { text: ph.name }));

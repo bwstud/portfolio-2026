@@ -1,0 +1,444 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bison Lab · Brian Studwell</title>
+  <meta name="robots" content="noindex">
+  <meta name="color-scheme" content="dark">
+  <link rel="stylesheet" href="../../styles.css">
+  <link rel="stylesheet" href="../../matte.css?v=12">
+  <script src="../../bison-versions.js"></script>
+  <style>
+    /* A galloping bison set in type. The animal is a 3D model (3DRT's bison) running its gallop, rendered from the
+       side in Blender and packed into bison.png: red the animal's tones (its coat, lit from above and ahead), green a
+       height (0 at the outline, rounding up inside it, higher the nearer the camera) and blue the outline.
+       bison-marks.png holds the lights on the head (the horn and the eye). tools/bison/ builds both. The page lays a
+       grid over the animal and sets one character in each cell, chosen by how bright the cell is: a light from above
+       on the height, plus the animal's own tones. A saved version marked "on the site" is what the work page's bison
+       uses (bison-versions.js, through bison.js). Saving needs the local server (dvs). */
+    /* the lab is a Matte instrument (matte.css): keys, faders, fields and legends; the stage is the animal's own black */
+    html, body { height: 100%; overflow: hidden; }
+    body { margin: 0; display: grid; grid-template: "head panel" auto "stage panel" minmax(0, 1fr) / minmax(0, 1fr) 360px;
+      background: var(--c-night); color: var(--c-mist); font: 400 15px/1.5 var(--font-sans); }
+
+    .head { grid-area: head; display: flex; align-items: center; gap: 12px 16px; padding: 16px 24px; }
+    .head h1 { margin: 0 auto 0 0; font: 600 22px/1 var(--font-display); letter-spacing: -0.01em; }
+    .head__time { min-width: 72px; text-align: right; font-variant-numeric: tabular-nums; }
+
+    .stage { grid-area: stage; position: relative; min-width: 0; min-height: 0; background: #000; overflow: hidden; }
+    .stage canvas { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
+
+    .panel { grid-area: panel; display: flex; flex-direction: column; gap: 16px; min-height: 0; padding: 20px; box-sizing: border-box;
+      background: #08090b; border-left: 1px solid rgb(255 255 255 / 0.06); overflow-y: auto; }
+    .panel .m-panel { display: flex; }
+    .panel__top { display: flex; align-items: center; gap: 8px; }
+    .panel__count { flex: 1; }
+    .group { display: grid; gap: 14px; justify-items: stretch; }
+    .group h2 { margin: 0; }
+    /* a row: its name and Reset over the fader and its typed number; a text setting takes the whole width */
+    .row { display: grid; grid-template-columns: 1fr 76px; align-items: center; gap: 4px 10px; }
+    .row__name { grid-area: 1 / 1; align-self: end; }
+    .row .m-fader { grid-area: 2 / 1; width: 100%; }
+    .row__value { grid-area: 2 / 2; display: flex; align-items: center; gap: 4px; }
+    .matte .row__num { width: 100%; min-width: 0; height: 24px; padding: 0 6px; text-align: right; font-size: 11px; font-variant-numeric: tabular-nums; }
+    .row__unit { font: 400 9px/1 var(--m-font); letter-spacing: 0.1em; text-transform: uppercase; color: var(--m-print-dim); }
+    .row__value:empty { display: none; }
+    .row .m-input[type="text"] { grid-column: 1 / -1; width: 100%; height: 30px; font-family: var(--font-mono); letter-spacing: 0.2em; }
+    .matte .row__reset { grid-area: 1 / 2; justify-self: end; align-self: end; height: 16px; margin-right: -5px; padding: 0 5px; border: 0; border-radius: 3px; background: none;
+      color: var(--m-signal); font: 400 9px/16px var(--m-font); letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer; visibility: hidden; }
+    .matte .row__reset:hover { color: var(--m-print-hi); background: color-mix(in srgb, var(--m-print) 12%, transparent); }
+    .row.is-changed .row__reset { visibility: visible; }
+    .row.is-changed .row__num { color: var(--m-signal); }
+    .row__hint { grid-column: 1 / -1; margin: 0; font-size: 12px; line-height: 1.45; color: var(--m-print-dim); }
+    .saved { display: grid; gap: 10px; }
+    .saved__row { display: flex; gap: 8px; align-items: center; }
+    .saved .m-input { flex: 1; min-width: 0; width: auto; }
+    .saved select.m-input { flex: none; width: 100%; }
+    #status { min-height: 1.4em; margin: 0; }
+    .credit { margin: 0; }
+
+    @media (max-width: 900px) {
+      html, body { height: auto; overflow: auto; }
+      body { display: block; }
+      .head { flex-wrap: wrap; padding: 12px 16px; }
+      .stage { height: 62svh; }
+      .panel { border-left: 0; overflow: visible; }
+    }
+  </style>
+</head>
+<body class="matte matte--dark">
+  <header class="head">
+    <a class="m-legend" href="../../work.html">← Work</a>
+    <h1>Bison Lab</h1>
+    <button class="m-key" id="play" type="button" aria-pressed="true">Pause</button>
+    <button class="m-key m-key--primary" id="replay" type="button">Replay</button>
+    <span class="head__time m-legend m-legend--dim" id="time" aria-live="off"></span>
+  </header>
+
+  <main class="stage" id="stage">
+    <canvas id="view" role="img" aria-label="A bison galloping in place, drawn as a grid of characters"></canvas>
+  </main>
+
+  <aside class="panel" aria-label="Parameters">
+    <div class="m-panel m-panel--col m-panel--flat"><div class="m-cell group saved">
+      <h2 class="m-legend m-legend--lg">Saved versions</h2>
+      <select class="m-input" id="versions" aria-label="Saved version"></select>
+      <div class="saved__row">
+        <button class="m-key" id="use" type="button">Use on the site</button>
+        <button class="m-key" id="remove" type="button">Delete</button>
+      </div>
+      <div class="saved__row">
+        <input class="m-input" id="name" type="text" placeholder="Name for a new version" aria-label="Name for a new version" autocomplete="off">
+        <button class="m-key" id="save" type="button">Save</button>
+      </div>
+      <div class="panel__top">
+        <span class="panel__count m-legend m-legend--dim" id="count" aria-live="polite"></span>
+        <button class="m-key m-key--quiet" id="copy" type="button">Copy config</button>
+        <button class="m-key m-key--quiet" id="reset" type="button">Reset all</button>
+      </div>
+      <p class="m-legend m-legend--dim" id="status" role="status"></p>
+    </div></div>
+    <div id="params"></div>
+  </aside>
+
+  <script>
+  (() => {
+    'use strict';
+    const SHEET = { src: 'bison.png', marks: 'bison-marks.png', w: 400, h: 240, per: 4 };   // the frames, the lights drawn on them, one frame's size, and frames across
+    const STORE = 'bison-lab-4';   // renamed when the defaults change enough that old saved settings would hide them
+
+    // ---- what can be tuned ------------------------------------------------------------------------------------
+    // [key, label, min, max, step, default, unit, hint]
+    const GROUPS = [
+      ['Grid', [
+        ['cell', 'Cell', 5, 28, 1, 9, 'px', 'One character\'s square. Smaller is finer.'],
+        ['size', 'Size', 30, 120, 1, 72, '%', 'The animal\'s frame, as a share of the stage\'s width.'],
+      ]],
+      ['Characters', [
+        ['ramp', 'Ramp', null, null, null, '.:+xB#', '', 'Darkest first. The first is set in every cell inside the animal.'],
+        ['glyph', 'Letter size', 50, 160, 1, 125, '%', 'Against the cell.'],
+        ['dim', 'Dimmest', 0, 1, 0.01, 0.28, '', 'How bright the first character is set.'],
+        ['bright', 'Brightest', 0, 1, 0.01, 1, '', 'How white the last character is set: 1 is pure white. The ones between run evenly from the dimmest to this.'],
+      ]],
+      ['Motion', [
+        ['fps', 'Speed', 0.5, 90, 0.5, 30, 'fps', 'Frames a second. Fourteen make one stride.'],
+        ['bob', 'Rise and fall', 0, 40, 0.5, 0, 'px', 'Extra lift and drop in a stride, on top of the animal\'s own.'],
+        ['blend', 'Blend', 0, 1, 0.01, 0.5, '', '0 steps from one frame to the next; 1 dissolves between them the whole way.'],
+      ]],
+      ['Light', [
+        ['light', 'Top light', 0, 3, 0.01, 0.4, '', 'A light from above on the rounded outline.'],
+        ['angle', 'Angle', -90, 90, 1, -18, '°', '0 is straight overhead; negative comes from behind the animal.'],
+        ['outline', 'Outline', 0, 2, 0.01, 0.5, '', 'A little light on the whole outline, whichever way it faces, so the legs and the head read.'],
+        ['tones', 'Coat and form', 0, 3, 0.01, 1.15, '', 'How much of the animal\'s own light and dark comes through: its coat, lit from above and ahead.'],
+        ['marks', 'Horn and eye', 0, 2, 0.01, 1.2, '', 'How bright the horn and the eye are set. 0 leaves them out.'],
+        ['floor', 'Floor', -0.5, 0.5, 0.01, -0.12, '', 'Added to every cell before the ramp is read.'],
+        ['gamma', 'Gamma', 0.3, 3, 0.01, 1, '', 'Above 1 holds more cells in the dark end.'],
+      ]],
+      ['Entrance', [
+        ['holdMs', 'Wall', 0, 5000, 10, 1100, 'ms', 'How long the wall of characters holds before it starts to turn into the bison.'],
+        ['resolveMs', 'Resolve', 0, 5000, 10, 750, 'ms', 'How long the wall takes to become the bison, first cell to last.'],
+        ['density', 'Density', 0, 100, 1, 42, '%', 'The share of the wall\'s cells lit at any moment. The rest hold the dimmest character.'],
+        ['wallRamp', 'Wall characters', null, null, null, '', '', 'The wall\'s own characters, such as ·T◆W. The first fills the unlit cells; lit cells take any of the rest, at random. Empty uses the ramp above.'],
+        ['ground', 'Ground', 0, 1, 0.01, 1, '', 'How visible the wall\'s unlit cells are, which show its first character. 0 leaves only the lit ones.'],
+        ['wall', 'Wall brightness', 0, 1, 0.01, 0.7, '', 'How bright the wall\'s lit cells can be. 1 lets the brightest reach the Brightest setting.'],
+        ['flicker', 'Flicker', 0, 40, 0.5, 9, '/s', 'How many times a second a cell changes its character. 0 holds the wall still.'],
+        ['patchStrength', 'Patchiness', 0, 2, 0.01, 1, '', 'How strongly the lighter and darker patches show. 0 lights the wall evenly; above 1, bare and crowded areas.'],
+        ['patch', 'Patch size', 4, 120, 1, 30, 'cells', 'How wide the wall\'s lighter and darker patches are.'],
+        ['drift', 'Shift', 0, 5, 0.05, 1, '', 'How fast the patches move across the wall. 0 holds them in place.'],
+        ['stagger', 'Stagger', 0, 90, 1, 60, '%', 'How ragged the change is: the share of the time the last cell waits. 0 turns every cell together.'],
+        ['close', 'Close in', 0, 100, 1, 70, '%', 'How much the wall clears from the edges inward, so the last of it is around the animal. 0 clears it evenly.'],
+        ['seed', 'Shuffle', 1, 999, 1, 7, '', 'Which arrangement of the wall: every number is a different one.'],
+      ]],
+      ['Pointer', [
+        ['reach', 'Pointer reach', 0, 400, 1, 110, 'px', '0 leaves the pointer out of it.'],
+        ['push', 'Pointer push', 0, 120, 1, 26, 'px', 'How far the pointer shoves the characters nearest it.'],
+        ['falloff', 'Pointer falloff', 0.3, 5, 0.1, 2, '', 'How quickly the shove dies away toward the edge of its reach.'],
+      ]],
+    ];
+    const SPECS = GROUPS.flatMap(g => g[1]);
+    const ENTRANCE = new Set(['holdMs', 'resolveMs', 'density', 'wall', 'wallRamp', 'ground', 'patchStrength', 'flicker', 'patch', 'drift', 'stagger', 'close', 'seed']);
+    const DEFAULTS = Object.fromEntries(SPECS.map(s => [s[0], s[5]]));
+    let cfg = { ...DEFAULTS };
+    try { Object.assign(cfg, JSON.parse(localStorage.getItem(STORE) || '{}')); } catch (e) {}
+    for (const k of Object.keys(cfg)) if (!(k in DEFAULTS)) delete cfg[k];
+    const save = () => { try { localStorage.setItem(STORE, JSON.stringify(cfg)); } catch (e) {} };
+
+    // ---- the panel: every number has a fader and a typed field, kept in step both ways -------------------------
+    const rows = {};
+    const make = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; };
+    const tidy = (v, step) => { const d = (String(step).split('.')[1] || '').length; return String(+(+v).toFixed(Math.max(d, 2))); };
+    function build() {
+      const list = document.getElementById('params');
+      for (const [title, specs] of GROUPS) {
+        const box = make('div', 'm-panel m-panel--col m-panel--flat'), group = make('div', 'm-cell group'); box.append(group); group.append(make('h2', 'm-legend m-legend--lg', title));
+        for (const [key, label, min, max, step, def, unit, hint] of specs) {
+          const row = make('div', 'row'), name = make('span', 'row__name m-legend m-legend--dim', label), value = make('span', 'row__value');
+          const reset = make('button', 'row__reset', 'Reset'); reset.type = 'button'; reset.setAttribute('aria-label', 'Reset ' + label);
+          row.append(name, value, reset);
+          if (min === null) {   // the ramp: text, not a number
+            const text = make('input', 'm-input'); text.type = 'text'; text.value = cfg[key]; text.spellcheck = false; text.autocomplete = 'off'; text.setAttribute('aria-label', label);
+            text.addEventListener('input', () => { if (text.value.length || key === 'wallRamp') set(key, text.value, text); });   // the wall's characters may be empty: then it uses the ramp
+            text.addEventListener('blur', () => { text.value = cfg[key]; });
+            row.append(text);
+            rows[key] = { row, show() { if (document.activeElement !== text) text.value = cfg[key]; } };
+          } else {
+            const num = make('input', 'm-input row__num'); num.type = 'number'; num.min = min; num.max = max; num.step = 'any'; num.setAttribute('aria-label', label + ', typed');
+            const range = make('input', 'm-fader'); range.type = 'range'; range.min = min; range.max = max; range.step = step; range.setAttribute('aria-label', label);
+            value.append(num); if (unit) value.append(make('span', 'row__unit', unit));
+            row.append(range);
+            range.addEventListener('input', () => set(key, +range.value, range));
+            // typed: a number in range takes effect as it is typed and is kept as typed; leaving or Enter tidies the field
+            num.addEventListener('input', () => { const v = parseFloat(num.value); if (num.value.trim() !== '' && isFinite(v) && v >= min && v <= max) set(key, v, num); });
+            const settle = () => { const v = parseFloat(num.value); if (num.value.trim() !== '' && isFinite(v)) set(key, Math.min(max, Math.max(min, v))); num.value = tidy(cfg[key], step); };
+            num.addEventListener('blur', settle);
+            num.addEventListener('keydown', e => { if (e.key === 'Enter') { settle(); num.select(); } });
+            rows[key] = { row, show(from) { if (from !== num) num.value = tidy(cfg[key], step); if (from !== range) range.value = cfg[key]; } };
+          }
+          reset.addEventListener('click', () => set(key, def));
+          if (hint) row.append(make('p', 'row__hint', hint));
+          group.append(row);
+        }
+        list.append(box);
+      }
+      list.append(make('p', 'credit m-legend m-legend--dim', 'The animal and its gallop are a 3D model by 3DRT, rendered from the side and set in type.'));
+      for (const k in rows) rows[k].show();
+      marks();
+    }
+    function marks() {
+      let n = 0;
+      for (const k in rows) { const changed = cfg[k] !== DEFAULTS[k]; rows[k].row.classList.toggle('is-changed', changed); if (changed) n++; }
+      document.getElementById('count').textContent = n ? n + ' changed' : 'Defaults';
+    }
+    function set(key, v, from) {
+      cfg[key] = v; rows[key].show(from); marks(); save();
+      if (key === 'cell' || key === 'size') layout();
+      if (ENTRANCE.has(key)) enter();   // a change to the entrance is shown at once
+      if (key === 'ramp' || key === 'glyph' || key === 'cell') face();
+      dirty = true;
+    }
+    // every setting at once: a saved version loaded, or the original
+    function apply(next) { cfg = { ...DEFAULTS, ...next }; for (const k in rows) rows[k].show(); marks(); save(); layout(); face(); enter(); dirty = true; }
+    document.getElementById('reset').addEventListener('click', () => apply({}));
+
+    // ---- saved versions: kept in bison-versions.js, written by the local server; the work page uses the active one --
+    let store = JSON.parse(JSON.stringify(window.BISON_VERSIONS || { active: 'original', versions: [{ id: 'original', name: 'Original', savedAt: null, config: {} }] }));
+    const $ = id => document.getElementById(id);
+    const say = text => { $('status').textContent = text; };
+    const changed = c => Object.fromEntries(Object.keys(DEFAULTS).filter(k => c[k] !== DEFAULTS[k]).map(k => [k, c[k]]));   // a version stores only what differs from the original
+    function list(selected) {
+      $('versions').replaceChildren(...store.versions.map(v => { const o = make('option', '', v.name + (v.id === store.active ? ' · on the site' : '')); o.value = v.id; return o; }));
+      $('versions').value = selected || store.active;
+    }
+    async function write(message) {
+      try {
+        const res = await fetch('/__lab/bison', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(store) });
+        say(res.ok ? message : `Not saved: ${await res.text()}`);
+        return res.ok;
+      } catch (err) { say('Not saved: this only works on the local server (dvs).'); return false; }
+    }
+    $('versions').addEventListener('change', () => { const v = store.versions.find(x => x.id === $('versions').value); apply(v.config); say(`Loaded “${v.name}”.`); });
+    $('save').addEventListener('click', async () => {
+      const name = $('name').value.trim() || `Version ${store.versions.length}`;
+      const at = store.versions.find(v => v.name === name && v.id !== 'original');   // the same name overwrites
+      const v = at || { id: Date.now().toString(36), name };
+      v.savedAt = new Date().toISOString(); v.config = changed(cfg);
+      if (!at) store.versions.push(v);
+      list(v.id); $('name').value = '';
+      await write(`Saved “${name}”. Press “Use on the site” to make it the one the work page uses.`);
+    });
+    $('name').addEventListener('keydown', e => { if (e.key === 'Enter') $('save').click(); });
+    $('use').addEventListener('click', async () => {
+      store.active = $('versions').value; list(store.active);
+      await write(`The work page now uses “${store.versions.find(v => v.id === store.active).name}”.`);
+    });
+    $('remove').addEventListener('click', async () => {
+      const id = $('versions').value;
+      if (id === 'original') return say('The original stays.');
+      if (id === store.active) return say('That version is on the site. Put another on the site first.');
+      store.versions = store.versions.filter(v => v.id !== id); list();
+      await write('Deleted.');
+    });
+    list();
+    document.getElementById('copy').addEventListener('click', async e => {
+      const b = e.currentTarget; try { await navigator.clipboard.writeText(JSON.stringify(cfg, null, 2)); b.textContent = 'Copied'; } catch (err) { b.textContent = 'Not copied'; }
+      setTimeout(() => { b.textContent = 'Copy config'; }, 1200);
+    });
+
+    // ---- the frames --------------------------------------------------------------------------------------------
+    const stage = document.getElementById('stage'), view = document.getElementById('view'), ctx = view.getContext('2d');
+    let sheet = null, frames = 0;        // the sheet's pixels, and how many frames it holds
+    let cols = 0, rws = 0, ox = 0, oy = 0, W = 0, H = 0, dpr = 1;
+    let grid = [];                        // per frame: { tone, height, mask } averaged down to the grid
+    let T, Hh, M, K;                      // the blended field
+    let dirty = true;
+
+    const picture = src => new Promise((done, fail) => { const img = new Image(); img.onload = () => done(img); img.onerror = fail; img.src = src; });
+    const pixels = img => { const c = document.createElement('canvas'); c.width = img.naturalWidth; c.height = img.naturalHeight;
+      const g = c.getContext('2d', { willReadFrequently: true }); g.drawImage(img, 0, 0); return { w: c.width, h: c.height, px: g.getImageData(0, 0, c.width, c.height).data }; };
+    function load() {
+      Promise.all([picture(SHEET.src), picture(SHEET.marks).catch(() => null)]).then(([img, lights]) => {
+        const c = { width: img.naturalWidth, height: img.naturalHeight };
+        sheet = pixels(img); sheet.marks = lights ? pixels(lights).px : null;   // without the marks the animal still runs
+        // the sheet's last row may be short: a frame counts if anything is drawn in it
+        const slots = Math.round(c.width / SHEET.w) * Math.round(c.height / SHEET.h);
+        frames = 0;
+        for (let k = 0; k < slots; k++) {
+          const sx = (k % SHEET.per) * SHEET.w, sy = Math.floor(k / SHEET.per) * SHEET.h; let any = false;
+          for (let y = 20; y < SHEET.h && !any; y += 9) for (let x = 20; x < SHEET.w; x += 9) if (sheet.px[((sy + y) * sheet.w + sx + x) * 4 + 2] > 128) { any = true; break; }
+          if (any) frames = k + 1;
+        }
+        layout(); face(); enter(); requestAnimationFrame(tick);
+      });
+    }
+
+    // the grid over the animal's frame, and every frame of the stride averaged down to it
+    function layout() {
+      const box = stage.getBoundingClientRect();
+      dpr = Math.min(2, window.devicePixelRatio || 1); W = box.width; H = box.height;
+      view.width = Math.round(W * dpr); view.height = Math.round(H * dpr);
+      if (!sheet) return;
+      cols = Math.max(8, Math.round(W * cfg.size / 100 / cfg.cell)); rws = Math.max(5, Math.round(cols * SHEET.h / SHEET.w));
+      ox = Math.round((W - cols * cfg.cell) / 2); oy = Math.round((H - rws * cfg.cell) / 2);
+      const n = cols * rws;
+      grid = [];
+      for (let k = 0; k < frames; k++) {
+        const sx = (k % SHEET.per) * SHEET.w, sy = Math.floor(k / SHEET.per) * SHEET.h;
+        const tone = new Float32Array(n), height = new Float32Array(n), mask = new Float32Array(n), mark = new Float32Array(n);
+        for (let r = 0; r < rws; r++) for (let c = 0; c < cols; c++) {
+          const x0 = Math.floor(c * SHEET.w / cols), x1 = Math.max(x0 + 1, Math.floor((c + 1) * SHEET.w / cols));
+          const y0 = Math.floor(r * SHEET.h / rws), y1 = Math.max(y0 + 1, Math.floor((r + 1) * SHEET.h / rws));
+          let t = 0, h = 0, m = 0, k = 0;
+          for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) { const i = ((sy + y) * sheet.w + sx + x) * 4; t += sheet.px[i]; h += sheet.px[i + 1]; m += sheet.px[i + 2]; if (sheet.marks) k += sheet.marks[i]; }
+          const area = (x1 - x0) * (y1 - y0) * 255, i = r * cols + c;
+          mask[i] = m / area; height[i] = h / area; mark[i] = k / area; tone[i] = m > 0 ? t / m : 0;   // the tone of the animal's own share of the cell
+        }
+        grid.push({ tone, height, mask, mark });
+      }
+      T = new Float32Array(n); Hh = new Float32Array(n); M = new Float32Array(n); K = new Float32Array(n);
+    }
+    let font = '';
+    function face() {
+      const family = getComputedStyle(document.documentElement).getPropertyValue('--font-mono').trim() || 'ui-monospace, Menlo, monospace';
+      font = `500 ${(cfg.cell * cfg.glyph / 100).toFixed(2)}px ${family}`;
+      dirty = true;
+    }
+
+    // ---- the entrance: a wall of flickering characters over the whole stage, which turns into the animal ----------
+    const still = matchMedia('(prefers-reduced-motion: reduce)');
+    let enterAt = -1e9;
+    function enter() { enterAt = still.matches ? -1e9 : performance.now(); dirty = true; }
+    document.getElementById('replay').addEventListener('click', enter);
+    const hash = (a, b, c) => { const v = Math.sin(a * 127.1 + b * 311.7 + c * 74.7) * 43758.5453; return v - Math.floor(v); };   // a cell's own chance: the same every time it is asked
+    let px = -1e5, py = -1e5;
+    stage.addEventListener('pointermove', e => { const b = stage.getBoundingClientRect(); px = e.clientX - b.left; py = e.clientY - b.top; dirty = true; });
+    stage.addEventListener('pointerleave', () => { px = py = -1e5; dirty = true; });
+
+    // ---- the film ----------------------------------------------------------------------------------------------
+    let playing = !still.matches, at = 0, last = 0;   // `at` is the place in the stride, in frames
+    const playKey = document.getElementById('play'), time = document.getElementById('time');
+    const showPlay = () => { playKey.textContent = playing ? 'Pause' : 'Play'; playKey.setAttribute('aria-pressed', playing); };
+    playKey.addEventListener('click', () => { playing = !playing; showPlay(); });
+    showPlay();
+    addEventListener('keydown', e => {
+      if (e.target.closest('input, button')) return;
+      if (e.key === ' ') { e.preventDefault(); playing = !playing; showPlay(); }
+      if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { playing = false; showPlay(); at = (Math.floor(at) + (e.key === 'ArrowRight' ? 1 : frames - 1)) % frames; dirty = true; }
+    });
+
+    function tick(now) {
+      requestAnimationFrame(tick);
+      const dt = Math.min(100, now - last); last = now;
+      if (playing && frames) { at = (at + dt / 1000 * cfg.fps) % frames; dirty = true; }
+      const entering = now - enterAt < cfg.holdMs + cfg.resolveMs + 50;
+      if (!dirty && !entering) return;
+      dirty = false;
+      draw(now);
+    }
+
+    function draw(now) {
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, W, H);
+      if (!frames || !grid.length) return;
+      const n = cols * rws, a = grid[Math.floor(at) % frames], b = grid[(Math.floor(at) + 1) % frames];
+      // hold the frame for the first part of its turn, then dissolve to the next over the rest
+      const f = at - Math.floor(at), w = cfg.blend > 0 ? Math.min(1, Math.max(0, (f - (1 - cfg.blend)) / cfg.blend)) : 0, u = 1 - w;
+      for (let i = 0; i < n; i++) { M[i] = a.mask[i] * u + b.mask[i] * w; Hh[i] = a.height[i] * u + b.height[i] * w; T[i] = a.tone[i] * u + b.tone[i] * w; K[i] = a.mark[i] * u + b.mark[i] * w; }
+      time.textContent = `${String(Math.floor(at) + 1).padStart(2, '0')} / ${frames}`;
+
+      const ramp = [...cfg.ramp], levels = ramp.length, cell = cfg.cell;
+      const rad = cfg.angle * Math.PI / 180, lx = Math.sin(rad), ly = -Math.cos(rad);
+      const slope = cfg.light * cols / 62;          // the height's slope is per cell, so a finer grid needs more of it
+      const edge = cfg.outline * cols / 62;
+      const g = cfg.gamma, reach = cfg.reach, push = cfg.push;
+      const lift = Math.round(-cfg.bob * Math.cos(at / frames * Math.PI * 2) / cell * 2) * cell / 2;   // highest with the legs gathered; in half cells, so the grid holds
+      const buckets = ramp.map(() => []);
+      // how bright the animal is in a cell, or -1 where it is not
+      const shade = (r, c) => {
+        if (r < 0 || c < 0 || r >= rws || c >= cols) return -1;
+        const i = r * cols + c;
+        if (M[i] < 0.42) return -1;
+        const hl = c > 0 ? Hh[i - 1] : 0, hr = c < cols - 1 ? Hh[i + 1] : 0, hu = r > 0 ? Hh[i - cols] : 0, hd = r < rws - 1 ? Hh[i + cols] : 0;
+        const gx = hl - hr, gy = hu - hd;                            // the outward slope
+        const lit = Math.max(0, gx * lx + gy * ly) * slope;          // turned to the light
+        let v = cfg.floor + lit + Math.sqrt(gx * gx + gy * gy) * edge + T[i] * cfg.tones;
+        v = v <= 0 ? 0 : v >= 1 ? 1 : Math.pow(v, g);
+        if (K[i] > 0.04) v = Math.max(v, Math.min(1, Math.pow(K[i], 0.7) * cfg.marks));   // the lights on the head (horn, eye) read whatever else is going on
+        return v;
+      };
+      const wramp = [...(cfg.wallRamp || cfg.ramp)], wlevels = wramp.length, wbuckets = wramp.map(() => []);   // the wall's own characters, or the animal's
+      const put = (r, c, v, alpha, wall) => {
+        let x = ox + (c + 0.5) * cell, y = oy + lift + (r + 0.5) * cell;
+        if (reach > 0) {
+          const dx = x - px, dy = y - py, d2 = dx * dx + dy * dy;
+          if (d2 < reach * reach) { const d = Math.sqrt(d2) || 1, k = Math.pow(1 - d / reach, cfg.falloff) * push; x += dx / d * k; y += dy / d * k; }
+        }
+        if (wall) wbuckets[v].push(x, y, alpha);   // a wall cell: v is which of the wall's characters, alpha carries its brightness
+        else buckets[Math.min(levels - 1, Math.floor(v * levels))].push(x, y, alpha);
+      };
+      const since = now - enterAt;
+      if (since >= cfg.holdMs + cfg.resolveMs) {
+        for (let r = 0; r < rws; r++) for (let c = 0; c < cols; c++) { const v = shade(r, c); if (v >= 0) put(r, c, v, 1); }
+      } else {
+        // The wall: the animal's grid carried out to the stage's edges. A cell is lit or not by its own chance, drawn
+        // again at each flicker, against patches of more and less that drift across. Then each cell in its turn (the
+        // far ones first, if the wall closes in) goes over to what the animal has there, or to nothing.
+        const turn = cfg.resolveMs > 0 ? Math.max(0, since - cfg.holdMs) / cfg.resolveMs : 1, wait = Math.min(0.9, cfg.stagger / 100), close = cfg.close / 100;
+        const seed = cfg.seed * 0.37, beat = since / 1000 * cfg.flicker, size = cfg.patch / 6.283, slide = since / 1000 * cfg.drift;
+        const c0 = -Math.ceil(ox / cell), c1 = cols + Math.ceil((W - ox - cols * cell) / cell), r0 = -Math.ceil((oy + lift) / cell) - 1, r1 = rws + Math.ceil((H - oy - lift - rws * cell) / cell) + 1;
+        const far = Math.hypot(Math.max(-c0, c1 - cols) / cols * 2 + 1, Math.max(-r0, r1 - rws) / rws * 2 + 1) - 0.6;
+        for (let r = r0; r < r1; r++) for (let c = c0; c < c1; c++) {
+          const own = hash(c, r, seed), nth = Math.floor(beat + own * 7);
+          const more = 0.5 + cfg.patchStrength * (0.28 * Math.sin(c / size + slide * 1.1 + 1.6 * Math.sin(r / size * 0.7 - slide * 0.6 + seed)) + 0.22 * Math.sin(r / size * 1.3 - slide * 0.8 + 1.4 * Math.sin(c / size * 0.6 + slide * 0.5)));
+          const on = hash(c, r, seed + 1 + nth) < cfg.density / 100 * more * 2;
+          // a lit cell takes any of the wall's characters after the first, at random, and its own brightness; an unlit one the first, faintly
+          const glyph = on && wlevels > 1 ? 1 + Math.floor(hash(c, r, seed + 3 + nth) * (wlevels - 1)) : 0;
+          const glow = (on ? cfg.dim + (cfg.bright - cfg.dim) * (0.3 + 0.7 * hash(c, r, seed + 2 + nth)) * cfg.wall : cfg.dim * cfg.ground);
+          const away = Math.min(1, Math.max(0, (Math.hypot((c + 0.5) / cols * 2 - 1, (r + 0.5) / rws * 2 - 1) - 0.6) / far));
+          const order = own * (1 - close) + (1 - away) * close * (0.75 + 0.25 * own);
+          const done = Math.min(1, Math.max(0, (turn - order * wait) / (1 - wait)));
+          const v = shade(r, c);
+          if (done < 1 && glow > 0) put(r, c, glyph, (1 - done) * glow, true);   // the wall fades out of the cell
+          if (v >= 0 && done > 0) put(r, c, v, done);                             // and the animal, where it is, fades in
+        }
+      }
+      ctx.font = font; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#fff';
+      for (let l = 0; l < levels; l++) {
+        const list = buckets[l], ch = ramp[l], bright = levels > 1 ? cfg.dim + (cfg.bright - cfg.dim) * l / (levels - 1) : cfg.bright;
+        for (let j = 0; j < list.length; j += 3) { ctx.globalAlpha = bright * list[j + 2]; ctx.fillText(ch, list[j], list[j + 1]); }
+      }
+      for (let l = 0; l < wlevels; l++) {
+        const list = wbuckets[l], ch = wramp[l];
+        for (let j = 0; j < list.length; j += 3) { ctx.globalAlpha = Math.min(1, list[j + 2]); ctx.fillText(ch, list[j], list[j + 1]); }
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    new ResizeObserver(() => layout()).observe(stage);
+    build();
+    document.fonts && document.fonts.ready.then(() => { face(); });
+    load();
+  })();
+  </script>
+</body>
+</html>

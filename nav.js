@@ -85,3 +85,28 @@ if (themeToggle) {
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && nav.classList.contains('is-menu-open')) { set(false); toggle.focus(); } });
   matchMedia('(min-width: 601px)').addEventListener('change', e => { if (e.matches) { set(false); panel.hidden = true; } });
 })();
+
+// The site's grid (matte-page.css): Shift+G, or ?grid in the address, lays its twelve columns over the page column, to check
+// that things sit on them. It follows the page column's padding as the window changes.
+(() => {
+  const home = document.querySelector('.home');
+  if (!home) return;
+  let overlay = null;
+  const place = () => {
+    const r = home.getBoundingClientRect(), c = getComputedStyle(home);
+    overlay.style.left = r.left + parseFloat(c.paddingLeft) + 'px';
+    overlay.style.width = r.width - parseFloat(c.paddingLeft) - parseFloat(c.paddingRight) + 'px';
+  };
+  const toggle = () => {
+    if (overlay) { overlay.remove(); overlay = null; removeEventListener('resize', place); return; }
+    overlay = document.createElement('div'); overlay.className = 'grid-overlay'; overlay.setAttribute('aria-hidden', 'true');
+    overlay.innerHTML = '<span></span>'.repeat(12);
+    document.body.append(overlay); place(); addEventListener('resize', place);
+  };
+  document.addEventListener('keydown', e => {
+    if (e.key !== 'G' || !e.shiftKey || e.metaKey || e.ctrlKey || e.altKey) return;
+    if (e.target.closest('input, textarea, select, [contenteditable]')) return;
+    toggle();
+  });
+  if (new URLSearchParams(location.search).has('grid')) toggle();
+})();

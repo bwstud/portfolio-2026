@@ -36,7 +36,9 @@
        so words sliding in from the left aren't cut off as they arrive */
     .home main { margin-inline: calc(-1 * max(var(--space-4), 4vw)); padding-inline: max(var(--space-4), 4vw); }
     .top { padding-top: var(--space-7); }
-    @media (min-width: 1100px) { .top { padding-top: 5px; } }   /* the board sits at the top of the page: its plate, and so the rail's first button, level with the Controls button */
+    /* the board sits at the top of the page, its plate 32px down, level with the rail's first button; Project and Released
+       sit centred in the space above it, as far from the window's top as from the plate (15px of label in 32) */
+    @media (min-width: 1100px) { .top { padding-top: 0; } .board.matte .board__head { padding-block: 8.5px; } .board.matte .board__head span:last-child { top: 8.5px; } }
     .top__name { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }   /* read out, not shown */
     /* From the cover: the bar, then the work, rising into place */
     @media (prefers-reduced-motion: no-preference) {
@@ -68,18 +70,14 @@
 
     /* A project's record */
     .bay { margin-top: var(--space-7);
-      display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: var(--space-7); scroll-margin-top: var(--space-5); }
+      display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: var(--space-7) var(--grid-gutter); scroll-margin-top: var(--space-5); }
+    .bay > div:first-child { grid-column: 1 / span 4; }   /* the words on four columns, the picture on the other eight, */
+    .bay > .bay__media { grid-column: 5 / -1; }           /* its left edge in line with the second field under it */
     .bay[hidden] { display: none; }
-    /* With the rail (1100px and up) the column is let out to the right, ending --space-5 from the window's edge. The
-       board runs the whole width (its script adds columns to fill it), and a record's words keep the width they had,
-       so the room gained goes to the picture. */
+    /* With the rail (1100px and up) the page column sits beside the rail's hairline and runs to --space-5 from the window's
+       edge (matte-page.css); the board runs the whole width (its script adds columns to fill it). */
     @media (min-width: 1100px) {
-      /* and it stays beside the rail's hairline however wide the window: not centred, which on a wide screen left a gulf
-         between the nav and the board. The footer's columns line up with a record's. */
-      .home, .endfoot .foot-col { --col-pad: max(var(--space-4), min(4vw, 58px)); max-width: none; margin-left: 164px; margin-right: 0;
-        padding-left: var(--col-pad); padding-right: var(--space-5); }
       .home main { margin-right: calc(-1 * var(--space-5)); padding-right: var(--space-5); }
-      .bay { grid-template-columns: minmax(0, min(27rem, 41.667%)) minmax(0, 1fr); }
     }
     .has-board .bay { margin-top: 100px; }   /* clear air under the board; the stacked small-screen records keep the tighter gap */
     /* On load the record stays unseen until the board's last flaps land, then comes in as a piece of choreography; it
@@ -171,16 +169,24 @@
     }
 
     .sheet__close { position: absolute; top: var(--space-5); right: var(--space-5); z-index: 1; }
-    .sheet__scroll { overflow-y: auto; overscroll-behavior: contain; height: 100dvh; padding: var(--space-7) var(--space-5) var(--space-8); }
+    /* the content starts below the close button: its top, its height (a 28px key), and a gap the same as its top */
+    .sheet { --sheet-top: calc(var(--space-5) + 28px + var(--space-5)); }
+    .sheet__scroll { overflow-y: auto; overscroll-behavior: contain; height: 100dvh; padding: var(--sheet-top) var(--space-5) var(--space-8); }
     .sheet__side h2 { font: 600 clamp(26px, 2.4vw, 36px)/1.1 "Söhne Breit", sans-serif; letter-spacing: -.01em; text-wrap: balance; margin: var(--space-3) 0 0; }
     .sheet__side .mono, .sheet h3 { font-family: var(--font-mono); letter-spacing: 0.1em; text-transform: uppercase; }
     .sheet__name { margin: 0; }
-    .sheet__meta { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-4); margin: var(--space-5) 0 0; padding: 0; list-style: none; }
+    /* the project's facts under the title: each a small label over its value */
+    .sheet__facts { display: grid; gap: var(--space-3); margin: var(--space-5) 0 0; }
+    .sheet__facts dt { font-family: var(--font-mono); font-size: var(--text-2xs); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+    .sheet__facts dd { margin: 2px 0 0; }
     .sheet__index { display: none; }
     .sheet__body { display: grid; gap: var(--space-7); margin-top: var(--space-7); }
     .sheet h3 { font-size: var(--text-2xs); font-weight: 400; color: var(--muted); margin: 0 0 var(--space-3); }
     .sheet section { scroll-margin-top: var(--space-7); }
     .sheet section p { margin: 0; max-width: 38em; font-size: var(--text-heading); line-height: 1.45; text-wrap: pretty; }
+    .sheet section p + p { margin-top: var(--space-2); }   /* a second result, as on the record */
+    .sheet .sheet__prose p + p { margin-top: var(--space-4); }   /* written paragraphs, a step further apart */
+    .sheet__prose > .sheet__film { margin-bottom: var(--space-7); }   /* the film, then the words beneath it */
     .sheet .is-result h3 { color: var(--signal); }
     .sheet__lead { margin: 0; padding: clamp(var(--space-4), 4vw, var(--space-8)); border-radius: var(--radius-lg); background: var(--surface); }
     .sheet__lead img { display: block; width: 100%; height: auto; border-radius: var(--radius-sm); }
@@ -206,35 +212,46 @@
     /* the line's name rides above its knob, and slides from the line's right to its left as the line crosses, so it never leaves the picture */
     .compare__tag { position: absolute; top: calc(var(--knob-y) - 52px); left: 0; translate: calc(var(--v) * -100%) 0; padding: 4px 8px; border-radius: 4px; white-space: nowrap;
       background: rgb(12 14 16 / 0.86); color: #fff; font-family: var(--font-mono); font-size: var(--text-2xs); letter-spacing: 0.1em; text-transform: uppercase; }
-    .sheet__screens { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: var(--space-3); margin: 0; padding: 0; list-style: none; }
+    .sheet__screens { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--grid-gutter); margin: 0; padding: 0; list-style: none; }
+    @media (max-width: 600px) { .sheet__screens { grid-template-columns: minmax(0, 1fr); } }
+    .sheet__film { margin: 0; }
+    .sheet__film video { display: block; width: 100%; height: auto; aspect-ratio: 16 / 10; border-radius: var(--radius-sm); background: #0c0e12; }
     .sheet__screens img { display: block; width: 100%; height: auto; border-radius: var(--radius-sm); background: var(--surface); }
     /* room for two columns: the project's name and an index of the sheet stay put on the left, the details scroll on the right */
     @media (min-width: 1100px) {
-      .sheet__scroll { display: grid; grid-template-columns: minmax(0, 20rem) minmax(0, 1fr); gap: var(--space-8); padding: var(--space-7) var(--space-7) var(--space-8); }
-      .sheet__side { position: sticky; top: 0; align-self: start; display: flex; flex-direction: column; min-height: calc(100dvh - var(--space-7) - var(--space-8)); }
+      /* the sheet on the twelve columns too, as the record is: its side (the name, title and facts) on the first four,
+         the details on the last eight */
+      .sheet__scroll { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--grid-gutter); padding: var(--sheet-top) var(--space-7) var(--space-8); }
+      .sheet__side { grid-column: 1 / span 4; }
+      .sheet__body { grid-column: 5 / -1; }
+      .sheet__side { position: sticky; top: 0; align-self: start; display: flex; flex-direction: column; min-height: calc(100dvh - var(--sheet-top) - var(--space-8)); }
       .sheet__index { display: grid; gap: var(--space-2); justify-items: start; margin-top: auto; padding-top: var(--space-7); }
       .sheet__index a { color: var(--muted); text-decoration: none; }
       .sheet__index a:hover, .sheet__index a:focus-visible { color: var(--fg); }
       .sheet__body { margin-top: var(--space-8); }
+      .sheet__body:has(> :first-child .sheet__film, > .sheet__film:first-child) { margin-top: 0; }   /* a film starts the details level with the name and title beside it */
     }
     .bay__name { margin: 0 0 var(--space-3); }
     .bay h2 { font: 600 clamp(28px, 2.95vw, 42px)/1.08 "Söhne Breit", sans-serif; letter-spacing: -.01em; text-wrap: balance; margin: 0; }
     .bay__meta { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-4); margin: var(--space-5) 0 0; padding: 0; list-style: none; }
-    .bay__media { display: grid; place-items: center; min-width: 0; margin: 0; }
+    .bay__media { display: grid; place-items: center start; min-width: 0; margin: 0; }   /* a picture narrower than its columns keeps to their left edge */
     .bay__media img { border-radius: var(--radius-sm); max-height: 26rem; width: auto; max-width: 100%; height: auto; }
     .bay__media img.is-phone { border-radius: 30px; max-height: 30rem; }
     .bay__media.is-empty { aspect-ratio: 16 / 10; border: 1px dashed var(--line-strong); border-radius: var(--radius-sm); }
-    .fields { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-6); margin: 0; padding-top: var(--space-5); border-top: 1px solid var(--line); }
+    .fields { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: var(--space-6) var(--grid-gutter); margin: 0; padding-top: var(--space-5); border-top: 1px solid var(--line); }
+    .fields > div { grid-column: span 4; }   /* three fields of four columns, under the record's grid */
     .fields dt { padding-bottom: var(--space-2); }
     .fields dd { margin: 0; font-size: var(--text-md); line-height: 1.55; text-wrap: pretty; }
     .fields .is-result dt { color: var(--signal); }
     .fields .is-result dd { font-size: var(--text-heading); line-height: 1.35; }
+    .fields dd + dd { margin-top: var(--space-2); }   /* a second result, on its own line */
     /* a fact still to be supplied: dashed so it can't pass for real copy */
     .slot { border-bottom: 1px dashed currentColor; font-style: italic; color: var(--muted); }
 
     @media (max-width: 760px) {
-      .bay { grid-template-columns: minmax(0, 1fr); gap: var(--space-5); }
-      .fields { grid-template-columns: minmax(0, 1fr); gap: var(--space-5); }
+      .bay { row-gap: var(--space-5); }
+      .bay > div:first-child, .bay > .bay__media, .fields > div { grid-column: 1 / -1; }
+      .fields { row-gap: var(--space-5); }
     }
   </style>
 </head>
@@ -292,21 +309,55 @@
       <article class="bay" id="groom-lake" aria-labelledby="groom-lake-h">
         <div>
           <p class="bay__name mono">Groom Lake</p>
-          <h2 id="groom-lake-h">Who says enterprise can’t be pretty?</h2>
+          <h2 id="groom-lake-h">Overhauling a flagship to compete in the AI era</h2>
           <ul class="bay__meta mono"><li>Design lead</li><li>Platform redesign</li><li>Design systems</li><li>Pervasive AI</li></ul>
         </div>
         <figure class="bay__media" data-wall="images/groom-lake-wall/" data-count="42" data-compare="images/groom-lake-compare/"
+                data-film="images/groom-lake-hero.mp4" data-film-poster="images/groom-lake-hero-poster.webp"
                 data-label="A drifting wall of screens from the redesigned Ideagen EHS application: dashboards, incident records, audits, reports and forms">
           <img src="images/groom-lake-dashboard-1200.webp"
                srcset="images/groom-lake-dashboard-1200.webp 1200w, images/groom-lake-dashboard-2000.webp 2000w"
-               sizes="(max-width: 760px) calc(100vw - 80px), 44vw" width="1200" height="753" decoding="async"
+               sizes="(max-width: 760px) calc(100vw - 80px), 56vw" width="1200" height="753" decoding="async"
                alt="The redesigned Ideagen home dashboard: a personal greeting, quick actions, an equipment calibration chart and quality indicators">
         </figure>
         <dl class="fields">
           <div><dt class="mono">Problem</dt><dd>Enterprises shouldn’t have to use slow, ugly, awkward software to meet their compliance obligations and stay safe.</dd></div>
           <div><dt class="mono">What I did</dt><dd>I led a down-to-the-studs redesign of our flagship EHS application: an agent-first design system, overhauled core features, and a carefully constructed interface. Embracing AI tooling made it all possible.</dd></div>
-          <div class="is-result"><dt class="mono">Result</dt><dd><span class="slot">A measured result goes here.</span></dd></div>
+          <div class="is-result"><dt class="mono">Result</dt><dd>Lost deals related to UI/UX Down 47%</dd><dd>NPS up 23%</dd></div>
         </dl>
+        <!-- the project sheet, section by section: each template's title names it in the sheet's index; the film
+             (data-film above) opens the first, untitled one -->
+        <!-- the facts the sheet shows under the title -->
+        <template class="bay__facts">
+          <div><dt>Role</dt><dd>Lead Designer</dd></div>
+          <div><dt>When</dt><dd>Summer 2026</dd></div>
+          <div><dt>Project Type</dt><dd>Redesign, AI Features</dd></div>
+          <div><dt>Tools</dt><dd>Claude Code, Vercel, AX Skillbox</dd></div>
+        </template>
+        <template class="bay__section" data-title="Hero Montage" data-untitled>
+          <p>EHS Enterprise is Ideagen’s flagship product for large organizations, delivering safety, quality, and risk solutions across a spectrum of regulated industries. The app allows customers to do things like operate an incident management program, conduct recurring audits of their manufacturing processes, and manage job safety for thousands of workers at hazardous work sites.</p>
+          <p>The product was powerful, but stiff, awkward, and cumbersome for users. It was not built for the AI era, and needed to be reconsidered in light of it. Its accompanying mobile app was an underutilized orphan, and shared little with the desktop experience.</p>
+          <p>Add this all up and we reached a point in mid-2026 where we were losing sales. Reports were coming back about deals lost with specific concerns about how the product showed to potential buyers. Stale. Clumsy. Too complicated.</p>
+          <p>Momentum had been building for over a year to overhaul the UX and the time had come. With revenue on the line I was asked to lead the redesign.</p>
+        </template>
+        <template class="bay__section" data-title="Custom Workspaces">
+          <p>Copy to come.</p>
+        </template>
+        <template class="bay__section" data-title="Agentic Workflow">
+          <p>Copy to come.</p>
+        </template>
+        <template class="bay__section" data-title="Praxis">
+          <p>Copy to come.</p>
+        </template>
+        <template class="bay__section" data-title="Filters">
+          <p>Copy to come.</p>
+        </template>
+        <template class="bay__section" data-title="Impact">
+          <p>Copy to come.</p>
+        </template>
+        <template class="bay__section" data-title="Reflection">
+          <p>Copy to come.</p>
+        </template>
       </article>
 
       <article class="bay" id="blackbird" aria-labelledby="blackbird-h">
@@ -352,7 +403,7 @@
       <div class="sheet__side">
         <p class="sheet__name mono"></p>
         <h2 id="sheet-title"></h2>
-        <ul class="sheet__meta mono"></ul>
+        <dl class="sheet__facts"></dl>
         <nav class="sheet__index mono" aria-label="In this project"></nav>
       </div>
       <div class="sheet__body"></div>
@@ -756,9 +807,19 @@
         const name = bay.querySelector('.bay__name').textContent, wall = bay.querySelector('[data-wall]'), lead = bay.querySelector('.bay__media > img');
         sheet.querySelector('.sheet__name').textContent = name;
         sheet.querySelector('#sheet-title').textContent = bay.querySelector('h2').textContent;
-        sheet.querySelector('.sheet__meta').replaceChildren(...[...bay.querySelectorAll('.bay__meta li')].map(li => make('li', '', li.textContent)));
+        const facts = bay.querySelector('template.bay__facts'), factList = sheet.querySelector('.sheet__facts');
+        factList.replaceChildren(...(facts ? [facts.content.cloneNode(true)] : []));
+        factList.hidden = !facts;
         const parts = [];   // [heading, section]
-        const pair = bay.querySelector('[data-compare]');
+        const pair = bay.querySelector('[data-compare]'), written = bay.querySelectorAll('template.bay__section');
+        if (written.length) {   // a record that writes its own sections: those, in order, in place of the fields and screens
+          written.forEach(tpl => {
+            const section = make('section', 'sheet__prose');
+            if (!tpl.hasAttribute('data-untitled')) section.append(make('h3', '', tpl.dataset.title));
+            section.append(tpl.content.cloneNode(true));
+            parts.push([tpl.dataset.title, section]);
+          });
+        } else {
         if (pair) {
           const section = make('section'), figure = make('figure', 'sheet__lead');
           figure.append(compare(pair.dataset.compare.replace(/\/?$/, '/')), make('figcaption', '', 'Drag the first line for the redesign, the second for its dark mode'));
@@ -771,9 +832,9 @@
           parts.push(['Overview', section]);
         }
         bay.querySelectorAll('.fields > div').forEach(field => {
-          const section = make('section', field.className), p = make('p');
-          p.innerHTML = field.querySelector('dd').innerHTML;
-          section.append(make('h3', '', field.querySelector('dt').textContent), p);
+          const section = make('section', field.className);
+          section.append(make('h3', '', field.querySelector('dt').textContent));
+          field.querySelectorAll('dd').forEach(dd => { const p = make('p'); p.innerHTML = dd.innerHTML; section.append(p); });   // each line of the field, a result per line
           parts.push([field.querySelector('dt').textContent, section]);
         });
         if (wall) {
@@ -787,7 +848,21 @@
           section.append(make('h3', '', 'Screens'), list);
           parts.push(['Screens', section]);
         }
+        }
         body.replaceChildren(...parts.map(([, section], i) => { section.id = 'sheet-' + i; return section; }));
+        // the project's film, if it has one, opens the details: right of the name and title, at the head of the first section
+        const filmed = bay.querySelector('[data-film]');
+        if (filmed) {
+          const figure = make('figure', 'sheet__film'), video = document.createElement('video');
+          video.muted = true; video.loop = true; video.playsInline = true; video.preload = 'auto';
+          video.setAttribute('aria-label', 'A short film of the ' + name + ' work: signing in, the dashboard, dark and light, cards, records with the assistant, creating a record');
+          if (filmed.dataset.filmPoster) video.poster = filmed.dataset.filmPoster;
+          video.src = filmed.dataset.film;
+          if (matchMedia('(prefers-reduced-motion: reduce)').matches) video.controls = true;   // still until asked to play
+          else video.autoplay = true;
+          figure.append(video);
+          (written.length ? body.firstElementChild : body).prepend(figure);
+        }
         index.replaceChildren(...parts.map(([heading], i) => {
           const a = make('a', '', heading);
           a.href = '#sheet-' + i;
@@ -917,6 +992,7 @@
         sheet.classList.remove('is-peek', 'is-over-nav', 'is-settled');   // it leaves at the pace it arrived
         if (canCue) { cue.classList.remove('is-on'); try { cue.hidePopover(); } catch (e) { /* not showing */ } }
         if (sheet.open) sheet.close();
+        sheet.querySelector('.sheet__film video')?.pause();
         clearTimeout(gone);
         gone = setTimeout(() => document.documentElement.classList.remove('has-sheet'), tune.leaveMs + 80);   // once it has left
       }

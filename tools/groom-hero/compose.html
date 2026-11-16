@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Groom Lake hero</title>
+<!--
+  The Groom Lake hero video, composed in the browser from the Paper exports in src/ (Case Studies › Groom Lake Gallery
+  Assets, exported at 2x and named by frame id). Open it to watch it play; render.mjs steps it frame by frame (window.render)
+  and encodes the MP4.
+  Every scene is a list of layers; each layer is a picture with keyframes (time, centre x/y on the 1920 × 1200 stage,
+  scale, opacity, and how its move eases). One look holds it together: the site's off-black stage (light for the light-mode
+  passages), one corner radius, one shadow, one hairline edge, and one family of curves.
+-->
+<style>
+  html, body { margin: 0; background: #000; }
+  #stage { position: relative; width: 1920px; height: 1200px; overflow: hidden; background: #0c0e12; }
+  #bg-light { position: absolute; inset: 0; background: radial-gradient(120% 90% at 50% 40%, #f1f3f5, #dfe3e8); }
+  #bg-dark { position: absolute; inset: 0; background: radial-gradient(110% 85% at 50% 42%, #141820, #0a0c10 70%); }
+  #glow { position: absolute; width: 1200px; height: 900px; left: 360px; top: 150px; border-radius: 50%;
+    background: radial-gradient(closest-side, rgb(255 255 255 / 0.06), transparent); pointer-events: none; }
+  #wipe { position: absolute; top: 0; bottom: 0; width: 2px; margin-left: -1px; background: linear-gradient(transparent, rgb(255 255 255 / 0.85) 25%, rgb(255 255 255 / 0.85) 75%, transparent); opacity: 0; }
+  .layer { position: absolute; left: 0; top: 0; transform-origin: 50% 50%; will-change: transform, opacity; border-radius: var(--r, 14px); overflow: hidden; }
+  .layer img { display: block; width: 100%; height: auto; }
+  .layer.dark { box-shadow: 0 0 0 1px rgb(255 255 255 / 0.07), 0 30px 80px rgb(0 0 0 / 0.55), 0 8px 24px rgb(0 0 0 / 0.35); }
+  .layer.light { box-shadow: 0 0 0 1px rgb(20 30 50 / 0.06), 0 28px 70px rgb(20 30 50 / 0.16), 0 6px 18px rgb(20 30 50 / 0.08); }
+  .layer.flat { box-shadow: none; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="bg-dark"></div>
+  <div id="bg-light"></div>
+  <div id="glow"></div>
+  <div id="layers"></div>
+  <div id="wipe"></div>
+</div>
+<script>
+const D = 30;   // seconds; it starts and ends on the empty stage, so it loops without a seam
+window.D = D;   // render.mjs reads the length from here
+const W = 1920, H = 1200;
+
+// the curves: entries settle long and soft, exits leave gently, camera moves are even on both ends
+const E = {
+  out: p => 1 - Math.pow(1 - p, 4),
+  in: p => p * p * p,
+  inout: p => p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2,
+  lin: p => p,
+};
+const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
+const span = (t, a, b, ease = 'inout') => E[ease](clamp((t - a) / (b - a)));
+
+// a layer: a picture (src/<id>.png), its width on the stage, a look (dark | light), and keyframes
+// [t, x, y, scale, opacity, ease-into-this-key]. Before the first key and after the last it is hidden.
+const L = [];
+function layer(id, w, look, keys, opts = {}) { L.push({ id, w, look, keys, ...opts }); }
+
+// 1 · Sign in (0–4.2): the card rises, the username field opens, it lifts away
+layer('1BC-0', 860, 'dark', [[0.2, 960, 640, 0.96, 0], [1.3, 960, 560, 1, 1, 'out'], [2.0, 960, 556, 1, 1, 'lin'], [2.5, 960, 554, 1, 0, 'inout']]);
+layer('1BM-0', 860, 'dark', [[2.0, 960, 678, 0.99, 0], [2.5, 960, 672, 1, 1, 'inout'], [3.1, 960, 666, 1, 1, 'lin'], [3.8, 960, 620, 1.04, 0, 'in']]);
+
+// 2 · The dashboard (3.8–9.2): it comes up whole, then the camera leans in toward the charts
+layer('1L1-0', 1500, 'dark', [[3.7, 960, 680, 0.92, 0], [4.9, 960, 600, 1, 1, 'out'], [8.4, 1010, 760, 1.32, 1, 'inout'], [9.2, 1020, 800, 1.4, 0, 'in']]);
+
+// 3 · Dark to light (8.8–13.4): the chart and the profile menu, then a line sweeps across and the page turns to day
+const swA = 10.8, swB = 11.9;
+layer('1VJ-0', 1100, 'dark', [[8.9, 1230, 520, 1, 0], [10.0, 1110, 520, 1, 1, 'out'], [12.6, 1100, 500, 1.01, 1, 'lin'], [13.4, 1100, 440, 1.01, 0, 'in']], { z: 1 });
+layer('5C1-0', 340, 'dark', [[9.2, 430, 700, 1, 0], [10.3, 430, 620, 1, 1, 'out'], [12.6, 425, 600, 1.01, 1, 'lin'], [13.4, 425, 540, 1.01, 0, 'in']], { z: 2 });
+layer('72P-0', 1100, 'light', [[swA, 1110, 520, 1, 1], [12.6, 1100, 500, 1.01, 1, 'lin'], [13.4, 1100, 440, 1.01, 0, 'in']], { z: 3, wipe: true });
+layer('7QF-0', 340, 'light', [[swA, 430, 620, 1, 1], [12.6, 425, 600, 1.01, 1, 'lin'], [13.4, 425, 540, 1.01, 0, 'in']], { z: 4, wipe: true });
+
+// 4 · The cards (13.0–18.4): three columns drifting up at their own pace
+const col = (x, top, speed, ids, delay) => {
+  let y = top;
+  ids.forEach(([id, h], i) => {
+    const cy = y + h * 1.1 / 2, d = delay + i * 0.18, v = speed;
+    layer(id, 440, 'light', [[13.1 + d, x, cy + 110, 0.97, 0], [14.2 + d, x, cy - v * 0.25, 1, 1, 'out'], [17.4, x, cy - v, 1, 1, 'lin'], [18.3, x, cy - v - 60, 1, 0, 'in']]);
+    y += h * 1.1 + 36;
+  });
+};
+col(460, 280, 150, [['6Y2-0', 187], ['6YM-0', 393], ['B93-0', 252]], 0.0);
+col(960, 170, 220, [['B02-0', 302], ['ASB-0', 639]], 0.12);
+col(1460, 240, 120, [['70C-0', 393], ['B5O-0', 365]], 0.24);
+
+// 5 · The data and the assistant (18.0–23.4): the table scrolls in its window, the assistant slides in beside it
+layer('2PD-0', 1240, 'dark', [[18.2, 860, 690, 0.96, 0], [19.3, 860, 610, 1, 1, 'out'], [22.6, 860, 600, 1, 1, 'lin'], [23.4, 860, 590, 0.97, 0, 'in']], { window: 820, scroll: [19.0, 22.8, 0, 620] });
+layer('2I3-0', 400, 'dark', [[19.7, 1700, 600, 1, 0], [20.8, 1500, 600, 1, 1, 'out'], [22.6, 1495, 595, 1, 1, 'lin'], [23.4, 1490, 580, 0.97, 0, 'in']], { z: 2 });
+
+// 6 · Create new (23.0–27.2): the list, then the modules open beside it and the list steps back
+layer('22W-0', 440, 'dark', [[23.2, 960, 690, 0.97, 0], [24.3, 960, 600, 1, 1, 'out'], [24.8, 960, 600, 1, 1], [25.8, 560, 600, 0.96, 0.55, 'inout'], [26.4, 550, 600, 0.96, 0.55, 'lin'], [27.2, 540, 590, 0.94, 0, 'in']]);
+layer('28G-0', 700, 'dark', [[24.9, 1260, 610, 0.94, 0], [25.9, 1170, 600, 1, 1, 'out'], [26.4, 1165, 598, 1, 1, 'lin'], [27.2, 1160, 585, 0.98, 0, 'in']], { z: 2 });
+
+// 7 · The dashboard assembles from its parts (27.0–30), then the stage empties for the loop
+const fin = (id, w, x, y, dx, dy, d, z) => layer(id, w, 'dark', [[27.0 + d, x + dx, y + dy, 0.97, 0], [28.1 + d, x, y, 1, 1, 'out'], [29.0, x, y, 1, 1, 'lin'], [29.8, x, y - 20, 0.99, 0, 'in']], { z });
+fin('1DF-0', 1300, 960, 200, 0, -40, 0.0, 3);
+fin('1GD-0', 360, 490, 700, -70, 0, 0.12, 2);
+fin('1E9-0', 880, 1180, 410, 0, 70, 0.24, 1);
+fin('1VJ-0', 880, 1180, 805, 0, 70, 0.36, 1);
+
+// the stage turns light for scenes 3–4 and dark again after; the glow sits behind the sign-in
+const lightAt = t => (t < swA ? 0 : t < 17.6 ? 1 : 1 - span(t, 17.6, 18.5));
+const glowAt = t => span(t, 0.1, 1.4, 'out') * (1 - span(t, 3.0, 3.9)) + span(t, 27.0, 28.4, 'out') * (1 - span(t, 29.0, 29.9)) * 0.7;
+const wipeX = t => (t < swA ? -10 : t > swB ? W + 10 : -10 + (W + 20) * span(t, swA, swB, 'inout'));
+
+// build the layers
+const box = document.getElementById('layers');
+const els = L.map(l => {
+  const el = document.createElement('div'); el.className = 'layer ' + l.look;
+  const img = new Image(); img.src = 'src/' + l.id + '.png'; img.decoding = 'sync'; el.append(img);
+  el.style.width = l.w + 'px'; el.style.zIndex = l.z || 0;
+  box.append(el); l.el = el; l.img = img; return el;
+});
+window.ready = Promise.all(L.map(l => l.img.decode().then(() => {
+  l.h = l.w * l.img.naturalHeight / l.img.naturalWidth;
+  if (l.window) { l.el.style.height = l.window + 'px'; l.h = l.window; }
+})));
+
+function at(l, t) {
+  const k = l.keys;
+  if (t < k[0][0] || t > k[k.length - 1][0]) return null;
+  for (let i = 1; i < k.length; i++) {
+    if (t <= k[i][0]) {
+      const a = k[i - 1], b = k[i], p = E[b[5] || 'inout'](clamp((t - a[0]) / (b[0] - a[0])));
+      return [1, 2, 3, 4].map(j => a[j] + (b[j] - a[j]) * p);
+    }
+  }
+  return k[k.length - 1].slice(1, 5);
+}
+
+window.render = t => {
+  t = ((t % D) + D) % D;
+  const light = lightAt(t);
+  document.getElementById('bg-light').style.opacity = light;
+  document.getElementById('glow').style.opacity = glowAt(t);
+  const wx = wipeX(t), wipeOn = t > swA - 0.05 && t < swB + 0.05;
+  const wipe = document.getElementById('wipe'); wipe.style.left = wx + 'px'; wipe.style.opacity = wipeOn ? Math.sin(Math.PI * span(t, swA, swB, 'lin')) : 0;
+  // the stage behind the light passage reveals with the line, too
+  document.getElementById('bg-light').style.clipPath = t < swB ? `inset(0 ${W - clamp(wx, 0, W)}px 0 0)` : 'none';
+  // a slow, constant drift of the whole camera, a few pixels, so nothing ever sits dead still
+  const cam = `translate(${Math.sin(t * 0.21) * 10}px, ${Math.cos(t * 0.17) * 8}px)`;
+  document.getElementById('layers').style.transform = cam;
+  for (const l of L) {
+    const s = at(l, t);
+    if (!s || s[3] <= 0.001) { l.el.style.visibility = 'hidden'; continue; }
+    const [x, y, sc, o] = s;
+    l.el.style.visibility = 'visible';
+    l.el.style.opacity = o;
+    l.el.style.transform = `translate(${x - l.w / 2}px, ${y - l.h / 2}px) scale(${sc})`;
+    if (l.wipe) {   // shown left of the sweeping line only, in stage coordinates
+      if (t >= swB) l.el.style.clipPath = 'none';
+      else { const left = x - (l.w * sc) / 2, cut = clamp((wx - left) / sc, 0, l.w); l.el.style.clipPath = `inset(0 ${l.w - cut}px 0 0 round 14px)`; }
+    }
+    if (l.scroll) { const [a, b, from, to] = l.scroll; l.img.style.transform = `translateY(${-(from + (to - from) * span(t, a, b, 'inout'))}px)`; }
+  }
+};
+
+// open it in a browser to watch: it plays on the page's clock (?t=12 holds a moment)
+const q = new URLSearchParams(location.search);
+window.ready.then(() => {
+  if (q.has('render')) return;
+  if (q.has('t')) return render(parseFloat(q.get('t')));
+  const t0 = performance.now(); const tick = now => { render((now - t0) / 1000); requestAnimationFrame(tick); }; requestAnimationFrame(tick);
+});
+</script>
+</body>
+</html>

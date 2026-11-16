@@ -6,7 +6,7 @@ The work below was done at Ideagen, on its environment, health and safety (EHS) 
 
 ## Work
 
-- Groom Lake. Role: design lead. A down-to-the-studs redesign of the flagship EHS application, with an agent-first design system and overhauled core features. Focus: platform redesign, design systems, pervasive AI.
+- Groom Lake. Role: design lead. A down-to-the-studs redesign of the flagship EHS application, with an agent-first design system and overhauled core features. Results: lost deals related to UI/UX down 47%; NPS up 23%. Focus: platform redesign, design systems, pervasive AI.
 - Blackbird. Role: design lead, 0-1. A new, unified mobile app for Ideagen's EHS portfolio, for workers in far-flung, dirty and dangerous places. Mazlan is embedded throughout to help users react and respond to their environment. Focus: agentic triage, product strategy, offline patterns.
 - Mazlan Builder. Role: designer. An agentic configuration tool that puts self-serve customization in customers' hands. Result: benchmark tasks went from hours to minutes, without losing capability. Focus: AI UX, trust and safety, judgment gates.
 - ADEPT and Workspace Personalization. Case studies in progress.

@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Chain Reaction · Brian Studwell</title>
+  <meta name="description" content="A Rube Goldberg machine in an empty concrete room: a miniature ski jumper, a camera operator, a lens, a spring pad, a cube of suspended gravity, a laser, gunpowder and a whale. Tune every link, move things around and scrub through the run.">
+  <style>
+    @layer base, matte;
+    @import url("../../matte.css") layer(matte);   /* the Matte system, under this page's own layout rules */
+    @import url("../rig.css") layer(matte);        /* and what the rigs share on top of it */
+    @font-face {
+      font-family: "Geist";
+      font-weight: 100 900;
+      font-display: swap;
+      src: url("../../fonts/Geist-Variable.woff2") format("woff2");
+    }
+    @layer base {
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      button, input, select { font: inherit; color: inherit; }
+      button { cursor: pointer; background: none; border: 0; }
+      button:disabled { cursor: default; opacity: 0.4; }
+      svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+    }
+    html, body {
+      height: 100%; overflow: hidden; background: #0d0d0d; color: var(--m-print-hi);
+      font: 13px/1.45 "Geist", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    [hidden] { display: none !important; }
+    kbd {                                                        /* a key cap, printed on the body */
+      font: 400 10px/1 var(--m-font); color: var(--m-print);
+      padding: 2px 5px; border-radius: 3px; box-shadow: 0 0 0 1px var(--m-edge), 0 1px 0 rgb(255 255 255 / 0.08); background: var(--m-well);
+    }
+
+    #scene { position: fixed; inset: 0; display: block; width: 100%; height: 100%; touch-action: none; }
+    #scene.is-hover { cursor: pointer; }
+    #scene.is-fly { cursor: crosshair; }
+
+    .panel { position: fixed; z-index: 2; border-radius: 12px; }   /* a Matte body (.m-body); its labels are Matte legends */
+    .seam { border-top: 1px solid var(--m-well); box-shadow: 0 1px 0 rgb(255 255 255 / 0.055) inset; }
+
+    /* ---------- header ---------- */
+    .top { position: fixed; z-index: 4; top: 14px; left: 16px; right: 16px; display: flex; align-items: center; gap: 12px; pointer-events: none; }
+    .top > * { pointer-events: auto; }
+    .top__start { display: flex; align-items: center; gap: 14px; height: 36px; padding: 0 14px; }   /* a small Matte body */
+    .back { white-space: nowrap; }
+    .brand { font-size: 15px; font-weight: 650; white-space: nowrap; color: var(--m-print-hi); }
+    .top__end { margin-left: auto; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+    .hbtn { white-space: nowrap; }                              /* a Matte key; the panels that are open stay down */
+    .hbtn svg { width: 14px; height: 14px; stroke-width: 1.7; }
+    .hbtn--icon { width: 34px; min-width: 0; padding: 0; }
+    .sep { width: 2px; height: 22px; margin: 0 2px; background: linear-gradient(90deg, var(--m-well) 50%, rgb(255 255 255 / 0.055) 50%); }   /* a seam */
+
+    /* ---------- chain panel (left) ---------- */
+    .chain { top: 62px; left: 16px; width: 270px; max-height: calc(100% - 180px); display: flex; flex-direction: column; overflow: hidden; }
+    .phead { display: flex; align-items: center; gap: 8px; padding: 12px 10px 10px 14px; border-bottom: 1px solid var(--m-well); box-shadow: 0 1px 0 rgb(255 255 255 / 0.04); }
+    .phead h2 { flex: 1; }                                       /* a Matte legend */
+    .phead .meta { color: var(--m-print-dim); font: 400 11px/1 var(--m-font); }
+    .pclose svg { width: 14px; height: 14px; }                  /* a quiet Matte key */
+    .links { list-style: none; overflow: auto; padding: 6px; }
+    .link { display: grid; grid-template-columns: 14px 1fr auto; align-items: center; gap: 8px; width: 100%; text-align: left; padding: 6px 8px; border-radius: 4px; color: var(--m-print); }   /* a row in a Matte list */
+    .dot { width: 7px; height: 7px; margin-left: 3px; border-radius: 50%; background: var(--m-cap-hi); box-shadow: 0 0 0 1px var(--m-edge); }   /* a lamp */
+    .dot.is-done { background: var(--m-ok); box-shadow: 0 0 0 1px var(--m-edge), 0 0 5px color-mix(in srgb, var(--m-ok) 60%, transparent); }
+    .dot.is-live { background: var(--m-signal); box-shadow: 0 0 0 1px var(--m-edge), 0 0 7px color-mix(in srgb, var(--m-signal) 80%, transparent); }
+    .dot.is-fail { background: var(--m-danger); box-shadow: 0 0 0 1px var(--m-edge), 0 0 6px color-mix(in srgb, var(--m-danger) 70%, transparent); }
+    .dot.is-never { background: transparent; box-shadow: 0 0 0 1px var(--m-print-dim) inset; }
+    .link time { color: var(--m-print-dim); font: 400 11px/1 var(--m-font); font-variant-numeric: tabular-nums; }
+    .story { margin: 4px 10px 10px; padding: 9px 11px 10px; min-height: 58px; border-radius: var(--m-radius-well); background: var(--m-well); box-shadow: var(--m-well-shadow); color: var(--m-glass-dim); }   /* read from a window */
+    .story.is-fail { color: color-mix(in srgb, var(--m-danger) 60%, var(--m-lit)); }
+    .story strong { display: block; font-weight: 600; color: var(--m-lit); margin-bottom: 2px; }
+    .story.is-fail strong { color: var(--m-danger); }
+
+    /* ---------- tune panel (right) ---------- */
+    .tune { top: 62px; right: 16px; width: 330px; max-height: calc(100% - 180px); display: flex; flex-direction: column; overflow: hidden; }
+    .chips { display: flex; flex-wrap: wrap; gap: 6px 5px; padding: 10px 10px 8px; border-bottom: 1px solid var(--m-well); box-shadow: 0 1px 0 rgb(255 255 255 / 0.04); }   /* small Matte keys; the section in view stays down */
+    .chip.has-change::after { content: ""; display: inline-block; width: 4px; height: 4px; border-radius: 50%; background: var(--m-signal); margin-left: 5px; }
+    .params { overflow: auto; padding: 4px 14px 10px; }
+    .group-label { margin: 14px 0 4px; }                        /* a Matte legend */
+    .param { padding: 8px 0; }
+    .param + .param { border-top: 1px solid var(--m-well); box-shadow: 0 1px 0 rgb(255 255 255 / 0.04) inset; }
+    .param__head { display: flex; align-items: center; gap: 6px; }
+    .param__head label { flex: 1; color: var(--m-print); }
+    .param__num { width: 68px; height: 22px; padding: 0 5px; text-align: right; font-size: 11px; font-variant-numeric: tabular-nums; -moz-appearance: textfield; appearance: textfield; }   /* a Matte number well */
+    .param__num::-webkit-inner-spin-button, .param__num::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+    .param__head .unit { color: var(--m-print-dim); font-size: 11.5px; min-width: 14px; }
+    .param.is-changed .param__head label { color: var(--m-signal); }
+    .param__reset { width: 18px; height: 18px; border-radius: 3px; color: var(--m-print-dim); font-size: 13px; line-height: 1; visibility: hidden; }
+    .param.is-changed .param__reset { visibility: visible; }
+    .param__reset:hover { color: var(--m-print-hi); background: color-mix(in srgb, var(--m-print) 12%, transparent); }
+    .param .m-fader { width: 100%; margin-top: 2px; }
+    .param input[type="color"] { width: 44px; height: 22px; border: 0; border-radius: var(--m-radius-well); background: var(--m-well); box-shadow: var(--m-well-shadow); padding: 2px; cursor: pointer; }
+    .note { color: var(--m-print-dim); font-size: 12px; margin-top: 2px; }
+    .toggle { flex: 1; }                                         /* a Matte tick box */
+    .pfoot { display: flex; gap: 6px; padding: 12px 10px 8px; flex-wrap: wrap; }
+    .btn { min-width: 0; white-space: nowrap; }                  /* a Matte key; the one that saves is the primary */
+    .btn--danger, .matte .btn--danger:hover { color: var(--m-danger); }
+
+    /* ---------- transport (bottom) ---------- */
+    .transport {
+      left: 50%; transform: translateX(-50%); bottom: 16px; width: min(900px, calc(100% - 32px));
+      padding: 12px 14px 9px; display: grid; grid-template-columns: auto 1fr auto; gap: 8px 16px; align-items: center;
+    }
+    .tbtns { display: flex; gap: 6px; align-items: center; }
+    .tbtn { width: 36px; min-width: 0; padding: 0; position: relative; }   /* Matte keys; Play is the primary */
+    .tbtn svg { width: 14px; height: 14px; fill: currentColor; }
+    .tbtn--play { width: 48px; }
+    .tbtn .badge { position: absolute; right: 3px; bottom: 2px; font: 400 7.5px/1 var(--m-font); color: var(--m-signal); }
+    .scrub { position: relative; height: 32px; display: flex; align-items: center; }
+    .scrub .m-fader { width: 100%; position: relative; z-index: 1; }
+    .marks { position: absolute; left: 8px; right: 8px; top: 0; bottom: 0; pointer-events: none; }
+    .mark { position: absolute; top: 1px; width: 2px; height: 6px; border-radius: 1px; background: var(--m-print-dim); transform: translateX(-1px); }   /* printed ticks above the slot */
+    .mark.is-fail { background: var(--m-danger); top: 0; height: 100%; }
+    .mark.is-boom { background: var(--m-signal); height: 8px; }
+    .clock { font: 400 12px/1.3 var(--m-font); font-variant-numeric: tabular-nums; color: var(--m-lit); white-space: nowrap; text-align: right; min-width: 160px; }
+    .clock .dim { color: var(--m-print-dim); }
+    .clock .meta { color: var(--m-print-dim); font-size: 10.5px; display: block; }
+    .speed { min-width: 46px; font-variant-numeric: tabular-nums; }   /* a small Matte key */
+
+    /* ---------- versions and help popovers ---------- */
+    .pop { top: 62px; right: 16px; width: 340px; z-index: 5; max-height: calc(100% - 90px); display: flex; flex-direction: column; overflow: hidden; }
+    .pop__body { padding: 12px 14px; overflow: auto; }
+    .pop__body .row + .note { margin-top: 8px; }
+    .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .field { flex: 1; min-width: 0; width: auto; height: 30px; }   /* a Matte entry well */
+    .vlist { list-style: none; margin-top: 12px; display: grid; gap: 6px; }
+    .vitem { display: grid; grid-template-columns: 1fr; gap: 2px 8px; padding: 8px 10px 9px; border-radius: var(--m-radius-well); background: var(--m-well); box-shadow: var(--m-well-shadow); }
+    .vitem .name { font-weight: 600; color: var(--m-lit); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .vitem .when { color: var(--m-glass-dim); font-size: 11.5px; }
+    .vitem .acts { display: flex; gap: 6px; align-items: center; margin-top: 7px; }
+    .vitem.is-current { box-shadow: var(--m-well-shadow), 0 0 0 1px var(--m-signal); }
+    .empty { color: var(--m-print-dim); padding: 8px 2px; }
+    .status { color: var(--m-print-dim); font-size: 12px; margin-top: 8px; min-height: 16px; }
+    .keys { display: grid; grid-template-columns: auto 1fr; gap: 7px 12px; align-items: center; color: var(--m-print); }
+    .keys dt { white-space: nowrap; }
+    .keys dd { color: var(--m-print-dim); }
+    .help h3 { margin: 16px 0 8px; }                            /* Matte legends */
+    .help h3:first-child { margin-top: 2px; }
+    .help p { color: var(--m-print); margin-bottom: 6px; }
+
+    .toast {                                                    /* a Matte toast: a strip of glass, shown and hidden by the page */
+      position: fixed; z-index: 6; left: 50%; bottom: 104px; transform: translateX(-50%);
+      max-width: min(520px, calc(100% - 32px)); line-height: 1.4; text-align: center;
+      opacity: 0; pointer-events: none; transition: opacity 0.2s;
+    }
+    .toast.is-on { opacity: 1; }
+    .loading { position: fixed; inset: 0; display: grid; place-items: center; color: var(--m-print-dim); z-index: 1; pointer-events: none; }
+
+    .wide { display: inline; }
+    @media (max-width: 1180px) { .wide { display: none; } }
+    @media (max-width: 860px) {
+      .chain { width: 236px; }
+      .tune { width: 296px; }
+    }
+    @media (max-width: 700px) {
+      .top { top: max(10px, env(safe-area-inset-top)); flex-wrap: wrap; gap: 8px; }
+      .brand { display: none; }
+      .top__end { gap: 6px; }
+      .hbtn--icon, .hbtn { width: 32px; min-width: 0; padding: 0; }
+      .sep { display: none; }
+      .chain, .tune, .pop { left: 16px; right: 16px; width: auto; top: 104px; max-height: calc(100% - 250px); }
+      .transport { grid-template-columns: 1fr auto; bottom: max(12px, env(safe-area-inset-bottom)); }
+      .transport .scrub { grid-column: 1 / -1; grid-row: 2; }
+      .tbtns { gap: 4px; }
+      .tbtn { width: 30px; }
+      .tbtn--play { width: 40px; }
+      .clock { min-width: 0; font-size: 11px; }
+      .clock .dim, .clock .meta { display: none; }   /* room for the time alone beside the keys */
+      .toast { bottom: 150px; }
+    }
+  </style>
+</head>
+<body class="matte">
+  <canvas id="scene" aria-label="The room with the machine in it. Drag to look around; click a part of the machine to select it."></canvas>
+  <div class="loading" id="loading">Building the room…</div>
+
+  <header class="top">
+    <div class="top__start m-body m-body--low"><a class="back m-legend" href="../">← Rigs and Jigs</a><span class="brand">Chain Reaction</span></div>
+    <div class="top__end">
+      <button class="hbtn m-key" id="show-chain" type="button" aria-pressed="true" title="The chain, link by link"><svg viewBox="0 0 24 24"><path d="M9 17H7A5 5 0 0 1 7 7h2"/><path d="M15 7h2a5 5 0 1 1 0 10h-2"/><path d="M8 12h8"/></svg><span class="wide">Chain</span></button>
+      <button class="hbtn m-key" id="show-tune" type="button" aria-pressed="true" title="Tune the selected link"><svg viewBox="0 0 24 24"><path d="M10 8h4"/><path d="M12 21v-9"/><path d="M12 8V3"/><path d="M17 16h4"/><path d="M19 12V3"/><path d="M19 21v-5"/><path d="M3 14h4"/><path d="M5 10V3"/><path d="M5 21v-7"/></svg><span class="wide">Tune</span></button>
+      <button class="hbtn m-key" id="show-versions" type="button" aria-pressed="false" title="Save and load versions"><svg viewBox="0 0 24 24"><path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7"/><path d="M7 3v4a1 1 0 0 0 1 1h7"/></svg><span class="wide">Versions</span></button>
+      <span class="sep" aria-hidden="true"></span>
+      <button class="hbtn hbtn--icon m-key" id="mode-move" type="button" aria-pressed="true" title="Move the selected part (M)" aria-label="Move"><svg viewBox="0 0 24 24"><path d="M12 2v20"/><path d="m15 19-3 3-3-3"/><path d="m19 9 3 3-3 3"/><path d="M2 12h20"/><path d="m5 9-3 3 3 3"/><path d="m9 5 3-3 3 3"/></svg></button>
+      <button class="hbtn hbtn--icon m-key" id="mode-turn" type="button" aria-pressed="false" title="Turn the selected part (R)" aria-label="Turn"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg></button>
+      <span class="sep" aria-hidden="true"></span>
+      <button class="hbtn hbtn--icon m-key" id="fly" type="button" aria-pressed="false" title="Fly the camera: drag to look, WASD to move, Q and E for down and up (F)" aria-label="Fly the camera"><svg viewBox="0 0 24 24"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/></svg></button>
+      <button class="hbtn m-key" id="home" type="button" title="Put the camera back where it started (H)"><svg viewBox="0 0 24 24"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg><span class="wide">Reset camera</span></button>
+      <button class="hbtn hbtn--icon m-key" id="sound" type="button" aria-pressed="true" title="Sound" aria-label="Sound"><svg viewBox="0 0 24 24"><path d="M11 5 6 9H2v6h4l5 4z"/><path class="wave" d="M15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14"/></svg></button>
+      <button class="hbtn hbtn--icon m-key" id="show-help" type="button" aria-pressed="false" title="Keys and how it works" aria-label="Help"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg></button>
+    </div>
+  </header>
+
+  <section class="panel chain m-body" id="chain" aria-label="The chain">
+    <div class="phead"><h2 class="m-legend">The chain</h2><span class="meta" id="chain-meta"></span><button class="pclose m-key m-key--quiet m-key--icon" id="close-chain" type="button" aria-label="Hide the chain"><svg viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button></div>
+    <ol class="links" id="links"></ol>
+    <div class="story" id="story" aria-live="polite"></div>
+  </section>
+
+  <section class="panel tune m-body" id="tune" aria-label="Tuning">
+    <div class="phead"><h2 class="m-legend" id="tune-title">Tune</h2><span class="meta" id="tune-meta"></span><button class="pclose m-key m-key--quiet m-key--icon" id="close-tune" type="button" aria-label="Hide tuning"><svg viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button></div>
+    <div class="chips" id="chips" role="toolbar" aria-label="Sections"></div>
+    <div class="params" id="params"></div>
+    <div class="pfoot seam">
+      <button class="btn m-key" id="reset-section" type="button">Reset this section</button>
+      <button class="btn btn--danger m-key" id="reset-all" type="button">Reset everything</button>
+    </div>
+  </section>
+
+  <section class="panel pop m-body" id="versions" aria-label="Versions" hidden>
+    <div class="phead"><h2 class="m-legend">Versions</h2><span class="meta" id="versions-meta"></span><button class="pclose m-key m-key--quiet m-key--icon" id="close-versions" type="button" aria-label="Close versions"><svg viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button></div>
+    <div class="pop__body">
+      <div class="row"><input class="field m-input" id="version-name" type="text" placeholder="Name this version" aria-label="Version name"><button class="btn btn--go m-key m-key--primary" id="version-save" type="button">Save</button></div>
+      <p class="note">Saves every setting, where everything sits and the camera. Kept in this browser; export to move them to another computer.</p>
+      <ul class="vlist" id="vlist"></ul>
+      <div class="row" style="margin-top:10px">
+        <button class="btn m-key" id="version-export" type="button">Export all</button>
+        <button class="btn m-key" id="version-import" type="button">Import</button>
+        <input type="file" id="version-file" accept="application/json,.json" hidden>
+      </div>
+      <p class="status" id="version-status"></p>
+    </div>
+  </section>
+
+  <section class="panel pop help m-body" id="help" aria-label="Help" hidden>
+    <div class="phead"><h2 class="m-legend">How it works</h2><button class="pclose m-key m-key--quiet m-key--icon" id="close-help" type="button" aria-label="Close help"><svg viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button></div>
+    <div class="pop__body">
+      <h3 class="m-legend">The run</h3>
+      <p>Every change re-runs the whole machine from the start, in a fraction of a second. Playback just reads that run, so rewinding and stepping frame by frame are exact. If a link fails, the chain panel says where and why.</p>
+      <h3 class="m-legend">Moving things</h3>
+      <p>Click any part of the machine to select it, then drag the arrows. Use turn mode for the ski jump, the camera operator and the whale. The operator moves with the ski jump, and he has to stay close to the wall to feel the bump.</p>
+      <h3 class="m-legend">Keys</h3>
+      <dl class="keys">
+        <dt><kbd>Space</kbd></dt><dd>Play or pause</dd>
+        <dt><kbd>←</kbd> <kbd>→</kbd></dt><dd>One frame back or forward (hold Shift for one second)</dd>
+        <dt><kbd>J</kbd> <kbd>L</kbd></dt><dd>Rewind, fast forward (press again to go faster)</dd>
+        <dt><kbd>Home</kbd> or <kbd>0</kbd></dt><dd>Back to the start</dd>
+        <dt><kbd>M</kbd> <kbd>R</kbd></dt><dd>Move or turn the selected part</dd>
+        <dt><kbd>Esc</kbd></dt><dd>Deselect</dd>
+        <dt><kbd>F</kbd></dt><dd>Fly the camera</dd>
+        <dt><kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd></dt><dd>Move the camera; <kbd>Q</kbd> <kbd>E</kbd> down and up; Shift to hurry</dd>
+        <dt><kbd>H</kbd></dt><dd>Reset the camera</dd>
+      </dl>
+    </div>
+  </section>
+
+  <section class="panel transport m-body" aria-label="Playback">
+    <div class="tbtns">
+      <button class="tbtn m-key" id="t-start" type="button" title="Back to the start (Home)" aria-label="Back to the start"><svg viewBox="0 0 24 24"><path d="M5 4v16"/><path d="M19 5 9 12l10 7z"/></svg></button>
+      <button class="tbtn m-key" id="t-rew" type="button" title="Rewind (J)" aria-label="Rewind" aria-pressed="false"><svg viewBox="0 0 24 24"><path d="M11 19 2 12l9-7z"/><path d="M22 19l-9-7 9-7z"/></svg><span class="badge" id="rew-badge"></span></button>
+      <button class="tbtn m-key" id="t-back" type="button" title="One frame back (←)" aria-label="One frame back"><svg viewBox="0 0 24 24"><path d="M17 5 8 12l9 7z"/><path d="M6 5v14"/></svg></button>
+      <button class="tbtn tbtn--play m-key m-key--primary" id="t-play" type="button" title="Play (Space)" aria-label="Play"><svg viewBox="0 0 24 24" id="play-icon"><path d="M6 4l14 8-14 8z"/></svg></button>
+      <button class="tbtn m-key" id="t-fwd" type="button" title="One frame forward (→)" aria-label="One frame forward"><svg viewBox="0 0 24 24"><path d="M7 5l9 7-9 7z"/><path d="M18 5v14"/></svg></button>
+      <button class="tbtn m-key" id="t-ff" type="button" title="Fast forward (L)" aria-label="Fast forward" aria-pressed="false"><svg viewBox="0 0 24 24"><path d="M13 19l9-7-9-7z"/><path d="M2 19l9-7-9-7z"/></svg><span class="badge" id="ff-badge"></span></button>
+      <button class="speed m-key m-key--sm" id="t-speed" type="button" title="Playback speed">1×</button>
+    </div>
+    <div class="scrub">
+      <div class="marks" id="marks"></div>
+      <input class="m-fader" type="range" id="scrub" min="0" max="1000" step="1" value="0" aria-label="Playback position">
+    </div>
+    <div class="clock" id="clock">0.00 s<span class="meta">frame 0</span></div>
+  </section>
+
+  <div class="toast m-toast m-toast--still" id="toast" role="status" aria-live="polite"></div>
+
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+      }
+    }
+  </script>
+  <script type="module" src="app.js"></script>
+</body>
+</html>

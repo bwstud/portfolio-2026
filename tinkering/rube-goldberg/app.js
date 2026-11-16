@@ -655,7 +655,7 @@ function renderChain(force) {
   box.innerHTML = LINKS.map((l, i) => {
     const st = states[i];
     const cur = SECTIONS.find(s => s.id === section)?.id === l.section || (selected && selected.split(':')[0] === l.el && l.section === section);
-    return `<li><button class="link" type="button" data-i="${i}" aria-current="${cur}"><span class="dot is-${st.s}" aria-hidden="true"></span><span>${esc(l.name)}</span><time>${st.at != null && st.s !== 'wait' ? st.at.toFixed(2) + ' s' : ''}</time></button></li>`;
+    return `<li><button class="link m-menu__item m-menu__item--plain" type="button" data-i="${i}" aria-current="${cur}"><span class="dot is-${st.s}" aria-hidden="true"></span><span>${esc(l.name)}</span><time>${st.at != null && st.s !== 'wait' ? st.at.toFixed(2) + ' s' : ''}</time></button></li>`;
   }).join('');
   box.querySelectorAll('.link').forEach(b => b.onclick = () => { const l = LINKS[+b.dataset.i]; section = l.section; select(l.el, true); });
   const done = states.filter(s => s.s === 'done').length;
@@ -688,7 +688,7 @@ function makeRow({ label, type = 'range', min, max, step, unit = '', note = '', 
   const fmt = fmtFor(step || 1);
   const mark = () => row.classList.toggle('is-changed', get() !== def);
   if (type === 'toggle') {
-    row.innerHTML = `<div class="param__head"><label class="toggle"><input type="checkbox" id="${id}" ${get() ? 'checked' : ''}> ${esc(label)}</label><button class="param__reset" type="button" aria-label="Reset ${esc(label)}">↺</button></div>${note ? `<p class="note">${esc(note)}</p>` : ''}`;
+    row.innerHTML = `<div class="param__head"><label class="toggle m-check"><input type="checkbox" id="${id}" ${get() ? 'checked' : ''}> ${esc(label)}</label><button class="param__reset" type="button" aria-label="Reset ${esc(label)}">↺</button></div>${note ? `<p class="note">${esc(note)}</p>` : ''}`;
     const inp = row.querySelector('input');
     inp.addEventListener('change', () => { set(inp.checked ? 1 : 0); mark(); });
     row.querySelector('.param__reset').onclick = () => { set(def); inp.checked = !!def; mark(); };
@@ -698,8 +698,8 @@ function makeRow({ label, type = 'range', min, max, step, unit = '', note = '', 
     inp.addEventListener('input', () => { set(inp.value); mark(); });
     row.querySelector('.param__reset').onclick = () => { set(def); inp.value = def; mark(); };
   } else {
-    row.innerHTML = `<div class="param__head"><label for="${id}">${esc(label)}</label><input type="number" class="param__num" min="${min}" max="${max}" step="any" value="${fmt(get())}" aria-label="${esc(label)}, typed"><span class="unit">${esc(unit)}</span><button class="param__reset" type="button" title="Back to ${esc(fmt(def))}" aria-label="Reset ${esc(label)}">↺</button></div>
-      <input type="range" id="${id}" min="${min}" max="${max}" step="${step}" value="${get()}">${note ? `<p class="note">${esc(note)}</p>` : ''}`;
+    row.innerHTML = `<div class="param__head"><label for="${id}">${esc(label)}</label><input type="number" class="param__num m-input" min="${min}" max="${max}" step="any" value="${fmt(get())}" aria-label="${esc(label)}, typed"><span class="unit">${esc(unit)}</span><button class="param__reset" type="button" title="Back to ${esc(fmt(def))}" aria-label="Reset ${esc(label)}">↺</button></div>
+      <input class="m-fader" type="range" id="${id}" min="${min}" max="${max}" step="${step}" value="${get()}">${note ? `<p class="note">${esc(note)}</p>` : ''}`;
     const sl = row.querySelector('input[type=range]'), num = row.querySelector('.param__num');
     sl.addEventListener('input', () => { set(+sl.value); num.value = fmt(+sl.value); mark(); });
     num.addEventListener('input', () => { const v = num.valueAsNumber; if (Number.isFinite(v) && v >= min && v <= max) { set(v); sl.value = v; mark(); } });
@@ -760,7 +760,7 @@ function renderPositionFields() { for (const r of posRows) r._sync?.(); }
 
 function renderParams() {
   const chips = $('#chips');
-  chips.innerHTML = SECTIONS.map(s => `<button class="chip" type="button" data-s="${s.id}" aria-pressed="${s.id === section}">${esc(s.name)}</button>`).join('');
+  chips.innerHTML = SECTIONS.map(s => `<button class="chip m-key m-key--sm" type="button" data-s="${s.id}" aria-pressed="${s.id === section}">${esc(s.name)}</button>`).join('');
   chips.querySelectorAll('.chip').forEach(b => b.onclick = () => { section = b.dataset.s; const s = SECTIONS.find(x => x.id === section); if (s.element && selected?.split(':')[0] !== s.element) select(s.element, true); else { renderParams(); renderChain(true); } });
   markChips();
   const s = SECTIONS.find(x => x.id === section);
@@ -770,9 +770,9 @@ function renderParams() {
   posRows = [];
   const el = s.element;
   if (el && ['jump', 'operator', 'pad', 'cube', 'laser', 'pile', 'trail', 'whale'].includes(el) && (section === el || (el === 'jump' && section === 'jump') || section === ELEMENT_SECTION[el])) {
-    const lab = document.createElement('p'); lab.className = 'group-label'; lab.textContent = el === 'trail' ? 'Bend points' : 'Position'; box.append(lab);
+    const lab = document.createElement('p'); lab.className = 'group-label m-legend'; lab.textContent = el === 'trail' ? 'Bend points' : 'Position'; box.append(lab);
     posRows = positionRows(el); box.append(...posRows);
-    const lab2 = document.createElement('p'); lab2.className = 'group-label'; lab2.textContent = 'Settings'; box.append(lab2);
+    const lab2 = document.createElement('p'); lab2.className = 'group-label m-legend'; lab2.textContent = 'Settings'; box.append(lab2);
   }
   for (const p of SCHEMA.filter(x => x.section === section)) {
     box.append(makeRow({ ...p, get: () => PARAMS[p.key], set: v => { PARAMS[p.key] = v; onParam(p); }, def: DEFAULTS[p.key] }));
@@ -815,7 +815,7 @@ function renderVersions() {
   if (!list.length) { ul.innerHTML = '<li class="empty">None saved yet.</li>'; return; }
   ul.innerHTML = list.map(v => `<li class="vitem${v.id === currentVersion ? ' is-current' : ''}" data-id="${esc(v.id)}">
     <span class="name">${esc(v.name)}</span><span class="when">${new Date(v.savedAt).toLocaleString()} · ${Object.keys(v.params || {}).length} settings changed</span>
-    <span class="acts"><button class="btn" data-a="load" type="button">Load</button><button class="btn" data-a="over" type="button" title="Replace this version with what's in the room now">Update</button><button class="btn btn--danger" data-a="del" type="button" aria-label="Delete ${esc(v.name)}">Delete</button></span></li>`).join('');
+    <span class="acts"><button class="btn m-key m-key--sm" data-a="load" type="button">Load</button><button class="btn m-key m-key--sm" data-a="over" type="button" title="Replace this version with what's in the room now">Update</button><button class="btn btn--danger m-key m-key--sm" data-a="del" type="button" aria-label="Delete ${esc(v.name)}">Delete</button></span></li>`).join('');
   ul.querySelectorAll('.vitem').forEach(li => li.querySelectorAll('button').forEach(b => b.onclick = () => versionAction(li.dataset.id, b.dataset.a)));
   if (!$('#version-name').value) $('#version-name').value = `Version ${list.length + 1}`;
 }
@@ -893,7 +893,7 @@ scrub.addEventListener('change', () => { scrubbing = false; });
 function updateClock() {
   if (!scrubbing) scrub.value = Math.round(T / run.duration * 1000);
   const f = Math.round(T * FPS);
-  $('#clock').innerHTML = `${T.toFixed(2)} s <span style="color:var(--muted)">/ ${run.duration.toFixed(1)} s</span><span class="meta">frame ${f} of ${run.frames - 1}${playing && rate !== 1 ? ` · ${rate}×` : ''}</span>`;
+  $('#clock').innerHTML = `${T.toFixed(2)} s <span class="dim">/ ${run.duration.toFixed(1)} s</span><span class="meta">frame ${f} of ${run.frames - 1}${playing && rate !== 1 ? ` · ${rate}×` : ''}</span>`;
 }
 
 /* ---------- header buttons and keys ---------- */

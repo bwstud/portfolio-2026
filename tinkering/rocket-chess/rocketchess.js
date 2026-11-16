@@ -374,10 +374,10 @@ const $ = id => document.getElementById(id);
 const listEl = $('pieces');
 function entry(key, def, sub) {
   const b = document.createElement('button');
-  b.className = 'piece';
+  b.className = 'piece m-menu__item m-menu__item--plain';
   b.dataset.key = key;
   b.setAttribute('aria-pressed', 'false');
-  b.innerHTML = `<span class="piece__role">${def.role || 'Pawn · ' + 'abcdefgh'[+key.slice(4)]}</span>
+  b.innerHTML = `<span class="piece__role m-legend">${def.role || 'Pawn · ' + 'abcdefgh'[+key.slice(4)]}</span>
     <span class="piece__name">${def.name}</span><span class="piece__sum">${sub}</span>`;
   b.addEventListener('click', () => select(key, true));
   return b;
@@ -386,11 +386,11 @@ function renderList() {
   listEl.innerHTML = '';
   const g1 = document.createElement('div');
   g1.className = 'group';
-  g1.innerHTML = '<div class="label">Pieces · one scale</div>';
+  g1.innerHTML = '<div class="label m-legend">Pieces · one scale</div>';
   MAJORS.forEach(k => { const d = state.set.pieces[k]; g1.appendChild(entry(k, d, `${d.flag} · ${d.height} m`)); });
   const g2 = document.createElement('div');
   g2.className = 'group';
-  g2.innerHTML = '<div class="label">Pawns · satellites by launch</div>';
+  g2.innerHTML = '<div class="label m-legend">Pawns · satellites by launch</div>';
   state.set.pawns.forEach((d, i) => g2.appendChild(entry('pawn' + i, d, `${d.flag} · ${d.year}`)));
   listEl.append(g1, g2);
 }

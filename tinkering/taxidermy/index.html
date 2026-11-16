@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Taxidermy · Brian Studwell</title>
   <style>
+    @layer base, matte;
+    @import url("../../matte.css") layer(matte);   /* the Matte system, under this page's own layout rules */
+    @import url("../rig.css") layer(matte);        /* and what the rigs share on top of it */
     @font-face {
       font-family: "Geist";
       font-weight: 100 900;
@@ -27,7 +30,11 @@
       --right: 288px;
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    @layer base {
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      button, input, select { font: inherit; color: inherit; }
+      button { cursor: pointer; background: none; border: 0; }
+    }
     [hidden] { display: none !important; }
     html, body {
       height: 100%; overflow: hidden;
@@ -35,9 +42,6 @@
       font: 13px/1.45 "Geist", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
       -webkit-font-smoothing: antialiased;
     }
-    button, input, select { font: inherit; color: inherit; }
-    button { cursor: pointer; background: none; border: 0; }
-    :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
     #scene { position: fixed; top: 0; bottom: 0; left: var(--left); right: var(--right); width: calc(100% - var(--left) - var(--right)); height: 100%; display: block; touch-action: none; }
 
@@ -47,8 +51,6 @@
       display: flex; align-items: center; gap: 14px; pointer-events: none;
     }
     .top > * { pointer-events: auto; }
-    .back { color: var(--muted); text-decoration: none; }
-    .back:hover { color: var(--fg); }
     .brand { font-size: 15px; font-weight: 650; letter-spacing: 0.01em; }
     .brand span { color: var(--muted); font-weight: 450; margin-left: 6px; }
     .spacer { flex: 1; }
@@ -57,18 +59,18 @@
     .sheets {
       position: fixed; z-index: 3; top: 0; bottom: 0; left: 0; width: var(--left);
       padding: 14px 14px 18px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;
-      background: #121110; border-right: 1px solid var(--line);
+      /* a Matte body docked to the left edge (.m-body--rack-left) */
       scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
     }
-    .sheets__head { display: flex; justify-content: space-between; align-items: baseline; color: var(--muted); font-size: 11.5px; }
-    .sheets__head b { color: var(--fg); font-weight: 600; font-size: 13px; }
+    .sheets__head { display: flex; justify-content: space-between; align-items: baseline; color: var(--m-print-dim); font-size: 11.5px; }
+    .sheets__head b { font-weight: 400; }                      /* a Matte legend */
     .sheet {
       position: relative; display: block; width: 100%; padding: 0; text-align: left;
       background: var(--paper); border-radius: 3px; overflow: hidden;
       box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.5), 0 8px 18px rgba(0, 0, 0, 0.45);
       transition: transform 0.18s, box-shadow 0.18s;
     }
-    .sheet:hover { transform: translateY(-1px); box-shadow: 0 0 0 1px var(--accent), 0 10px 22px rgba(0, 0, 0, 0.5); }
+    .sheet:hover { transform: translateY(-1px); box-shadow: 0 0 0 1px var(--m-signal), 0 10px 22px rgba(0, 0, 0, 0.5); }
     .sheet canvas { display: block; width: 100%; aspect-ratio: 220 / 150; }
     .sheet::after { content: ""; position: absolute; inset: 5px; border: 1px solid rgba(39, 39, 39, 0.55); pointer-events: none; }
     .sheet__block {
@@ -77,83 +79,60 @@
       border-top: 1px solid rgba(39, 39, 39, 0.55); color: var(--ink); font-size: 10.5px; letter-spacing: 0.02em;
     }
     .sheet__no { font-variant-numeric: tabular-nums; font-weight: 600; }
-    .sheets__foot { margin-top: auto; color: var(--faint); font-size: 11px; line-height: 1.5; }
+    .sheets__foot { margin-top: auto; color: var(--m-print-dim); font-size: 11px; line-height: 1.5; }
 
     /* ---------- settings (right) ---------- */
     .side {
       position: fixed; z-index: 3; top: 0; bottom: 0; right: 0; width: var(--right);
       padding: 14px 14px 18px; overflow-y: auto; overscroll-behavior: contain;
-      background: #121110; border-left: 1px solid var(--line);
+      /* a Matte body docked to the right edge (.m-body--rack) */
       scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
     }
-    .side__title { font-size: 13px; font-weight: 600; margin-bottom: 8px; }
-    .side__sep { height: 1px; background: var(--line); margin: 14px -14px 12px; }
-    .side__note { color: var(--muted); font-size: 12px; margin-top: 8px; min-height: 34px; }
-    .field { width: 100%; height: 30px; padding: 0 9px; border-radius: 8px; border: 1px solid var(--line-strong); background: rgba(255, 255, 255, 0.04); }
-    select.field { appearance: none; background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%); background-position: calc(100% - 14px) 13px, calc(100% - 10px) 13px; background-size: 4px 4px; background-repeat: no-repeat; }
+    .side__title { margin-bottom: 10px; }                      /* a Matte legend */
+    .side__sep { height: 2px; margin: 16px -14px 14px; background: linear-gradient(180deg, var(--m-well) 50%, rgb(255 255 255 / 0.055) 50%); }   /* a seam */
+    .side__note { color: var(--m-print-dim); font-size: 12px; margin-top: 10px; min-height: 34px; }
+    .field { width: 100%; }                                    /* a Matte input */
     select.field option { background: #191919; }
-    .settings { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
-    .setting {
-      display: grid; justify-items: center; gap: 5px; padding: 8px 2px 7px; border-radius: 9px;
-      border: 1px solid var(--line); color: var(--muted); font-size: 11.5px; line-height: 1.2; text-align: center;
-    }
-    .setting svg { width: 34px; height: 26px; fill: none; stroke: currentColor; stroke-width: 1.3; stroke-linejoin: round; stroke-linecap: round; }
-    .setting:hover { color: var(--fg); background: rgba(255, 255, 255, 0.04); }
-    .setting[aria-pressed="true"] { color: var(--fg); border-color: var(--accent); background: rgba(177, 177, 177, 0.08); }
-    .seg { display: flex; gap: 2px; padding: 2px; border-radius: 9px; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--line); }
-    .seg button { flex: 1; height: 28px; border-radius: 7px; font-size: 12px; color: var(--muted); }
-    .seg button:hover { color: var(--fg); }
-    .seg button[aria-pressed="true"] { background: rgba(255, 255, 255, 0.12); color: var(--fg); }
-    .row { display: flex; gap: 6px; align-items: center; }
-    .btn {
-      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-      height: 30px; padding: 0 11px; border-radius: 8px; border: 1px solid var(--line-strong);
-      color: var(--fg); white-space: nowrap;
-    }
-    .btn:hover { background: rgba(255, 255, 255, 0.07); }
-    .btn:disabled { opacity: 0.4; cursor: default; background: none; }
+    .settings { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px 6px; }
+    .setting { font-size: 8.5px; letter-spacing: 0.04em; }     /* a Matte tile key: the setting drawn over its name */
+    .setting svg { width: 34px; height: 26px; stroke-width: 1.3; }
+    .row { display: flex; gap: 8px; align-items: center; }
+    .btn { white-space: nowrap; }                              /* a Matte key */
     .btn--grow { flex: 1; }
-    .poses { list-style: none; margin-top: 8px; display: grid; gap: 4px; }
-    .poses li { display: flex; align-items: center; gap: 4px; padding: 4px 4px 4px 9px; border-radius: 8px; background: rgba(255, 255, 255, 0.03); }
-    .poses .pose__name { flex: 1; min-width: 0; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .poses .pose__name small { color: var(--faint); margin-left: 5px; }
-    .poses .x { width: 24px; height: 24px; border-radius: 6px; color: var(--faint); }
-    .poses .x:hover { color: var(--fg); background: rgba(255, 255, 255, 0.08); }
-    .empty { color: var(--faint); font-size: 12px; margin-top: 8px; }
-    .check { display: flex; align-items: center; gap: 8px; color: var(--muted); margin-top: 10px; cursor: pointer; }
-    .check input { accent-color: var(--accent); }
-    .credit { color: var(--faint); font-size: 11px; line-height: 1.5; }
-    .credit a { color: var(--muted); }
+    .poses { list-style: none; margin-top: 10px; display: grid; gap: 4px; }
+    .poses li { display: flex; align-items: center; gap: 4px; padding: 3px 4px 3px 9px; border-radius: var(--m-radius-well); background: var(--m-well); box-shadow: var(--m-well-shadow); }   /* each saved pose in a well */
+    .poses .pose__name { flex: 1; min-width: 0; text-align: left; color: var(--m-ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .poses .pose__name small { color: var(--m-print-dim); margin-left: 5px; }
+    .poses .x { width: 24px; height: 24px; font-size: 14px; }  /* a quiet Matte key */
+    .empty { color: var(--m-print-dim); font-size: 12px; margin-top: 8px; }
+    .check { margin-top: 12px; }                               /* a Matte tick box */
+    .credit { color: var(--m-print-dim); font-size: 11px; line-height: 1.5; }
+    .credit a { color: var(--m-print); }
 
     /* ---------- the bench: selection, numbers and commands (bottom of the stage) ---------- */
     .bench {
       position: fixed; z-index: 3; left: calc(var(--left) + 16px); right: calc(var(--right) + 16px); bottom: calc(14px + env(safe-area-inset-bottom));
-      display: grid; gap: 8px; padding: 10px 12px; border-radius: 14px;
-      background: var(--panel); border: 1px solid var(--line);
-      backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
-      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+      display: grid; gap: 10px; padding: 12px 14px; border-radius: 14px;   /* a Matte body (.m-body) */
     }
     .bench__row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
     .bench__bone { font-weight: 600; min-width: 0; flex: 1 1 180px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .bench__bone small { color: var(--muted); font-weight: 450; margin-left: 6px; }
-    .num { display: inline-flex; align-items: center; gap: 4px; color: var(--muted); font-size: 12px; }
-    .num input { width: 58px; height: 28px; padding: 0 6px; border-radius: 7px; border: 1px solid var(--line-strong); background: rgba(255, 255, 255, 0.04); text-align: right; font-variant-numeric: tabular-nums; }
-    .nudges { display: inline-flex; gap: 3px; }
-    .nudges button { height: 28px; min-width: 30px; padding: 0 7px; border-radius: 7px; border: 1px solid var(--line); color: var(--muted); font-size: 12px; }
-    .nudges button:hover { color: var(--fg); background: rgba(255, 255, 255, 0.07); }
+    .bench__bone small { color: var(--m-print-dim); font-weight: 450; margin-left: 6px; }
+    .num { display: inline-flex; align-items: center; gap: 6px; }   /* a Matte legend beside number wells */
+    .num input { width: 58px; padding: 0 6px; text-align: right; font-variant-numeric: tabular-nums; }
+    .nudges { display: inline-flex; gap: 5px; }
+    .nudges button { min-width: 30px; padding: 0 7px; }        /* Matte keys */
     .cmd { display: flex; gap: 8px; align-items: center; }
-    .cmd input { flex: 1; height: 32px; padding: 0 11px; border-radius: 9px; border: 1px solid var(--line-strong); background: rgba(0, 0, 0, 0.25); font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 12.5px; }
-    .cmd input::placeholder { color: var(--faint); }
-    .say { color: var(--muted); font-size: 12px; min-height: 17px; }
-    .say.is-bad { color: #a1a1a1; }
-    .history { display: inline-flex; gap: 4px; }
+    .cmd input { flex: 1; width: auto; height: 32px; font-size: 12px; }   /* a Matte input: commands typed into a well */
+    .say { color: var(--m-print-dim); font-size: 12px; min-height: 17px; }
+    .say.is-bad { color: var(--m-danger); }
+    .history { display: inline-flex; gap: 6px; }
 
     .loading {
       position: fixed; z-index: 5; left: var(--left); right: var(--right); top: 45%;
       display: grid; justify-items: center; gap: 10px; color: var(--muted); pointer-events: none; transition: opacity 0.5s;
     }
-    .loading i { display: block; width: 180px; height: 2px; background: rgba(255, 255, 255, 0.08); border-radius: 2px; overflow: hidden; }
-    .loading i b { display: block; height: 100%; width: 0; background: var(--accent); transition: width 0.2s; }
+    .loading i { display: block; width: 180px; height: 4px; background: var(--m-meter-off); border-radius: 2px; overflow: hidden; }   /* a bar of light */
+    .loading i b { display: block; height: 100%; width: 0; background: var(--m-meter-on); transition: width 0.2s; }
     .loading.is-done { opacity: 0; }
 
     .keys { color: var(--faint); font-size: 11px; line-height: 1.6; }
@@ -163,7 +142,7 @@
     @media (max-width: 820px) {
       :root { --left: 0px; --right: 0px; }
       .sheets { display: none; }
-      .side { top: auto; height: 42vh; width: 100%; border-left: 0; border-top: 1px solid var(--line); }
+      .side { top: auto; height: 42vh; width: 100%; }
       #scene { bottom: 42vh; height: auto; }
       .bench { bottom: calc(42vh + 10px); left: 10px; right: 10px; }
       .bench .nudges, .bench .num { display: none; }
@@ -179,56 +158,56 @@
     }
   </script>
 </head>
-<body>
+<body class="matte">
   <canvas id="scene" aria-label="A skeleton, mounted"></canvas>
 
   <header class="top">
-    <a class="back" href="../" aria-label="Back to Rigs and Jigs">←<span class="back__label"> Rigs and Jigs</span></a>
+    <a class="back m-legend" href="../" aria-label="Back to Rigs and Jigs">←<span class="back__label"> Rigs and Jigs</span></a>
     <div class="brand">Taxidermy<span>pose a skeleton, mount it, take it home</span></div>
   </header>
 
-  <aside class="sheets" aria-label="Drawing sheets">
-    <div class="sheets__head"><b>Sheets</b><span>click one to look from there</span></div>
+  <aside class="sheets m-body--rack-left" aria-label="Drawing sheets">
+    <div class="sheets__head"><b class="m-legend">Sheets</b><span>click one to look from there</span></div>
     <div id="sheet-list" style="display: contents"></div>
     <p class="sheets__foot" id="sheet-foot"></p>
   </aside>
 
-  <aside class="side" aria-label="Specimen and setting">
-    <div class="side__title">Specimen</div>
-    <select class="field" id="animal" aria-label="Animal">
+  <aside class="side m-body--rack" aria-label="Specimen and setting">
+    <div class="side__title m-legend">Specimen</div>
+    <select class="field m-input m-input--sm" id="animal" aria-label="Animal">
       <option value="giraffe">Northern giraffe, adult male</option>
       <option value="moa">Little bush moa</option>
     </select>
 
     <div class="side__sep"></div>
-    <div class="side__title">Setting</div>
+    <div class="side__title m-legend">Setting</div>
     <div class="settings" id="settings" role="group" aria-label="Setting"></div>
     <p class="side__note" id="setting-note"></p>
-    <label class="check"><input type="checkbox" id="rod" checked> Mounting rod</label>
+    <label class="check m-check"><input type="checkbox" id="rod" checked> Mounting rod</label>
 
     <div class="side__sep"></div>
-    <div class="side__title">Light</div>
-    <div class="seg" id="lights" role="group" aria-label="Light">
+    <div class="side__title m-legend">Light</div>
+    <div class="seg m-seg m-seg--fill" id="lights" role="group" aria-label="Light">
       <button type="button" data-light="gallery" aria-pressed="true">Gallery</button>
       <button type="button" data-light="window">Window</button>
       <button type="button" data-light="night">Night</button>
     </div>
 
     <div class="side__sep"></div>
-    <div class="side__title">Saved poses</div>
+    <div class="side__title m-legend">Saved poses</div>
     <div class="row">
-      <input class="field" id="pose-name" placeholder="Name this pose" aria-label="Pose name">
-      <button class="btn" id="pose-save" type="button">Save</button>
+      <input class="field m-input m-input--sm" id="pose-name" placeholder="Name this pose" aria-label="Pose name">
+      <button class="btn m-key" id="pose-save" type="button">Save</button>
     </div>
     <ul class="poses" id="poses"></ul>
     <p class="empty" id="poses-empty">Nothing saved yet. A saved pose keeps the bones, the setting and the view.</p>
 
     <div class="side__sep"></div>
-    <div class="side__title">Export</div>
+    <div class="side__title m-legend">Export</div>
     <div class="row">
-      <button class="btn btn--grow" type="button" data-export="stl" title="One watertight-ish mesh per bone, merged, for slicers">STL</button>
-      <button class="btn btn--grow" type="button" data-export="obj" title="One object per bone, named, for CAD">OBJ</button>
-      <button class="btn btn--grow" type="button" data-export="glb" title="Textured, with the joint hierarchy">GLB</button>
+      <button class="btn btn--grow m-key" type="button" data-export="stl" title="One watertight-ish mesh per bone, merged, for slicers">STL</button>
+      <button class="btn btn--grow m-key" type="button" data-export="obj" title="One object per bone, named, for CAD">OBJ</button>
+      <button class="btn btn--grow m-key" type="button" data-export="glb" title="Textured, with the joint hierarchy">GLB</button>
     </div>
     <p class="side__note">The posed skeleton in metres, standing on y = 0. STL and OBJ are for printing and CAD; GLB keeps the textures and joints.</p>
 
@@ -242,34 +221,34 @@
     <p class="credit" id="credit"></p>
   </aside>
 
-  <section class="bench" aria-label="Selected bone">
+  <section class="bench m-body" aria-label="Selected bone">
     <div class="bench__row">
       <div class="bench__bone" id="bone-name">No bone picked<small>click one</small></div>
-      <div class="seg" id="modes" role="group" aria-label="Tool" style="width: 150px">
+      <div class="seg m-seg m-seg--fill" id="modes" role="group" aria-label="Tool" style="width: 150px">
         <button type="button" data-mode="rotate" aria-pressed="true" title="Turn the bone at its joint (R)">Turn</button>
         <button type="button" data-mode="translate" title="Move the bone; the joints above it bend to follow (G)">Move</button>
       </div>
       <span class="history">
-        <button class="btn" id="undo" type="button" title="Undo (⌘Z)" disabled>Undo</button>
-        <button class="btn" id="redo" type="button" title="Redo (⇧⌘Z)" disabled>Redo</button>
-        <button class="btn" id="reset" type="button" title="Back to the standing pose">Reset</button>
+        <button class="btn m-key" id="undo" type="button" title="Undo (⌘Z)" disabled>Undo</button>
+        <button class="btn m-key" id="redo" type="button" title="Redo (⇧⌘Z)" disabled>Redo</button>
+        <button class="btn m-key" id="reset" type="button" title="Back to the standing pose">Reset</button>
       </span>
     </div>
     <div class="bench__row" id="numbers">
-      <span class="num" title="Turn about the bone's own axes, in degrees from its standing pose">Turn °
-        <input type="number" step="1" id="rx" aria-label="Turn about X, degrees">
-        <input type="number" step="1" id="ry" aria-label="Turn about Y, degrees">
-        <input type="number" step="1" id="rz" aria-label="Turn about Z, degrees">
+      <span class="num m-legend" title="Turn about the bone's own axes, in degrees from its standing pose">Turn °
+        <input class="m-input m-input--sm" type="number" step="1" id="rx" aria-label="Turn about X, degrees">
+        <input class="m-input m-input--sm" type="number" step="1" id="ry" aria-label="Turn about Y, degrees">
+        <input class="m-input m-input--sm" type="number" step="1" id="rz" aria-label="Turn about Z, degrees">
       </span>
-      <span class="num">Move <input type="number" step="1" value="20" id="step" aria-label="Move step, millimetres"> mm</span>
+      <span class="num m-legend">Move <input class="m-input m-input--sm" type="number" step="1" value="20" id="step" aria-label="Move step, millimetres"> mm</span>
       <span class="nudges" id="nudges">
-        <button type="button" data-dir="up" title="Up">↑</button><button type="button" data-dir="down" title="Down">↓</button>
-        <button type="button" data-dir="forward" title="Toward the head">Fwd</button><button type="button" data-dir="back" title="Toward the tail">Back</button>
-        <button type="button" data-dir="left" title="To the animal's left">Left</button><button type="button" data-dir="right" title="To the animal's right">Right</button>
+        <button class="m-key" type="button" data-dir="up" title="Up">↑</button><button class="m-key" type="button" data-dir="down" title="Down">↓</button>
+        <button class="m-key" type="button" data-dir="forward" title="Toward the head">Fwd</button><button class="m-key" type="button" data-dir="back" title="Toward the tail">Back</button>
+        <button class="m-key" type="button" data-dir="left" title="To the animal's left">Left</button><button class="m-key" type="button" data-dir="right" title="To the animal's right">Right</button>
       </span>
     </div>
     <div class="cmd">
-      <input id="cmd" autocomplete="off" spellcheck="false" placeholder="move left femur 40 up · rotate skull 30 ccw around y · select tail vertebra 5" aria-label="Command">
+      <input class="m-input" id="cmd" autocomplete="off" spellcheck="false" placeholder="move left femur 40 up · rotate skull 30 ccw around y · select tail vertebra 5" aria-label="Command">
     </div>
     <div class="say" id="say" aria-live="polite"></div>
   </section>

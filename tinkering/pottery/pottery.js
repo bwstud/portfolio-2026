@@ -776,7 +776,7 @@ const ROOM_SWATCH = {
 
 function choice(html, pressed, onClick) {
   const b = document.createElement('button');
-  b.type = 'button'; b.className = 'choice'; b.innerHTML = html;
+  b.type = 'button'; b.className = 'choice m-menu__item m-menu__item--plain'; b.innerHTML = html;
   b.setAttribute('aria-pressed', pressed);
   b.addEventListener('click', onClick);
   return b;
@@ -796,7 +796,7 @@ function buildSetup() {
   pre.innerHTML = '';
   for (const a of AMOUNTS) {
     const b = document.createElement('button');
-    b.type = 'button'; b.dataset.kg = a.kg;
+    b.type = 'button'; b.className = 'm-key m-key--tile'; b.dataset.kg = a.kg;
     b.innerHTML = `<svg viewBox="0 0 28 22"><path d="${a.d}"/></svg>${a.name}`;
     b.addEventListener('click', () => { S.kg = a.kg; syncChoices(); });
     pre.append(b);
@@ -818,7 +818,7 @@ function buildSetup() {
   }
   $('begin').addEventListener('click', placeClay);
   const cancel = document.createElement('button');
-  cancel.className = 'btn'; cancel.id = 'setup-cancel'; cancel.type = 'button'; cancel.textContent = 'Back to my piece';
+  cancel.className = 'btn m-key'; cancel.id = 'setup-cancel'; cancel.type = 'button'; cancel.textContent = 'Back to my piece';
   cancel.addEventListener('click', () => setPhase(hist[hi] ? 'throw' : 'setup'));
   $('setup-hint').before(cancel);
 }
@@ -837,7 +837,7 @@ function buildTools() {
   const nav = $('tools');
   const add = (id, name, keyName) => {
     const b = document.createElement('button');
-    b.className = 'tool'; b.type = 'button'; b.dataset.tool = id;
+    b.className = 'tool m-key'; b.type = 'button'; b.dataset.tool = id;
     b.setAttribute('aria-label', name);
     b.setAttribute('aria-pressed', 'false');
     b.innerHTML = `<svg viewBox="0 0 20 20">${ICONS[id]}</svg><span class="tip">${name}<kbd>${keyName}</kbd></span>`;
@@ -853,7 +853,7 @@ function buildTools() {
   }
   nav.append(document.createElement('hr'));
   const w = document.createElement('button');
-  w.className = 'tool tool--water'; w.type = 'button';
+  w.className = 'tool tool--water m-key'; w.type = 'button';
   w.setAttribute('aria-label', 'Add water');
   w.innerHTML = `<svg viewBox="0 0 20 20">${ICONS.water}</svg><span class="tip">Add water<kbd>W</kbd></span>`;
   w.addEventListener('click', addWater);
@@ -903,6 +903,7 @@ function syncSpeed() {
   } else band.hidden = true;
   const stopped = S.target === 0;
   $('spin').classList.toggle('is-stopped', stopped);
+  $('spin').setAttribute('aria-pressed', String(!stopped));   // the Matte push switch stays down while the wheel turns
   $('spin').setAttribute('aria-label', stopped ? 'Start the wheel' : 'Stop the wheel');
   $('spin-icon').innerHTML = stopped ? '<path d="M4.5 2.5v11L13.5 8z"/>' : '<rect x="4" y="3" width="3" height="10" rx="1"/><rect x="9" y="3" width="3" height="10" rx="1"/>';
   $('auto').setAttribute('aria-pressed', S.auto);
@@ -971,7 +972,7 @@ function renderVersions() {
     row.className = 'version';
     const stage = v.phase === 'view' ? `fired, ${GLAZES[v.glaze]?.name.toLowerCase()}` : v.phase === 'glaze' ? 'glazing' : 'on the wheel';
     row.innerHTML = `${thumbSVG(snap)}<div><b></b><small>${cm(snap.height)} · ${stage} · ${d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} ${d.toTimeString().slice(0, 5)}</small></div>
-      <div class="row"><button class="btn" type="button" data-load>Load</button><button class="btn" type="button" data-del aria-label="Delete">✕</button></div>`;
+      <div class="row"><button class="btn m-key m-key--sm" type="button" data-load>Load</button><button class="btn m-key m-key--sm m-key--quiet" type="button" data-del aria-label="Delete">✕</button></div>`;
     row.querySelector('b').textContent = v.name;
     row.querySelector('[data-load]').addEventListener('click', () => { loadRecord(v, { label: `Loaded “${v.name}”` }); toast(`Loaded “${v.name}”`); });
     row.querySelector('[data-del]').addEventListener('click', () => {
@@ -1057,7 +1058,7 @@ function buildGlaze() {
   const grid = $('glazes');
   for (const [id, g] of Object.entries(GLAZES)) {
     const b = document.createElement('button');
-    b.type = 'button'; b.dataset.glaze = id;
+    b.type = 'button'; b.className = 'm-key m-key--tile'; b.dataset.glaze = id;
     b.addEventListener('click', () => { S.glaze = id; applyGlaze(); saveSession(); });
     grid.append(b);
   }

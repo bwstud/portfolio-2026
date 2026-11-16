@@ -20,8 +20,8 @@ export function makeUI(root) {
         return Math.round(v / mag) * mag;
       };
       const show = v => fmt ? fmt(v) : `${+(+v).toFixed(step < 0.01 ? 3 : step < 0.1 ? 2 : step < 1 ? 1 : 0)}${unit ? ` ${unit}` : ''}`;
-      const node = el(`<div class="ctl"><div class="row"><label for="${id}">${esc(label)}</label><output></output></div>
-        <input type="range" id="${id}" min="${log ? 0 : min}" max="${log ? N : max}" step="${log ? 1 : step}">${help(h)}</div>`);
+      const node = el(`<div class="ctl"><div class="row"><label class="m-legend" for="${id}">${esc(label)}</label><output class="m-value"></output></div>
+        <input class="m-fader" type="range" id="${id}" min="${log ? 0 : min}" max="${log ? N : max}" step="${log ? 1 : step}">${help(h)}</div>`);
       const input = node.querySelector('input'), out = node.querySelector('output');
       let v = value;
       const apply = (nv, fire = true) => { v = nv; out.textContent = show(v); if (fire) onChange(v); };
@@ -33,7 +33,7 @@ export function makeUI(root) {
 
     toggle(label, value, onChange = () => {}, h) {
       const id = `c${uid++}`;
-      const node = el(`<div class="ctl toggle"><label for="${id}">${esc(label)}</label><input type="checkbox" class="switch" id="${id}">${help(h)}</div>`);
+      const node = el(`<div class="ctl toggle"><label class="m-legend" for="${id}">${esc(label)}</label><input type="checkbox" class="switch m-switch m-switch--sm" id="${id}">${help(h)}</div>`);
       const input = node.querySelector('input');
       input.checked = value;
       input.addEventListener('change', () => onChange(input.checked));
@@ -44,7 +44,7 @@ export function makeUI(root) {
     /* Segmented buttons. options: ['a', 'b'] or [{ value, label }] */
     seg(label, options, value, onChange = () => {}, h) {
       const opts = options.map(o => typeof o === 'object' ? o : { value: o, label: o });
-      const node = el(`<div class="ctl">${label ? `<div class="row"><label>${esc(label)}</label></div>` : ''}<div class="seg" role="group" aria-label="${esc(label || '')}">
+      const node = el(`<div class="ctl">${label ? `<div class="row"><label class="m-legend">${esc(label)}</label></div>` : ''}<div class="seg m-seg" role="group" aria-label="${esc(label || '')}">
         ${opts.map(o => `<button type="button" data-v="${esc(o.value)}">${esc(o.label)}</button>`).join('')}</div>${help(h)}</div>`);
       const buttons = [...node.querySelectorAll('button')];
       let v = value;
@@ -61,7 +61,7 @@ export function makeUI(root) {
     select(label, options, value, onChange = () => {}, h) {
       const id = `c${uid++}`;
       const opts = options.map(o => typeof o === 'object' ? o : { value: o, label: o });
-      const node = el(`<div class="ctl"><div class="row"><label for="${id}">${esc(label)}</label></div><select id="${id}">
+      const node = el(`<div class="ctl"><div class="row"><label class="m-legend" for="${id}">${esc(label)}</label></div><select class="m-input m-input--sm" id="${id}">
         ${opts.map(o => `<option value="${esc(o.value)}">${esc(o.label)}</option>`).join('')}</select>${help(h)}</div>`);
       const s = node.querySelector('select');
       s.value = value;
@@ -72,7 +72,7 @@ export function makeUI(root) {
 
     color(label, value, onChange = () => {}, h) {
       const id = `c${uid++}`;
-      const node = el(`<div class="ctl"><div class="row"><label for="${id}">${esc(label)}</label><output></output></div><input type="color" id="${id}">${help(h)}</div>`);
+      const node = el(`<div class="ctl"><div class="row"><label class="m-legend" for="${id}">${esc(label)}</label><output class="m-value"></output></div><input type="color" id="${id}">${help(h)}</div>`);
       const input = node.querySelector('input'), out = node.querySelector('output');
       input.value = value;
       const apply = () => { out.textContent = input.value; onChange(input.value); };
@@ -85,14 +85,14 @@ export function makeUI(root) {
       const node = el(`<div class="btnrow"></div>`);
       for (const b of list) {
         const btn = document.createElement('button');
-        btn.type = 'button'; btn.className = `btn${b.primary ? ' primary' : ''}`; btn.textContent = b.label;
+        btn.type = 'button'; btn.className = `btn m-key${b.primary ? ' primary m-key--primary' : ''}`; btn.textContent = b.label;
         btn.addEventListener('click', b.onClick);
         node.append(btn);
       }
       return node;
     },
 
-    label(text) { return el(`<div class="group-label">${esc(text)}</div>`); },
+    label(text) { return el(`<div class="group-label m-legend m-legend--dim">${esc(text)}</div>`); },
     html(html) { return el(`<div>${html}</div>`); },
   };
 }

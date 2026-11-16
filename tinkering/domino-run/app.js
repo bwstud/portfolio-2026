@@ -1206,7 +1206,7 @@ function buildPanels() {
   $('#styles').innerHTML = '';
   for (const s of STYLES) {
     const b = document.createElement('button');
-    b.className = 'row';
+    b.className = 'row m-menu__item m-menu__item--plain';
     b.dataset.style = s.id;
     b.append(styleSwatch(s.id, s.id === 'wood' ? '#c9a06b' : s.id === 'steel' ? '#b9bec4' : s.color));
     const t = document.createElement('span');
@@ -1219,7 +1219,7 @@ function buildPanels() {
   $('#colors').innerHTML = '';
   for (const [name, hex] of COLORS) {
     const b = document.createElement('button');
-    b.className = 'swatch';
+    b.className = 'swatch m-dot';
     b.style.background = hex;
     b.title = name; b.setAttribute('aria-label', name);
     b.dataset.color = hex;
@@ -1231,7 +1231,7 @@ function buildPanels() {
   $('#size-chips').innerHTML = '';
   for (const [name, f] of SIZE_CHIPS) {
     const b = document.createElement('button');
-    b.className = 'chip';
+    b.className = 'chip m-key m-key--sm';
     b.textContent = name;
     b.addEventListener('click', () => setSize(f(), true));
     $('#size-chips').append(b);
@@ -1246,7 +1246,7 @@ function buildPanels() {
   $('#builtins').innerHTML = '';
   for (const b of BUILT_INS) {
     const el = document.createElement('button');
-    el.className = 'item';
+    el.className = 'item m-menu__item m-menu__item--plain';
     el.dataset.builtin = b.id;
     el.innerHTML = `<span class="item__icon">${elementIcon(b.id)}</span><span class="item__body"><b>${esc(b.name)}</b><small>${esc(b.note)}</small></span>`;
     el.addEventListener('click', () => startElement(builtIn(b.id, { h: S.h, style: S.style, color: S.color, spacing: S.spacing }), b.id));
@@ -1256,7 +1256,7 @@ function buildPanels() {
   $('#effects').innerHTML = '';
   for (const fx of EFFECTS) {
     const el = document.createElement('button');
-    el.className = 'item';
+    el.className = 'item m-menu__item m-menu__item--plain';
     el.dataset.fx = fx.id;
     el.innerHTML = `<span class="fx-dot" style="color:${fx.color}"></span><span class="item__body"><b>${esc(fx.name)}</b><small>${esc(fx.note)} ${fx.when === 'hit' ? 'Fires when it’s hit.' : 'Fires when it lands.'}</small></span><span class="fx-count"></span>`;
     el.addEventListener('click', () => toggleEffect(fx.id));
@@ -1266,7 +1266,7 @@ function buildPanels() {
   $('#views').innerHTML = '';
   for (const v of VIEWS) {
     const b = document.createElement('button');
-    b.className = 'btn';
+    b.className = 'btn m-key';
     b.textContent = v.name;
     b.addEventListener('click', () => setView(v.id));
     $('#views').append(b);
@@ -1341,8 +1341,8 @@ async function loadElements() {
     box.innerHTML = '';
     for (const it of items) {
       const row = document.createElement('div');
-      row.className = 'item';
-      row.innerHTML = `<span class="item__icon">${elementIcon('line')}</span><button class="item__body" style="text-align:left"><b>${esc(it.name)}</b><small>${it.count} dominoes</small></button><button class="item__del" title="Delete" aria-label="Delete ${esc(it.name)}">×</button>`;
+      row.className = 'item m-menu__item m-menu__item--plain';
+      row.innerHTML = `<span class="item__icon">${elementIcon('line')}</span><button class="item__body" style="text-align:left"><b>${esc(it.name)}</b><small>${it.count} dominoes</small></button><button class="item__del m-key m-key--quiet m-key--icon" title="Delete" aria-label="Delete ${esc(it.name)}">×</button>`;
       row.querySelector('.item__body').addEventListener('click', async () => {
         try { const data = await store.load('elements', it.id); startElement({ ...data, name: it.name }, `saved:${it.id}`); }
         catch (err) { toast(`Couldn’t load it: ${err.message}`); }
@@ -1471,7 +1471,7 @@ function renderInspector() {
   const box = $('#sel');
   let html;
   if (S.phase === 'run') {
-    html = `<div class="run-note"><b>Watching the run</b>Orbit with a left drag. Scrub the timeline, or change speed. The layout comes back when you go back to building.<button class="btn" data-act="build">Back to building <kbd>Esc</kbd></button></div>`;
+    html = `<div class="run-note"><b>Watching the run</b>Orbit with a left drag. Scrub the timeline, or change speed. The layout comes back when you go back to building.<button class="btn m-key" data-act="build">Back to building <kbd>Esc</kbd></button></div>`;
   } else if (held) {
     html = `<div class="sel__title">Holding ${held.ids.size}</div><div class="sel__meta">Click to set down. <kbd>Q</kbd> <kbd>E</kbd> turn. <kbd>Esc</kbd> puts ${held.ids.size > 1 ? 'them' : 'it'} back.</div>`;
   } else if (!S.sel.size) {
@@ -1495,7 +1495,7 @@ function renderInspector() {
     const meta = [g ? `${esc(g.name)}, a group` : groupsIn.size ? `In ${groupsIn.size} group${groupsIn.size > 1 ? 's' : ''}` : 'Not grouped',
       sizes.length === 1 ? sizes[0] : 'Mixed heights', locked ? `${locked} locked` : '', ds.some(d => d.start) ? 'Starts the run' : ''].filter(Boolean).join(' · ');
     const can = { group: ds.length > 1 && !g, ungroup: groupsIn.size > 0, paste: !!clipboard };
-    const btn = (act, label, key, extra = '', dis = false) => `<button class="act ${extra}" data-act="${act}" ${dis ? 'disabled' : ''}><span>${label}</span>${key ? `<kbd>${key}</kbd>` : ''}</button>`;
+    const btn = (act, label, key, extra = '', dis = false) => `<button class="act m-key ${extra}" data-act="${act}" ${dis ? 'disabled' : ''}><span>${label}</span>${key ? `<kbd>${key}</kbd>` : ''}</button>`;
     html = `<div class="sel__title">${ds.length === 1 ? '1 domino' : `${ds.length} dominoes`}</div><div class="sel__meta">${meta}</div>
       <div class="actions">
         ${btn('rotl', 'Turn left', 'Q')}${btn('rotr', 'Turn right', 'E')}
@@ -1507,7 +1507,7 @@ function renderInspector() {
         ${btn('delete', g ? 'Delete group' : 'Delete', '⌫', 'act--wide act--danger')}
       </div>
       ${g ? '<p class="note">Drag the orange dot on either end to bend or stretch the group. The other end stays put.</p>' : ''}
-      ${fx.length ? `<div class="sub">Effects</div><div class="fx-chips">${fx.map(id => `<span class="fx-chip"><span class="fx-dot" style="color:${effectById[id]?.color}"></span>${esc(effectById[id]?.name ?? id)}<button data-unfx="${id}" aria-label="Remove ${esc(effectById[id]?.name ?? id)}">×</button></span>`).join('')}</div>` : ''}`;
+      ${fx.length ? `<div class="sub m-legend">Effects</div><div class="fx-chips">${fx.map(id => `<span class="fx-chip"><span class="fx-dot" style="color:${effectById[id]?.color}"></span>${esc(effectById[id]?.name ?? id)}<button data-unfx="${id}" aria-label="Remove ${esc(effectById[id]?.name ?? id)}">×</button></span>`).join('')}</div>` : ''}`;
   }
   if (html === lastInspector) return;
   lastInspector = html;
@@ -1531,7 +1531,7 @@ $('#sel').addEventListener('click', e => {
 /* ---------------- dialogs ---------------- */
 function openModal(html, mount) {
   const m = $('#modal');
-  m.innerHTML = `<div class="modal" role="dialog" aria-modal="true">${html}</div>`;
+  m.innerHTML = `<div class="modal m-body" role="dialog" aria-modal="true">${html}</div>`;
   m.hidden = false;
   m.onclick = e => { if (e.target === m) closeModal(); };
   mount?.(m.firstElementChild);
@@ -1546,8 +1546,8 @@ async function saveDialog() {
   const where = mode === 'project' ? 'Saves go in this project, in <code>tinkering/domino-run/saves/states/</code>.' : 'There’s no local server here, so saves stay in this browser.';
   const name = S.saveName || `Run ${new Date().toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`;
   openModal(`<h2>Save this run</h2><p>${where} ${L.dominoes.length} dominoes, with the camera where it is now.</p>
-    <div class="field"><label for="save-name">Name</label><input type="text" id="save-name" value="${esc(name)}" maxlength="80"></div>
-    <div class="modal__actions"><button class="btn" data-x="cancel">Cancel</button>${S.saveId ? '<button class="btn" data-x="new">Save as new</button>' : ''}<button class="btn btn--accent" data-x="save">${S.saveId ? 'Save over' : 'Save'}</button></div>`, m => {
+    <div class="field"><label class="m-legend" for="save-name">Name</label><input class="m-input" type="text" id="save-name" value="${esc(name)}" maxlength="80"></div>
+    <div class="modal__actions"><button class="btn m-key" data-x="cancel">Cancel</button>${S.saveId ? '<button class="btn m-key" data-x="new">Save as new</button>' : ''}<button class="btn btn--accent m-key m-key--primary" data-x="save">${S.saveId ? 'Save over' : 'Save'}</button></div>`, m => {
     const input = m.querySelector('#save-name');
     input.select();
     const go = asNew => { const n = input.value.trim(); if (!n) { input.focus(); return; } closeModal(); doSave(n, asNew); };
@@ -1560,7 +1560,7 @@ async function saveDialog() {
 async function openDialog() {
   const mode = await store.storeMode();
   openModal(`<h2>Open a saved run</h2><p>${mode === 'project' ? 'From <code>tinkering/domino-run/saves/states/</code> in this project.' : 'Saved in this browser.'}</p><div class="saves" id="save-list"><p class="empty">Loading…</p></div>
-    <div class="modal__actions"><button class="btn" data-x="close">Close</button></div>`, async m => {
+    <div class="modal__actions"><button class="btn m-key" data-x="close">Close</button></div>`, async m => {
     m.querySelector('[data-x="close"]').onclick = closeModal;
     const box = m.querySelector('#save-list');
     try {
@@ -1571,7 +1571,7 @@ async function openDialog() {
         const row = document.createElement('div');
         row.className = 'save';
         const when = new Date(it.savedAt).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
-        row.innerHTML = `<button class="save__open">${it.thumb ? `<img src="${esc(it.thumb)}" alt="">` : '<span class="noimg"></span>'}<span><b>${esc(it.name)}</b><small>${it.count} dominoes · ${esc(when)}</small></span></button><button class="item__del" title="Delete" aria-label="Delete ${esc(it.name)}">×</button>`;
+        row.innerHTML = `<button class="save__open m-menu__item m-menu__item--plain">${it.thumb ? `<img src="${esc(it.thumb)}" alt="">` : '<span class="noimg"></span>'}<span><b>${esc(it.name)}</b><small>${it.count} dominoes · ${esc(when)}</small></span></button><button class="item__del m-key m-key--quiet m-key--icon" title="Delete" aria-label="Delete ${esc(it.name)}">×</button>`;
         row.querySelector('.save__open').onclick = () => openState(it.id, it.name);
         row.querySelector('.item__del').onclick = async () => {
           if (!confirm(`Delete "${it.name}"? This removes the file.`)) return;
@@ -1589,8 +1589,8 @@ function elementDialog() {
   if (!ds.length) return;
   const g = selectedGroup();
   openModal(`<h2>Save as an element</h2><p>Keeps these ${ds.length} dominoes as a piece you can place again, in this run or a new one. It keeps their sizes, colours and effects.</p>
-    <div class="field"><label for="el-name">Name</label><input type="text" id="el-name" value="${esc(g?.name ?? 'My element')}" maxlength="60"></div>
-    <div class="modal__actions"><button class="btn" data-x="cancel">Cancel</button><button class="btn btn--accent" data-x="save">Save element</button></div>`, m => {
+    <div class="field"><label class="m-legend" for="el-name">Name</label><input class="m-input" type="text" id="el-name" value="${esc(g?.name ?? 'My element')}" maxlength="60"></div>
+    <div class="modal__actions"><button class="btn m-key" data-x="cancel">Cancel</button><button class="btn btn--accent m-key m-key--primary" data-x="save">Save element</button></div>`, m => {
     const input = m.querySelector('#el-name');
     input.select();
     const go = async () => {
@@ -1617,7 +1617,7 @@ function helpDialog() {
     ${k([MOD.trim(), 'C'], 'Copy')}${k([MOD.trim(), 'V'], 'Paste')}${k([MOD.trim(), 'D'], 'Duplicate')}${k(['⌫'], 'Delete')}${k(['S'], 'Start here')}${k(['←', '→'], 'Nudge')}${k([MOD.trim(), 'A'], 'Select all')}${k([MOD.trim(), 'Z'], 'Undo')}
     <h3>Playback</h3>${k(['Space'], 'Play, pause')}${k(['←', '→'], '5 seconds back, forward')}${k(['Home'], 'Restart')}${k(['[', ']'], 'Slower, faster')}${k(['Esc'], 'Back to building')}${k(['T'], 'Follow on, off')}
     <h3>Camera</h3>${k(['Right drag'], 'Orbit')}${k(['⇧', 'Right drag'], 'Pan')}${k([MOD.trim(), 'Drag'], 'Orbit')}${k([MOD.trim(), '⇧', 'Drag'], 'Pan')}${k(['Middle drag'], 'Pan')}${k(['Scroll'], 'Zoom')}${k(['F'], 'Fit to dominoes')}
-  </div><div class="modal__actions"><button class="btn" data-x="close">Close</button></div>`, m => { m.querySelector('[data-x="close"]').onclick = closeModal; });
+  </div><div class="modal__actions"><button class="btn m-key" data-x="close">Close</button></div>`, m => { m.querySelector('[data-x="close"]').onclick = closeModal; });
 }
 
 /* ---------------- keyboard ---------------- */
@@ -1719,7 +1719,7 @@ function renderLab() {
   tabs.innerHTML = '';
   for (const s of SECTIONS) {
     const b = document.createElement('button');
-    b.className = 'chip';
+    b.className = 'chip m-key m-key--sm';
     b.textContent = s.name;
     b.setAttribute('aria-pressed', String(s.id === S.labSection));
     b.onclick = () => { S.labSection = s.id; renderLab(); };
@@ -1732,8 +1732,8 @@ function renderLab() {
     row.className = 'param';
     const id = `p-${p.key}`;
     const fmt = v => (p.type === 'toggle' ? (v ? 'On' : 'Off') : p.type === 'color' ? '' : (+v).toFixed(p.step >= 1 ? 0 : p.step >= 0.1 ? 1 : p.step >= 0.01 ? 2 : 3));
-    row.innerHTML = `<div class="param__head"><label for="${id}">${esc(p.label)}</label>${p.type === 'color' || p.type === 'toggle' ? `<output>${fmt(PARAMS[p.key])}</output>` : `<input type="number" class="param__num" min="${p.min}" max="${p.max}" step="${p.step}" value="${+fmt(PARAMS[p.key])}" aria-label="${esc(p.label)}, typed">`}<span class="unit">${esc(p.unit ?? '')}</span><button class="param__reset" title="Back to default (${esc(String(p.value))})" aria-label="Reset ${esc(p.label)}">↺</button></div>
-      ${p.type === 'color' ? `<input type="color" id="${id}" value="${PARAMS[p.key]}">` : p.type === 'toggle' ? `<label class="check" style="margin-top:4px"><input type="checkbox" id="${id}" ${PARAMS[p.key] ? 'checked' : ''}> On</label>` : `<input type="range" id="${id}" min="${p.min}" max="${p.max}" step="${p.step}" value="${PARAMS[p.key]}">`}
+    row.innerHTML = `<div class="param__head"><label for="${id}">${esc(p.label)}</label>${p.type === 'color' || p.type === 'toggle' ? `<output>${fmt(PARAMS[p.key])}</output>` : `<input type="number" class="param__num m-input" min="${p.min}" max="${p.max}" step="${p.step}" value="${+fmt(PARAMS[p.key])}" aria-label="${esc(p.label)}, typed">`}<span class="unit">${esc(p.unit ?? '')}</span><button class="param__reset" title="Back to default (${esc(String(p.value))})" aria-label="Reset ${esc(p.label)}">↺</button></div>
+      ${p.type === 'color' ? `<input type="color" id="${id}" value="${PARAMS[p.key]}">` : p.type === 'toggle' ? `<label class="check m-check" style="margin-top:4px"><input type="checkbox" id="${id}" ${PARAMS[p.key] ? 'checked' : ''}> On</label>` : `<input class="m-fader" type="range" id="${id}" min="${p.min}" max="${p.max}" step="${p.step}" value="${PARAMS[p.key]}">`}
       ${p.note ? `<p class="note">${esc(p.note)}</p>` : ''}`;
     const input = row.querySelector(`#${CSS.escape(id)}`);
     const out = row.querySelector('output'), num = row.querySelector('.param__num');

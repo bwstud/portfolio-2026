@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Chladni plate · Brian Studwell</title>
   <style>
+    @layer base, matte;
+    @import url("../../matte.css") layer(matte);   /* the Matte system, under this page's own layout rules */
+    @import url("../rig.css") layer(matte);        /* and what the rigs share on top of it */
     @font-face {
       font-family: "Geist";
       font-weight: 100 900;
@@ -24,7 +27,10 @@
       --accent-glow: rgba(189, 189, 189, 0.55);
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    @layer base {
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      button { font: inherit; color: inherit; cursor: pointer; background: none; border: 0; }
+    }
     [hidden] { display: none !important; }
     html, body {
       height: 100%; overflow: hidden;
@@ -32,8 +38,6 @@
       font: 13px/1.45 "Geist", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
       -webkit-font-smoothing: antialiased;
     }
-    button { font: inherit; color: inherit; cursor: pointer; background: none; border: 0; }
-    :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 
     #scene { position: fixed; inset: 0; display: block; width: 100%; height: 100%; touch-action: none; cursor: grab; }
     #scene:active { cursor: grabbing; }
@@ -44,52 +48,30 @@
       display: flex; align-items: center; gap: 14px; pointer-events: none;
     }
     .top > * { pointer-events: auto; }
-    .back { color: var(--muted); text-decoration: none; }
-    .back:hover { color: var(--fg); }
     .brand { font-size: 15px; font-weight: 650; letter-spacing: 0.01em; }
     .brand span { color: var(--muted); font-weight: 450; margin-left: 6px; }
     .top .spacer { flex: 1; }
-    .ghost {
-      display: inline-flex; align-items: center; gap: 7px;
-      padding: 6px 11px; border-radius: 8px; border: 1px solid var(--line-strong);
-      background: var(--panel); color: var(--fg); white-space: nowrap;
-      backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-    }
-    .ghost:hover { background: rgba(255, 255, 255, 0.08); }
-    .ghost svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+    .ghost { white-space: nowrap; }                           /* a Matte key */
 
     /* ---------- material panel ---------- */
     .side {
       position: fixed; z-index: 3; top: 56px; right: 16px; width: 264px;
       max-height: calc(100vh - 56px - 72px); overflow-y: auto; overscroll-behavior: contain;
-      padding: 12px 12px 14px; border-radius: 14px;
-      background: var(--panel); border: 1px solid var(--line);
-      backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+      padding: 14px 12px 14px; border-radius: 14px;          /* a Matte body (.m-body) */
       scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
     }
-    .side__title { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
+    .side__title { margin-bottom: 4px; }                      /* a Matte legend */
     .side__title + .side__group .side__sub { margin-top: 8px; }
-    .side__sub { font-size: 11.5px; color: var(--faint); margin: 10px 0 6px; }
-    .side__sep { height: 1px; background: var(--line); margin: 12px -12px 10px; }
-    .swatches { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px 2px; }
-    .swatch { display: grid; justify-items: center; gap: 5px; padding: 0; border-radius: 10px; }
-    .swatch__chip {
-      width: 32px; height: 32px; border-radius: 50%;
-      box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12), 0 4px 10px rgba(0, 0, 0, 0.45);
-      transition: box-shadow 0.18s, transform 0.18s;
-    }
-    .swatch__name { font-size: 11px; line-height: 1.2; color: var(--muted); text-align: center; transition: color 0.18s; }
-    .swatch:hover .swatch__chip { transform: translateY(-1px); box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.3), 0 6px 14px rgba(0, 0, 0, 0.5); }
-    .swatch:hover .swatch__name { color: var(--fg); }
-    .swatch[aria-pressed="true"] .swatch__chip { box-shadow: 0 0 0 2px var(--bg), 0 0 0 3.5px var(--accent), 0 6px 14px rgba(0, 0, 0, 0.5); }
-    .swatch[aria-pressed="true"] .swatch__name { color: var(--fg); font-weight: 550; }
-    .about { margin-top: 10px; color: var(--muted); font-size: 12px; line-height: 1.45; min-height: 35px; }
-    .seg { display: flex; gap: 2px; padding: 2px; border-radius: 9px; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--line); }
-    .seg button { flex: 1; height: 28px; border-radius: 7px; font-size: 12px; color: var(--muted); }
-    .seg button:hover { color: var(--fg); }
-    .seg button[aria-pressed="true"] { background: rgba(255, 255, 255, 0.12); color: var(--fg); }
+    .side__sub { margin: 12px 0 8px; }
+    .side__sep { height: 2px; margin: 14px -12px 12px; background: linear-gradient(180deg, var(--m-well) 50%, rgb(255 255 255 / 0.055) 50%); }   /* a seam */
+    .swatches { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px 4px; }
+    .swatch { gap: 5px; padding: 7px 2px 6px; font-size: 7.5px; letter-spacing: 0.02em; }   /* a Matte tile key: the material over its name. The one on the plate stays down, ringed in the signal colour */
+    .swatch__chip { width: 26px; height: 26px; border-radius: 50%; box-shadow: 0 0 0 1px var(--m-edge), 0 2px 4px rgb(0 0 0 / 0.5); }
+    .swatch__name { line-height: 1.2; text-align: center; }
+    .about { margin-top: 12px; color: var(--m-print-dim); font-size: 12px; line-height: 1.45; min-height: 35px; }
+    .seg button { padding: 0 4px; letter-spacing: 0.05em; }   /* a Matte segmented control */
     .mat-toggle { display: none; }
-    .mat-toggle i { width: 14px; height: 14px; border-radius: 50%; box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.2); }
+    .mat-toggle i { width: 12px; height: 12px; border-radius: 50%; box-shadow: 0 0 0 1px var(--m-edge); }
 
     /* ---------- dock ---------- */
     .dock {
@@ -97,122 +79,74 @@
       transform: translateX(-50%);
       display: flex; align-items: center; gap: 26px;
       padding: 14px 26px 14px 22px;
-      border-radius: 22px;
-      background: linear-gradient(180deg, rgba(31, 31, 31, 0.82), rgba(13, 13, 13, 0.86));
-      border: 1px solid var(--line);
-      box-shadow: 0 1px 0 rgba(255, 255, 255, 0.06) inset, 0 24px 60px rgba(0, 0, 0, 0.55);
-      backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+      border-radius: 22px;                                    /* a Matte body (.m-body): the signal generator */
       user-select: none; -webkit-user-select: none;
     }
-    .dock__sep { width: 1px; align-self: stretch; background: var(--line); }
-    .cap { font-size: 11px; font-weight: 550; color: var(--muted); letter-spacing: 0.02em; }
+    .dock > .m-seam { align-self: stretch; margin: -14px 0; }  /* a seam, the height of the body */
 
-    /* the toggle: a bat lever on a steel plate */
+    /* the power switch: a Matte rocker. Press the top in for On */
     .switch { display: grid; grid-template-columns: auto auto; align-items: center; column-gap: 12px; }
-    .toggle {
-      position: relative; width: 46px; height: 74px; border-radius: 12px;
-      background:
-        radial-gradient(120% 70% at 50% 0%, rgba(255, 255, 255, 0.16), transparent 60%),
-        linear-gradient(180deg, #3b3b3b, #1e1e1e);
-      box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6), 0 1px 0 rgba(255, 255, 255, 0.12) inset, 0 8px 18px rgba(0, 0, 0, 0.5);
-      touch-action: manipulation;
-    }
-    .toggle::before, .toggle::after {           /* the plate's screws */
-      content: ""; position: absolute; left: 50%; width: 5px; height: 5px; margin-left: -2.5px; border-radius: 50%;
-      background: radial-gradient(circle at 35% 35%, #8d8d8d, #2b2b2b);
-    }
-    .toggle::before { top: 6px; } .toggle::after { bottom: 6px; }
-    .toggle__collar { z-index: 1;
-      position: absolute; left: 50%; top: 50%; width: 20px; height: 20px; margin: -10px 0 0 -10px; border-radius: 50%;
-      background: radial-gradient(circle at 40% 35%, #dbdbdb, #6f6f6f 55%, #323232);
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.6);
-    }
-    .toggle__lever {
-      position: absolute; left: 50%; top: calc(50% - 28px); width: 9px; height: 28px; margin-left: -4.5px;
-      transform-origin: 50% 100%; transform: scaleY(-0.9);
-      border-radius: 5px 5px 3px 3px;
-      background: linear-gradient(90deg, #727272, #f3f3f3 45%, #9d9d9d 70%, #4d4d4d);
-      box-shadow: 0 3px 5px rgba(0, 0, 0, 0.45);
-      transition: transform 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);
-    }
-    .toggle__lever::after {                       /* the ball tip */
-      content: ""; position: absolute; left: 50%; top: -3px; width: 12px; height: 12px; margin-left: -6px; border-radius: 50%;
-      background: radial-gradient(circle at 38% 32%, #ffffff, #bcbcbc 45%, #606060);
-    }
-    .toggle[aria-checked="true"] .toggle__lever { transform: scaleY(0.9); }
-    .switch__side { display: flex; flex-direction: column; justify-content: space-between; height: 74px; padding: 4px 0; }
-    .switch__side .cap { transition: color 0.2s; }
-    .switch__side .cap.is-on { color: var(--fg); }
-    .lamp {
-      width: 9px; height: 9px; border-radius: 50%; margin: 1px 0;
-      background: radial-gradient(circle at 40% 35%, #505050, #1f1f1f);
-      box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.7);
-      transition: background 0.2s, box-shadow 0.2s;
-    }
+    .switch__side { display: flex; flex-direction: column; justify-content: space-between; align-items: flex-start; height: 62px; padding: 3px 0; }
+    .switch__side .cap { color: var(--m-print-dim); transition: color 0.2s; }
+    .switch__side .cap.is-on { color: var(--m-print-hi); }
+    .lamp { margin: 1px 0 1px 2px; }                          /* a Matte lamp, lit while the plate sounds; it glows more at a resonance */
     .is-sounding .lamp {
-      background: radial-gradient(circle at 40% 35%, #f3f3f3, #bdbdbd 50%, #7b7b7b);
-      box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.5), 0 0 10px 2px var(--accent-glow), 0 0 22px 6px rgba(189, 189, 189, calc(0.15 + var(--res, 0) * 0.35));
+      background: var(--m-signal);
+      box-shadow: 0 0 0 1px var(--m-edge), 0 0 5px color-mix(in srgb, var(--m-signal) 75%, transparent), 0 0 16px 3px color-mix(in srgb, var(--m-signal) calc(var(--res, 0) * 55%), transparent);
     }
 
     /* the knob */
     .knob-wrap { position: relative; width: 116px; height: 116px; margin: -6px 0; }
     .dial { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
-    .dial .track { fill: none; stroke: rgba(255, 255, 255, 0.08); stroke-width: 2; stroke-linecap: round; }
-    .dial .value { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linecap: round; opacity: 0.85; }
-    .dial .tick { fill: rgba(255, 255, 255, 0.22); transition: fill 0.2s; }
-    .dial .tick.is-near { fill: var(--accent); }
-    .dial .pos { fill: #fff; filter: drop-shadow(0 0 4px var(--accent-glow)); }
+    /* drawn as the Matte knob is: a flat cap with a knurled side and a white dot, on a ring that fills with its value in the signal colour */
+    .dial .track { fill: none; stroke: var(--m-well); stroke-width: 2.6; stroke-linecap: round; }
+    .dial .value { fill: none; stroke: var(--m-signal); stroke-width: 1.5; stroke-linecap: round; }
+    .dial .tick { fill: color-mix(in srgb, var(--m-print) 36%, transparent); transition: fill 0.2s; }
+    .dial .tick.is-near { fill: var(--m-print-hi); }
+    .dial .pos { fill: var(--m-lit); }
     .knob {
-      position: absolute; left: 50%; top: 50%; width: 76px; height: 76px; margin: -38px 0 0 -38px; border-radius: 50%;
+      position: absolute; left: 50%; top: 50%; width: 80px; height: 80px; margin: -40px 0 0 -40px; border-radius: 50%;
       cursor: grab; touch-action: none;
-      background: repeating-conic-gradient(from 0deg, #2c2c2c 0deg 3deg, #4c4c4c 3deg 6deg);
-      box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.8), 0 10px 22px rgba(0, 0, 0, 0.6), 0 2px 3px rgba(0, 0, 0, 0.5);
+      background: repeating-conic-gradient(from 0deg, var(--m-knurl-lo) 0deg 2deg, var(--m-knurl-hi) 2deg 4deg);
+      box-shadow: 0 0 0 1px var(--m-edge), 0 16px 18px -4px rgb(0 0 0 / 0.8), 0 3px 4px rgb(0 0 0 / 0.6);
     }
     .knob:active { cursor: grabbing; }
-    .knob__face {
-      position: absolute; inset: 6px; border-radius: 50%;
-      background:
-        radial-gradient(circle at 50% 50%, transparent 0 46%, rgba(0, 0, 0, 0.25) 47% 48%, transparent 49%),
-        conic-gradient(from 20deg, #cccccc, #7f7f7f, #ebebeb, #767676, #c7c7c7, #878787, #e4e4e4, #7d7d7d, #cccccc);
-      box-shadow: 0 1px 0 rgba(255, 255, 255, 0.4) inset, 0 -2px 4px rgba(0, 0, 0, 0.35) inset;
+    .knob__face {                                              /* the cap: outside the grip, so its light stays put while the grip turns */
+      position: absolute; inset: 5px; border-radius: 50%;
+      background: radial-gradient(circle at 50% 22%, var(--m-cap-hi), var(--m-cap) 68%);
+      box-shadow: 0 1px 0 rgb(255 255 255 / 0.13) inset, 0 -1px 1px rgb(0 0 0 / 0.55) inset, 0 0 0 1px rgb(0 0 0 / 0.55);
     }
     .knob__grip { position: absolute; inset: 0; border-radius: 50%; will-change: transform; }
-    .knob__mark {
-      position: absolute; left: 50%; top: 9px; width: 3px; height: 15px; margin-left: -1.5px; border-radius: 2px;
-      background: #1c1c1c; box-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
-    }
-    .is-sounding .knob__mark { background: var(--accent); box-shadow: 0 0 6px var(--accent-glow); }
+    .knob__mark { position: absolute; left: 50%; top: 13px; width: 5px; height: 5px; margin-left: -2.5px; border-radius: 50%; background: var(--m-mark); transition: background 0.2s, box-shadow 0.2s; }
+    .is-sounding .knob__mark { background: var(--m-signal); box-shadow: 0 0 6px color-mix(in srgb, var(--m-signal) 75%, transparent); }
 
     /* the readout */
-    .readout { width: 152px; display: grid; gap: 6px; }
-    .freq { display: flex; align-items: baseline; gap: 5px; font-variant-numeric: tabular-nums; }
-    .freq b { font-size: 30px; font-weight: 500; letter-spacing: -0.02em; line-height: 1; }
-    .freq small { font-size: 13px; color: var(--muted); }
-    .mode { font-size: 12px; color: var(--muted); height: 17px; white-space: nowrap; }
-    .mode.is-locked { color: var(--fg); }
-    .meter { position: relative; height: 3px; border-radius: 2px; background: rgba(255, 255, 255, 0.08); overflow: hidden; }
-    .meter i { position: absolute; inset: 0 auto 0 0; width: 0; border-radius: 2px; background: linear-gradient(90deg, #6f6f6f, var(--accent)); }
-    .hops { display: flex; gap: 6px; margin-top: 2px; }
-    .hop {
-      flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 4px;
-      height: 26px; border-radius: 7px; border: 1px solid var(--line-strong);
-      font-size: 12px; color: var(--muted);
-    }
-    .hop:hover { color: var(--fg); background: rgba(255, 255, 255, 0.06); }
-    .hop svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+    /* the readout: a Matte display, a recessed black window, over two keys */
+    .readout { width: 156px; display: grid; gap: 10px; }
+    .window { display: grid; gap: 6px; padding: 10px 10px 9px; border-radius: var(--m-radius-well); background: linear-gradient(180deg, #040404, #0b0b0b);
+      box-shadow: 0 2px 5px rgb(0 0 0 / 0.95) inset, 0 0 0 1px var(--m-edge), 0 1px 0 rgb(255 255 255 / 0.08); }
+    .freq { display: flex; align-items: flex-end; justify-content: space-between; font-variant-numeric: tabular-nums; }
+    .freq b { font: 400 25px/1 var(--m-font); letter-spacing: -0.02em; color: var(--m-lit); }
+    .freq small { padding-bottom: 2px; font: 400 var(--m-text-glass)/1 var(--m-font); letter-spacing: 0.1em; text-transform: uppercase; color: var(--m-glass-dim); }
+    .mode { font: 400 var(--m-text-glass)/1 var(--m-font); letter-spacing: 0.08em; text-transform: uppercase; color: var(--m-glass-dim); height: 10px; white-space: nowrap; overflow: hidden; }
+    .mode.is-locked { color: var(--m-lit); }
+    .meter { position: relative; height: 3px; border-radius: 1px; background: var(--m-glass-off); overflow: hidden; }
+    .meter i { position: absolute; inset: 0 auto 0 0; width: 0; border-radius: 1px; background: var(--m-signal); }
+    .hops { display: flex; gap: 8px; }
+    .hop { flex: 1; }                                          /* Matte keys: glide to the next resonance, or the last */
 
     /* first-run hint */
     .hint {
       position: fixed; z-index: 3; left: 50%; bottom: calc(176px + env(safe-area-inset-bottom));
       transform: translateX(-50%);
-      padding: 7px 13px; border-radius: 999px;
-      background: rgba(15, 15, 15, 0.7); border: 1px solid var(--line);
-      color: var(--muted); white-space: nowrap; pointer-events: none;
+      padding: 8px 11px; border-radius: 3px;                  /* a strip of label tape */
+      background: var(--m-glass); box-shadow: 0 0 0 1px var(--m-edge), 0 6px 12px rgb(0 0 0 / 0.5);
+      color: var(--m-lit); white-space: nowrap; pointer-events: none;
       transition: opacity 0.6s, transform 0.6s;
     }
     .hint.is-gone { opacity: 0; transform: translate(-50%, 6px); }
 
-    .keys { position: fixed; z-index: 2; left: 16px; bottom: calc(22px + env(safe-area-inset-bottom)); color: var(--faint); font-size: 11.5px; line-height: 1.7; }
+    .keys { position: fixed; z-index: 2; left: 16px; bottom: calc(22px + env(safe-area-inset-bottom)); color: var(--m-print-dim); font-size: 11.5px; line-height: 1.7; }
     .keys kbd { font: inherit; color: var(--muted); padding: 0 5px; border: 1px solid var(--line); border-radius: 4px; }
 
     @media (max-width: 1100px) { .keys { display: none; } }
@@ -223,10 +157,10 @@
       .brand { white-space: nowrap; }
       body.sheet-open .hint { opacity: 0; }
       .dock { left: 12px; right: 12px; transform: none; gap: 14px; padding: 12px 14px; justify-content: space-between; bottom: calc(12px + env(safe-area-inset-bottom)); }
-      .dock__sep { display: none; }
+      .dock > .m-seam { display: none; }
       .switch { column-gap: 8px; }
       .readout { width: auto; flex: 1; min-width: 0; }
-      .freq b { font-size: 26px; }
+      .freq b { font-size: 22px; }
       .hint { bottom: calc(150px + env(safe-area-inset-bottom)); font-size: 12px; }
       .scatter-label { display: none; }
       .mat-toggle { display: inline-flex; }
@@ -240,7 +174,7 @@
       .swatches { grid-template-columns: repeat(5, 1fr); }
     }
     @media (max-width: 370px) { .switch__side { display: none; } }
-    @media (prefers-reduced-motion: reduce) { .toggle__lever, .hint { transition: none; } }
+    @media (prefers-reduced-motion: reduce) { .hint { transition: none; } }
   </style>
   <script type="importmap">
     {
@@ -251,48 +185,45 @@
     }
   </script>
 </head>
-<body>
+<body class="matte">
   <canvas id="scene" aria-label="A metal plate covered in sand, floating in darkness"></canvas>
 
   <header class="top">
-    <a class="back" href="../" aria-label="Back to Rigs and Jigs">←<span class="back__label"> Rigs and Jigs</span></a>
+    <a class="back m-legend" href="../" aria-label="Back to Rigs and Jigs">←<span class="back__label"> Rigs and Jigs</span></a>
     <div class="brand">Chladni plate<span>sound you can see</span></div>
     <span class="spacer"></span>
-    <button class="ghost mat-toggle" id="mat-toggle" type="button" aria-expanded="false" aria-controls="side"><i id="mat-chip"></i><span id="mat-name">Sand</span></button>
-    <button class="ghost" id="scatter" type="button" title="Pour again (S)">
+    <button class="ghost mat-toggle m-key" id="mat-toggle" type="button" aria-expanded="false" aria-controls="side"><i id="mat-chip"></i><span id="mat-name">Sand</span></button>
+    <button class="ghost m-key" id="scatter" type="button" title="Pour again (S)">
       <svg viewBox="0 0 16 16"><circle cx="4" cy="5" r="0.9"/><circle cx="8" cy="3.5" r="0.9"/><circle cx="12" cy="5.5" r="0.9"/><circle cx="6" cy="9" r="0.9"/><circle cx="10.5" cy="9.5" r="0.9"/><circle cx="3.5" cy="12.5" r="0.9"/><circle cx="8.5" cy="13" r="0.9"/><circle cx="12.5" cy="12.5" r="0.9"/></svg>
       <span class="scatter-label" id="scatter-label">Pour again</span>
     </button>
   </header>
 
-  <aside class="side" id="side" aria-label="Materials">
-    <div class="side__title">Material</div>
+  <aside class="side m-body" id="side" aria-label="Materials">
+    <div class="side__title m-legend">Material</div>
     <div id="media"></div>
     <p class="about" id="about"></p>
     <div class="side__sep"></div>
-    <div class="side__sub" id="amount-label">Amount</div>
-    <div class="seg" id="amounts" role="group" aria-label="Amount"></div>
+    <div class="side__sub m-legend m-legend--dim" id="amount-label">Amount</div>
+    <div class="seg m-seg m-seg--fill" id="amounts" role="group" aria-label="Amount"></div>
     <div class="side__sep"></div>
-    <div class="side__title">Plate</div>
+    <div class="side__title m-legend">Plate</div>
     <div class="swatches" id="plates" style="margin-top: 10px"></div>
   </aside>
 
-  <div class="hint" id="hint">Flip the switch, then turn the knob slowly</div>
+  <div class="hint m-legend" id="hint">Flip the switch, then turn the knob slowly</div>
 
-  <section class="dock" aria-label="Signal generator">
+  <section class="dock m-body" aria-label="Signal generator">
     <div class="switch">
-      <button class="toggle" id="power" type="button" role="switch" aria-checked="false" aria-label="Sound">
-        <span class="toggle__collar"></span>
-        <span class="toggle__lever"></span>
-      </button>
+      <button class="toggle m-rocker" id="power" type="button" role="switch" aria-checked="false" aria-label="Sound"></button>
       <div class="switch__side" aria-hidden="true">
-        <span class="cap" id="cap-on">On</span>
-        <span class="lamp"></span>
-        <span class="cap is-on" id="cap-off">Off</span>
+        <span class="cap m-legend" id="cap-on">On</span>
+        <span class="lamp m-led"></span>
+        <span class="cap is-on m-legend" id="cap-off">Off</span>
       </div>
     </div>
 
-    <span class="dock__sep"></span>
+    <span class="dock__sep m-seam"></span>
 
     <div class="knob-wrap">
       <svg class="dial" id="dial" viewBox="0 0 116 116" aria-hidden="true">
@@ -303,22 +234,24 @@
       </svg>
       <div class="knob" id="knob" role="slider" tabindex="0" aria-label="Frequency"
            aria-valuemin="60" aria-valuemax="4800" aria-valuenow="369" aria-valuetext="369 hertz">
+        <span class="knob__face"></span>
         <div class="knob__grip" id="grip">
-          <span class="knob__face"></span>
           <span class="knob__mark"></span>
         </div>
       </div>
     </div>
 
     <div class="readout">
-      <div class="freq"><b id="hz">369</b><small>Hz</small></div>
-      <div class="mode" id="mode" aria-live="polite">Between resonances</div>
-      <div class="meter" title="How close you are to a resonance"><i id="meter"></i></div>
+      <div class="window">
+        <div class="freq"><b id="hz">369</b><small>Hz</small></div>
+        <div class="mode" id="mode" aria-live="polite">Between resonances</div>
+        <div class="meter" title="How close you are to a resonance"><i id="meter"></i></div>
+      </div>
       <div class="hops">
-        <button class="hop" id="prev" type="button" title="Glide to the previous resonance ([)" aria-label="Previous resonance">
+        <button class="hop m-key" id="prev" type="button" title="Glide to the previous resonance ([)" aria-label="Previous resonance">
           <svg viewBox="0 0 12 12"><path d="M7.5 2.5 4 6l3.5 3.5"/></svg>
         </button>
-        <button class="hop" id="next" type="button" title="Glide to the next resonance (])" aria-label="Next resonance">
+        <button class="hop m-key" id="next" type="button" title="Glide to the next resonance (])" aria-label="Next resonance">
           <svg viewBox="0 0 12 12"><path d="M4.5 2.5 8 6 4.5 9.5"/></svg>
         </button>
       </div>

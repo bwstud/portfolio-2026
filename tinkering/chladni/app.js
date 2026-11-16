@@ -539,7 +539,7 @@ const store = {
 const POUR_LABEL = { grains: 'Pour again', solids: 'Pour again', liquid: 'Refill', fire: 'Relight' };
 const swatch = (item, attr) => {
   const b = document.createElement('button');
-  b.type = 'button'; b.className = 'swatch'; b.dataset[attr] = item.id;
+  b.type = 'button'; b.className = 'swatch m-key m-key--tile'; b.dataset[attr] = item.id;
   b.setAttribute('aria-pressed', 'false');
   b.innerHTML = `<span class="swatch__chip" style="background:${item.swatch}"></span><span class="swatch__name">${item.name}</span>`;
   return b;
@@ -547,7 +547,7 @@ const swatch = (item, attr) => {
 for (const g of GROUPS) {
   const wrap = document.createElement('div');
   wrap.className = 'side__group';
-  wrap.innerHTML = `<div class="side__sub">${g.name}</div><div class="swatches"></div>`;
+  wrap.innerHTML = `<div class="side__sub m-legend m-legend--dim">${g.name}</div><div class="swatches"></div>`;
   MEDIA.filter((m) => m.group === g.id).forEach((m) => wrap.lastChild.appendChild(swatch(m, 'medium')));
   $('media').appendChild(wrap);
 }

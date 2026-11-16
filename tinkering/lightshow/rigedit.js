@@ -361,10 +361,10 @@ export function rigEditor({ svg, panel, ctx }) {
     const p = plot(), M = m(), n = tally(p);
     const house = !ctx.custom();
     let h = `<section class="sec"><div class="sec__head"><h3>Start from</h3><span class="meta">${house ? 'This venue’s rig' : 'Your rig'}</span></div><div class="templates">`;
-    for (const t of TEMPLATES) h += `<button type="button" data-template="${t.id}"><b>${t.name}</b><small>${t.note}</small></button>`;
+    for (const t of TEMPLATES) h += `<button class="m-menu__item m-menu__item--plain" type="button" data-template="${t.id}"><b>${t.name}</b><small>${t.note}</small></button>`;
     h += `</div></section>`;
     h += `<section class="sec"><div class="sec__head"><h3>Add a truss</h3></div><div class="row" style="margin-top:0">`;
-    for (const [k, label] of [['line', 'Straight'], ['arc', 'Arc'], ['ring', 'Ring'], ['tower', mirror ? 'Towers' : 'Tower'], ['floor', 'Floor line']]) h += `<button class="btn" type="button" data-add="${k}">${label}</button>`;
+    for (const [k, label] of [['line', 'Straight'], ['arc', 'Arc'], ['ring', 'Ring'], ['tower', mirror ? 'Towers' : 'Tower'], ['floor', 'Floor line']]) h += `<button class="btn m-key" type="button" data-add="${k}">${label}</button>`;
     h += `</div></section>`;
     // the selection
     h += `<section class="sec" id="rig-sel">`;
@@ -382,11 +382,11 @@ export function rigEditor({ svg, panel, ctx }) {
         h += range('radius', 'Radius', 0.08, 1.4, 0.01, tr.r, v => `${(v * M.hw).toFixed(1)} m`);
         h += range('sweep', 'Sweep', 40, 360, 5, Math.round(Math.abs(tr.a1 - tr.a0) * 180 / Math.PI), v => `${v}°`);
       }
-      h += `<div class="field"><div class="label">Hang</div><div class="seg" id="hang-type"></div></div>`;
+      h += `<div class="field"><div class="label m-legend">Hang</div><div class="seg m-seg m-seg--wrap" id="hang-type"></div></div>`;
       if (hangOpts.type !== 'pixel') h += range('count', 'How many', 1, 24, 1, hangOpts.n, v => String(v), null, true);
       if (!isRing(tr)) h += range('span', 'Spread along it', 0.2, 1, 0.01, hangOpts.span, v => `${Math.round(v * 100)}%`, null, true);
-      h += `<div class="row"><button class="btn btn--accent" type="button" data-act="hang">${hangOpts.type === 'pixel' ? 'Run a pixel strip' : `Hang ${hangOpts.type === 'beam' && hangOpts.n === 1 ? 'a spot' : `${hangOpts.n} ${hangOpts.n === 1 ? TYPE[hangOpts.type].one : TYPE[hangOpts.type].plural}`}`}</button>`;
-      h += `<button class="btn" type="button" data-act="clear">Clear it</button><button class="btn" type="button" data-act="dup">Duplicate</button><button class="btn btn--danger" type="button" data-act="del-truss">Delete</button></div>`;
+      h += `<div class="row"><button class="btn btn--accent m-key m-key--accent" type="button" data-act="hang">${hangOpts.type === 'pixel' ? 'Run a pixel strip' : `Hang ${hangOpts.type === 'beam' && hangOpts.n === 1 ? 'a spot' : `${hangOpts.n} ${hangOpts.n === 1 ? TYPE[hangOpts.type].one : TYPE[hangOpts.type].plural}`}`}</button>`;
+      h += `<button class="btn m-key" type="button" data-act="clear">Clear it</button><button class="btn m-key" type="button" data-act="dup">Duplicate</button><button class="btn btn--danger m-key" type="button" data-act="del-truss">Delete</button></div>`;
       h += `<p class="hint">Hanging replaces whatever of that kind is already on this truss.${mirror ? ' Mirror hangs the same on the other side.' : ''}</p>`;
     } else if (sel.fx.size) {
       const list = p.fixtures.filter(f => sel.fx.has(f.id)), types = [...new Set(list.map(f => f.type))];
@@ -394,12 +394,12 @@ export function rigEditor({ svg, panel, ctx }) {
       h += `<div class="sec__head"><h3>${what}</h3><span class="meta">selected</span></div>`;
       if (types.length === 1) {
         const gtype = TYPE[types[0]].group, gs = p.groups.filter(g => g.type === gtype);
-        h += `<div class="field"><div class="label">Group</div><div class="seg" id="fx-group"></div></div>`;
-        h += `<div class="row"><input class="text" id="group-name" type="text" maxlength="24" placeholder="New group name" aria-label="New group name" style="flex:1"><button class="btn" type="button" data-act="new-group">Make a group</button></div>`;
+        h += `<div class="field"><div class="label m-legend">Group</div><div class="seg m-seg m-seg--wrap" id="fx-group"></div></div>`;
+        h += `<div class="row"><input class="text m-input m-input--sm" id="group-name" type="text" maxlength="24" placeholder="New group name" aria-label="New group name" style="flex:1"><button class="btn m-key" type="button" data-act="new-group">Make a group</button></div>`;
         if (!gs.length) h += `<p class="hint">A group gets its own settings in the cue editor, so these can do something different from the rest.</p>`;
       } else h += `<p class="hint">Select one kind of fixture to put them in a group.</p>`;
       const one = new Set(list.map(f => f.truss)).size === 1;
-      h += `<div class="row">${one ? `<button class="btn" type="button" data-act="truss-of">Select its truss</button>` : ''}<button class="btn" type="button" data-act="space">Space evenly</button><button class="btn btn--danger" type="button" data-act="del-fx">Delete</button></div>`;
+      h += `<div class="row">${one ? `<button class="btn m-key" type="button" data-act="truss-of">Select its truss</button>` : ''}<button class="btn m-key" type="button" data-act="space">Space evenly</button><button class="btn btn--danger m-key" type="button" data-act="del-fx">Delete</button></div>`;
     } else {
       h += `<div class="sec__head"><h3>Selection</h3></div><p class="say" style="margin-top:0">Click a truss to hang lights on it, drag it to move it, or drag its handles to reshape it. Drag across empty space to select fixtures, then slide them along their truss.</p>`;
     }
@@ -409,7 +409,7 @@ export function rigEditor({ svg, panel, ctx }) {
     if (!p.groups.length) h += `<p class="empty">No groups yet. Select some fixtures to make one.</p>`;
     p.groups.forEach((g, i) => {
       const k = p.fixtures.filter(f => f.group === g.id).length, t = TYPES.find(x => x.group === g.type);
-      h += `<div class="grouprow"><i style="background:${GROUP_HUES[i % GROUP_HUES.length]}"></i><input class="text" type="text" maxlength="24" value="${esc(g.name)}" data-rename="${g.id}" aria-label="Group name"><small>${k} ${k === 1 ? t.one : t.plural}</small><button class="btn btn--danger" type="button" data-ungroup="${g.id}" aria-label="Delete group ${esc(g.name)}">✕</button></div>`;
+      h += `<div class="grouprow"><i style="background:${GROUP_HUES[i % GROUP_HUES.length]}"></i><input class="text m-input m-input--sm" type="text" maxlength="24" value="${esc(g.name)}" data-rename="${g.id}" aria-label="Group name"><small>${k} ${k === 1 ? t.one : t.plural}</small><button class="btn btn--danger m-key" type="button" data-ungroup="${g.id}" aria-label="Delete group ${esc(g.name)}">✕</button></div>`;
     });
     h += `</section>`;
     // budget
@@ -420,7 +420,7 @@ export function rigEditor({ svg, panel, ctx }) {
     wirePanel(p);
   }
   function range(key, label, min, max, step, value, show, hint, opt = false) {
-    return `<div class="field"><div class="label">${label} <output data-out="${key}">${show(value)}</output></div><input type="range" data-range="${key}" data-opt="${opt ? 1 : ''}" min="${min}" max="${max}" step="${step}" value="${value}" aria-label="${label}">${hint ? `<p class="hint">${hint}</p>` : ''}</div>`;
+    return `<div class="field"><div class="label m-legend">${label} <output data-out="${key}">${show(value)}</output></div><input class="m-fader" type="range" data-range="${key}" data-opt="${opt ? 1 : ''}" min="${min}" max="${max}" step="${step}" value="${value}" aria-label="${label}">${hint ? `<p class="hint">${hint}</p>` : ''}</div>`;
   }
   function wirePanel(p) {
     const q = s => panel.querySelectorAll(s);

@@ -166,7 +166,7 @@ function setSetting(id) {
 }
 for (const s of SETTINGS) {
   const b = document.createElement('button');
-  b.className = 'setting'; b.type = 'button'; b.dataset.id = s.id;
+  b.className = 'setting m-key m-key--tile'; b.type = 'button'; b.dataset.id = s.id;
   b.innerHTML = `<svg viewBox="0 0 34 26" aria-hidden="true">${ICONS[s.id]}</svg>${s.name}`;
   b.addEventListener('click', () => { setSetting(s.id); });
   $('settings').append(b);
@@ -365,7 +365,7 @@ function listPoses() {
   for (const p of poses) {
     const li = document.createElement('li');
     const when = new Date(p.savedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-    li.innerHTML = `<button class="pose__name" type="button" title="Load this pose"></button><button class="x" type="button" aria-label="Delete">×</button>`;
+    li.innerHTML = `<button class="pose__name" type="button" title="Load this pose"></button><button class="x m-key m-key--quiet m-key--icon" type="button" aria-label="Delete">×</button>`;
     li.firstChild.textContent = p.name;
     li.firstChild.insertAdjacentHTML('beforeend', `<small>${when}</small>`);
     li.firstChild.addEventListener('click', () => {

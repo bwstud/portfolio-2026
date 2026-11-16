@@ -618,7 +618,7 @@ function renderLibrary() {
   ui.list.innerHTML = '';
   for (const d of DESIGNS) {
     const b = document.createElement('button');
-    b.className = 'item';
+    b.className = 'item m-menu__item m-menu__item--plain';
     b.setAttribute('aria-pressed', String(d.id === state.design));
     const n = d.steps({ aspect: Math.SQRT2 }).length;
     b.innerHTML = `<span class="item__name">${esc(d.name)}</span><span class="item__sum">${esc(d.summary)}</span><span class="item__meta">${d.level} · ${n} steps</span>`;
@@ -635,7 +635,7 @@ function renderSaved() {
     if (!d) continue;
     const row = document.createElement('div');
     row.className = 'piece';
-    row.innerHTML = `<button class="piece__open" aria-label="Open ${esc(p.name)} in the viewer"><img src="${p.thumb}" alt=""><span><b>${esc(p.name)}</b><small>${esc(describePaper(p.paper, d))}</small><small>${new Date(p.savedAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}</small></span></button><button class="piece__del" aria-label="Delete ${esc(p.name)}" title="Delete">×</button>`;
+    row.innerHTML = `<button class="piece__open m-menu__item m-menu__item--plain" aria-label="Open ${esc(p.name)} in the viewer"><img src="${p.thumb}" alt=""><span><b>${esc(p.name)}</b><small>${esc(describePaper(p.paper, d))}</small><small>${new Date(p.savedAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}</small></span></button><button class="piece__del m-key m-key--quiet" aria-label="Delete ${esc(p.name)}" title="Delete">×</button>`;
     row.querySelector('.piece__open').addEventListener('click', () => { openPiece(p); closeDrawers(); });
     row.querySelector('.piece__del').addEventListener('click', () => {
       if (!confirm(`Delete ${p.name}?`)) return;
@@ -687,7 +687,7 @@ function buildOptions() {
   wl.innerHTML = '';
   for (const w of WEIGHTS) {
     const b = document.createElement('button');
-    b.className = 'row';
+    b.className = 'row m-menu__item m-menu__item--plain';
     b.setAttribute('aria-pressed', String(w.id === state.weight));
     b.innerHTML = `<b>${w.name} <span>${w.gsm} gsm</span></b><small>${w.note}</small>`;
     b.addEventListener('click', () => { state.weight = w.id; store.set('weight', w.id); restyle(); renderAll(); buildOptions(); });
@@ -697,7 +697,7 @@ function buildOptions() {
   sl.innerHTML = '';
   for (const s of SURFACES) {
     const b = document.createElement('button');
-    b.className = 'row row--swatch';
+    b.className = 'row row--swatch m-menu__item m-menu__item--plain';
     b.setAttribute('aria-pressed', String(s.id === state.surface));
     b.appendChild(surfaces.swatch(s.id));
     const t = document.createElement('span');
@@ -711,7 +711,7 @@ function buildOptions() {
   el.innerHTML = '';
   for (const e of ENVS) {
     const b = document.createElement('button');
-    b.className = 'chip';
+    b.className = 'chip m-key';
     b.textContent = e.name;
     b.setAttribute('aria-pressed', String(e.id === state.env));
     b.addEventListener('click', () => { state.env = e.id; store.set('env', e.id); applyEnv(); for (const x of el.children) x.setAttribute('aria-pressed', String(x === b)); });
@@ -723,7 +723,7 @@ function swatches(el, get, set) {
   el.innerHTML = '';
   for (const c of COLORS) {
     const b = document.createElement('button');
-    b.className = 'swatch';
+    b.className = 'swatch m-dot';
     b.style.background = c.hex;
     b.title = c.name;
     b.setAttribute('aria-label', c.name);

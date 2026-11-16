@@ -1,0 +1,73 @@
+/* lil-gui worn as Matte, for the rigs that build their control panel with it (Sandtable, Old Glory, Bonsai).
+   lil-gui writes its own stylesheet into the page, outside any cascade layer, so this file is imported
+   outside the Matte layer too, after matte.css and rig.css:
+
+     @import url("../rig-gui.css");
+
+   It needs .matte on the body for the tokens. lil-gui is themed through its own variables first, and its
+   parts are then finished as Matte parts: the panel is a body, a folder title is a legend, a field is a
+   well, a slider is a slot with the fader's white line, a tick box holds a lamp, a button is a key. */
+
+.matte .lil-gui {
+  --background-color: transparent;
+  --text-color: var(--m-print);
+  --title-background-color: transparent;
+  --title-text-color: var(--m-print);
+  --widget-color: var(--m-well);
+  --hover-color: color-mix(in srgb, var(--m-print) 9%, var(--m-well));
+  --focus-color: color-mix(in srgb, var(--m-print) 14%, var(--m-well));
+  --number-color: var(--m-lit);
+  --string-color: var(--m-lit);
+  --font-family: var(--m-font-text);
+  --font-family-mono: var(--m-font);
+  --font-size: 12px;
+  --input-font-size: 11px;
+  --widget-height: 24px;
+  --spacing: 6px;
+  --padding: 6px;
+  --widget-border-radius: var(--m-radius-well);
+  --slider-knob-width: 3px;
+  --checkbox-size: 18px;
+}
+
+/* the panel: a Matte body. Folders inside it are part of the same body */
+.matte .lil-gui.root { border: 0; border-radius: var(--radius-xl, 12px); backdrop-filter: none; -webkit-backdrop-filter: none;
+  background: var(--m-grain), linear-gradient(180deg, var(--m-body-hi), var(--m-body-lo));
+  box-shadow: 0 1px 0 var(--m-shine) inset, 0 -1px 0 rgb(0 0 0 / calc(0.6 * var(--m-shade))) inset, 0 0 0 1px var(--m-edge), var(--m-drop); }
+.matte .lil-gui.root > .children { scrollbar-color: color-mix(in srgb, var(--m-print) 30%, transparent) transparent; }
+
+/* titles: silkscreened legends, with a seam above each folder */
+.matte .lil-gui .title { height: 32px; line-height: 32px; padding: 0 12px; font: 400 var(--m-text-legend)/32px var(--m-font); letter-spacing: 0.1em; text-transform: uppercase; color: var(--m-print); }
+.matte .lil-gui .title:hover, .matte .lil-gui .title:focus { background: none; color: var(--m-print-hi); }
+.matte .lil-gui .title:focus-visible { outline: 2px solid var(--m-signal); outline-offset: -3px; text-decoration: none; }
+.matte .lil-gui .lil-gui > .title { border-top: 1px solid var(--m-well); box-shadow: 0 1px 0 rgb(255 255 255 / calc(0.055 * var(--m-gloss))) inset; }
+.matte .lil-gui .lil-gui > .children { border-left: 0; margin-left: 0; }
+.matte .lil-gui .children { padding: 2px 6px 8px; }
+.matte .lil-gui .controller > .name { color: var(--m-print); }
+
+/* wells: number and text fields, the slider's slot, the select and the colour */
+.matte .lil-gui input[type="text"], .matte .lil-gui input[type="number"], .matte .lil-gui .controller.number .slider, .matte .lil-gui .controller.option .display, .matte .lil-gui .controller.color .display {
+  box-shadow: 0 1px 3px rgb(0 0 0 / calc(0.9 * var(--m-shade))) inset, 0 0 0 1px var(--m-edge), 0 1px 0 rgb(255 255 255 / calc(0.08 * var(--m-gloss))); }
+.matte .lil-gui input[type="text"], .matte .lil-gui input[type="number"] { font-family: var(--m-font); letter-spacing: 0.01em; }
+.matte .lil-gui .controller.number .slider { height: 8px; margin-top: 8px; margin-bottom: 8px; border-radius: 4px; overflow: visible; }   /* the fader's slot */
+.matte .lil-gui .controller.number .fill { position: relative; height: 100%; border-right: 0; }
+.matte .lil-gui .controller.number .fill::after { content: ""; position: absolute; right: -6px; top: -7px; width: 12px; height: 22px; border-radius: 3px;      /* and its cap, with the white line */
+  background: linear-gradient(90deg, transparent 42%, var(--m-mark) 42% 58%, transparent 58%), linear-gradient(180deg, var(--m-cap-hi), var(--m-cap));
+  box-shadow: 0 1px 0 rgb(255 255 255 / calc(0.16 * var(--m-gloss))) inset, 0 0 0 1px var(--m-edge), 0 3px 5px rgb(0 0 0 / calc(0.7 * var(--m-shade))); }
+.matte .lil-gui .controller.option .display { font-family: var(--m-font); font-size: 11px; color: var(--m-ink); }
+
+/* tick box: a small well with a lamp in it */
+.matte .lil-gui input[type="checkbox"] { display: grid; place-items: center; border-radius: 4px; background: var(--m-well);
+  box-shadow: 0 2px 4px rgb(0 0 0 / calc(0.9 * var(--m-shade))) inset, 0 0 0 1px var(--m-edge), 0 1px 0 rgb(255 255 255 / calc(0.08 * var(--m-gloss))); }
+.matte .lil-gui input[type="checkbox"]:checked::before { content: ""; width: 8px; height: 8px; border-radius: 2px; background: var(--m-signal); box-shadow: 0 0 5px color-mix(in srgb, var(--m-signal) 70%, transparent); }
+
+/* buttons: keys */
+.matte .lil-gui .controller.function button, .matte .lil-gui .controller button { height: 26px; margin-bottom: 3px; border-radius: var(--m-radius-key); color: var(--m-print);
+  background: linear-gradient(180deg, var(--m-cap-hi), var(--m-cap));
+  box-shadow: 0 1px 0 var(--m-shine) inset, 0 0 0 1px var(--m-edge), 0 3px 0 var(--m-wall), 0 5px 6px rgb(0 0 0 / calc(0.5 * var(--m-shade)));
+  transition: color var(--m-hover), transform var(--m-release) var(--m-ease), box-shadow var(--m-release) var(--m-ease); }
+.matte .lil-gui .controller.function button .name, .matte .lil-gui .controller.function .name { font: 400 var(--m-text-legend)/1 var(--m-font); letter-spacing: 0.1em; text-transform: uppercase; color: inherit; }
+.matte .lil-gui .controller button:hover { color: var(--m-print-hi); background: linear-gradient(180deg, var(--m-cap-hi), var(--m-cap)); }
+.matte .lil-gui .controller button:active { transform: translateY(2px); box-shadow: 0 1px 0 rgb(255 255 255 / calc(0.08 * var(--m-gloss))) inset, 0 0 0 1px var(--m-edge), 0 1px 0 var(--m-wall); }
+.matte .lil-gui .controller button:focus-visible, .matte .lil-gui input:focus-visible, .matte .lil-gui select:focus-visible + .display { outline: 2px solid var(--m-signal); outline-offset: 2px; }
+.matte .lil-gui .controller.disabled { opacity: 0.4; }

@@ -164,8 +164,8 @@ const paint = (input) => input.style.setProperty('--p', `${((input.value - input
 
 function slider({ label, get, set, min, max, step = 0.01, log = false, fmt, disabled = false }) {
   const id = `f${++uid}`;
-  const out = el('span', { class: 'field__value' });
-  const input = el('input', { type: 'range', id });
+  const out = el('span', { class: 'field__value m-value' });
+  const input = el('input', { class: 'm-fader', type: 'range', id });
   let toS, fromS;
   if (log) {
     Object.assign(input, { min: 0, max: 1000, step: 1 });
@@ -187,7 +187,7 @@ function slider({ label, get, set, min, max, step = 0.01, log = false, fmt, disa
   input.addEventListener('input', () => { set(fromS(+input.value)); show(); });
   sync();
   const node = el('div', { class: 'field' },
-    el('div', { class: 'field__top' }, el('label', { class: 'field__label', for: id, text: label }), out),
+    el('div', { class: 'field__top' }, el('label', { class: 'field__label m-legend', for: id, text: label }), out),
     input);
   node.sync = sync;
   node.input = input;
@@ -195,7 +195,7 @@ function slider({ label, get, set, min, max, step = 0.01, log = false, fmt, disa
 }
 
 function seg(label, options, get, set) {
-  const wrap = el('div', { class: 'seg', role: 'group', 'aria-label': label });
+  const wrap = el('div', { class: 'seg m-seg m-seg--fill', role: 'group', 'aria-label': label });
   const sync = () => {
     for (const b of wrap.children) b.setAttribute('aria-pressed', String(b.dataset.v === String(get())));
   };
@@ -210,12 +210,12 @@ function seg(label, options, get, set) {
 }
 
 function field(label, control) {
-  return el('div', { class: 'field' }, el('div', { class: 'field__top' }, el('span', { class: 'field__label', text: label })), control);
+  return el('div', { class: 'field' }, el('div', { class: 'field__top' }, el('span', { class: 'field__label m-legend', text: label })), control);
 }
 
 function toggle(label, get, set) {
   const b = el('button', { class: 'switch', type: 'button', role: 'switch' },
-    el('span', { text: label }), el('span', { class: 'switch__track', 'aria-hidden': 'true' }));
+    el('span', { class: 'm-legend', text: label }), el('span', { class: 'switch__track m-switch m-switch--sm', 'aria-hidden': 'true' }));
   const sync = () => b.setAttribute('aria-checked', String(!!get()));
   b.addEventListener('click', () => { set(!get()); sync(); });
   sync();
@@ -225,7 +225,7 @@ function toggle(label, get, set) {
 function group(title, end, ...kids) {
   return el('section', { class: 'group' },
     el('div', { class: 'group__head' },
-      el('h3', { class: 'group__title', text: title }),
+      el('h3', { class: 'group__title m-legend m-legend--lg', text: title }),
       end ? el('div', { class: 'group__end' }, end) : null),
     ...kids);
 }
@@ -241,7 +241,7 @@ function renderSound() {
   panel.replaceChildren();
 
   panel.append(group('Presets', null,
-    el('div', { class: 'presets' }, ...PRESETS.map((pr) => el('button', { class: 'preset', type: 'button', text: pr.name, onclick: () => applyPreset(pr) })))));
+    el('div', { class: 'presets' }, ...PRESETS.map((pr) => el('button', { class: 'preset m-key', type: 'button', text: pr.name, onclick: () => applyPreset(pr) })))));
 
   panel.append(group('Source', null,
     seg('Source', [['tones', 'Tone generator'], ['mic', 'Microphone']], () => P.source, (v) => setSource(v)),
@@ -287,7 +287,7 @@ function renderDish() {
   panel.replaceChildren();
   panel.append(group('Liquid', null,
     el('div', { class: 'presets' }, ...FLUIDS.map((f) => {
-      const b = el('button', { class: 'btn', type: 'button', text: f.name, 'aria-pressed': String(P.fluid === f.id), onclick: () => { P.fluid = f.id; renderDish(); changed(); } });
+      const b = el('button', { class: 'btn m-key', type: 'button', text: f.name, 'aria-pressed': String(P.fluid === f.id), onclick: () => { P.fluid = f.id; renderDish(); changed(); } });
       return b;
     })),
     hint(fluidHint())));
@@ -316,7 +316,7 @@ function renderLight() {
   panel.replaceChildren();
   panel.append(group('Lighting', null,
     el('div', { class: 'presets' }, ...LIGHTS.map(([id, name, title]) => el('button', {
-      class: 'btn', type: 'button', text: name, title, 'aria-pressed': String(L.light === id),
+      class: 'btn m-key', type: 'button', text: name, title, 'aria-pressed': String(L.light === id),
       onclick: () => { L.light = id; renderLight(); },
     }))),
     hint(LIGHTS.find(([id]) => id === L.light)[2] + '.')));
@@ -342,7 +342,7 @@ function renderStyle() {
   const panel = $('panel-style');
   panel.replaceChildren();
   const pals = el('div', { class: 'swatches swatches--pal' }, ...PALETTES.map((p) => el('button', {
-    class: 'swatch', type: 'button', 'aria-pressed': String(ST.palette === p.id),
+    class: 'swatch m-key m-key--tile', type: 'button', 'aria-pressed': String(ST.palette === p.id),
     onclick: () => { ST.palette = p.id; paletteChanged(); renderStyle(); },
   }, el('span', { class: 'swatch__bar', style: `--g:${gradientCss(p.stops || ST.custom)}`, 'aria-hidden': 'true' }), p.name)));
   const custom = ST.palette === 'custom'

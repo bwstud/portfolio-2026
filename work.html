@@ -64,7 +64,10 @@
        board runs the whole width (its script adds columns to fill it), and a record's words keep the width they had,
        so the room gained goes to the picture. */
     @media (min-width: 1100px) {
-      .home { --col-pad: max(var(--space-4), 4vw); max-width: none; margin-right: 0; padding-right: var(--space-5); }
+      /* and it stays beside the rail's hairline however wide the window: not centred, which on a wide screen left a gulf
+         between the nav and the board. The footer's columns line up with a record's. */
+      .home, .endfoot .foot-col { --col-pad: max(var(--space-4), min(4vw, 58px)); max-width: none; margin-left: 164px; margin-right: 0;
+        padding-left: var(--col-pad); padding-right: var(--space-5); }
       .home main { margin-right: calc(-1 * var(--space-5)); padding-right: var(--space-5); }
       .bay { grid-template-columns: minmax(0, min(27rem, 41.667%)) minmax(0, 1fr); }
     }
@@ -138,7 +141,11 @@
     .sheet-cue:not(:popover-open) { display: none; }
     .sheet-cue.is-on { opacity: 1; scale: 1; }
     .sheet-cue svg { width: 40%; height: 40%; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
-    @media (prefers-reduced-motion: reduce) { .sheet, .sheet::backdrop, .sheet-cue { transition: none; } }
+    /* The sheet's pictures arrive out of focus and resolve as it slides in. They are sharp when it leaves: the blur is
+       only where they start from. */
+    .sheet[open] img { filter: blur(0px); transition: filter var(--sheet-focus-ms, 900ms) cubic-bezier(0.3, 0, 0.3, 1) var(--sheet-focus-wait, 0ms); }
+    @starting-style { .sheet[open] img { filter: blur(var(--sheet-blur, 14px)); } }
+    @media (prefers-reduced-motion: reduce) { .sheet, .sheet::backdrop, .sheet-cue, .sheet[open] img { transition: none; } }
 
     .sheet__close { position: absolute; top: var(--space-5); right: var(--space-5); z-index: 1; }
     .sheet__scroll { overflow-y: auto; overscroll-behavior: contain; height: 100dvh; padding: var(--space-7) var(--space-5) var(--space-8); }
@@ -154,6 +161,27 @@
     .sheet .is-result h3 { color: var(--signal); }
     .sheet__lead { margin: 0; padding: clamp(var(--space-4), 4vw, var(--space-8)); border-radius: var(--radius-lg); background: var(--surface); }
     .sheet__lead img { display: block; width: 100%; height: auto; border-radius: var(--radius-sm); }
+    .sheet__lead figcaption { margin-top: var(--space-4); font-family: var(--font-mono); font-size: var(--text-2xs); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+    /* Before and after: three pictures of the same screen in one place, and two lines to drag across them. Left of the
+       first line is the redesign; left of the second, which follows behind it, is the redesign's dark mode. --a and --b
+       are the lines' places, 0 at the left edge and 1 at the right; both start at 0, so the old screen shows whole. */
+    .compare { --a: 0; --b: 0; position: relative; user-select: none; -webkit-user-select: none; }
+    .compare__a { --v: var(--a); --knob-y: 38%; }
+    .compare__b { --v: var(--b); --knob-y: 64%; }
+    .compare img.compare__layer { position: absolute; inset: 0; height: 100%; clip-path: inset(0 calc((1 - var(--v)) * 100%) 0 0); }
+    .compare__line { position: absolute; top: 0; bottom: 0; left: calc(var(--v) * 100%); width: 0; cursor: ew-resize; touch-action: pan-y; outline: none; }
+    .compare__line::before { content: ""; position: absolute; top: 0; bottom: 0; left: -1px; width: 2px; background: #fff; box-shadow: 0 0 0 1px rgb(0 0 0 / 0.35); }
+    .compare__line::after { content: ""; position: absolute; top: 0; bottom: 0; left: -14px; width: 28px; }   /* room to catch it */
+    .compare__knob { position: absolute; top: var(--knob-y); left: 0; translate: -50% -50%; width: 44px; height: 44px; display: grid; place-items: center;
+      border-radius: 50%; background: #fff; color: #14181c; box-shadow: 0 0 0 1px rgb(0 0 0 / 0.35), 0 6px 18px rgb(0 0 0 / 0.45); transition: scale 160ms ease-out; }
+    .compare__b .compare__knob { background: #14181c; color: #fff; box-shadow: 0 0 0 1.5px #fff, 0 6px 18px rgb(0 0 0 / 0.45); }
+    .compare__knob svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+    .compare__line:hover .compare__knob, .compare__line.is-held .compare__knob { scale: 1.08; }
+    .sheet .compare .compare__line:focus-visible { outline: none; }   /* the ring goes round the knob, not the hairline */
+    .compare__line:focus-visible .compare__knob { outline: 2px solid var(--signal); outline-offset: 3px; }
+    /* the line's name rides above its knob, and slides from the line's right to its left as the line crosses, so it never leaves the picture */
+    .compare__tag { position: absolute; top: calc(var(--knob-y) - 52px); left: 0; translate: calc(var(--v) * -100%) 0; padding: 4px 8px; border-radius: 4px; white-space: nowrap;
+      background: rgb(12 14 16 / 0.86); color: #fff; font-family: var(--font-mono); font-size: var(--text-2xs); letter-spacing: 0.1em; text-transform: uppercase; }
     .sheet__screens { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: var(--space-3); margin: 0; padding: 0; list-style: none; }
     .sheet__screens img { display: block; width: 100%; height: auto; border-radius: var(--radius-sm); background: var(--surface); }
     /* room for two columns: the project's name and an index of the sheet stay put on the left, the details scroll on the right */
@@ -211,6 +239,7 @@
           <li><a href="tinkering/button-lab/">Button Lab</a></li>
           <li><a href="tinkering/dissolve-lab/">Dissolve Lab</a></li>
           <li><a href="tinkering/peek-lab/">Peek Lab</a></li>
+          <li><a href="tinkering/bison-lab/">Bison Lab</a></li>
         </ul>
       </div>
     </nav>
@@ -242,7 +271,7 @@
           <h2 id="groom-lake-h">Who says enterprise can’t be pretty?</h2>
           <ul class="bay__meta mono"><li>Design lead</li><li>Platform redesign</li><li>Design systems</li><li>Pervasive AI</li></ul>
         </div>
-        <figure class="bay__media" data-wall="images/groom-lake-wall/" data-count="42"
+        <figure class="bay__media" data-wall="images/groom-lake-wall/" data-count="42" data-compare="images/groom-lake-compare/"
                 data-label="A drifting wall of screens from the redesigned Ideagen EHS application: dashboards, incident records, audits, reports and forms">
           <img src="images/groom-lake-dashboard-1200.webp"
                srcset="images/groom-lake-dashboard-1200.webp 1200w, images/groom-lake-dashboard-2000.webp 2000w"
@@ -306,8 +335,7 @@
     </div>
   </dialog>
   <div class="sheet-cue matte" id="sheet-cue" popover="manual" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M6 3.5 2.5 7 6 10.5"/><path d="M2.5 7h7a4 4 0 0 1 0 8H8" transform="translate(0 -1.5)"/></svg></div>
-  <div class="endframe">
-    <footer class="project--band endband">
+  <footer class="endfoot">
       <div class="foot-col">
         <div class="foot">
           <div><h2>About</h2><p>I think in systems, always keep the plates spinning, and care deeply about the people who rely on my work.</p></div>
@@ -328,8 +356,11 @@
           </div>
         </div>
       </div>
-    </footer>
-  </div>
+  </footer>
+  <!-- The page ends on a bison galloping in type (bison.js, the Bison Lab's drawing) -->
+  <section class="bison-run" aria-label="A bison galloping, drawn in characters">
+    <canvas role="img" aria-label="A bison galloping in place, drawn as a grid of characters"></canvas>
+  </section>
 
   <script src="nav.js"></script>
   <script src="spark.js" defer></script>
@@ -339,15 +370,10 @@
   <script src="split-flap-versions.js"></script>
   <script src="sheet-versions.js"></script>   <!-- the project sheet's peek, as tuned in the Peek Lab -->
   <script src="drift-wall.js"></script>
-  <script src="halftone.js"></script>
-  <script src="halftone-versions.js"></script>
+  <script src="bison-versions.js"></script>   <!-- the version the Bison Lab has put on the site -->
+  <script src="bison.js"></script>
   <script>
-    /* ---- The halftone above the footer, drawn from the active Halftone Lab version ---- */
-    if (window.Halftone) {
-      const edge = Halftone.mount(document.querySelectorAll('.endband'), Halftone.activeConfig());
-      // it reads its colours from CSS, so switching light/dark redraws it
-      document.addEventListener('themechange', () => edge.redraw());
-    }
+    if (window.Bison) Bison.mount(document.querySelector('.bison-run canvas'), { src: 'tinkering/bison-lab/bison.png', marks: 'tinkering/bison-lab/bison-marks.png', config: Bison.activeConfig() });
 
     /* ---- The board: project rows on the left, release dates on the right. Its size, columns, timing and
        look are the active version from the Split-Flap Lab; the rows come from the links above. ---- */
@@ -439,17 +465,18 @@
         folded = on && resolved && !shrugging;
         boardEl.classList.toggle('is-folded', folded);
       }
-      // a short wait either way: passing over the board doesn't open it, and slipping off its edge doesn't shut it
-      const foldSoon = (on, ms) => { clearTimeout(foldTimer); foldTimer = setTimeout(() => setFold(on), ms); };
+      // The pointer opens and shuts it at once (no wait): it opens the moment the pointer is on the plate or the leaves
+      // under it, and starts to fold the moment the pointer is off. The waits are for the keyboard and for a choice by touch.
+      const foldSoon = (on, ms) => { clearTimeout(foldTimer); if (ms > 0) foldTimer = setTimeout(() => setFold(on), ms); else setFold(on); };
       // Not while the project sheet is over the page, or on its way out: the pointer was on the sheet then (on its Close
       // key, which lies over the board), and finding itself on the board as the sheet leaves is no reason to open. It
       // opens the next time the pointer comes onto it.
       const sheetUp = () => document.documentElement.classList.contains('has-sheet');
-      stageEl.addEventListener('pointerenter', e => { if (e.pointerType !== 'touch' && !sheetUp()) { over = true; foldSoon(false, 70); } });
+      stageEl.addEventListener('pointerenter', e => { if (e.pointerType !== 'touch' && !sheetUp()) { over = true; foldSoon(false, 0); } });
       stageEl.addEventListener('pointerleave', e => {
         if (e.pointerType === 'touch') return;
         over = false;
-        if (!keys.querySelector(':focus-visible')) foldSoon(true, 320);
+        if (!keys.querySelector(':focus-visible')) foldSoon(true, 0);
       });
       keys.addEventListener('focusin', () => { if (keys.querySelector(':focus-visible')) foldSoon(false, 0); });
       keys.addEventListener('focusout', () => { if (!over) foldSoon(true, 320); });
@@ -641,13 +668,67 @@
       if (!sheet || !sheet.showModal) return;
       const make = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text) n.textContent = text; return n; };
       const scroller = sheet.querySelector('.sheet__scroll'), body = sheet.querySelector('.sheet__body'), index = sheet.querySelector('.sheet__index');
+      // The before and after at the head of a sheet (styles above, under "Before and after"). The folder holds
+      // before, light and dark, each at 1200 and 2400 wide. The second line stays behind the first: either pushes the other.
+      function compare(dir) {
+        const box = make('div', 'compare');
+        box.setAttribute('role', 'group'); box.setAttribute('aria-label', 'Before and after: the old home screen, the redesign, and the redesign in dark mode');
+        const shot = (file, alt, cls) => {
+          const img = new Image();
+          img.decoding = 'async'; img.draggable = false; img.width = 2400; img.height = 1506; img.alt = alt; if (cls) img.className = cls;
+          img.srcset = `${dir}${file}-1200.webp 1200w, ${dir}${file}-2400.webp 2400w`; img.sizes = '(min-width: 1100px) 60vw, 90vw'; img.src = `${dir}${file}-1200.webp`;
+          return img;
+        };
+        const at = { a: 0, b: 0 };
+        const lines = {};
+        function set(k, v) {
+          at[k] = Math.min(1, Math.max(0, v));
+          if (k === 'a') at.b = Math.min(at.b, at.a); else at.a = Math.max(at.a, at.b);
+          for (const key of ['a', 'b']) {
+            box.style.setProperty('--' + key, at[key].toFixed(4));
+            lines[key].setAttribute('aria-valuenow', Math.round(at[key] * 100));
+            lines[key].setAttribute('aria-valuetext', Math.round(at[key] * 100) + '% shown');
+          }
+        }
+        const line = (k, label, tag) => {
+          const el = make('div', 'compare__line compare__' + k);
+          el.tabIndex = 0; el.setAttribute('role', 'slider'); el.setAttribute('aria-label', label);
+          el.setAttribute('aria-valuemin', 0); el.setAttribute('aria-valuemax', 100); el.setAttribute('aria-orientation', 'horizontal');
+          el.innerHTML = '<span class="compare__knob" aria-hidden="true"><svg viewBox="0 0 18 18"><path d="M6.5 5 2.5 9l4 4M11.5 5l4 4-4 4"/></svg></span>';
+          el.append(make('span', 'compare__tag', tag));
+          let off = null;   // how far from the line it was caught, so the line doesn't jump to the pointer
+          const where = e => { const b = box.getBoundingClientRect(); return (e.clientX - b.left) / b.width; };
+          el.addEventListener('pointerdown', e => { if (e.button) return; e.preventDefault(); off = where(e) - at[k]; el.setPointerCapture(e.pointerId); el.classList.add('is-held'); });
+          el.addEventListener('pointermove', e => { if (off !== null) set(k, where(e) - off); });
+          const drop = () => { off = null; el.classList.remove('is-held'); };
+          el.addEventListener('pointerup', drop); el.addEventListener('pointercancel', drop);
+          el.addEventListener('keydown', e => {
+            const step = e.shiftKey ? 0.1 : 0.02;
+            const to = { ArrowLeft: at[k] - step, ArrowDown: at[k] - step, ArrowRight: at[k] + step, ArrowUp: at[k] + step, Home: 0, End: 1 }[e.key];
+            if (to === undefined) return;
+            e.preventDefault(); set(k, to);
+          });
+          return lines[k] = el;
+        };
+        // the second line is added first, so where the two lie together it is the first that is caught
+        box.append(shot('before', 'The old home screen'), shot('light', 'The redesigned home screen', 'compare__layer compare__a'), shot('dark', 'The redesigned home screen in dark mode', 'compare__layer compare__b'),
+          line('b', 'Show the dark mode', 'Dark mode'), line('a', 'Show the redesign', 'Redesign'));
+        set('a', 0);
+        return box;
+      }
       function fill(bay) {
         const name = bay.querySelector('.bay__name').textContent, wall = bay.querySelector('[data-wall]'), lead = bay.querySelector('.bay__media > img');
         sheet.querySelector('.sheet__name').textContent = name;
         sheet.querySelector('#sheet-title').textContent = bay.querySelector('h2').textContent;
         sheet.querySelector('.sheet__meta').replaceChildren(...[...bay.querySelectorAll('.bay__meta li')].map(li => make('li', '', li.textContent)));
         const parts = [];   // [heading, section]
-        if (lead) {
+        const pair = bay.querySelector('[data-compare]');
+        if (pair) {
+          const section = make('section'), figure = make('figure', 'sheet__lead');
+          figure.append(compare(pair.dataset.compare.replace(/\/?$/, '/')), make('figcaption', '', 'Drag the first line for the redesign, the second for its dark mode'));
+          section.append(figure);
+          parts.push(['Overview', section]);
+        } else if (lead) {
           const section = make('section'), figure = make('figure', 'sheet__lead'), img = lead.cloneNode();
           img.removeAttribute('style'); img.sizes = '(min-width: 1100px) 60vw, 90vw';
           figure.append(img); section.append(figure);
@@ -718,6 +799,9 @@
         peekDim: 0,        // and during the peek
         cue: 40,           // px across the return arrow that rides on the pointer; 0 for none
         radius: 16,        // the sheet's top left corner
+        blur: 14,          // px of blur the sheet's pictures start with; 0 for none
+        focusMs: 900,      // how long they take to come into focus
+        focusWait: 0,      // ms after the sheet starts to move before they begin
       };
       let tune = { ...TUNE };
       // The arrival's progress, 0 to 1, at each of `steps` even moments, when a shaper is set; null when the plain
@@ -745,6 +829,7 @@
         const curve = arriveCurve();   // a shaped arrival is handed to the stylesheet as its sampled curve
         if (curve) set('--sheet-ease-arrive', `linear(${curve.map(y => +y.toFixed(4)).join(', ')})`);
         set('--sheet-dim', tune.dim); set('--sheet-peek-dim', tune.peekDim); set('--cue-size', tune.cue + 'px');
+        set('--sheet-blur', tune.blur + 'px'); set('--sheet-focus-ms', tune.focusMs + 'ms'); set('--sheet-focus-wait', tune.focusWait + 'ms');
       }
       const saved = window.SHEET_VERSIONS, active = saved && saved.versions.find(v => v.id === saved.active);
       applyTune(active ? active.config : {});

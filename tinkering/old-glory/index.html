@@ -5,6 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Old Glory · Brian Studwell</title>
   <style>
+    @layer base, matte;
+    @import url("../../matte.css") layer(matte);   /* the Matte system, under this page's own layout rules */
+    @import url("../rig.css") layer(matte);        /* and what the rigs share on top of it */
+    @import url("../rig-gui.css");                  /* lil-gui worn as Matte: outside the layer, as lil-gui's own styles are */
     @font-face {
       font-family: "Geist";
       font-weight: 100 900;
@@ -19,7 +23,7 @@
       --accent: #949494;
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    @layer base { * { box-sizing: border-box; margin: 0; padding: 0; } }
 
     html, body {
       height: 100%;
@@ -49,35 +53,19 @@
       color: var(--muted);
     }
 
-    .hud a { pointer-events: auto; color: var(--fg); text-decoration: none; }
-    .hud a:hover { color: var(--accent); }
+    .hud a { pointer-events: auto; }                       /* the way back is a Matte legend */
 
     .hud--top { top: 24px; left: 28px; }
     .hud--bottom { bottom: 24px; left: 28px; line-height: 1.6; max-width: 46ch; }
     .hud__title { color: var(--fg); font-size: 15px; font-weight: 600; letter-spacing: 0.02em; }
 
-    /* Control panel (lil-gui), docked right */
-    /* lil-gui sets its own colours on every folder, so hand the panel's down to them */
-    body .lil-gui .lil-gui { --background-color: inherit; --widget-color: inherit; --hover-color: inherit; --focus-color: inherit; --number-color: inherit; --string-color: inherit; --title-background-color: inherit; --text-color: inherit; }
+    /* Control panel (lil-gui), docked right. Its finish is Matte, from rig-gui.css */
     body .lil-gui.root {
-      --background-color: rgba(11, 11, 11, 0.82);
-      --widget-color: #1c1c1c;
-      --hover-color: #282828;
-      --focus-color: #333333;
-      --number-color: var(--accent);
-      --string-color: var(--accent);
-      --title-background-color: rgba(19, 19, 19, 0.95);
-      --text-color: #dadada;
-      --font-family: inherit;
       --width: 300px;
       top: 16px;
       right: 16px;
       max-height: calc(100vh - 32px);
-      border: 1px solid rgba(161, 161, 161, 0.18);
-      border-radius: 10px;
       overflow: hidden auto;
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
       cursor: auto;
     }
 
@@ -97,10 +85,10 @@
     }
   </script>
 </head>
-<body>
+<body class="matte">
   <canvas id="scene" aria-label="Night-time drone show: about a thousand lights forming a waving American flag"></canvas>
 
-  <div class="hud hud--top"><a href="../">← Rigs and Jigs</a></div>
+  <div class="hud hud--top"><a class="m-legend" href="../">← Rigs and Jigs</a></div>
   <div class="hud hud--bottom">
     <div class="hud__title">Old Glory</div>
     A drone show of Americana. Scene 1: the American flag.

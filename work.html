@@ -153,11 +153,13 @@
     .sheet-cue:not(:popover-open) { display: none; }
     .sheet-cue.is-on { opacity: 1; scale: 1; }
     .sheet-cue svg { width: 40%; height: 40%; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
-    /* The sheet's lead picture arrives out of focus and resolves as it slides in; it is sharp when it leaves, as the blur
-       is only where it starts from. Only the lead: blurring every screenshot while a full-screen sheet slides costs frames,
-       and the ones further down can't be seen yet anyway. The Peek Lab keeps the blur to 8px or less for the same reason. */
-    .sheet[open] .sheet__lead img { filter: blur(0px); transition: filter var(--sheet-focus-ms, 900ms) cubic-bezier(0.3, 0, 0.3, 1) var(--sheet-focus-wait, 0ms); }
-    @starting-style { .sheet[open] .sheet__lead img { filter: blur(var(--sheet-blur, 8px)); } }
+    /* The sheet's lead picture (or its film) arrives out of focus and resolves as it slides in; it is sharp when it leaves,
+       as the blur is only where it starts from. Only the lead: blurring every screenshot while a full-screen sheet slides
+       costs frames, and the ones further down can't be seen yet anyway. The Peek Lab keeps the blur to 8px or less for the
+       same reason. The tagline beside it inks in on the same curve and lands with it (goo() in the sheet's script). */
+    .sheet[open] :is(.sheet__lead img, .sheet__film video) { filter: blur(0px); transition: filter var(--sheet-focus-ms, 1500ms) cubic-bezier(0.3, 0, 0.3, 1) var(--sheet-focus-wait, 0ms); }
+    @starting-style { .sheet[open] :is(.sheet__lead img, .sheet__film video) { filter: blur(var(--sheet-blur, 8px)); } }
+    .sheet__goo { display: block; }   /* a line of the tagline while it inks in; plain text again once it has */
     /* Reduced motion: nothing slides, scales or blurs, but the sheet and its dimming still fade, so it doesn't snap */
     @media (prefers-reduced-motion: reduce) {
       .sheet { translate: 0 0; opacity: 0; transition: opacity 200ms ease-out, overlay 200ms allow-discrete, display 200ms allow-discrete; }
@@ -165,7 +167,7 @@
       @starting-style { .sheet[open] { opacity: 0; } }
       .sheet::backdrop { transition: background 200ms ease-out, overlay 200ms allow-discrete, display 200ms allow-discrete; }
       .sheet-cue { scale: 1; transition: opacity 160ms ease-out; }
-      .sheet[open] .sheet__lead img { transition: none; }
+      .sheet[open] :is(.sheet__lead img, .sheet__film video) { transition: none; }
     }
 
     .sheet__close { position: absolute; top: var(--space-5); right: var(--space-5); z-index: 1; }
@@ -911,8 +913,10 @@
         cue: 40,           // px across the return arrow that rides on the pointer; 0 for none
         radius: 16,        // the sheet's top left corner
         blur: 8,           // px of blur the sheet's lead picture starts with, 8 at most; 0 for none
-        focusMs: 900,      // how long they take to come into focus
+        focusMs: 1500,     // how long they take to come into focus: sharp as the sheet comes to rest (in sight of 1px by 1.3s)
         focusWait: 0,      // ms after the sheet starts to move before they begin
+        goo: 0.5,          // the tagline's starting blur, in ems of its own size, before it inks in; 0 for none
+        gooStagger: 100,   // ms between one line of the tagline starting and the next; all of them land with the picture
       };
       let tune = { ...TUNE };
       // The arrival's progress, 0 to 1, at each of `steps` even moments, when a shaper is set; null when the plain
@@ -982,11 +986,94 @@
         document.documentElement.classList.add('has-sheet');   // the board keeps shut under it (see the board's script)
         sheet.showModal();
         scroller.scrollTop = 0;
+        goo();
         if (canCue) { try { cue.showPopover(); } catch (e) { /* already showing */ } }
         clearTimeout(settle);
         settle = setTimeout(() => { sheet.classList.add('is-settled'); sheet.classList.toggle('is-peek', want || held); }, arrivedMs());   // once the arrival looks done, the quicker scoot
       }
+      /* The tagline inks in. Each line gets an SVG filter of its own: a blur, then a colour matrix that makes any pixel
+         over about 40% opaque solid and drops the rest (alpha × 20 − 8). Heavily blurred, nothing gets over the line, so
+         the text is invisible; as the blur lifts, the thick parts of the letters cross it first, as blobs that swell and
+         run together into the words. Near the end the threshold eases back to plain (× 1 − 0) so the edges are smooth
+         again, then the filters come off and the tagline is plain text. The blur lifts on the film's focus curve and
+         lands when it does: the first line starts with it, the others a stagger later, each a little quicker. */
+      const title = sheet.querySelector('#sheet-title');
+      let gooFrame = 0, gooText = null, gooDefs = null;
+      function bezier(x1, y1, x2, y2) {
+        const at = (a, b, u) => 3 * a * u * (1 - u) ** 2 + 3 * b * u * u * (1 - u) + u ** 3;
+        return t => {
+          let lo = 0, hi = 1;
+          for (let n = 0; n < 20; n++) { const mid = (lo + hi) / 2; if (at(x1, x2, mid) < t) lo = mid; else hi = mid; }
+          return at(y1, y2, (lo + hi) / 2);
+        };
+      }
+      const focusCurve = bezier(0.3, 0, 0.3, 1);   // the film's, from the stylesheet
+      function gooStop() {
+        cancelAnimationFrame(gooFrame); gooFrame = 0;
+        if (gooText !== null) { title.textContent = gooText; gooText = null; }
+        gooDefs?.replaceChildren();
+      }
+      function goo() {
+        gooStop();
+        if (!(tune.goo > 0) || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+        // find the lines as they fall: a span per word, grouped by where each sits
+        const text = title.textContent, words = text.split(/\s+/).filter(Boolean);
+        title.replaceChildren(...words.flatMap((w, i) => { const s = make('span', '', w); return i ? [' ', s] : [s]; }));
+        const lines = [];
+        title.querySelectorAll('span').forEach(s => {
+          const last = lines[lines.length - 1];
+          if (last && Math.abs(last.top - s.offsetTop) < 2) last.words.push(s.textContent); else lines.push({ top: s.offsetTop, words: [s.textContent] });
+        });
+        gooText = text;
+        if (!gooDefs) {
+          const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+          svg.setAttribute('aria-hidden', 'true'); svg.style.cssText = 'position:absolute;width:0;height:0;overflow:hidden';
+          sheet.append(svg); gooDefs = svg;
+        }
+        const start = tune.goo * parseFloat(getComputedStyle(title).fontSize);
+        const matrix = (amp, off) => `1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 ${amp} ${off}`;
+        const parts = lines.map((line, i) => {
+          const filter = document.createElementNS('http://www.w3.org/2000/svg', 'filter');
+          filter.id = 'sheet-goo-' + i;
+          // room around the line for the blur: it is wide but short, so far more above and below than at the sides
+          filter.setAttribute('x', '-10%'); filter.setAttribute('width', '120%'); filter.setAttribute('y', '-100%'); filter.setAttribute('height', '300%');
+          filter.setAttribute('color-interpolation-filters', 'sRGB');
+          filter.innerHTML = `<feGaussianBlur in="SourceGraphic" stdDeviation="${start}"/><feColorMatrix type="matrix" values="${matrix(20, -8)}"/>`;
+          gooDefs.append(filter);
+          const el = make('span', 'sheet__goo', line.words.join(' '));
+          el.style.filter = `url(#${filter.id})`;
+          return { el, blur: filter.firstChild, ink: filter.lastChild };
+        });
+        title.replaceChildren(...parts.map(p => p.el));
+        // The clock is the picture's own focus transition, read each frame, so the two can't drift: the transition can
+        // start a frame or several after the sheet opens, while a video finds its feet. Until it shows up the tagline
+        // holds; once it has run and gone, the tagline is done. With no picture to follow, it keeps its own time.
+        const picture = sheet.querySelector('.sheet__film video, .sheet__lead img');
+        const t0 = performance.now(), total = tune.focusMs;
+        let seen = false;
+        const clock = now => {
+          const focus = picture?.getAnimations().find(a => a.transitionProperty === 'filter');
+          if (focus) { seen = true; return (focus.currentTime ?? 0) - tune.focusWait; }
+          if (seen || !picture || now - t0 > 300) return seen ? total : now - t0 - tune.focusWait;   // gone, absent, or never came
+          return 0;
+        };
+        const step = now => {
+          let done = true;
+          const elapsed = clock(now);
+          parts.forEach((p, i) => {
+            const lead = Math.min(i * tune.gooStagger, total * 0.5), dur = Math.max(1, total - lead);
+            const t = Math.min(1, Math.max(0, (elapsed - lead) / dur));
+            const relax = Math.min(1, Math.max(0, (t - 0.65) / 0.35));   // the last 35%: the threshold eases back to plain
+            p.blur.setAttribute('stdDeviation', (start * (1 - focusCurve(t))).toFixed(2));
+            p.ink.setAttribute('values', matrix(20 - 19 * relax, -8 * (1 - relax)));
+            if (t < 1) done = false;
+          });
+          if (done) gooStop(); else gooFrame = requestAnimationFrame(step);
+        };
+        gooFrame = requestAnimationFrame(step);
+      }
       function hide() {
+        gooStop();
         clearTimeout(settle); clearTimeout(peekTimer);
         want = false;
         sheet.classList.remove('is-peek', 'is-over-nav', 'is-settled');   // it leaves at the pace it arrived

@@ -180,7 +180,7 @@
     /* the project's facts under the title: each a small label over its value */
     .sheet__facts { display: grid; gap: var(--space-3); margin: var(--space-5) 0 0; }
     .sheet__facts dt { font-family: var(--font-mono); font-size: var(--text-2xs); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
-    .sheet__facts dd { margin: 2px 0 0; }
+    .sheet__facts dd { margin: 2px 0 0; line-height: 1.45; text-wrap: pretty; }   /* a value can run to a paragraph, as Summary does */
     .sheet__index { display: none; }
     .sheet__body { display: grid; gap: var(--space-7); margin-top: var(--space-7); }
     .sheet h3 { font-size: var(--text-2xs); font-weight: 400; color: var(--muted); margin: 0 0 var(--space-3); }
@@ -188,7 +188,10 @@
     .sheet section p { margin: 0; max-width: 38em; font-size: var(--text-heading); line-height: 1.45; text-wrap: pretty; }
     .sheet section p + p { margin-top: var(--space-2); }   /* a second result, as on the record */
     .sheet .sheet__prose p + p { margin-top: var(--space-4); }   /* written paragraphs, a step further apart */
-    .sheet__prose > .sheet__film { margin-bottom: var(--space-7); }   /* the film, then the words beneath it */
+    .sheet__prose > .sheet__film { margin-bottom: var(--space-7); }
+    /* a clip in a section: the screen recording, at its own proportions, under the heading and above the words */
+    .sheet__clip { margin: 0 0 var(--space-5); }
+    .sheet__clip video { display: block; width: 100%; height: auto; border-radius: var(--radius-sm); background: #0c0e12; }   /* the film, then the words beneath it */
     .sheet .is-result h3 { color: var(--signal); }
     .sheet__lead { margin: 0; padding: clamp(var(--space-4), 4vw, var(--space-8)); border-radius: var(--radius-lg); background: var(--surface); }
     .sheet__lead img { display: block; width: 100%; height: auto; border-radius: var(--radius-sm); }
@@ -247,6 +250,14 @@
     .fields .is-result dt { color: var(--signal); }
     .fields .is-result dd { font-size: var(--text-heading); line-height: 1.35; }
     .fields dd + dd { margin-top: var(--space-2); }   /* a second result, on its own line */
+    /* the Result field is the design system's Module (matte.css): a raised body, its label in a header cell, a seam, then the results */
+    .fields .is-result.m-panel { display: flex; align-self: start; user-select: text; -webkit-user-select: text; }
+    .fields .is-result dt { position: relative; padding: var(--m-pad-y) var(--m-pad-x); }
+    .fields .is-result dt::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px;
+      background: linear-gradient(180deg, var(--m-well) 50%, rgb(255 255 255 / calc(0.055 * var(--m-gloss))) 50%); }   /* the module's seam */
+    .fields .is-result dd { padding: 0 var(--m-pad-x); color: var(--m-print-hi); }
+    .fields .is-result dt + dd { padding-top: calc(var(--m-pad-y) + 2px); }
+    .fields .is-result dd:last-child { padding-bottom: var(--m-pad-y); }
     /* a fact still to be supplied: dashed so it can't pass for real copy */
     .slot { border-bottom: 1px dashed currentColor; font-style: italic; color: var(--muted); }
 
@@ -325,7 +336,7 @@
         <dl class="fields">
           <div><dt class="mono">Problem</dt><dd>Enterprises shouldn’t have to use slow, ugly, awkward software to meet their compliance obligations and stay safe.</dd></div>
           <div><dt class="mono">What I did</dt><dd>I led a down-to-the-studs redesign of our flagship EHS application: an agent-first design system, overhauled core features, and a carefully constructed interface. Embracing AI tooling made it all possible.</dd></div>
-          <div class="is-result"><dt class="mono">Result</dt><dd>Lost deals related to UI/UX Down 47%</dd><dd>NPS up 23%</dd></div>
+          <div class="is-result matte m-panel m-panel--col"><dt class="mono">Result</dt><dd>Lost deals related to UI/UX Down 47%</dd><dd>NPS up 23%</dd></div>
         </dl>
         <!-- the project sheet, section by section: each template's title names it in the sheet's index; the film
              (data-film above) opens the first, untitled one -->
@@ -335,18 +346,31 @@
           <div><dt>When</dt><dd>Summer 2026</dd></div>
           <div><dt>Project Type</dt><dd>Redesign, AI Features</dd></div>
           <div><dt>Tools</dt><dd>Claude Code, Vercel, AX Skillbox</dd></div>
+          <div><dt>Summary</dt><dd>Groom Lake was the code name for a complete redesign of Ideagen EHS Enterprise. I led a team of 3 designers over 2 months to create the prototype, then stewarded the project through 3 months of engineering to deliver a reimagined, high-craft application that embeds AI in key features.</dd></div>
         </template>
-        <template class="bay__section" data-title="Hero Montage" data-untitled>
+        <template class="bay__section" data-title="Intro" data-untitled>
           <p>EHS Enterprise is Ideagen’s flagship product for large organizations, delivering safety, quality, and risk solutions across a spectrum of regulated industries. The app allows customers to do things like operate an incident management program, conduct recurring audits of their manufacturing processes, and manage job safety for thousands of workers at hazardous work sites.</p>
           <p>The product was powerful, but stiff, awkward, and cumbersome for users. It was not built for the AI era, and needed to be reconsidered in light of it. Its accompanying mobile app was an underutilized orphan, and shared little with the desktop experience.</p>
           <p>Add this all up and we reached a point in mid-2026 where we were losing sales. Reports were coming back about deals lost with specific concerns about how the product showed to potential buyers. Stale. Clumsy. Too complicated.</p>
           <p>Momentum had been building for over a year to overhaul the UX and the time had come. With revenue on the line I was asked to lead the redesign.</p>
         </template>
         <template class="bay__section" data-title="Custom Workspaces">
-          <p>Copy to come.</p>
+          <figure class="sheet__clip">
+            <video src="images/groom-lake-workspaces.mp4" poster="images/groom-lake-workspaces-poster.webp" width="1512" height="950"
+                   muted loop playsinline preload="none"
+                   aria-label="Customizing a workspace: opening the component library, choosing quick actions, adding components such as notifications, then finishing the edit"></video>
+          </figure>
+          <p>EHS Enterprise had taken a one-size-fits-all approach out of necessity. The interface was intentionally standardized after a long history of bespoke customizations had led to projects running late and over budget. But the resulting sameness poorly represented what the software could do. A generic default landing page, meant to give all customers a reasonable orientation to the system, had left most feeling ignored and underserved.</p>
+          <p>AI promised to let us deliver on our early dreams of personalization. What if the first thing a user sees when they log in felt like walking into their own garage, with all their tools laid out in the right place, ready to use? I worked with our Product and Sales teams to create user archetypes I designed against, creating informed default workspace components. I created a layout system that deferred to users’ preferences, letting them rearrange and recompose their workspace at will. Then I went a step further.</p>
+          <p>In the past, we had offered a set of pre-built components that people could use to build a dashboard. Their saved searches could be jammed into various formats and wedged into a layout slot. It got the job done, but was clunky and required real knowledge of the system. I wanted to make getting the information and actions an individual needs pulled together in front of them as easy as asking for it. I designed an AI system for generating workspace components based on a user’s intent. Elevated one level, the same system allowed users to generate an entire workspace. I developed a visual grammar for components and a taxonomy of user intents so the agent could compose the most legible form of the data.</p>
+          <p>It was well received, but a good example of a case where the highest-end tool is not necessarily the one most people need. This system was designed for people who oversee work and manage activities across a facility or organization. The average boots-on-the-ground worker didn’t need it. They need to get in, log something or find an assignment, and get out. Data visualizations and customizable views aren’t valuable. Time and attention are. I had already set role-based rules in the system, so for users at that tier, we set the final product up so that admins create the workspace for them, and workers simply use it.</p>
         </template>
         <template class="bay__section" data-title="Agentic Workflow">
-          <p>Copy to come.</p>
+          <p>The bread and butter of the application is workers creating records. Someone gets burned; file an injury report. A shipment fails purity testing; log a non-conformance. A piece coming off an assembly line shows a defect; kick off a root cause investigation and start a corrective action. Day in and day out, this is what our customers do in Enterprise.</p>
+          <p>The exact details and the exact workflow are unique to the implementation. Organizations often have their own way of doing things and a lexicon that’s anything but standard.</p>
+          <p>The issue is that at the scale of a national lab or a global manufacturing firm, there may be 50 or 100 different workflows in the system. How is a worker supposed to know which one fits the situation? In some cases, the proper course of action is obvious and routine. In others, anything but.</p>
+          <p>AI has proven a fantastic triage partner. I designed a new way of creating records in the product, guided by Mazlan, Ideagen’s AI. Users describe the events surrounding them, or the problem they’re trying to solve, and Mazlan directs them to the appropriate workflow. As the user adds information to the conversation, Mazlan transposes it to the corresponding fields in the form. If a user isn’t sure how to proceed, Mazlan knows what the steps are and who the next step is assigned to. If a user already knows what they need to do and wants to just get to work, that path remains available to them. AI assists when called on, and defers otherwise.</p>
+          <p>This operating model was particularly exciting in the mobile world. Enterprise users are often in the field, on shop floors, or in remote locations. They’re people who work on their feet and with their hands. A really great experience with fluid image and video capture, speech-to-text data input, and geolocation had never made it to the product. Mazlan, in Enterprise’s mobile version, allows users to do all that and more, doing work and recording information from unknown locations, wearing PPE, in the wind and the rain. The wrinkle here, which is beyond the scope of this case study, is providing an exceptional user experience in low- or no-connectivity environments.</p>
         </template>
         <template class="bay__section" data-title="Praxis">
           <p>Copy to come.</p>
@@ -377,7 +401,7 @@
         <dl class="fields">
           <div><dt class="mono">Problem</dt><dd>Workers in far-flung, dirty and dangerous places need to react and respond to their environment, across a portfolio of separate EHS products.</dd></div>
           <div><dt class="mono">What I did</dt><dd>I led a 0–1 project designing a new, unified app for Ideagen’s EHS portfolio. Mazlan, Ideagen’s AI, is embedded strategically throughout the experience.</dd></div>
-          <div class="is-result"><dt class="mono">Result</dt><dd><span class="slot">A measured result goes here.</span></dd></div>
+          <div class="is-result matte m-panel m-panel--col"><dt class="mono">Result</dt><dd><span class="slot">A measured result goes here.</span></dd></div>
         </dl>
       </article>
 
@@ -391,7 +415,7 @@
         <dl class="fields">
           <div><dt class="mono">Problem</dt><dd>By man-hours spent, configuration was the biggest bucket of work our company had.</dd></div>
           <div><dt class="mono">What I did</dt><dd>I designed Ideagen’s agentic configuration tool, Mazlan Builder, which puts the power of self-serve customization in the customers’ hands.</dd></div>
-          <div class="is-result"><dt class="mono">Result</dt><dd>Benchmark tasks went from hours to minutes, without losing an ounce of capability.</dd></div>
+          <div class="is-result matte m-panel m-panel--col"><dt class="mono">Result</dt><dd>Benchmark tasks went from hours to minutes, without losing an ounce of capability.</dd></div>
         </dl>
       </article>
 
@@ -805,6 +829,7 @@
         set('a', 0);
         return box;
       }
+      let clips = null;   // watches the sheet's section clips, to play the one in view
       function fill(bay) {
         const name = bay.querySelector('.bay__name').textContent, wall = bay.querySelector('[data-wall]'), lead = bay.querySelector('.bay__media > img');
         sheet.querySelector('.sheet__name').textContent = name;
@@ -865,6 +890,12 @@
           figure.append(video);
           (written.length ? body.firstElementChild : body).prepend(figure);
         }
+        clips?.disconnect();
+        const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+        clips = new IntersectionObserver(entries => entries.forEach(e => {
+          if (e.isIntersecting && sheet.open && !reduce) e.target.play().catch(() => {}); else e.target.pause();
+        }), { root: scroller, threshold: 0.4 });
+        body.querySelectorAll('.sheet__clip video').forEach(v => { if (reduce) { v.controls = true; v.preload = 'metadata'; } clips.observe(v); });
         index.replaceChildren(...parts.map(([heading], i) => {
           const a = make('a', '', heading);
           a.href = '#sheet-' + i;
@@ -1079,7 +1110,7 @@
         sheet.classList.remove('is-peek', 'is-over-nav', 'is-settled');   // it leaves at the pace it arrived
         if (canCue) { cue.classList.remove('is-on'); try { cue.hidePopover(); } catch (e) { /* not showing */ } }
         if (sheet.open) sheet.close();
-        sheet.querySelector('.sheet__film video')?.pause();
+        sheet.querySelectorAll('video').forEach(v => v.pause());
         clearTimeout(gone);
         gone = setTimeout(() => document.documentElement.classList.remove('has-sheet'), tune.leaveMs + 80);   // once it has left
       }

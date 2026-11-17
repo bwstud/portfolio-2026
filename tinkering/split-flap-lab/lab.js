@@ -98,6 +98,22 @@
       n('edgeMinDeg', 'Edge angle', 0, 45, 1, '°', 'Leaf angle where that highlight appears.'),
       n('edgeSize', 'Edge size', 0, 0.03, 0.001, '× height', 'Highlight thickness.'),
     ]],
+    ['Hologram', [
+      n('holo', 'Strength', 0, 1, 0.01, '', 'Lifts the letters off the flaps as projected light. 0 prints them on the flaps.'),
+      c('holoColor', 'Light colour', 'The colour of the projection.'),
+      n('holoBloom', 'Bloom', 0, 2, 0.01, '', 'Glow around each letter.'),
+      n('holoFringe', 'Fringe', 0, 4, 0.1, 'px', 'Red and cyan split at the letters’ edges.'),
+      n('holoScan', 'Scanlines', 0, 1, 0.01, '', 'How much the scanlines take out of the light.'),
+      n('holoScanGap', 'Scanline spacing', 1, 10, 0.5, 'px', 'Distance from one scanline to the next.'),
+      n('holoFlicker', 'Flicker', 0, 1, 0.01, '', 'How unsteady the light is. Off under reduced motion.'),
+      n('holoSpin', 'While spinning', 0, 1, 0.01, '', 'Brightness of the letters while the flaps spin under them. Each lights to full the moment it lands.'),
+      n('holoShadow', 'Shadow opacity', 0, 1, 0.01, '', 'How strong the letter’s shadow on the flaps is. 0 removes it.'),
+      c('holoShadowColor', 'Shadow colour', 'The colour of the letter’s shadow on the flap.'),
+      n('holoShadowX', 'Shadow across', -0.3, 0.3, 0.005, '× width', 'Shadow offset to the right; negative to the left.'),
+      n('holoShadowY', 'Shadow down', -0.3, 0.3, 0.005, '× width', 'Shadow offset downward; negative upward.'),
+      n('holoShadowBlur', 'Shadow softness', 0, 0.3, 0.005, '× width', 'How soft the shadow is.'),
+      n('holoSpill', 'Light on the flap', 0, 1, 0.01, '', 'The letter’s light falling on the flap straight behind it.'),
+    ]],
   ];
 
   /* ---- Board ---- */

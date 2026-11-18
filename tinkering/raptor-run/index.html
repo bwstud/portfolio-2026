@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Raptor Run · Brian Studwell</title>
-  <meta name="description" content="An overhead view of a jungle clearing. People sprint across it at random, each with a velociraptor close behind.">
+  <meta name="description" content="An overhead view of a sunlit forest floor. People sprint across it at random, each with a velociraptor close behind.">
   <style>
     @layer base, matte;
     @import url("../../matte.css") layer(matte);   /* the Matte system, under this page's own layout rules */
@@ -15,9 +15,15 @@
       font-display: swap;
       src: url("../../fonts/Geist-Variable.woff2") format("woff2");
     }
+    @font-face {
+      font-family: "Söhne Breit";
+      font-weight: 600;
+      font-display: block;
+      src: url("../../fonts/soehne-breit-halbfett.woff2") format("woff2");
+    }
 
     :root {
-      --bg: #313131;
+      --bg: #1c3526;
       --panel: rgba(13, 13, 13, 0.78);
       --line: rgba(255, 255, 255, 0.1);
       --line-strong: rgba(255, 255, 255, 0.2);
@@ -42,7 +48,6 @@
     a { color: inherit; }
 
     .layer { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
-    #canopy { pointer-events: none; }
 
     .top {
       position: fixed; z-index: 3; top: 14px; left: 16px; right: 16px;
@@ -74,9 +79,7 @@
   </style>
 </head>
 <body class="matte">
-  <canvas class="layer" id="ground" aria-hidden="true"></canvas>
-  <canvas class="layer" id="stage" aria-label="Overhead view of a jungle clearing. People run across it, each chased by a velociraptor."></canvas>
-  <canvas class="layer" id="canopy" aria-hidden="true"></canvas>
+  <canvas class="layer" id="stage" aria-label="Overhead view of a sunlit forest floor with the words Raptor Run set across it. People run across it, each chased by a velociraptor."></canvas>
 
   <header class="top">
     <a class="back m-legend" href="../" aria-label="Back to Experiments">← <span class="back__text">Experiments</span></a>
@@ -104,13 +107,13 @@
   </header>
 
   <aside class="notes" aria-label="Notes">
-    <p>The overhead koi pond is a familiar idea. This is the same camera looking down at a jungle clearing, where nobody is swimming gracefully.</p>
-    <p>People arrive from any edge at random, one at a time, each with a velociraptor close behind. The speeds are set so the catch always happens just past the edge of the screen.</p>
-    <p>Everything is drawn in code each frame. The raptor's spine follows the person's path, and its feet plant and push off with a short airborne moment in each stride. The tracks fade after it's gone.</p>
+    <p>The overhead koi pond, with a forest floor in place of the water, and nobody swimming gracefully.</p>
+    <p>As with the koi, each creature is a painting laid on a mesh that bends along a moving spine. Paintings sit in this page's art folder; until one exists, the creature is sculpted in code from rounded forms, scales and folds, and lit like skin.</p>
+    <p>A low sun throws long shadows, so you see the legs stride even from straight above, and leaves drifting overhead dapple everything. Shadows only take away sunlight, so they fade in the leaf shade. The catch always happens just past the edge of the screen.</p>
   </aside>
 
   <div class="status m-body m-body--low" id="status" role="status" aria-live="polite">
-    <span class="status__now" id="now">The clearing is quiet</span>
+    <span class="status__now" id="now">The forest floor is quiet</span>
     <span class="status__count m-value" id="count"></span>
   </div>
   <button class="hbtn show-ui m-key" id="show" type="button" hidden>Show controls</button>

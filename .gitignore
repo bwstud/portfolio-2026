@@ -13,6 +13,9 @@ tinkering/*/v1.0 Recording/
 # Taxidermy raw scans and the purchased reference model: local only
 tinkering/taxidermy/source/
 
+# Raptor Run: the generated source paintings (the cut-out WebPs in art/ are what ship): local only
+tinkering/raptor-run/source/
+
 # Font order downloads (invoice, duplicate files): local only
 fonts/Klim-Order-*/
 

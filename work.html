@@ -23,7 +23,7 @@
   <link rel="preload" href="fonts/soehne-buch.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="fonts/soehne-mono-buch.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="styles.css">
-  <link rel="stylesheet" href="matte.css?v=12">   <!-- the Matte system: the nav keys, the menu and the board's housing -->
+  <link rel="stylesheet" href="matte.css?v=14">   <!-- the Matte system: the nav keys, the menu and the board's housing -->
   <link rel="stylesheet" href="board.css">   <!-- the project board's finish, shared with the Split-Flap Lab -->
   <link rel="stylesheet" href="drift-wall.css">   <!-- the drifting wall of screenshots in a project's record -->
   <link rel="stylesheet" href="matte-page.css">   <!-- the shared page: rail nav, off-black ground, footer band -->
@@ -258,6 +258,11 @@
     .fields .is-result dd { padding: 0 var(--m-pad-x); color: var(--m-print-hi); }
     .fields .is-result dt + dd { padding-top: calc(var(--m-pad-y) + 2px); }
     .fields .is-result dd:last-child { padding-bottom: var(--m-pad-y); }
+    /* several results as a list: a small copper square for each, hung in the margin so the lines align */
+    .result-list { list-style: none; margin: 0; padding: 0; }
+    .result-list li { position: relative; padding-left: 1.1em; }
+    .result-list li + li { margin-top: var(--space-3); }
+    .result-list li::before { content: ""; position: absolute; left: 0; top: 0.55em; width: 0.32em; height: 0.32em; background: var(--signal); }
     /* a fact still to be supplied: dashed so it can't pass for real copy */
     .slot { border-bottom: 1px dashed currentColor; font-style: italic; color: var(--muted); }
 
@@ -336,7 +341,7 @@
         <dl class="fields">
           <div><dt class="mono">Problem</dt><dd>Enterprises shouldn’t have to use slow, ugly, awkward software to meet their compliance obligations and stay safe.</dd></div>
           <div><dt class="mono">What I did</dt><dd>I led a down-to-the-studs redesign of our flagship EHS application: an agent-first design system, overhauled core features, and a carefully constructed interface. Embracing AI tooling made it all possible.</dd></div>
-          <div class="is-result matte m-panel m-panel--col"><dt class="mono">Result</dt><dd>Lost deals related to UI/UX Down 47%</dd><dd>NPS up 23%</dd></div>
+          <div class="is-result matte m-panel m-panel--col"><dt class="mono">Result</dt><dd><ul class="result-list"><li>Deal loss related to UX reduced from 14% to 2%</li><li>NPS increased from −53 to +71</li><li>WAUs increased from ~3,200 to ~11,000</li></ul></dd></div>
         </dl>
         <!-- the project sheet, section by section: each template's title names it in the sheet's index; the film
              (data-film above) opens the first, untitled one -->
@@ -436,17 +441,26 @@
     </div>
   </dialog>
   <div class="sheet-cue matte" id="sheet-cue" popover="manual" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M6 3.5 2.5 7 6 10.5"/><path d="M2.5 7h7a4 4 0 0 1 0 8H8" transform="translate(0 -1.5)"/></svg></div>
+  <!-- The site is still being built: a Matte notice (matte.css) comes up in the middle of the screen as the first record arrives -->
+  <dialog class="m-dialog m-notice m-panel m-panel--col matte" id="wip" tabindex="-1" aria-labelledby="wip-title" aria-describedby="wip-words">
+    <div class="m-notice__cap"><h2 class="m-title" id="wip-title">Work in progress</h2><svg class="m-notice__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m12.99 6.74 1.93 3.44"/><path d="M19.136 12a10 10 0 0 1-14.271 0"/><path d="m21 21-2.16-3.84"/><path d="m3 21 8.02-14.26"/><circle cx="12" cy="5" r="2"/></svg></div>
+    <div class="m-notice__body"><p class="m-prose" id="wip-words">This portfolio is still being built. Some case studies are unfinished, and a few sections hold placeholders for now.</p></div>
+    <span class="m-seam"></span>
+    <div class="m-notice__foot"><button class="m-key m-key--lg" type="button" id="wip-close">See the work</button></div>
+  </dialog>
   <footer class="endfoot">
       <div class="foot-col">
         <div class="foot">
           <div><h2>About</h2><p>I think in systems, always keep the plates spinning, and care deeply about the people who rely on my work.</p></div>
-          <div><h2>Lab</h2>
+          <div><h2>Featured Experiments</h2>
             <ul>
-              <li><a href="tinkering/">Nineteen experiments</a></li>
-              <li><a href="tinkering/split-flap-lab/">Split-Flap Lab, where this board is tuned</a></li>
-              <li><a href="tinkering/design-system/">Design system</a></li>
-              <li><a href="tinkering/halftone-lab/">Halftone Lab</a></li>
-              <li><a href="tinkering/button-lab/">Button Lab</a></li>
+              <li><a href="tinkering/split-flap-lab/">Split-Flap Lab</a></li>
+              <li><a href="tinkering/kaleidoscopes/">Kaleidoscopes</a></li>
+              <li><a href="tinkering/bonsai/">Bonsai</a></li>
+              <li><a href="tinkering/pottery/">Pottery Wheel</a></li>
+              <li><a href="tinkering/design-system/">Matte Design System</a></li>
+              <li><a href="tinkering/knot-dojo/">Knot Dojo</a></li>
+              <li><a href="tinkering/taxidermy/">Taxidermy</a></li>
             </ul>
           </div>
           <div id="contact"><h2>Contact</h2>
@@ -467,6 +481,7 @@
   <script src="spark.js" defer></script>
   <script src="filings-versions.js"></script>
   <script src="filings.js"></script>
+  <script src="matte.js"></script>   <!-- Matte's behaviour: the notice's key gets its iron filings from Matte.init() -->
   <script src="split-flap.js"></script>
   <script src="split-flap-versions.js"></script>
   <script src="sheet-versions.js"></script>   <!-- the project sheet's peek, as tuned in the Peek Lab -->
@@ -497,7 +512,9 @@
       // a board of modules can't be read on a small screen: those keep the rows as links, with every record on the page
       const wide = matchMedia('(min-width: 1100px)');   // narrower, the modules are too small to read
       const unpend = () => document.documentElement.classList.remove('board-pending');   // the layout is final: show the page
-      if (!wide.matches || !window.SplitFlap) return unpend();
+      // the record has arrived: the page's notices wait for this (see the notice script)
+      const arrive = () => { document.documentElement.classList.add('is-arrived'); document.dispatchEvent(new Event('recordarrive')); };
+      if (!wide.matches || !window.SplitFlap) { unpend(); return arrive(); }
 
       const SHRUG = '¯\\_(ツ)_/¯';
       const PARTY = 'ヽ(⌐■_■)ノ♪♬';
@@ -757,11 +774,12 @@
           requestAnimationFrame(() => requestAnimationFrame(() => boardEl.classList.remove('is-instant')));   // after the folded state has painted
         }
         unpend();   // one record chosen, the others hidden, and the board in its place
-        if (still) { settle(); return flap.seek(Infinity); }
+        if (still) { settle(); arrive(); return flap.seek(Infinity); }
         run();   // the rows flip in once; choosing a row leaves the board as it is
         setTimeout(settle, flap.duration + 450);   // a beat after the last flap lands, the board folds to the row in view
+        if (seen) arrive();   // the record is already showing
         // the record starts down as the last flaps are landing, so the two finish together
-        setTimeout(() => document.documentElement.classList.remove('is-arriving'), Math.max(0, flap.duration - entrance.recordLeadMs));
+        else setTimeout(() => { document.documentElement.classList.remove('is-arriving'); arrive(); }, Math.max(0, flap.duration - entrance.recordLeadMs));
       });
       addEventListener('hashchange', () => { if (rows.some(r => '#' + r.id === location.hash)) choose(fromHash(), { remember: false }); });
       document.addEventListener('themechange', () => { flap.restyle(SplitFlap.activeStyle(mode())); if (!running) flap.seek(now()); });
@@ -1141,6 +1159,25 @@
         };
         addEventListener('load', () => { try { parent.peekLab && parent.peekLab.ready(); } catch (e) { /* opened on its own */ } });
       }
+    })();
+
+    /* ---- The work-in-progress notice: it comes up as the first record arrives (with the project section, once the board
+       has settled) and holds the page until it is put away: its key, Escape, or a click beside it. Once a visit. ---- */
+    (function () {
+      const note = document.getElementById('wip');
+      if (!note || !note.showModal) return;
+      try { if (sessionStorage.getItem('wip-closed') === '1') return; } catch (e) { /* show it every time */ }
+      let wired = false;
+      const show = () => {
+        if (note.open) return;
+        note.showModal(); note.focus();
+        if (!wired && window.Matte) { wired = true; Matte.init(note); }   // once it has a size: its key's iron filings, as on any Matte key
+      };   // focus on the dialog, not its key: no ring until the reader tabs
+      if (document.documentElement.classList.contains('is-arrived')) show();
+      else document.addEventListener('recordarrive', show, { once: true });
+      document.getElementById('wip-close').addEventListener('click', () => note.close());
+      note.addEventListener('click', e => { if (e.target === note) note.close(); });   // the backdrop
+      note.addEventListener('close', () => { try { sessionStorage.setItem('wip-closed', '1'); } catch (e) { /* it comes back next time */ } });
     })();
   </script>
 </body>

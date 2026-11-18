@@ -30,10 +30,14 @@
   box-shadow: 0 0 0 1px var(--m-edge), 0 0 4px 1px var(--m-signal), 0 0 12px 3px color-mix(in srgb, var(--m-signal) 55%, transparent), 0 0 26px 7px color-mix(in srgb, var(--m-signal) 22%, transparent); }
 :root:root .board__flap.is-aside + .board__keys .m-led { background: var(--m-cap-hi); box-shadow: 0 1px 1px rgb(0 0 0 / calc(0.8 * var(--m-shade))) inset, 0 0 0 1px var(--m-edge); }
 /* The row in view has lighter flaps; a row under the pointer lightens part of the way.
+   The lift is a straight line that raises black and leaves white where it is: contrast(c) brightness(1 + a) with
+   c = (1 - a) / (1 + a) takes v to a + (1 - a)v. A plain brightness() multiplied the letters' soft edges past white,
+   which flattened them into hard steps, plainest on a 1x screen. a is chosen so the flaps (about 14/255) lift as far as
+   brightness 1.75 (in view) and 1.3 (under the pointer) took them.
    On the light board, where the flaps are already near white, the row takes a shade instead. */
 .board__flap .sf canvas { transition: filter .2s ease; }
-.board__flap .sf-row.is-hover .sf canvas { filter: brightness(1.3); }
-.board__flap .sf-row.is-chosen .sf canvas { filter: brightness(1.75); }
+.board__flap .sf-row.is-hover .sf canvas { filter: contrast(.9657) brightness(1.0175); }
+.board__flap .sf-row.is-chosen .sf canvas { filter: contrast(.9163) brightness(1.0437); }
 :root[data-theme="light"] .board__flap .sf-row.is-hover .sf canvas { filter: brightness(.97); }
 :root[data-theme="light"] .board__flap .sf-row.is-chosen .sf canvas { filter: brightness(.92); }
 /* while the board shows something other than the projects, no row is lit */
@@ -52,8 +56,8 @@
   background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.1' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .9 -.42'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E"); }
 .board.matte .is-framed .sf { background: var(--m-well); box-shadow: 0 1px 0 rgb(255 255 255 / calc(0.08 * var(--m-gloss))), 0 0 0 1px var(--m-edge); }
 .board.matte .board__flap .sf canvas { filter: grayscale(1); }
-.board.matte .board__flap .sf-row.is-hover .sf canvas { filter: grayscale(1) brightness(1.3); }
-.board.matte .board__flap .sf-row.is-chosen .sf canvas { filter: grayscale(1) brightness(1.75); }
+.board.matte .board__flap .sf-row.is-hover .sf canvas { filter: grayscale(1) contrast(.9657) brightness(1.0175); }
+.board.matte .board__flap .sf-row.is-chosen .sf canvas { filter: grayscale(1) contrast(.9163) brightness(1.0437); }
 :root[data-theme="light"] .board.matte .board__flap .sf-row.is-hover .sf canvas { filter: grayscale(1) brightness(.97); }
 :root[data-theme="light"] .board.matte .board__flap .sf-row.is-chosen .sf canvas { filter: grayscale(1) brightness(.92); }
 :root:root .board.matte .board__flap.is-aside .sf-row .sf canvas { filter: grayscale(1); }

@@ -59,8 +59,9 @@
   /* Controls is pushed to the bottom of the rail, and its menu opens upward */
   .nav .dropdown--controls { margin-top: auto; }
   .nav .dropdown--controls .dropdown__menu { top: auto; bottom: calc(100% + var(--space-3)); left: 0; right: auto; }
-  .home, .foot-col { --col-pad: max(var(--space-4), min(4vw, 58px)); max-width: none; margin-left: 164px; margin-right: 0;
-    padding-left: var(--col-pad); padding-right: var(--space-5); }
+  /* the column starts one --space-4 past the hairline, the same gap as between the rail's buttons and the hairline */
+  .home, .foot-col { max-width: none; margin-left: calc(var(--space-5) + var(--rail-w) + var(--space-4) + 1px); margin-right: 0;
+    padding-left: var(--space-4); padding-right: var(--space-5); }
 }
 /* Phones: one row, with the links in the Menu panel (styles.css and nav.js) */
 /* Below the rail the nav spans the window. The iron filings' canvas reaches past each key (filings.js), and past

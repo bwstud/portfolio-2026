@@ -285,20 +285,22 @@
 .matte .m-key--accent { background: linear-gradient(180deg, color-mix(in srgb, var(--m-accent) 92%, #fff), color-mix(in srgb, var(--m-accent) 82%, #000)); color: #17110b; }
 .matte .m-key--accent:hover { color: #000; }
 
-/* ---- Push switch: a round latching button in a collar. Up, the cap stands above the body on a visible wall;
-        pressed, it stays down inside the collar until it is pressed again. A lamp in the cap is optional. ---- */
-.matte .m-push { --rise: 4px; position: relative; flex: none; width: 40px; height: 40px; border-radius: 50%; touch-action: manipulation; background: var(--m-well);
+/* ---- Push switch: a round latching button in a collar, seen head-on like the knob. Up, the cap fills its collar,
+        lit from above, its shadow falling on the collar floor below it; pressed, it sinks and stays down: a step
+        smaller and darker, its shadow gone and the collar's rim shading its top edge. A lamp in the cap is optional. ---- */
+.matte .m-push { position: relative; flex: none; width: 40px; height: 40px; border-radius: 50%; touch-action: manipulation; background: var(--m-well);
   box-shadow: 0 2px 4px rgb(0 0 0 / calc(0.9 * var(--m-shade))) inset, 0 0 0 1px var(--m-edge) inset, 0 1px 0 rgb(255 255 255 / calc(0.08 * var(--m-gloss))); }
-.matte .m-push--sm { --rise: 3px; width: 30px; height: 30px; }
-.m-push::before { content: ""; position: absolute; inset: 4px; border-radius: 50%; transform: translateY(calc(var(--rise) * -1));
-  background: radial-gradient(circle at 50% 24%, var(--m-cap-hi), var(--m-cap) 72%);
-  box-shadow: 0 1px 0 rgb(255 255 255 / calc(0.17 * var(--m-gloss))) inset, 0 0 0 1px var(--m-edge), 0 var(--rise) 0 var(--m-knurl-lo), 0 calc(var(--rise) + 3px) 7px rgb(0 0 0 / calc(0.75 * var(--m-shade)));
-  transition: transform var(--m-travel) var(--m-ease-detent), box-shadow var(--m-travel) var(--m-ease), filter var(--m-travel) var(--m-ease); }
-.m-push > .m-led { position: absolute; left: 50%; top: 50%; margin: -3px 0 0 -3px; transform: translateY(calc(var(--rise) * -1)); transition: transform var(--m-travel) var(--m-ease-detent), background var(--m-light-off), box-shadow var(--m-light-off); }
-.m-push[aria-pressed="true"]::before, .m-push[aria-checked="true"]::before { transform: none; filter: brightness(0.86);       /* down: the wall is gone and the collar shades the cap */
-  box-shadow: 0 1px 0 rgb(255 255 255 / calc(0.06 * var(--m-gloss))) inset, 0 4px 5px rgb(0 0 0 / calc(0.6 * var(--m-shade))) inset, 0 0 0 1px var(--m-edge), 0 0 0 transparent, 0 0 0 transparent; }
-.m-push[aria-pressed="true"] > .m-led, .m-push[aria-checked="true"] > .m-led { transform: none; }
-.m-push:active::before, .m-push:active > .m-led { transform: translateY(1px); transition-duration: var(--m-press); }   /* a finger pushes it just past its resting depth */
+.matte .m-push--sm { width: 30px; height: 30px; }
+.m-push::before { content: ""; position: absolute; inset: 4px; border-radius: 50%;
+  background: radial-gradient(circle at 50% 22%, var(--m-cap-hi), var(--m-cap) 68%);
+  box-shadow: 0 1px 0 rgb(255 255 255 / calc(0.2 * var(--m-gloss))) inset, 0 -2px 2px rgb(0 0 0 / calc(0.5 * var(--m-shade))) inset, 0 0 0 1px var(--m-edge),
+    0 2px 2px rgb(0 0 0 / calc(0.9 * var(--m-shade))), 0 4px 7px rgb(0 0 0 / calc(0.7 * var(--m-shade)));
+  transition: scale var(--m-travel) var(--m-ease-detent), box-shadow var(--m-travel) var(--m-ease), filter var(--m-travel) var(--m-ease); }
+.m-push > .m-led { position: absolute; left: 50%; top: 50%; margin: -3px 0 0 -3px; transition: scale var(--m-travel) var(--m-ease-detent), background var(--m-light-off), box-shadow var(--m-light-off); }
+.m-push[aria-pressed="true"]::before, .m-push[aria-checked="true"]::before { scale: 0.9; filter: brightness(0.82);       /* down: further from the eye, unlit by the rim */
+  box-shadow: 0 1px 0 rgb(255 255 255 / calc(0.04 * var(--m-gloss))) inset, 0 4px 5px rgb(0 0 0 / calc(0.75 * var(--m-shade))) inset, 0 0 0 1px var(--m-edge), 0 0 0 transparent, 0 0 0 transparent; }
+.m-push[aria-pressed="true"] > .m-led, .m-push[aria-checked="true"] > .m-led { scale: 0.9; }
+.m-push:active::before, .m-push:active > .m-led { scale: 0.86; transition-duration: var(--m-press); }   /* a finger pushes it just past its resting depth */
 
 /* ---- Fader: a native range input dressed as a slot and a cap with a white line ---- */
 .m-fader { appearance: none; -webkit-appearance: none; width: 168px; height: 28px; margin: 0; background: none; cursor: grab; touch-action: none; }

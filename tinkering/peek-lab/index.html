@@ -7,7 +7,7 @@
   <meta name="robots" content="noindex">
   <meta name="color-scheme" content="dark">
   <link rel="stylesheet" href="../../styles.css">
-  <link rel="stylesheet" href="../../matte.css?v=12">
+  <link rel="stylesheet" href="../../matte.css?v=14">
   <style>
     /* Peek Lab: tune the project sheet on the work page, and above all its peek: how the sheet scoots over when the
        pointer moves onto the page showing beside it. The stage is the work page itself in a frame, with the first
@@ -105,7 +105,7 @@
     Matte.init();
     // The sheet's settings and their starting values: the same list as TUNE in work.html, which is what the site
     // falls back to. A version stores only what differs from these.
-    const DEFAULTS = { rest: 40, past: 0, outMs: 300, backMs: 300, outDelay: 0, backDelay: 0, outX1: 0.3, outY1: 0, outX2: 0, outY2: 1, backX1: 0.3, backY1: 0, backX2: 0, backY2: 1, arriveX1: 0.42, arriveY1: 0, arriveX2: 0.58, arriveY2: 1, leaveX1: 0.3, leaveY1: 0, leaveX2: 0, leaveY2: 1, arriveMs: 700, arriveStart: 1, arriveEnd: 1, leaveMs: 520, dim: 0.5, peekDim: 0, cue: 40, radius: 16, blur: 8, focusMs: 900, focusWait: 0 };
+    const DEFAULTS = { rest: 40, past: 0, outMs: 300, backMs: 300, outDelay: 0, backDelay: 0, outX1: 0.3, outY1: 0, outX2: 0, outY2: 1, backX1: 0.3, backY1: 0, backX2: 0, backY2: 1, arriveX1: 0.42, arriveY1: 0, arriveX2: 0.58, arriveY2: 1, leaveX1: 0.3, leaveY1: 0, leaveX2: 0, leaveY2: 1, arriveMs: 700, arriveStart: 1, arriveEnd: 1, leaveMs: 520, dim: 0.5, peekDim: 0, cue: 40, radius: 16, blur: 8, focusMs: 1500, focusWait: 0 };
     // [key, label, min, max, step], in groups. A group with a third entry has an easing curve, drawn from the four
     // handles whose keys start with it.
     const handles = (move) => [[move + 'X1', 'First handle, across', 0, 1, 0.01], [move + 'Y1', 'First handle, up', -1, 2, 0.01],

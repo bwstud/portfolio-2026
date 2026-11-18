@@ -12,7 +12,7 @@
   <script src="../../button-versions.js"></script>
   <script src="../../buttons.js"></script>
   <link rel="stylesheet" href="../../styles.css">
-  <link rel="stylesheet" href="../../matte.css?v=12">   <!-- the Matte system itself -->
+  <link rel="stylesheet" href="../../matte.css?v=14">   <!-- the Matte system itself -->
   <link rel="stylesheet" href="../../matte-page.css">          <!-- the page shared with the work page: rail nav, off-black ground, card, footer band -->
   <style>
     /* The design system page. It is the one reference for Matte: what used to be the Matte Lab's catalogue and tuner
@@ -789,6 +789,16 @@
           <figcaption><b>Banner</b><code>.m-banner · .m-status--ok · --warn · --danger</code></figcaption>
         </figure>
         <figure class="spec">
+          <!-- shown in place here; on a page it is a modal <dialog> opened with showModal() (the Work page's work-in-progress note) -->
+          <div class="m-notice m-panel m-panel--col" style="display: flex; width: 480px; max-width: 100%" role="group" aria-labelledby="ds-notice-title">
+            <div class="m-notice__cap"><h3 class="m-title" id="ds-notice-title">Work in progress</h3><svg class="m-notice__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m12.99 6.74 1.93 3.44"/><path d="M19.136 12a10 10 0 0 1-14.271 0"/><path d="m21 21-2.16-3.84"/><path d="m3 21 8.02-14.26"/><circle cx="12" cy="5" r="2"/></svg></div>
+            <div class="m-notice__body"><p class="m-prose">This portfolio is still being built. Some case studies are unfinished, and a few sections hold placeholders for now.</p></div>
+            <span class="m-seam"></span>
+            <div class="m-notice__foot"><button class="m-key m-key--lg" type="button">See the work</button></div>
+          </div>
+          <figcaption><b>Notice</b><code>.m-notice · __cap · __body · __foot · --m-rust</code></figcaption>
+        </figure>
+        <figure class="spec">
           <div class="m-panel"><div class="m-cell" style="gap: 14px">
             <span class="m-note m-status--ok"><span class="m-led is-on"></span>Connected to Speaker A</span>
             <span class="m-note m-status--warn"><span class="m-led is-on"></span>Signal is weak</span>
@@ -1175,13 +1185,15 @@
       <div class="foot-col">
         <div class="foot">
           <div><h2>About</h2><p>I think in systems, always keep the plates spinning, and care deeply about the people who rely on my work.</p></div>
-          <div><h2>Lab</h2>
+          <div><h2>Featured Experiments</h2>
             <ul>
-              <li><a href="../../work.html">Recent work</a></li>
               <li><a href="../split-flap-lab/">Split-Flap Lab</a></li>
-              <li><a href="./">Design system</a></li>
-              <li><a href="../halftone-lab/">Halftone Lab</a></li>
-              <li><a href="../button-lab/">Button Lab</a></li>
+              <li><a href="../kaleidoscopes/">Kaleidoscopes</a></li>
+              <li><a href="../bonsai/">Bonsai</a></li>
+              <li><a href="../pottery/">Pottery Wheel</a></li>
+              <li><a href="./">Matte Design System</a></li>
+              <li><a href="../knot-dojo/">Knot Dojo</a></li>
+              <li><a href="../taxidermy/">Taxidermy</a></li>
             </ul>
           </div>
           <div id="contact"><h2>Contact</h2>

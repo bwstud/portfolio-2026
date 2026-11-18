@@ -96,6 +96,23 @@
     tileBottom: '#1c1c1e',
     glyphColor: '#f2f0ec',
     slotColor: '#0e0e0f',
+
+    // Hologram: the letters leave the flaps and float in front of them as projected light. 0 turns it off and prints
+    // the letters on the flaps as usual. The flaps keep only the letter's shadow and a little of its light.
+    holo: 0,                    // strength of the projection, 0–1
+    holoColor: '#e6f2ff',       // the light's colour
+    holoBloom: 0.5,             // glow around each letter
+    holoFringe: 0.8,            // px of red and cyan split at the letters' edges
+    holoScan: 0.3,              // how much the scanlines take out
+    holoScanGap: 3,             // px from one scanline to the next
+    holoFlicker: 0.25,          // how unsteady the light is
+    holoSpin: 0.35,             // how bright the letters run while the flaps spin under them; a landed one is at full strength
+    holoShadow: 0.6,            // the opacity of the letter's shadow, cast on the flaps behind it
+    holoShadowColor: '#000000', // its colour
+    holoShadowX: 0.05,          // its offset, fraction of tile width
+    holoShadowY: 0.12,
+    holoShadowBlur: 0.06,       // its softness, fraction of tile width
+    holoSpill: 0.3,             // the letter's light falling on the flap straight behind it
   };
 
   // Curves take progress 0–1. Anything else accepted as an ease is a cubic-bezier array.
@@ -198,7 +215,7 @@
     let cfg, mods, grid, flipEase, spinEase, duration, layoutMessage;
     const blanks = count => Array(count).fill(' ');
     // geometry in device pixels; tiles (background + glyph) are cached per character
-    let tw, th, pad, tiles = {}, fontReady = false, time = 0;
+    let tw, th, pad, insetX = 0, insetY = 0, tiles = {}, fontReady = false, time = 0;
 
     function build(next) {
       cfg = { ...DEFAULTS, ...next };
@@ -238,7 +255,7 @@
 
       board.textContent = '';
       mods = [];
-      rows.forEach(cells => {
+      rows.forEach((cells, r) => {
         const row = document.createElement('span');
         row.className = 'sf-row';
         cells.forEach(ch => {
@@ -246,10 +263,11 @@
           el.className = 'sf';
           const canvas = document.createElement('canvas');
           el.appendChild(canvas); row.appendChild(el);
-          mods.push({ el, canvas, ctx: canvas.getContext('2d'), target: ch });
+          mods.push({ el, canvas, ctx: canvas.getContext('2d'), target: ch, row: r });
         });
         board.appendChild(row);
       });
+      holoSetup();
 
       // schedule: every module opens on some earlier letter and spins forward around the drum
       // to its target, so all of them flip; the last one gets enough extra flips to land last
@@ -284,7 +302,7 @@
       const gap = Math.round(parseFloat(getComputedStyle(row).columnGap) * dpr) || 0;
       const inset = cfg.frame ? cfg.frameInset : 0;
       const cellW = Math.max(4, Math.floor((inner - gap * (grid.cols - 1)) / grid.cols));
-      const insetX = Math.round(cellW * inset), insetY = Math.round(insetX * cfg.tileRatio);
+      insetX = Math.round(cellW * inset); insetY = Math.round(insetX * cfg.tileRatio);
       tw = cellW - 2 * insetX;
       th = Math.round(tw * cfg.tileRatio);
       pad = Math.round(tw * cfg.overhang);
@@ -296,6 +314,7 @@
       tiles = {};
       [...mods.map(m => m.canvas), scratch].forEach(c => { c.width = tw + pad * 2; c.height = th; });
       if (fontReady) [...cfg.chars].forEach(tile);   // build every tile up front, not mid-spin
+      holoPlace();
       snap();
     }
 
@@ -319,28 +338,37 @@
       g.beginPath(); g.roundRect(0, 0, tw, th / 2, [r, r, 0, 0]); g.fill();
       g.fillStyle = cfg.tileBottom;
       g.beginPath(); g.roundRect(0, th / 2, tw, th / 2, [0, 0, r, r]); g.fill();
-      if (!fontReady) { addGrain(g, ch); return (tiles[ch] = c); }   // plain tile until Geist arrives
-      if (cfg.icons[ch]) { drawIcon(g, cfg.icons[ch]); addGrain(g, ch); return (tiles[ch] = c); }
-      // every glyph shares one baseline, with capitals centred on the hinge
-      g.font = cfg.fontWeight + ' ' + Math.round(tw * cfg.glyphSize) + 'px Geist, sans-serif';
-      g.textAlign = 'center';
-      g.fillStyle = cfg.glyphColor;
-      g.fillText(ch, tw / 2, th / 2 + g.measureText('H').actualBoundingBoxAscent / 2);
+      if (!fontReady || ch === ' ') { addGrain(g, ch); return (tiles[ch] = c); }   // plain tile until Geist arrives
+      if (cfg.holo > 0) {   // the letter is light in front of the flap: the flap keeps only the glow it casts
+        g.save();
+        // the shadow isn't here: it is drawn on its own layer over the flaps (holoFrame), where the work page's
+        // greyscale doesn't reach it and nothing is painted over it
+        if (cfg.holoSpill > 0) { g.filter = `blur(${Math.max(0, cfg.holoShadowBlur * tw) * 2.5}px)`; g.globalAlpha = Math.min(1, cfg.holoSpill * cfg.holo); paintGlyph(g, ch, cfg.holoColor, 0, 0); }
+        g.restore();
+      } else paintGlyph(g, ch, cfg.glyphColor, 0, 0);
       addGrain(g, ch);
       return (tiles[ch] = c);
     }
 
-    // an icon centred on the hinge, in the glyph colour
-    function drawIcon(g, paths) {
-      const size = tw * cfg.iconSize, s = size / 24;
-      g.save();
-      g.translate((tw - size) / 2, (th - size) / 2);
-      g.scale(s, s);
-      g.strokeStyle = cfg.glyphColor;
-      g.lineWidth = cfg.iconStroke;
-      g.lineCap = 'round'; g.lineJoin = 'round';
-      [].concat(paths).forEach(d => g.stroke(new Path2D(d)));
-      g.restore();
+    // a letter or icon as the tile prints it, moved by dx, dy: every glyph shares one baseline, with capitals centred
+    // on the hinge, and an icon sits centred on it
+    function paintGlyph(g, ch, color, dx, dy) {
+      if (cfg.icons[ch]) {
+        const size = tw * cfg.iconSize, s = size / 24;
+        g.save();
+        g.translate((tw - size) / 2 + dx, (th - size) / 2 + dy);
+        g.scale(s, s);
+        g.strokeStyle = color;
+        g.lineWidth = cfg.iconStroke;
+        g.lineCap = 'round'; g.lineJoin = 'round';
+        [].concat(cfg.icons[ch]).forEach(d => g.stroke(new Path2D(d)));
+        g.restore();
+        return;
+      }
+      g.font = cfg.fontWeight + ' ' + Math.round(tw * cfg.glyphSize) + 'px Geist, sans-serif';
+      g.textAlign = 'center';
+      g.fillStyle = color;
+      g.fillText(ch, tw / 2 + dx, th / 2 + g.measureText('H').actualBoundingBoxAscent / 2 + dy);
     }
 
     // baked into the tile, over the glyph, so the grain travels with the leaf as it swings
@@ -498,10 +526,140 @@
       board.style.setProperty('--sf-frame-sheen', cfg.frameSheen);
     }
 
+    /* ---- Hologram: the letters as light in front of the flaps ----
+       Each row carries a canvas a little larger than itself, laid over its modules, so the projection moves, folds and
+       fades with its row. It runs on its own clock (the page only seeks the board while it spins), drawing what each
+       module shows at the board's playhead: faint and unsteady while the flaps spin, then at full strength the moment
+       its last flap lands, held with a slight flicker. Red and cyan copies at the edges, a bloom and scanlines make it
+       read as light. Each letter sits still, centred on its tile. */
+    let holoRows = [], sprites = {}, holoRaf = 0, inView = true, margin = 0;
+    const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const lightBoard = () => { const h = (cfg.tileBottom || '#000').replace('#', ''), v = parseInt(h.length === 3 ? h.replace(/./g, '$&$&') : h, 16);
+      return ((v >> 16 & 255) * 0.299 + (v >> 8 & 255) * 0.587 + (v & 255) * 0.114) / 255 > 0.5; };
+    // a board of light flaps can't take added light: there the projection is laid on as colour
+
+    function holoSetup() {
+      holoRows.forEach(h => { h.canvas.remove(); h.shade.remove(); });
+      holoRows = []; sprites = {};
+      if (!(cfg.holo > 0)) { holoStop(); return; }
+      [...board.querySelectorAll('.sf-row')].forEach((row, r) => {
+        row.style.position = 'relative';
+        const layer = (name, z, blend) => {
+          const c = document.createElement('canvas');
+          c.className = name;
+          Object.assign(c.style, { position: 'absolute', pointerEvents: 'none', zIndex: z, mixBlendMode: blend });
+          row.appendChild(c);
+          return c;
+        };
+        // the shadow is laid on as plain colour; the light over it is added, on a dark board
+        const shade = layer('sf-holo-shade', 2, 'normal'), canvas = layer('sf-holo', 3, lightBoard() ? 'normal' : 'screen');
+        holoRows.push({ row, canvas, ctx: canvas.getContext('2d'), shade, sctx: shade.getContext('2d'), mods: mods.filter(m => m.row === r) });
+      });
+      holoStart();
+    }
+
+    // where each letter's light sits, in its row canvas's device pixels
+    function holoPlace() {
+      if (!holoRows.length || !tw) return;
+      const dpr = window.devicePixelRatio || 1;
+      margin = Math.ceil(tw / dpr * 0.6 + 4);
+      sprites = {};
+      holoRows.forEach(h => {
+        const w = h.row.clientWidth + 2 * margin, ht = h.row.clientHeight + 2 * margin;
+        [h.canvas, h.shade].forEach(c => {
+          Object.assign(c.style, { left: -margin + 'px', top: -margin + 'px', width: w + 'px', height: ht + 'px' });
+          c.width = Math.round(w * dpr); c.height = Math.round(ht * dpr);
+        });
+        h.mods.forEach(m => {
+          m.hx = (m.el.offsetLeft + margin) * dpr + insetX + tw / 2;
+          m.hy = (m.el.offsetTop + margin) * dpr + insetY + th / 2;
+        });
+      });
+    }
+
+    // one letter in light: the core with its bloom, and the red and cyan copies for the fringe
+    function sprite(ch) {
+      if (sprites[ch]) return sprites[ch];
+      const sw = Math.ceil(tw * 1.6), sh = Math.ceil(th * 1.3), ox = (sw - tw) / 2, oy = (sh - th) / 2;
+      const make = (color, bloom, soft = 0) => {
+        const c = document.createElement('canvas'); c.width = sw; c.height = sh;
+        const g = c.getContext('2d');
+        if (soft > 0) g.filter = `blur(${soft}px)`;
+        if (bloom > 0) { g.shadowColor = color; g.shadowBlur = bloom * tw * 0.35; paintGlyph(g, ch, color, ox, oy); g.shadowBlur = 0; }
+        paintGlyph(g, ch, color, ox, oy);
+        return c;
+      };
+      const light = lightBoard();
+      return (sprites[ch] = { sw, sh, core: make(cfg.holoColor, cfg.holoBloom), red: light ? null : make('#ff3d64', 0), cyan: light ? null : make('#3de4ff', 0),
+        shade: make(cfg.holoShadowColor, 0, Math.max(0, cfg.holoShadowBlur * tw)) });
+    }
+
+    let scan = null;
+    function scanPattern(g, dpr) {
+      const gap = Math.max(2, Math.round(cfg.holoScanGap * dpr)), key = gap;
+      if (!scan || scan.key !== key) {
+        const c = document.createElement('canvas'); c.width = 1; c.height = gap;
+        const sg = c.getContext('2d'); sg.fillStyle = '#000'; sg.fillRect(0, 0, 1, Math.max(1, Math.round(gap / 3)));
+        scan = { key, gap, pattern: null, canvas: c };
+      }
+      return scan;
+    }
+
+    // a steady hash, so a letter's flicker is the same however often it is drawn within one beat
+    const hash = n => { n = Math.imul(n ^ n >>> 16, 0x45d9f3b); n = Math.imul(n ^ n >>> 16, 0x45d9f3b); return ((n ^ n >>> 16) >>> 0) / 4294967296; };
+
+    function holoFrame(now) {
+      holoRaf = 0;
+      if (!holoRows.length || !fontReady) { holoStart(); return; }
+      const dpr = window.devicePixelRatio || 1, still = reduced(), light = lightBoard();
+      const beat = Math.floor(now / 70);
+      holoRows.forEach((h, r) => {
+        const g = h.ctx, sg = h.sctx;
+        g.globalCompositeOperation = 'source-over'; g.globalAlpha = 1;
+        g.clearRect(0, 0, h.canvas.width, h.canvas.height);
+        sg.globalAlpha = 1; sg.clearRect(0, 0, h.shade.width, h.shade.height);
+        const sdx = cfg.holoShadowX * tw, sdy = cfg.holoShadowY * tw;
+        g.globalCompositeOperation = light ? 'source-over' : 'lighter';
+        h.mods.forEach((m, i) => {
+          const st = stateAt(m, time), spinning = time >= m.start && time < flapEnd(m, cfg);
+          const ch = st.top;
+          let a = spinning ? cfg.holoSpin : 1;
+          if (ch === ' ') return;
+          if (!still && cfg.holoFlicker > 0) { const k = hash(beat * 7919 + r * 613 + i * 97); a *= 1 - cfg.holoFlicker * (k < 0.05 ? 0.75 : k * 0.18); }
+          a *= Math.min(1, cfg.holo);
+          const sp = sprite(ch), x = m.hx - sp.sw / 2, y = m.hy - sp.sh / 2;
+          if (cfg.holoShadow > 0) {   // the shadow: its own colour and opacity, steady while the light flickers
+            sg.globalAlpha = Math.min(1, cfg.holoShadow * Math.min(1, cfg.holo) * (spinning ? cfg.holoSpin : 1));
+            sg.drawImage(sp.shade, x + sdx, y + sdy);
+          }
+          const f = cfg.holoFringe * dpr;
+          if (f > 0 && sp.red) { g.globalAlpha = a * 0.55; g.drawImage(sp.red, x - f, y); g.drawImage(sp.cyan, x + f, y); }
+          g.globalAlpha = a;
+          g.drawImage(sp.core, x, y);
+        });
+        if (cfg.holoScan > 0) {   // scanlines, drifting slowly down
+          const sc = scanPattern(g, dpr);
+          const pattern = g.createPattern(sc.canvas, 'repeat');
+          pattern.setTransform(new DOMMatrix().translate(0, still ? 0 : (now * 0.02 * dpr) % sc.gap));
+          g.globalCompositeOperation = 'destination-out';
+          g.globalAlpha = Math.min(1, cfg.holoScan);
+          g.fillStyle = pattern;
+          g.fillRect(0, 0, h.canvas.width, h.canvas.height);
+        }
+      });
+      holoStart();
+    }
+    function holoStart() { if (!holoRaf && holoRows.length && inView && !document.hidden) holoRaf = requestAnimationFrame(holoFrame); }
+    function holoStop() { if (holoRaf) cancelAnimationFrame(holoRaf); holoRaf = 0; }
+    new IntersectionObserver(([e]) => { inView = e.isIntersecting; inView ? holoStart() : holoStop(); }).observe(board);
+    document.addEventListener('visibilitychange', () => document.hidden ? holoStop() : holoStart());
+
     // change colours and shading in place, without rebuilding: whatever is mid-spin carries on
     function restyle(overrides) {
+      const wasHolo = cfg.holo > 0;
       Object.assign(cfg, overrides);
       plateStyle();
+      if (wasHolo !== cfg.holo > 0 || cfg.holo > 0) { holoSetup(); holoPlace(); }
       tiles = {};
       if (fontReady) [...cfg.chars].forEach(tile);
       redraw();
@@ -519,7 +677,7 @@
     });
 
     const ready = document.fonts.load('800 64px Geist').catch(() => {}).then(() => {
-      fontReady = true; tiles = {};
+      fontReady = true; tiles = {}; sprites = {};
       [...cfg.chars].forEach(tile);
       redraw();
     });
@@ -553,13 +711,16 @@
   // active, light mode uses LIGHT.
   const STYLE_KEYS = ['frameColor', 'wellColor', 'frameDepth', 'frameLip', 'frameSheen',
     'tileTop', 'tileBottom', 'slotColor', 'glyphColor', 'fontWeight', 'grain', 'grainSize',
-    'topShade', 'bottomShine', 'edgeLight', 'edgeMinDeg', 'edgeSize'];
+    'topShade', 'bottomShine', 'edgeLight', 'edgeMinDeg', 'edgeSize',
+    'holo', 'holoColor', 'holoBloom', 'holoFringe', 'holoScan', 'holoScanGap', 'holoFlicker',
+    'holoSpin', 'holoShadow', 'holoShadowColor', 'holoShadowX', 'holoShadowY', 'holoShadowBlur', 'holoSpill'];
   // warm, to sit on the light page's paper (#F5F3ED): a plate a shade darker than the page,
   // cream tiles and Rust letters (tried: Night, Navy, #1C374E), like an enamel station board in daylight
   const LIGHT = {
     frameColor: '#e6e1d5', wellColor: '#cdc5b5', frameDepth: 0.3, frameLip: 0.7, frameSheen: 0.25,
     tileTop: '#fffdf7', tileBottom: '#f0ebe0', glyphColor: '#9F4933', slotColor: '#b3aa98',
     edgeLight: 0.55, grain: 0.035,
+    holo: 0,   // the hologram is a dark board's; a light board has it only from a light version
   };
   const pick = (config, keys) => Object.fromEntries(keys.map(k => [k, config[k]]));
 

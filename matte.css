@@ -93,6 +93,8 @@
   --m-warn: #e3b341;
   --m-danger: #e8705a;
   --m-info: #9fc4d8;
+  --m-rust: var(--c-rust, #9f4933);   /* the site's original warm: a notice's cap. Dark in both finishes, so it keeps light print */
+  --m-on-rust: var(--c-mist, #dae4e3);
   --m-well-shadow: 0 2px 4px rgb(0 0 0 / calc(0.9 * var(--m-shade))) inset, 0 0 0 1px var(--m-edge), 0 1px 0 rgb(255 255 255 / calc(0.08 * var(--m-gloss)));
   --m-font-text: var(--font-sans, system-ui, sans-serif);   /* running text: help, messages, card copy */
 
@@ -166,7 +168,7 @@
   background: linear-gradient(180deg, var(--m-body-hi), var(--m-body-lo));
   box-shadow: 0 1px 0 var(--m-shine) inset, 0 -1px 0 rgb(0 0 0 / calc(0.6 * var(--m-shade))) inset, 0 0 0 1px var(--m-edge), var(--m-drop);
   user-select: none; -webkit-user-select: none; text-align: left; }
-.m-panel::before { content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit; opacity: calc(var(--m-speckle) * var(--m-speckle-gain)); filter: var(--m-speckle-ink); pointer-events: none;
+.m-panel::before, .m-notice__cap::before { content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit; opacity: calc(var(--m-speckle) * var(--m-speckle-gain)); filter: var(--m-speckle-ink); pointer-events: none;
   background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.1' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .9 -.42'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E"); }
 .m-panel--col { flex-direction: column; }
 .m-panel--flat { box-shadow: 0 1px 0 var(--m-shine) inset, 0 -1px 0 rgb(0 0 0 / calc(0.6 * var(--m-shade))) inset, 0 0 0 1px var(--m-edge); }   /* a body with no drop shadow, for inside a layout */
@@ -475,6 +477,23 @@ dialog.m-drawer { margin: 0 0 0 auto; width: min(360px, 100vw); height: 100dvh; 
   animation: m-toast-in var(--m-enter) var(--m-ease); }
 .m-toast.is-leaving { opacity: 0; transform: translateY(8px); transition: opacity var(--m-exit) var(--m-ease-exit), transform var(--m-exit) var(--m-ease-exit); }
 @keyframes m-toast-in { from { opacity: 0; transform: translateY(8px); } }
+
+/* Notice: a dialog that holds the reader for one thing they should know before they go on. A coloured cap carries a large
+   title; the words sit on the body below; a Matte key at the foot puts it away.
+   <dialog class="m-dialog m-notice m-panel m-panel--col matte"> with .m-notice__cap (its .m-title and an optional .m-notice__icon), .m-notice__body, a .m-seam and .m-notice__foot.
+   The cap is Rust (--m-rust, the site's original warm), powder-coated with the body's speckle, unless --m-notice-cap says otherwise. Open it with showModal(); focus the dialog itself (tabindex="-1") so its key shows no focus ring until the reader tabs to it. */
+dialog.m-notice { width: min(560px, calc(100vw - 2 * var(--space-4, 16px))); color: var(--m-print); user-select: text; -webkit-user-select: text; }
+dialog.m-notice:focus { outline: none; }
+dialog.m-notice::backdrop { background: rgb(0 0 0 / 0.6); }   /* the page dims behind it; no frosting */
+.m-notice__cap { --cap: var(--m-notice-cap, var(--m-rust)); position: relative; isolation: isolate; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 22px 32px; border-radius: var(--m-radius) var(--m-radius) 0 0;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--cap) 88%, #fff), var(--cap) 45%, color-mix(in srgb, var(--cap) 86%, #000)); color: var(--m-on-rust);
+  box-shadow: 0 1px 0 rgb(255 255 255 / 0.18) inset, 0 -1px 0 rgb(0 0 0 / 0.3) inset; }
+.m-notice__cap .m-title { color: var(--m-on-rust); font: 400 26px/1.15 var(--m-font-text); letter-spacing: -0.01em; }   /* Söhne Buch, the one weight of Söhne the site carries (a heavier one would be a faux bold) */
+.m-notice__icon { flex: none; width: 26px; height: 26px; fill: none; stroke: var(--m-on-rust); stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }   /* a Lucide icon at the title's size, at the cap's right */
+.m-notice__body { padding: 24px 32px; }
+.m-notice__body .m-prose { font-size: 16px; line-height: 1.55; }
+.m-notice__foot { display: flex; justify-content: flex-end; gap: 10px; padding: 18px 32px 21px; }   /* its keys, at the right: plain Matte keys, under a seam (21px + the key's 3px wall) */
+@media (max-width: 699px) { .m-notice__cap { padding: 20px 22px; } .m-notice__body { padding: 20px 22px; } .m-notice__foot { padding: 16px 22px 19px; } }
 
 /* Progress: a native <progress> as a bar of light behind glass */
 progress.m-progress { appearance: none; -webkit-appearance: none; display: block; width: 200px; height: 10px; border: 0; border-radius: 5px; overflow: hidden;

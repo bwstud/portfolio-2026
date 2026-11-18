@@ -23,7 +23,7 @@
   <link rel="preload" href="fonts/soehne-buch.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="fonts/soehne-mono-buch.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="styles.css">
-  <link rel="stylesheet" href="matte.css?v=12">   <!-- the Matte system: the nav keys, the menu and the board's housing -->
+  <link rel="stylesheet" href="matte.css?v=14">   <!-- the Matte system: the nav keys, the menu and the board's housing -->
   <link rel="stylesheet" href="board.css">   <!-- the project board's finish, shared with the Split-Flap Lab -->
   <link rel="stylesheet" href="drift-wall.css">   <!-- the drifting wall of screenshots in a project's record -->
   <link rel="stylesheet" href="matte-page.css">   <!-- the shared page: rail nav, off-black ground, footer band -->
@@ -153,11 +153,13 @@
     .sheet-cue:not(:popover-open) { display: none; }
     .sheet-cue.is-on { opacity: 1; scale: 1; }
     .sheet-cue svg { width: 40%; height: 40%; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
-    /* The sheet's lead picture arrives out of focus and resolves as it slides in; it is sharp when it leaves, as the blur
-       is only where it starts from. Only the lead: blurring every screenshot while a full-screen sheet slides costs frames,
-       and the ones further down can't be seen yet anyway. The Peek Lab keeps the blur to 8px or less for the same reason. */
-    .sheet[open] .sheet__lead img { filter: blur(0px); transition: filter var(--sheet-focus-ms, 900ms) cubic-bezier(0.3, 0, 0.3, 1) var(--sheet-focus-wait, 0ms); }
-    @starting-style { .sheet[open] .sheet__lead img { filter: blur(var(--sheet-blur, 8px)); } }
+    /* The sheet's lead picture (or its film) arrives out of focus and resolves as it slides in; it is sharp when it leaves,
+       as the blur is only where it starts from. Only the lead: blurring every screenshot while a full-screen sheet slides
+       costs frames, and the ones further down can't be seen yet anyway. The Peek Lab keeps the blur to 8px or less for the
+       same reason. The tagline beside it inks in on the same curve and lands with it (goo() in the sheet's script). */
+    .sheet[open] :is(.sheet__lead img, .sheet__film video) { filter: blur(0px); transition: filter var(--sheet-focus-ms, 1500ms) cubic-bezier(0.3, 0, 0.3, 1) var(--sheet-focus-wait, 0ms); }
+    @starting-style { .sheet[open] :is(.sheet__lead img, .sheet__film video) { filter: blur(var(--sheet-blur, 8px)); } }
+    .sheet__goo { display: block; }   /* a line of the tagline while it inks in; plain text again once it has */
     /* Reduced motion: nothing slides, scales or blurs, but the sheet and its dimming still fade, so it doesn't snap */
     @media (prefers-reduced-motion: reduce) {
       .sheet { translate: 0 0; opacity: 0; transition: opacity 200ms ease-out, overlay 200ms allow-discrete, display 200ms allow-discrete; }
@@ -165,7 +167,7 @@
       @starting-style { .sheet[open] { opacity: 0; } }
       .sheet::backdrop { transition: background 200ms ease-out, overlay 200ms allow-discrete, display 200ms allow-discrete; }
       .sheet-cue { scale: 1; transition: opacity 160ms ease-out; }
-      .sheet[open] .sheet__lead img { transition: none; }
+      .sheet[open] :is(.sheet__lead img, .sheet__film video) { transition: none; }
     }
 
     .sheet__close { position: absolute; top: var(--space-5); right: var(--space-5); z-index: 1; }
@@ -178,7 +180,7 @@
     /* the project's facts under the title: each a small label over its value */
     .sheet__facts { display: grid; gap: var(--space-3); margin: var(--space-5) 0 0; }
     .sheet__facts dt { font-family: var(--font-mono); font-size: var(--text-2xs); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
-    .sheet__facts dd { margin: 2px 0 0; }
+    .sheet__facts dd { margin: 2px 0 0; line-height: 1.45; text-wrap: pretty; }   /* a value can run to a paragraph, as Summary does */
     .sheet__index { display: none; }
     .sheet__body { display: grid; gap: var(--space-7); margin-top: var(--space-7); }
     .sheet h3 { font-size: var(--text-2xs); font-weight: 400; color: var(--muted); margin: 0 0 var(--space-3); }
@@ -186,7 +188,10 @@
     .sheet section p { margin: 0; max-width: 38em; font-size: var(--text-heading); line-height: 1.45; text-wrap: pretty; }
     .sheet section p + p { margin-top: var(--space-2); }   /* a second result, as on the record */
     .sheet .sheet__prose p + p { margin-top: var(--space-4); }   /* written paragraphs, a step further apart */
-    .sheet__prose > .sheet__film { margin-bottom: var(--space-7); }   /* the film, then the words beneath it */
+    .sheet__prose > .sheet__film { margin-bottom: var(--space-7); }
+    /* a clip in a section: the screen recording, at its own proportions, under the heading and above the words */
+    .sheet__clip { margin: 0 0 var(--space-5); }
+    .sheet__clip video { display: block; width: 100%; height: auto; border-radius: var(--radius-sm); background: #0c0e12; }   /* the film, then the words beneath it */
     .sheet .is-result h3 { color: var(--signal); }
     .sheet__lead { margin: 0; padding: clamp(var(--space-4), 4vw, var(--space-8)); border-radius: var(--radius-lg); background: var(--surface); }
     .sheet__lead img { display: block; width: 100%; height: auto; border-radius: var(--radius-sm); }
@@ -245,6 +250,19 @@
     .fields .is-result dt { color: var(--signal); }
     .fields .is-result dd { font-size: var(--text-heading); line-height: 1.35; }
     .fields dd + dd { margin-top: var(--space-2); }   /* a second result, on its own line */
+    /* the Result field is the design system's Module (matte.css): a raised body, its label in a header cell, a seam, then the results */
+    .fields .is-result.m-panel { display: flex; align-self: start; user-select: text; -webkit-user-select: text; }
+    .fields .is-result dt { position: relative; padding: var(--m-pad-y) var(--m-pad-x); }
+    .fields .is-result dt::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px;
+      background: linear-gradient(180deg, var(--m-well) 50%, rgb(255 255 255 / calc(0.055 * var(--m-gloss))) 50%); }   /* the module's seam */
+    .fields .is-result dd { padding: 0 var(--m-pad-x); color: var(--m-print-hi); }
+    .fields .is-result dt + dd { padding-top: calc(var(--m-pad-y) + 2px); }
+    .fields .is-result dd:last-child { padding-bottom: var(--m-pad-y); }
+    /* several results as a list: a small copper square for each, hung in the margin so the lines align */
+    .result-list { list-style: none; margin: 0; padding: 0; }
+    .result-list li { position: relative; padding-left: 1.1em; }
+    .result-list li + li { margin-top: var(--space-3); }
+    .result-list li::before { content: ""; position: absolute; left: 0; top: 0.55em; width: 0.32em; height: 0.32em; background: var(--signal); }
     /* a fact still to be supplied: dashed so it can't pass for real copy */
     .slot { border-bottom: 1px dashed currentColor; font-style: italic; color: var(--muted); }
 
@@ -323,7 +341,7 @@
         <dl class="fields">
           <div><dt class="mono">Problem</dt><dd>Enterprises shouldn’t have to use slow, ugly, awkward software to meet their compliance obligations and stay safe.</dd></div>
           <div><dt class="mono">What I did</dt><dd>I led a down-to-the-studs redesign of our flagship EHS application: an agent-first design system, overhauled core features, and a carefully constructed interface. Embracing AI tooling made it all possible.</dd></div>
-          <div class="is-result"><dt class="mono">Result</dt><dd>Lost deals related to UI/UX Down 47%</dd><dd>NPS up 23%</dd></div>
+          <div class="is-result matte m-panel m-panel--col"><dt class="mono">Result</dt><dd><ul class="result-list"><li>Deal loss related to UX reduced from 14% to 2%</li><li>NPS increased from −53 to +71</li><li>WAUs increased from ~3,200 to ~11,000</li></ul></dd></div>
         </dl>
         <!-- the project sheet, section by section: each template's title names it in the sheet's index; the film
              (data-film above) opens the first, untitled one -->
@@ -333,18 +351,31 @@
           <div><dt>When</dt><dd>Summer 2026</dd></div>
           <div><dt>Project Type</dt><dd>Redesign, AI Features</dd></div>
           <div><dt>Tools</dt><dd>Claude Code, Vercel, AX Skillbox</dd></div>
+          <div><dt>Summary</dt><dd>Groom Lake was the code name for a complete redesign of Ideagen EHS Enterprise. I led a team of 3 designers over 2 months to create the prototype, then stewarded the project through 3 months of engineering to deliver a reimagined, high-craft application that embeds AI in key features.</dd></div>
         </template>
-        <template class="bay__section" data-title="Hero Montage" data-untitled>
+        <template class="bay__section" data-title="Intro" data-untitled>
           <p>EHS Enterprise is Ideagen’s flagship product for large organizations, delivering safety, quality, and risk solutions across a spectrum of regulated industries. The app allows customers to do things like operate an incident management program, conduct recurring audits of their manufacturing processes, and manage job safety for thousands of workers at hazardous work sites.</p>
           <p>The product was powerful, but stiff, awkward, and cumbersome for users. It was not built for the AI era, and needed to be reconsidered in light of it. Its accompanying mobile app was an underutilized orphan, and shared little with the desktop experience.</p>
           <p>Add this all up and we reached a point in mid-2026 where we were losing sales. Reports were coming back about deals lost with specific concerns about how the product showed to potential buyers. Stale. Clumsy. Too complicated.</p>
           <p>Momentum had been building for over a year to overhaul the UX and the time had come. With revenue on the line I was asked to lead the redesign.</p>
         </template>
         <template class="bay__section" data-title="Custom Workspaces">
-          <p>Copy to come.</p>
+          <figure class="sheet__clip">
+            <video src="images/groom-lake-workspaces.mp4" poster="images/groom-lake-workspaces-poster.webp" width="1512" height="950"
+                   muted loop playsinline preload="none"
+                   aria-label="Customizing a workspace: opening the component library, choosing quick actions, adding components such as notifications, then finishing the edit"></video>
+          </figure>
+          <p>EHS Enterprise had taken a one-size-fits-all approach out of necessity. The interface was intentionally standardized after a long history of bespoke customizations had led to projects running late and over budget. But the resulting sameness poorly represented what the software could do. A generic default landing page, meant to give all customers a reasonable orientation to the system, had left most feeling ignored and underserved.</p>
+          <p>AI promised to let us deliver on our early dreams of personalization. What if the first thing a user sees when they log in felt like walking into their own garage, with all their tools laid out in the right place, ready to use? I worked with our Product and Sales teams to create user archetypes I designed against, creating informed default workspace components. I created a layout system that deferred to users’ preferences, letting them rearrange and recompose their workspace at will. Then I went a step further.</p>
+          <p>In the past, we had offered a set of pre-built components that people could use to build a dashboard. Their saved searches could be jammed into various formats and wedged into a layout slot. It got the job done, but was clunky and required real knowledge of the system. I wanted to make getting the information and actions an individual needs pulled together in front of them as easy as asking for it. I designed an AI system for generating workspace components based on a user’s intent. Elevated one level, the same system allowed users to generate an entire workspace. I developed a visual grammar for components and a taxonomy of user intents so the agent could compose the most legible form of the data.</p>
+          <p>It was well received, but a good example of a case where the highest-end tool is not necessarily the one most people need. This system was designed for people who oversee work and manage activities across a facility or organization. The average boots-on-the-ground worker didn’t need it. They need to get in, log something or find an assignment, and get out. Data visualizations and customizable views aren’t valuable. Time and attention are. I had already set role-based rules in the system, so for users at that tier, we set the final product up so that admins create the workspace for them, and workers simply use it.</p>
         </template>
         <template class="bay__section" data-title="Agentic Workflow">
-          <p>Copy to come.</p>
+          <p>The bread and butter of the application is workers creating records. Someone gets burned; file an injury report. A shipment fails purity testing; log a non-conformance. A piece coming off an assembly line shows a defect; kick off a root cause investigation and start a corrective action. Day in and day out, this is what our customers do in Enterprise.</p>
+          <p>The exact details and the exact workflow are unique to the implementation. Organizations often have their own way of doing things and a lexicon that’s anything but standard.</p>
+          <p>The issue is that at the scale of a national lab or a global manufacturing firm, there may be 50 or 100 different workflows in the system. How is a worker supposed to know which one fits the situation? In some cases, the proper course of action is obvious and routine. In others, anything but.</p>
+          <p>AI has proven a fantastic triage partner. I designed a new way of creating records in the product, guided by Mazlan, Ideagen’s AI. Users describe the events surrounding them, or the problem they’re trying to solve, and Mazlan directs them to the appropriate workflow. As the user adds information to the conversation, Mazlan transposes it to the corresponding fields in the form. If a user isn’t sure how to proceed, Mazlan knows what the steps are and who the next step is assigned to. If a user already knows what they need to do and wants to just get to work, that path remains available to them. AI assists when called on, and defers otherwise.</p>
+          <p>This operating model was particularly exciting in the mobile world. Enterprise users are often in the field, on shop floors, or in remote locations. They’re people who work on their feet and with their hands. A really great experience with fluid image and video capture, speech-to-text data input, and geolocation had never made it to the product. Mazlan, in Enterprise’s mobile version, allows users to do all that and more, doing work and recording information from unknown locations, wearing PPE, in the wind and the rain. The wrinkle here, which is beyond the scope of this case study, is providing an exceptional user experience in low- or no-connectivity environments.</p>
         </template>
         <template class="bay__section" data-title="Praxis">
           <p>Copy to come.</p>
@@ -375,7 +406,7 @@
         <dl class="fields">
           <div><dt class="mono">Problem</dt><dd>Workers in far-flung, dirty and dangerous places need to react and respond to their environment, across a portfolio of separate EHS products.</dd></div>
           <div><dt class="mono">What I did</dt><dd>I led a 0–1 project designing a new, unified app for Ideagen’s EHS portfolio. Mazlan, Ideagen’s AI, is embedded strategically throughout the experience.</dd></div>
-          <div class="is-result"><dt class="mono">Result</dt><dd><span class="slot">A measured result goes here.</span></dd></div>
+          <div class="is-result matte m-panel m-panel--col"><dt class="mono">Result</dt><dd><span class="slot">A measured result goes here.</span></dd></div>
         </dl>
       </article>
 
@@ -389,7 +420,7 @@
         <dl class="fields">
           <div><dt class="mono">Problem</dt><dd>By man-hours spent, configuration was the biggest bucket of work our company had.</dd></div>
           <div><dt class="mono">What I did</dt><dd>I designed Ideagen’s agentic configuration tool, Mazlan Builder, which puts the power of self-serve customization in the customers’ hands.</dd></div>
-          <div class="is-result"><dt class="mono">Result</dt><dd>Benchmark tasks went from hours to minutes, without losing an ounce of capability.</dd></div>
+          <div class="is-result matte m-panel m-panel--col"><dt class="mono">Result</dt><dd>Benchmark tasks went from hours to minutes, without losing an ounce of capability.</dd></div>
         </dl>
       </article>
 
@@ -410,17 +441,26 @@
     </div>
   </dialog>
   <div class="sheet-cue matte" id="sheet-cue" popover="manual" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M6 3.5 2.5 7 6 10.5"/><path d="M2.5 7h7a4 4 0 0 1 0 8H8" transform="translate(0 -1.5)"/></svg></div>
+  <!-- The site is still being built: a Matte notice (matte.css) comes up in the middle of the screen as the first record arrives -->
+  <dialog class="m-dialog m-notice m-panel m-panel--col matte" id="wip" tabindex="-1" aria-labelledby="wip-title" aria-describedby="wip-words">
+    <div class="m-notice__cap"><h2 class="m-title" id="wip-title">Work in progress</h2><svg class="m-notice__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m12.99 6.74 1.93 3.44"/><path d="M19.136 12a10 10 0 0 1-14.271 0"/><path d="m21 21-2.16-3.84"/><path d="m3 21 8.02-14.26"/><circle cx="12" cy="5" r="2"/></svg></div>
+    <div class="m-notice__body"><p class="m-prose" id="wip-words">This portfolio is still being built. Some case studies are unfinished, and a few sections hold placeholders for now.</p></div>
+    <span class="m-seam"></span>
+    <div class="m-notice__foot"><button class="m-key m-key--lg" type="button" id="wip-close">See the work</button></div>
+  </dialog>
   <footer class="endfoot">
       <div class="foot-col">
         <div class="foot">
           <div><h2>About</h2><p>I think in systems, always keep the plates spinning, and care deeply about the people who rely on my work.</p></div>
-          <div><h2>Lab</h2>
+          <div><h2>Featured Experiments</h2>
             <ul>
-              <li><a href="tinkering/">Nineteen experiments</a></li>
-              <li><a href="tinkering/split-flap-lab/">Split-Flap Lab, where this board is tuned</a></li>
-              <li><a href="tinkering/design-system/">Design system</a></li>
-              <li><a href="tinkering/halftone-lab/">Halftone Lab</a></li>
-              <li><a href="tinkering/button-lab/">Button Lab</a></li>
+              <li><a href="tinkering/split-flap-lab/">Split-Flap Lab</a></li>
+              <li><a href="tinkering/kaleidoscopes/">Kaleidoscopes</a></li>
+              <li><a href="tinkering/bonsai/">Bonsai</a></li>
+              <li><a href="tinkering/pottery/">Pottery Wheel</a></li>
+              <li><a href="tinkering/design-system/">Matte Design System</a></li>
+              <li><a href="tinkering/knot-dojo/">Knot Dojo</a></li>
+              <li><a href="tinkering/taxidermy/">Taxidermy</a></li>
             </ul>
           </div>
           <div id="contact"><h2>Contact</h2>
@@ -441,6 +481,7 @@
   <script src="spark.js" defer></script>
   <script src="filings-versions.js"></script>
   <script src="filings.js"></script>
+  <script src="matte.js"></script>   <!-- Matte's behaviour: the notice's key gets its iron filings from Matte.init() -->
   <script src="split-flap.js"></script>
   <script src="split-flap-versions.js"></script>
   <script src="sheet-versions.js"></script>   <!-- the project sheet's peek, as tuned in the Peek Lab -->
@@ -471,7 +512,9 @@
       // a board of modules can't be read on a small screen: those keep the rows as links, with every record on the page
       const wide = matchMedia('(min-width: 1100px)');   // narrower, the modules are too small to read
       const unpend = () => document.documentElement.classList.remove('board-pending');   // the layout is final: show the page
-      if (!wide.matches || !window.SplitFlap) return unpend();
+      // the record has arrived: the page's notices wait for this (see the notice script)
+      const arrive = () => { document.documentElement.classList.add('is-arrived'); document.dispatchEvent(new Event('recordarrive')); };
+      if (!wide.matches || !window.SplitFlap) { unpend(); return arrive(); }
 
       const SHRUG = '¯\\_(ツ)_/¯';
       const PARTY = 'ヽ(⌐■_■)ノ♪♬';
@@ -731,11 +774,12 @@
           requestAnimationFrame(() => requestAnimationFrame(() => boardEl.classList.remove('is-instant')));   // after the folded state has painted
         }
         unpend();   // one record chosen, the others hidden, and the board in its place
-        if (still) { settle(); return flap.seek(Infinity); }
+        if (still) { settle(); arrive(); return flap.seek(Infinity); }
         run();   // the rows flip in once; choosing a row leaves the board as it is
         setTimeout(settle, flap.duration + 450);   // a beat after the last flap lands, the board folds to the row in view
+        if (seen) arrive();   // the record is already showing
         // the record starts down as the last flaps are landing, so the two finish together
-        setTimeout(() => document.documentElement.classList.remove('is-arriving'), Math.max(0, flap.duration - entrance.recordLeadMs));
+        else setTimeout(() => { document.documentElement.classList.remove('is-arriving'); arrive(); }, Math.max(0, flap.duration - entrance.recordLeadMs));
       });
       addEventListener('hashchange', () => { if (rows.some(r => '#' + r.id === location.hash)) choose(fromHash(), { remember: false }); });
       document.addEventListener('themechange', () => { flap.restyle(SplitFlap.activeStyle(mode())); if (!running) flap.seek(now()); });
@@ -803,6 +847,7 @@
         set('a', 0);
         return box;
       }
+      let clips = null;   // watches the sheet's section clips, to play the one in view
       function fill(bay) {
         const name = bay.querySelector('.bay__name').textContent, wall = bay.querySelector('[data-wall]'), lead = bay.querySelector('.bay__media > img');
         sheet.querySelector('.sheet__name').textContent = name;
@@ -863,6 +908,12 @@
           figure.append(video);
           (written.length ? body.firstElementChild : body).prepend(figure);
         }
+        clips?.disconnect();
+        const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+        clips = new IntersectionObserver(entries => entries.forEach(e => {
+          if (e.isIntersecting && sheet.open && !reduce) e.target.play().catch(() => {}); else e.target.pause();
+        }), { root: scroller, threshold: 0.4 });
+        body.querySelectorAll('.sheet__clip video').forEach(v => { if (reduce) { v.controls = true; v.preload = 'metadata'; } clips.observe(v); });
         index.replaceChildren(...parts.map(([heading], i) => {
           const a = make('a', '', heading);
           a.href = '#sheet-' + i;
@@ -911,8 +962,10 @@
         cue: 40,           // px across the return arrow that rides on the pointer; 0 for none
         radius: 16,        // the sheet's top left corner
         blur: 8,           // px of blur the sheet's lead picture starts with, 8 at most; 0 for none
-        focusMs: 900,      // how long they take to come into focus
+        focusMs: 1500,     // how long they take to come into focus: sharp as the sheet comes to rest (in sight of 1px by 1.3s)
         focusWait: 0,      // ms after the sheet starts to move before they begin
+        goo: 0.5,          // the tagline's starting blur, in ems of its own size, before it inks in; 0 for none
+        gooStagger: 100,   // ms between one line of the tagline starting and the next; all of them land with the picture
       };
       let tune = { ...TUNE };
       // The arrival's progress, 0 to 1, at each of `steps` even moments, when a shaper is set; null when the plain
@@ -982,17 +1035,100 @@
         document.documentElement.classList.add('has-sheet');   // the board keeps shut under it (see the board's script)
         sheet.showModal();
         scroller.scrollTop = 0;
+        goo();
         if (canCue) { try { cue.showPopover(); } catch (e) { /* already showing */ } }
         clearTimeout(settle);
         settle = setTimeout(() => { sheet.classList.add('is-settled'); sheet.classList.toggle('is-peek', want || held); }, arrivedMs());   // once the arrival looks done, the quicker scoot
       }
+      /* The tagline inks in. Each line gets an SVG filter of its own: a blur, then a colour matrix that makes any pixel
+         over about 40% opaque solid and drops the rest (alpha × 20 − 8). Heavily blurred, nothing gets over the line, so
+         the text is invisible; as the blur lifts, the thick parts of the letters cross it first, as blobs that swell and
+         run together into the words. Near the end the threshold eases back to plain (× 1 − 0) so the edges are smooth
+         again, then the filters come off and the tagline is plain text. The blur lifts on the film's focus curve and
+         lands when it does: the first line starts with it, the others a stagger later, each a little quicker. */
+      const title = sheet.querySelector('#sheet-title');
+      let gooFrame = 0, gooText = null, gooDefs = null;
+      function bezier(x1, y1, x2, y2) {
+        const at = (a, b, u) => 3 * a * u * (1 - u) ** 2 + 3 * b * u * u * (1 - u) + u ** 3;
+        return t => {
+          let lo = 0, hi = 1;
+          for (let n = 0; n < 20; n++) { const mid = (lo + hi) / 2; if (at(x1, x2, mid) < t) lo = mid; else hi = mid; }
+          return at(y1, y2, (lo + hi) / 2);
+        };
+      }
+      const focusCurve = bezier(0.3, 0, 0.3, 1);   // the film's, from the stylesheet
+      function gooStop() {
+        cancelAnimationFrame(gooFrame); gooFrame = 0;
+        if (gooText !== null) { title.textContent = gooText; gooText = null; }
+        gooDefs?.replaceChildren();
+      }
+      function goo() {
+        gooStop();
+        if (!(tune.goo > 0) || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+        // find the lines as they fall: a span per word, grouped by where each sits
+        const text = title.textContent, words = text.split(/\s+/).filter(Boolean);
+        title.replaceChildren(...words.flatMap((w, i) => { const s = make('span', '', w); return i ? [' ', s] : [s]; }));
+        const lines = [];
+        title.querySelectorAll('span').forEach(s => {
+          const last = lines[lines.length - 1];
+          if (last && Math.abs(last.top - s.offsetTop) < 2) last.words.push(s.textContent); else lines.push({ top: s.offsetTop, words: [s.textContent] });
+        });
+        gooText = text;
+        if (!gooDefs) {
+          const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+          svg.setAttribute('aria-hidden', 'true'); svg.style.cssText = 'position:absolute;width:0;height:0;overflow:hidden';
+          sheet.append(svg); gooDefs = svg;
+        }
+        const start = tune.goo * parseFloat(getComputedStyle(title).fontSize);
+        const matrix = (amp, off) => `1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 ${amp} ${off}`;
+        const parts = lines.map((line, i) => {
+          const filter = document.createElementNS('http://www.w3.org/2000/svg', 'filter');
+          filter.id = 'sheet-goo-' + i;
+          // room around the line for the blur: it is wide but short, so far more above and below than at the sides
+          filter.setAttribute('x', '-10%'); filter.setAttribute('width', '120%'); filter.setAttribute('y', '-100%'); filter.setAttribute('height', '300%');
+          filter.setAttribute('color-interpolation-filters', 'sRGB');
+          filter.innerHTML = `<feGaussianBlur in="SourceGraphic" stdDeviation="${start}"/><feColorMatrix type="matrix" values="${matrix(20, -8)}"/>`;
+          gooDefs.append(filter);
+          const el = make('span', 'sheet__goo', line.words.join(' '));
+          el.style.filter = `url(#${filter.id})`;
+          return { el, blur: filter.firstChild, ink: filter.lastChild };
+        });
+        title.replaceChildren(...parts.map(p => p.el));
+        // The clock is the picture's own focus transition, read each frame, so the two can't drift: the transition can
+        // start a frame or several after the sheet opens, while a video finds its feet. Until it shows up the tagline
+        // holds; once it has run and gone, the tagline is done. With no picture to follow, it keeps its own time.
+        const picture = sheet.querySelector('.sheet__film video, .sheet__lead img');
+        const t0 = performance.now(), total = tune.focusMs;
+        let seen = false;
+        const clock = now => {
+          const focus = picture?.getAnimations().find(a => a.transitionProperty === 'filter');
+          if (focus) { seen = true; return (focus.currentTime ?? 0) - tune.focusWait; }
+          if (seen || !picture || now - t0 > 300) return seen ? total : now - t0 - tune.focusWait;   // gone, absent, or never came
+          return 0;
+        };
+        const step = now => {
+          let done = true;
+          const elapsed = clock(now);
+          parts.forEach((p, i) => {
+            const lead = Math.min(i * tune.gooStagger, total * 0.5), dur = Math.max(1, total - lead);
+            const t = Math.min(1, Math.max(0, (elapsed - lead) / dur));
+            const relax = Math.min(1, Math.max(0, (t - 0.65) / 0.35));   // the last 35%: the threshold eases back to plain
+            p.blur.setAttribute('stdDeviation', (start * (1 - focusCurve(t))).toFixed(2));
+            p.ink.setAttribute('values', matrix(20 - 19 * relax, -8 * (1 - relax)));
+            if (t < 1) done = false;
+          });
+          if (done) gooStop(); else gooFrame = requestAnimationFrame(step);
+        };
+        gooFrame = requestAnimationFrame(step);
+      }
       function hide() {
+        gooStop();
         clearTimeout(settle); clearTimeout(peekTimer);
         want = false;
         sheet.classList.remove('is-peek', 'is-over-nav', 'is-settled');   // it leaves at the pace it arrived
         if (canCue) { cue.classList.remove('is-on'); try { cue.hidePopover(); } catch (e) { /* not showing */ } }
         if (sheet.open) sheet.close();
-        sheet.querySelector('.sheet__film video')?.pause();
+        sheet.querySelectorAll('video').forEach(v => v.pause());
         clearTimeout(gone);
         gone = setTimeout(() => document.documentElement.classList.remove('has-sheet'), tune.leaveMs + 80);   // once it has left
       }
@@ -1023,6 +1159,25 @@
         };
         addEventListener('load', () => { try { parent.peekLab && parent.peekLab.ready(); } catch (e) { /* opened on its own */ } });
       }
+    })();
+
+    /* ---- The work-in-progress notice: it comes up as the first record arrives (with the project section, once the board
+       has settled) and holds the page until it is put away: its key, Escape, or a click beside it. Once a visit. ---- */
+    (function () {
+      const note = document.getElementById('wip');
+      if (!note || !note.showModal) return;
+      try { if (sessionStorage.getItem('wip-closed') === '1') return; } catch (e) { /* show it every time */ }
+      let wired = false;
+      const show = () => {
+        if (note.open) return;
+        note.showModal(); note.focus();
+        if (!wired && window.Matte) { wired = true; Matte.init(note); }   // once it has a size: its key's iron filings, as on any Matte key
+      };   // focus on the dialog, not its key: no ring until the reader tabs
+      if (document.documentElement.classList.contains('is-arrived')) show();
+      else document.addEventListener('recordarrive', show, { once: true });
+      document.getElementById('wip-close').addEventListener('click', () => note.close());
+      note.addEventListener('click', e => { if (e.target === note) note.close(); });   // the backdrop
+      note.addEventListener('close', () => { try { sessionStorage.setItem('wip-closed', '1'); } catch (e) { /* it comes back next time */ } });
     })();
   </script>
 </body>

@@ -238,7 +238,7 @@
     }
     .bay__name { margin: 0 0 var(--space-3); }
     .bay h2 { font: 600 clamp(28px, 2.95vw, 42px)/1.08 "Söhne Breit", sans-serif; letter-spacing: -.01em; text-wrap: balance; margin: 0; }
-    .bay__meta { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-4); margin: var(--space-5) 0 0; padding: 0; list-style: none; }
+    .bay__meta { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-1); margin: var(--space-5) 0 0; padding: 0; list-style: none; }   /* one tag a line */
     .bay__media { display: grid; place-items: center start; min-width: 0; margin: 0; }   /* a picture narrower than its columns keeps to their left edge */
     .bay__media img { border-radius: var(--radius-sm); max-height: 26rem; width: auto; max-width: 100%; height: auto; }
     .bay__media img.is-phone { border-radius: 30px; max-height: 30rem; }
@@ -247,21 +247,20 @@
     .fields > div { grid-column: span 4; }   /* three fields of four columns, under the record's grid */
     .fields dt { padding-bottom: var(--space-2); }
     .fields dd { margin: 0; font-size: var(--text-md); line-height: 1.55; text-wrap: pretty; }
-    .fields .is-result dt { color: var(--signal); }
-    .fields .is-result dd { font-size: var(--text-heading); line-height: 1.35; }
+    .fields .m-panel dt { color: var(--signal); }
     .fields dd + dd { margin-top: var(--space-2); }   /* a second result, on its own line */
-    /* the Result field is the design system's Module (matte.css): a raised body, its label in a header cell, a seam, then the results */
-    .fields .is-result.m-panel { display: flex; align-self: start; user-select: text; -webkit-user-select: text; }
-    .fields .is-result dt { position: relative; padding: var(--m-pad-y) var(--m-pad-x); }
-    .fields .is-result dt::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px;
+    /* each field is the design system's Module (matte.css): a raised body, its label in a header cell, a seam, then the words */
+    .fields .m-panel { display: flex; user-select: text; -webkit-user-select: text; }   /* the three side by side share a height */
+    .fields .m-panel dt { position: relative; padding: var(--m-pad-y) var(--m-pad-x); }
+    .fields .m-panel dt::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px;
       background: linear-gradient(180deg, var(--m-well) 50%, rgb(255 255 255 / calc(0.055 * var(--m-gloss))) 50%); }   /* the module's seam */
-    .fields .is-result dd { padding: 0 var(--m-pad-x); color: var(--m-print-hi); }
-    .fields .is-result dt + dd { padding-top: calc(var(--m-pad-y) + 2px); }
-    .fields .is-result dd:last-child { padding-bottom: var(--m-pad-y); }
+    .fields .m-panel dd { padding: 0 var(--m-pad-x); color: var(--m-print-hi); }
+    .fields .m-panel dt + dd { padding-top: calc(var(--m-pad-y) + 2px); }
+    .fields .m-panel dd:last-child { padding-bottom: var(--m-pad-y); }
     /* several results as a list: a small copper square for each, hung in the margin so the lines align */
     .result-list { list-style: none; margin: 0; padding: 0; }
     .result-list li { position: relative; padding-left: 1.1em; }
-    .result-list li + li { margin-top: var(--space-3); }
+    .result-list li + li { margin-top: var(--space-2); }
     .result-list li::before { content: ""; position: absolute; left: 0; top: 0.55em; width: 0.32em; height: 0.32em; background: var(--signal); }
     /* a fact still to be supplied: dashed so it can't pass for real copy */
     .slot { border-bottom: 1px dashed currentColor; font-style: italic; color: var(--muted); }
@@ -328,7 +327,7 @@
         <div>
           <p class="bay__name mono">Groom Lake</p>
           <h2 id="groom-lake-h">Overhauling a flagship to compete in the AI era</h2>
-          <ul class="bay__meta mono"><li>Design lead</li><li>Platform redesign</li><li>Design systems</li><li>Pervasive AI</li></ul>
+          <ul class="bay__meta mono"><li>Platform Redesign</li><li>Agentic Design Systems</li><li>Pervasive AI</li></ul>
         </div>
         <figure class="bay__media" data-wall="images/groom-lake-wall/" data-count="42" data-compare="images/groom-lake-compare/"
                 data-film="images/groom-lake-hero.mp4" data-film-poster="images/groom-lake-hero-poster.webp"
@@ -339,9 +338,9 @@
                alt="The redesigned Ideagen home dashboard: a personal greeting, quick actions, an equipment calibration chart and quality indicators">
         </figure>
         <dl class="fields">
-          <div><dt class="mono">Problem</dt><dd>Enterprises shouldn’t have to use slow, ugly, awkward software to meet their compliance obligations and stay safe.</dd></div>
-          <div><dt class="mono">What I did</dt><dd>I led a down-to-the-studs redesign of our flagship EHS application: an agent-first design system, overhauled core features, and a carefully constructed interface. Embracing AI tooling made it all possible.</dd></div>
-          <div class="is-result matte m-panel m-panel--col"><dt class="mono">Result</dt><dd><ul class="result-list"><li>Deal loss related to UX reduced from 14% to 2%</li><li>NPS increased from −53 to +71</li><li>WAUs increased from ~3,200 to ~11,000</li></ul></dd></div>
+          <div class="matte m-panel m-panel--col"><dt class="mono">Problem</dt><dd>Enterprises shouldn’t have to use slow, ugly, awkward software to meet their compliance obligations and stay safe.</dd></div>
+          <div class="matte m-panel m-panel--col"><dt class="mono">What I did</dt><dd>I led a down-to-the-studs redesign of our flagship EHS application: an agent-first design system, overhauled core features, and a carefully constructed interface. Embracing AI tooling made it all possible.</dd></div>
+          <div class="is-result matte m-panel m-panel--col"><dt class="mono">Outcome</dt><dd><ul class="result-list"><li>Deal loss related to UX reduced from 14% to 2%</li><li>NPS increased from −53 to +71</li><li>WAUs increased from ~3,200 to ~11,000</li></ul></dd></div>
         </dl>
         <!-- the project sheet, section by section: each template's title names it in the sheet's index; the film
              (data-film above) opens the first, untitled one -->
@@ -404,9 +403,9 @@
                alt="The Blackbird mobile app's New screen: Mazlan asks “Hi Maya, how can I help?” above a voice-first prompt, with assistants to report an incident, record an observation or mark a hazard">
         </figure>
         <dl class="fields">
-          <div><dt class="mono">Problem</dt><dd>Workers in far-flung, dirty and dangerous places need to react and respond to their environment, across a portfolio of separate EHS products.</dd></div>
-          <div><dt class="mono">What I did</dt><dd>I led a 0–1 project designing a new, unified app for Ideagen’s EHS portfolio. Mazlan, Ideagen’s AI, is embedded strategically throughout the experience.</dd></div>
-          <div class="is-result matte m-panel m-panel--col"><dt class="mono">Result</dt><dd><span class="slot">A measured result goes here.</span></dd></div>
+          <div class="matte m-panel m-panel--col"><dt class="mono">Problem</dt><dd>Workers in far-flung, dirty and dangerous places need to react and respond to their environment, across a portfolio of separate EHS products.</dd></div>
+          <div class="matte m-panel m-panel--col"><dt class="mono">What I did</dt><dd>I led a 0–1 project designing a new, unified app for Ideagen’s EHS portfolio. Mazlan, Ideagen’s AI, is embedded strategically throughout the experience.</dd></div>
+          <div class="is-result matte m-panel m-panel--col"><dt class="mono">Outcome</dt><dd><span class="slot">A measured result goes here.</span></dd></div>
         </dl>
       </article>
 
@@ -418,9 +417,9 @@
         </div>
         <figure class="bay__media is-empty mono">Image to come</figure>
         <dl class="fields">
-          <div><dt class="mono">Problem</dt><dd>By man-hours spent, configuration was the biggest bucket of work our company had.</dd></div>
-          <div><dt class="mono">What I did</dt><dd>I designed Ideagen’s agentic configuration tool, Mazlan Builder, which puts the power of self-serve customization in the customers’ hands.</dd></div>
-          <div class="is-result matte m-panel m-panel--col"><dt class="mono">Result</dt><dd>Benchmark tasks went from hours to minutes, without losing an ounce of capability.</dd></div>
+          <div class="matte m-panel m-panel--col"><dt class="mono">Problem</dt><dd>By man-hours spent, configuration was the biggest bucket of work our company had.</dd></div>
+          <div class="matte m-panel m-panel--col"><dt class="mono">What I did</dt><dd>I designed Ideagen’s agentic configuration tool, Mazlan Builder, which puts the power of self-serve customization in the customers’ hands.</dd></div>
+          <div class="is-result matte m-panel m-panel--col"><dt class="mono">Outcome</dt><dd>Benchmark tasks went from hours to minutes, without losing an ounce of capability.</dd></div>
         </dl>
       </article>
 
@@ -451,7 +450,13 @@
   <footer class="endfoot">
       <div class="foot-col">
         <div class="foot">
-          <div><h2>About</h2><p>I think in systems, always keep the plates spinning, and care deeply about the people who rely on my work.</p></div>
+          <div id="contact"><h2>Contact</h2>
+            <ul>
+              <li><a href="https://www.linkedin.com/in/bwstudwell" target="_blank" rel="noopener"><svg class="foot__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect width="4" height="12" x="2" y="9"/><circle cx="4" cy="4" r="2"/></svg>LinkedIn</a></li>
+              <li><a href="mailto:bwstudwell@gmail.com"><svg class="foot__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7"/><rect x="2" y="4" width="20" height="16" rx="2"/></svg>Email</a></li>
+              <li><a href="llms.txt">Plain text for agents</a></li>
+            </ul>
+          </div>
           <div><h2>Featured Experiments</h2>
             <ul>
               <li><a href="tinkering/split-flap-lab/">Split-Flap Lab</a></li>
@@ -461,12 +466,6 @@
               <li><a href="tinkering/design-system/">Matte Design System</a></li>
               <li><a href="tinkering/knot-dojo/">Knot Dojo</a></li>
               <li><a href="tinkering/taxidermy/">Taxidermy</a></li>
-            </ul>
-          </div>
-          <div id="contact"><h2>Contact</h2>
-            <ul>
-              <li><a href="https://www.linkedin.com/in/bwstudwell" target="_blank" rel="noopener">LinkedIn</a></li>
-              <li><a href="llms.txt">Plain text for agents</a></li>
             </ul>
           </div>
         </div>
@@ -488,6 +487,9 @@
   <script src="drift-wall.js"></script>
   <script src="bison-versions.js"></script>   <!-- the version the Bison Lab has put on the site -->
   <script src="bison.js"></script>
+  <!-- smooth scroll (smooth-scroll.js says how): lerp 0.05; the project sheet and the notice keep their own scrolling -->
+  <script src="https://cdn.jsdelivr.net/npm/lenis@1.3.27/dist/lenis.min.js"></script>
+  <script src="smooth-scroll.js" data-lerp="0.05"></script>
   <script>
     if (window.Bison) Bison.mount(document.querySelector('.bison-run canvas'), { src: 'tinkering/bison-lab/bison.png', marks: 'tinkering/bison-lab/bison-marks.png', config: Bison.activeConfig() });
 

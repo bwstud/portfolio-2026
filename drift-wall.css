@@ -7,10 +7,11 @@
 
 .wall__stage {
   position: absolute; inset: 0; overflow: hidden; container-type: size;
-  /* the edges fall away into the page: a softer fade than the reference's, which read too dark here */
-  -webkit-mask-image: radial-gradient(ellipse 78% 82% at 50% 46%, #000 68%, transparent 100%), linear-gradient(to top, #000 78%, transparent 100%);
+  /* the edges fall away into the page: a softer fade than the reference's, which read too dark here; the top and bottom
+     fade to black the same way, over the outer 22% of the height */
+  -webkit-mask-image: radial-gradient(ellipse 78% 82% at 50% 46%, #000 68%, transparent 100%), linear-gradient(to bottom, transparent 0%, #000 22%, #000 78%, transparent 100%);
   -webkit-mask-composite: source-in;
-  mask-image: radial-gradient(ellipse 78% 82% at 50% 46%, #000 68%, transparent 100%), linear-gradient(to top, #000 78%, transparent 100%);
+  mask-image: radial-gradient(ellipse 78% 82% at 50% 46%, #000 68%, transparent 100%), linear-gradient(to bottom, transparent 0%, #000 22%, #000 78%, transparent 100%);
   mask-composite: intersect;
 }
 .wall__scene {

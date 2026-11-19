@@ -23,7 +23,7 @@
     /* Bio: a page of its own, laid out like the work page (work.html), with the same nav rail.
        Colours, spacing and type come from the tokens in styles.css. */
     .home { padding-bottom: var(--space-9); }
-    .top { padding-top: var(--space-7); }
+    .top { padding-top: calc(var(--space-7) + var(--space-5)); }
     /* 110px, eased down on narrow screens so it fits; trimmed to its capitals so the letters, not the line box, sit on the top line */
     .page h1 { font: 600 clamp(42px, 8.5vw, 110px)/1.05 "Söhne Breit", sans-serif; letter-spacing: -.01em; text-wrap: balance; margin: 0;
       text-box: trim-both cap alphabetic; }
@@ -31,13 +31,16 @@
     .page__body.is-empty { opacity: .6; }
     .page__body p { margin: 0; font-size: 26px; line-height: 1.35; text-wrap: pretty; }
     .page__body p + p { margin-top: var(--space-4); }
+    /* the time-period legends that break the story into eras: a small mono legend, more room above than below */
+    .page__era { margin: var(--space-8) 0 var(--space-3); letter-spacing: 0.1em; text-transform: uppercase; }
+    .page__era:first-child { margin-top: 0; }
     .page h1:focus { outline: none; }   /* focus lands here after Back to top, for keyboards; it is not a control */
     /* the keys: Download resume under the photo, Back to top after the last paragraph */
     .page__keys { display: flex; margin-top: var(--space-5); }
     .page__photo .page__keys { justify-content: flex-end; }
     .home .page__keys a { text-decoration: none; }   /* a key, not a text link */
     .page__body .page__keys { margin-top: var(--space-7); }
-    @media (min-width: 1100px) { .top { padding-top: var(--rail-top, var(--space-6)); } }   /* the headline's capitals level with the top of the rail's first button (matte-page.css pads the rail the same) */
+    @media (min-width: 1100px) { .top { padding-top: var(--space-9); } }   /* the headline sits well down from the top edge, below the rail's first button */
 
     /* the photo: under the heading on phones; beside the text from 761px, four columns wide, its top level with the
        first paragraph, and it stays in view while the text scrolls past */
@@ -63,10 +66,11 @@
       .page > .page__photo { grid-row: 2; grid-column: 9 / -1; align-self: start; position: sticky; top: var(--space-7);
         max-width: none; }
     }
-    @media (min-width: 1300px) { .page > .page__photo { grid-column: 9 / span 4; } }   /* one empty column after the text */
-    @media (min-width: 1600px) { .page > .page__photo { grid-column: 8 / span 4; } }
-    @media (min-width: 1800px) { .page > .page__photo { grid-column: 7 / span 4; } }
-    @media (min-width: 2200px) { .page > .page__photo { grid-column: 6 / span 4; } }
+    /* from 1300px: the text one column wider than matte-page.css sets it, and the photo one column further right */
+    @media (min-width: 1300px) { .page > .page__body { grid-column: 1 / span 8; } .page > .page__photo { grid-column: 9 / span 4; } }
+    @media (min-width: 1600px) { .page > .page__body { grid-column: 1 / span 7; } .page > .page__photo { grid-column: 9 / span 4; } }   /* one empty column after the text from here */
+    @media (min-width: 1800px) { .page > .page__body { grid-column: 1 / span 6; } .page > .page__photo { grid-column: 8 / span 4; } }
+    @media (min-width: 2200px) { .page > .page__body { grid-column: 1 / span 5; } .page > .page__photo { grid-column: 7 / span 4; } }
   </style>
 </head>
 <body>
@@ -110,23 +114,28 @@
         <div class="page__slot" hidden role="img" aria-label="Photo to come"><svg viewBox="0 0 24 24" aria-hidden="true"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg></div></div>
       <div class="m-bank page__bank" role="radiogroup" aria-label="Photo">
         <button class="m-push" type="button" role="radio" aria-checked="true" aria-label="Photo 1, corn maze"><span class="m-led"></span></button>
-        <button class="m-push" type="button" role="radio" aria-checked="false" aria-label="Photo 2"><span class="m-led"></span></button>
-        <button class="m-push" type="button" role="radio" aria-checked="false" aria-label="Photo 3"><span class="m-led"></span></button>
-        <button class="m-push" type="button" role="radio" aria-checked="false" aria-label="Photo 4"><span class="m-led"></span></button>
+        <button class="m-push" type="button" role="radio" aria-checked="false" aria-label="Photo 2, aura portrait"><span class="m-led"></span></button>
+        <button class="m-push" type="button" role="radio" aria-checked="false" aria-label="Photo 3, mirrored room"><span class="m-led"></span></button>
+        <button class="m-push" type="button" role="radio" aria-checked="false" aria-label="Photo 4, beach"><span class="m-led"></span></button>
       </div>
       <div class="m-seam"></div>
       <div class="page__keys"><a class="m-key m-key--lg" href="brian-studwell-resume.pdf" download="Brian Studwell Resume.pdf">Download resume<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/></svg></a></div>
     </figure>
     <div class="page__body">
+      <h2 class="page__era mono">The Present</h2>
       <p>I currently live in Rochester, NY, with my fiancée and her 13-year-old cat, Lou, who basically runs the show. I've been here for 6 years. It's cold, but it's home.</p>
-      <p>Earlier in my life, I got a bachelor's in English. I spent 15 years thinking that had been an expensive mistake until prompting LLMs made good writing a vital skill. After college, I worked in restaurants, at a ski resort, at a homebrew supply store, and did odd jobs on top of that while living in Park City, UT, Los Angeles, and Portland, OR. In Portland, I got my first design job. At least, the job was with a design company, Ancona + Associates. I fell in love with design there, learning a vocabulary I'd been reaching for without knowing it. I decided to pursue a career in that world and got a master's in HCI at the University of Washington in Seattle. Before that, I did a bootcamp in front-end web development, not sure whether I saw myself on the building or designing side of the fence. It turns out the fence didn't exist.</p>
-      <p>After Seattle, I spent 5 years in the Bay Area cutting my teeth in tech. I joined a Series A legal tech startup called Ravel Law, where we applied machine learning to create novel research tools for attorneys. Judge Analytics, which I designed, won the American Association of Law Libraries' 2016 New Product Award. I was their sole designer for almost 2 years until we were acquired by LexisNexis, one half of the reigning duopoly in the industry. I learned on the job, building skills, taste, and product sense in a fast-moving environment.</p>
+      <h2 class="page__era mono">2005–2014</h2>
+      <p>Earlier in my life, I got a bachelor's in English. I spent 15 years thinking that had been an expensive mistake until prompting LLMs made good writing a vital skill. After college, I worked in restaurants, at a ski resort, at a homebrew supply store, on a TV show, and did odd jobs on top of that while living in Park City, UT, Los Angeles, and Portland, OR. In Portland, I got my first design job. At least, the job was with a design company, Ancona + Associates. I fell in love with design there, learning a vocabulary I'd been reaching for without knowing it. I decided to pursue a career in that world and got a master's in HCI at the University of Washington in Seattle. Before that, I did a bootcamp in front-end web development, not sure whether I saw myself on the building or designing side of the fence. It turns out the fence didn't exist.</p>
+      <h2 class="page__era mono">2015–2020</h2>
+      <p>After Seattle, I spent 5 years in the Bay Area cutting my teeth in tech. I joined a Series A legal tech startup called Ravel Law, where we applied machine learning to create novel research tools for attorneys. Judge Analytics, which I designed, won the American Association of Law Libraries' 2016 New Product Award. I was their sole designer for almost 2 years until we were acquired by LexisNexis, one half of the reigning duopoly in the industry. I learned on the job, building skills, stamina, and product sense in a fast-moving environment.</p>
       <p>LexisNexis had a large design team based in Raleigh, NC, at their headquarters. I traveled there regularly and hired a junior designer into my office in SF. I spent another 2 years infusing Ravel's DNA into Lexis' product suite, working across analytics, search, and early concepts for a chatbot research assistant (yes, we were thinking about it all the way back in 2018). The experience taught me how design operates at scale and how to execute in a big company.</p>
       <p>From there, I moved to the Toyota Research Institute to gain experience in a new industry, autonomous driving. I was hired onto the Cloud Data team as their embedded designer. We built a variety of tools that served research teams around the building, who worked with logs from the self-driving test cars, developed vision models based on proprietary data annotations, and tested hardware configurations for the fleet. I came away with a better understanding of building for and with technical audiences, and deeper knowledge of model training.</p>
+      <h2 class="page__era mono">2020–2023</h2>
       <p>In early 2020, news started coming out about an illness sweeping the country. My lease was up, and San Francisco was milking me dry, so I took a remote job and moved back to Western New York to ride out the plague. I swore loudly and often that I would never move back to Rochester, but there I found myself. I began working with DevonWay as their first design hire. The previous year they had begun a project to transform and modernize their UX. The “Classic” UI dated back to 2005 and looked even older. After struggling on their own for a while, they decided to seek professional help, and an ex-TRI colleague referred me for the job.</p>
       <p>I spent 3 years designing and building features across the product. It was an interesting and challenging environment because our software was extremely configurable, meaning customers could and did ask for myriad permutations of our interface. Our solutions spanned safety, quality, risk, and more across a variety of heavily regulated fields. I never thought my familiarity with the Code of Federal Regulations would come in handy. Such is life. It was hard, and I was often limited by how the legacy product was built, but I found ways to improve the system bit by bit, and we tripled revenue. I developed a real sense of ownership, honed my systems thinking, and built influence in a remote org. In September 2023, we were acquired by Ideagen.</p>
+      <h2 class="page__era mono">2023–2026</h2>
       <p>For the last 3 years and change, I've led design for Ideagen's EHS pillar, unifying acquired products, expanding into new industries like aviation, and competing with the biggest names in our sector. In that time, we climbed from Specialist to Leader in Verdantix's Green Quadrant. Over the last 18 months or so, design in tech has fundamentally changed. I've become a designer who uses AI tools to build AI products. Our business has transformed from enterprise SaaS to AI everything. I spend my days in Claude's warm embrace and revel in a creative freedom I've never experienced. I'm more excited about design work than I've ever been because, with the advent of these new technologies, I can create living, breathing artifacts that express my ideas in rich detail. Gone are the days of formulaic frameworks, and lo! The age of the designer who ships has come.</p>
-      <p>Outside of work, my passions are cooking, gardening, the great outdoors, and fitness. I love prestige (and sometimes trash) TV. I've been reading about consciousness, sci-fi thought monsters, and the roots of industrial design. I'm riding the AI wave with enthusiasm, but my P(doom) is not zero. My hopes for the future include returning to writing, visiting every national park, and taking up more hobbies where I make things with my hands. If I could travel into space, I would jump at the chance, as long as I get good odds of coming back.</p>
+      <p>Outside of work, my passions are cooking, gardening, the great outdoors, and fitness. I love prestige (and sometimes trash) TV. I've been reading about consciousness, sci-fi thought monsters, and the roots of industrial design. I'm riding the AI wave with enthusiasm, but my P(doom) is not zero. My hopes for the future include returning to writing, visiting every national park, and taking up hobbies where I make things with my hands. If I could travel into space, I would jump at the chance, as long as I get good odds of coming back.</p>
       <div class="page__keys matte"><button class="m-key m-key--lg" type="button" id="to-top">Back to top<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 7-7 7 7"/><path d="M12 19V5"/></svg></button></div>
     </div>
   </main>
@@ -143,10 +152,17 @@
       const PHOTOS = [
         { src: 'images/bio-corn-maze-600.webp', srcset: 'images/bio-corn-maze-600.webp 600w, images/bio-corn-maze-1200.webp 1200w',
           alt: 'Brian and his fiancée smiling in front of a corn maze entrance sign, rows of tall corn behind them.' },
-        null, null, null,
+        { src: 'images/bio-aura-600.webp', srcset: 'images/bio-aura-600.webp 600w, images/bio-aura-1200.webp 1200w',
+          alt: 'An aura photograph of Brian, his face and shoulders glowing in a haze of blue light, mounted in a gold-edged card from Magic Jewelry and dated 6/29/2025.' },
+        { src: 'images/bio-mirror-room-600.webp', srcset: 'images/bio-mirror-room-600.webp 600w, images/bio-mirror-room-1200.webp 1200w',
+          alt: 'Brian, in a backwards cap, and his fiancée taking a selfie in a mirrored room strung with purple lights, a screen behind them showing an older man resting his chin on his hand, a pose she copies.' },
+        { src: 'images/bio-beach-600.webp', srcset: 'images/bio-beach-600.webp 600w, images/bio-beach-1200.webp 1200w',
+          alt: 'Brian and his fiancée smiling on a sandy beach under grey clouds, waves rolling in below a granite headland covered in pine trees.' },
       ];
       const bank = document.querySelector('.page__bank'), img = document.querySelector('.page__window img'), slot = document.querySelector('.page__slot');
       const pushes = [...bank.querySelectorAll('[role="radio"]')];
+      // fetch the other photos once the page has loaded, at the size the window will ask for, so a switch shows its photo at once
+      addEventListener('load', () => PHOTOS.slice(1).forEach((p) => { if (!p) return; const i = new Image(); i.sizes = img.sizes; i.srcset = p.srcset; i.src = p.src; }));
       bank.addEventListener('change', () => {
         const photo = PHOTOS[pushes.findIndex((p) => p.getAttribute('aria-checked') === 'true')];
         img.hidden = !photo; slot.hidden = !!photo;
@@ -167,5 +183,7 @@
   <!-- smooth scroll (smooth-scroll.js says how): heavy here, lerp 0.02 -->
   <script src="https://cdn.jsdelivr.net/npm/lenis@1.3.27/dist/lenis.min.js"></script>
   <script src="smooth-scroll.js" data-lerp="0.02"></script>
+  <!-- the toy revolver cursor (cover/gun.js says how) over the photo switches and the resume key -->
+  <script src="cover/gun.js" data-over=".page__bank, .page__photo .page__keys a"></script>
 </body>
 </html>

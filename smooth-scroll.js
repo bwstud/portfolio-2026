@@ -8,7 +8,10 @@
      A typed value inside the range takes effect as it is typed; leaving the field, or Enter, brings one outside it
      to the nearest end, or an empty field back to the current value. The value is kept for this page in this
      browser only; ?friction=0.08 in the address tries one without keeping it.
-   - window.siteLenis is the running instance, for a page's own scrolling (the Bio's Back to top). */
+   - window.siteLenis is the running instance, for a page's own scrolling (the Bio's Back to top).
+   - window.siteSmoothIn(box, content) gives a scrolling box of the page's own (the Work page's project sheet) the same
+     glide at the same lerp, and the tuner moves both. content is the part of the box that grows, so its height is
+     watched; without it, the box itself. Undefined where nothing runs (touch is still native, reduced motion). */
 (() => {
   const tag = document.currentScript;
   if (!window.Lenis || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
@@ -23,6 +26,13 @@
     smoothWheel: true, autoRaf: true, anchors: true,
     prevent: (node) => !!node.closest('dialog, [data-lenis-prevent]'),
   });
+  const all = [lenis];
+  window.siteSmoothIn = (wrapper, content = wrapper) => {
+    const inner = new Lenis({ wrapper, content, lerp: lenis.options.lerp, smoothWheel: true, autoRaf: true,
+      prevent: (node) => !!node.closest('[data-lenis-prevent]') });
+    all.push(inner);
+    return inner;
+  };
 
   const tuner = document.createElement('div');
   tuner.className = 'tuner m-panel m-panel--col matte';
@@ -37,7 +47,7 @@
   document.body.append(tuner);
   const fader = tuner.querySelector('.m-fader'), num = tuner.querySelector('.tuner__num');
   const set = (v, from, keep = true) => {
-    lenis.options.lerp = v;
+    all.forEach((l) => { l.options.lerp = v; });
     if (from !== 'fader') fader.value = v;
     if (from !== 'number') num.value = v;
     if (keep) try { localStorage.setItem(KEY, v); } catch (e) {}

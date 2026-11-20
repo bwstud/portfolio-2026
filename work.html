@@ -231,8 +231,9 @@
       .sheet__body { grid-column: 5 / -1; }
       .sheet__side { position: sticky; top: 0; align-self: start; display: flex; flex-direction: column; min-height: calc(100dvh - var(--sheet-top) - var(--space-8)); }
       .sheet__index { display: grid; gap: var(--space-2); justify-items: start; margin-top: auto; padding-top: var(--space-7); }
-      .sheet__index a { color: var(--muted); text-decoration: none; }
-      .sheet__index a:hover, .sheet__index a:focus-visible { color: var(--fg); }
+      .sheet__index a { display: inline-flex; align-items: center; gap: var(--space-2); color: var(--muted); text-decoration: none; transition: color var(--m-light-off); }
+      .sheet__index a:hover, .sheet__index a:focus-visible, .sheet__index a[aria-current] { color: var(--fg); }
+      .sheet__index a[aria-current] { transition-duration: var(--m-light-on); }   /* the item in view: its lamp lit (.m-led.is-on, matte.css) */
       .sheet__body { margin-top: var(--space-8); }
       .sheet__body:has(> :first-child .sheet__film, > .sheet__film:first-child) { margin-top: 0; }   /* a film starts the details level with the name and title beside it */
     }
@@ -501,7 +502,7 @@
   <script src="drift-wall.js"></script>
   <script src="bison-versions.js"></script>   <!-- the version the Bison Lab has put on the site -->
   <script src="bison.js"></script>
-  <!-- smooth scroll (smooth-scroll.js says how): lerp 0.05; the project sheet and the notice keep their own scrolling -->
+  <!-- smooth scroll (smooth-scroll.js says how): lerp 0.05, the project sheet too (its own instance, siteSmoothIn); the notice keeps its own scrolling -->
   <script src="https://cdn.jsdelivr.net/npm/lenis@1.3.27/dist/lenis.min.js"></script>
   <script src="smooth-scroll.js" data-lerp="0.05"></script>
   <script>
@@ -814,6 +815,20 @@
       if (!sheet || !sheet.showModal) return;
       const make = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text) n.textContent = text; return n; };
       const scroller = sheet.querySelector('.sheet__scroll'), body = sheet.querySelector('.sheet__body'), index = sheet.querySelector('.sheet__index');
+      // the sheet glides as the page does, at the page's lerp (smooth-scroll.js); none where the page doesn't glide
+      const glide = window.siteSmoothIn ? window.siteSmoothIn(scroller, body) : null;
+      // the index lamp: lit beside the section in view, the last one whose top has passed a third of the way down the
+      // sheet (the last of all once the sheet is scrolled to its end)
+      function lightIndex() {
+        const links = [...index.children], sections = [...body.children];
+        if (!links.length) return;
+        const line = scroller.getBoundingClientRect().top + scroller.clientHeight / 3;
+        let at = 0;
+        sections.forEach((sec, i) => { if (sec.getBoundingClientRect().top <= line) at = i; });
+        if (scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight - 2) at = sections.length - 1;
+        links.forEach((a, i) => { const on = i === at; a.firstChild.classList.toggle('is-on', on); if (on) a.setAttribute('aria-current', 'location'); else a.removeAttribute('aria-current'); });
+      }
+      scroller.addEventListener('scroll', lightIndex, { passive: true });
       // The before and after at the head of a sheet (styles above, under "Before and after"). The folder holds
       // before, light and dark, each at 1200 and 2400 wide. The second line stays behind the first: either pushes the other.
       function compare(dir) {
@@ -931,11 +946,20 @@
         }), { root: scroller, threshold: 0.4 });
         body.querySelectorAll('.sheet__clip video').forEach(v => { if (reduce) { v.controls = true; v.preload = 'metadata'; } clips.observe(v); });
         index.replaceChildren(...parts.map(([heading], i) => {
-          const a = make('a', '', heading);
+          const a = make('a');
           a.href = '#sheet-' + i;
-          a.addEventListener('click', e => { e.preventDefault(); document.getElementById('sheet-' + i).scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }); });
+          a.append(make('span', 'm-led'), heading);
+          a.firstChild.setAttribute('aria-hidden', 'true');
+          a.addEventListener('click', e => {
+            e.preventDefault();
+            const to = document.getElementById('sheet-' + i);
+            if (glide) glide.scrollTo(to, { duration: 0.6, easing: t => 1 - Math.pow(1 - t, 4) });
+            else to.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+          });
           return a;
         }));
+        glide?.resize();
+        lightIndex();
       }
       document.querySelectorAll('.bay').forEach(bay => {
         const media = bay.querySelector('.bay__media[data-wall]');
@@ -1051,6 +1075,8 @@
         document.documentElement.classList.add('has-sheet');   // the board keeps shut under it (see the board's script)
         sheet.showModal();
         scroller.scrollTop = 0;
+        glide?.scrollTo(0, { immediate: true, force: true });
+        lightIndex();
         goo();
         if (canCue) { try { cue.showPopover(); } catch (e) { /* already showing */ } }
         clearTimeout(settle);

@@ -67,6 +67,13 @@
         max-width: none; }
     }
     /* from 1300px: the text one column wider than matte-page.css sets it, and the photo one column further right */
+    /* Tatankagram, the bead bison (tinkering/tatankagram/, framed): below everything, across all twelve columns, in a
+       wide window cut into a Matte body. The beads sit straight on the well */
+    .page--foot { padding-top: 0; }
+    .page__anim { display: flex; margin: var(--space-9) 0 var(--space-8); padding-bottom: var(--space-4); }
+    .page__anim .page__window { position: relative; }
+    .page__restart { position: absolute; left: var(--space-4); bottom: var(--space-4); z-index: 1; }   /* over the picture, in its corner */
+    .page__anim iframe { display: block; width: 100%; aspect-ratio: 16 / 9; max-height: 82vh; border: 0; background: transparent; pointer-events: none; }
     @media (min-width: 1300px) { .page > .page__body { grid-column: 1 / span 8; } .page > .page__photo { grid-column: 9 / span 4; } }
     @media (min-width: 1600px) { .page > .page__body { grid-column: 1 / span 7; } .page > .page__photo { grid-column: 9 / span 4; } }   /* one empty column after the text from here */
     @media (min-width: 1800px) { .page > .page__body { grid-column: 1 / span 6; } .page > .page__photo { grid-column: 8 / span 4; } }
@@ -139,6 +146,13 @@
       <div class="page__keys matte"><button class="m-key m-key--lg" type="button" id="to-top">Back to top<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 7-7 7 7"/><path d="M12 19V5"/></svg></button></div>
     </div>
   </main>
+  <!-- after main, so the photo (sticky inside main) stops at the end of the text and never rides over it -->
+  <div class="home page page--foot">
+    <figure class="page__anim m-panel m-panel--col matte">
+      <div class="page__window"><iframe src="tinkering/tatankagram/?embed&amp;version=Tune%204" title="Tatankagram: a bison head made of thousands of beads, forming out of orbiting rings and falling back into them" loading="lazy" tabindex="-1"></iframe>
+        <button class="m-key page__restart" type="button" id="anim-restart">Restart<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></button></div>
+    </figure>
+  </div>
 
   <script src="nav.js"></script>
   <script src="spark.js" defer></script>
@@ -146,7 +160,11 @@
   <script src="filings.js"></script>
   <script src="matte.js"></script>   <!-- the two keys get their iron filings from Matte.init(), as on the work page -->
   <script>
-    if (window.Matte) [document.querySelector('.page__photo'), document.querySelector('.page__body .page__keys')].forEach((el) => Matte.init(el));
+    if (window.Matte) [document.querySelector('.page__photo'), document.querySelector('.page__body .page__keys'), document.querySelector('.page__anim')].forEach((el) => el && Matte.init(el));
+    // Restart, in the bison's frame: presses the experiment's own Restart (same site, so the frame's page is reachable)
+    document.getElementById('anim-restart')?.addEventListener('click', () => {
+      try { document.querySelector('.page__anim iframe').contentDocument.getElementById('replay').click(); } catch (e) { /* not loaded yet */ }
+    });
     // the photo bank: each push switch shows its photo in the window; null is a photo still to come
     (() => {
       const PHOTOS = [

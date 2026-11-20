@@ -85,8 +85,8 @@
 /* the page itself, in the dark theme: off-black with the same fine speckle as a Matte body, in place of Night.
    Everything mixed from Night (lines, surfaces, muted text) follows, so the greys stay neutral. */
 :root:not([data-theme="light"]) { --c-night: #0d0d0e; }
-:root:not([data-theme="light"]) body { background: var(--ground)
-  url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.1' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .126 -.059'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E"); }
+:root:not([data-theme="light"]) { --page-speckle: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.1' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .126 -.059'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E"); }   /* the ground's grain, for surfaces that match it (the Work page's project sheet) */
+:root:not([data-theme="light"]) body { background: var(--ground) var(--page-speckle); }
 
 .foot { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: var(--space-6) var(--grid-gutter); }
 .foot > * { grid-column: span 4; }   /* three columns of four */

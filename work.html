@@ -124,6 +124,8 @@
       margin: 0; padding: 0; border: 0; overflow: hidden; color: var(--fg); background: color-mix(in srgb, var(--ground) 95%, #fff);
       box-shadow: -1px 0 0 var(--line-strong), -30px 0 80px rgb(0 0 0 / 0.55); translate: 100% 0;
       transition: translate var(--sheet-move, var(--sheet-ms)) var(--sheet-ease, var(--sheet-ease-leave, cubic-bezier(0.3, 0, 0, 1))), overlay var(--sheet-ms) allow-discrete, display var(--sheet-ms) allow-discrete; }
+    /* in the dark theme, the page's own surface: the off-black ground and its speckle (matte-page.css); its edge and shadow set it apart */
+    :root:not([data-theme="light"]) .sheet { background: var(--ground) var(--page-speckle); }
     /* A move takes its pace and its curve from the state it is going to: the closed sheet above holds the departure's,
        the open one here the arrival's, and once it has arrived the peek's two take over below. */
     .sheet[open] { --sheet-ms: var(--sheet-arrive-ms, 700ms); --sheet-ease: var(--sheet-ease-arrive, cubic-bezier(0.42, 0, 0.58, 1)); translate: 0 0; display: grid; grid-template-columns: minmax(0, 1fr); }
@@ -191,7 +193,7 @@
     .sheet__prose > .sheet__film { margin-bottom: var(--space-7); }
     /* a clip in a section: the screen recording, at its own proportions, under the heading and above the words */
     .sheet__clip { margin: 0 0 var(--space-5); }
-    .sheet__clip video { display: block; width: 100%; height: auto; border-radius: var(--radius-sm); background: #0c0e12; }   /* the film, then the words beneath it */
+    .sheet__clip video, .sheet__clip img { display: block; width: 100%; height: auto; border-radius: var(--radius-sm); background: #0c0e12; }   /* the film, then the words beneath it */
     .sheet .is-result h3 { color: var(--signal); }
     .sheet__lead { margin: 0; padding: clamp(var(--space-4), 4vw, var(--space-8)); border-radius: var(--radius-lg); background: var(--surface); }
     .sheet__lead img { display: block; width: 100%; height: auto; border-radius: var(--radius-sm); }
@@ -383,6 +385,12 @@
           <p>This operating model was particularly exciting in the mobile world. Enterprise users are often in the field, on shop floors, or in remote locations. They’re people who work on their feet and with their hands. A really great experience with fluid image and video capture, speech-to-text data input, and geolocation had never made it to the product. Mazlan, in Enterprise’s mobile version, allows users to do all that and more, doing work and recording information from unknown locations, wearing PPE, in the wind and the rain. The wrinkle here, which is beyond the scope of this case study, is providing an exceptional user experience in low- or no-connectivity environments.</p>
         </template>
         <template class="bay__section" data-title="Praxis">
+          <figure class="sheet__clip">
+            <img src="images/groom-lake-praxis-1200.webp"
+                 srcset="images/groom-lake-praxis-1200.webp 1200w, images/groom-lake-praxis-2400.webp 2400w"
+                 sizes="(max-width: 760px) 100vw, 60vw" width="1200" height="547" loading="lazy" decoding="async"
+                 alt="Praxis design system specimen sheets: Mazlan AI surfaces, form fields, the app shell, the Create New and module selector, and workspace frames and metrics, each annotated with its CSS classes and measurements">
+          </figure>
           <p>When I began this project, Ideagen was at an inflection point. The old, Figma-based design system had been retired, and a new AI-first design system initiative had been announced. That system, however, was little more than a twinkle in someone’s eye. My job was to shed our old skin and design a product that would earn customers’ trust and win business.</p>
           <p>Our timeline was tight. I was given a month before the first presentation to leadership. Designing a new experience with Figma would’ve been impossible. There was too much ground to cover. I’d been using Claude for feature work for a few months and had gotten my sea legs. The two designers I had working for me, however, were still spending most of their time in the canvas.</p>
           <p>I showed them what was possible with Claude and got them excited. I coached them through the first few steps as we set up Git, started prompting, and figured out how to work together. Within the first week, they were designing small components and flows in code. By our first leadership review, they were prompting and refining richly detailed journeys through the new UX.</p>

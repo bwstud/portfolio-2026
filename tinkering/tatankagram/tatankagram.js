@@ -260,7 +260,9 @@
   list();
 
   // ---- WebGL ----
-  const gl = canvas.getContext('webgl2', { antialias: true, alpha: false });
+  // ?embed: just the animation, on a clear ground, for another page to show in a frame (the bio page does)
+  const EMBED = new URLSearchParams(location.search).has('embed');
+  const gl = canvas.getContext('webgl2', { antialias: true, alpha: EMBED });
   if (!gl) { document.getElementById('fail').hidden = false; canvas.hidden = true; return; }
 
   const SHADOW = 2048;
@@ -690,7 +692,9 @@
     wake();
   }
   changedSetting('gather');
-  loadConfig((store.versions.find(v => v.id === store.active) || { config: {} }).config, true);   // open with the chosen version
+  // open with the chosen version, or the one ?version= names (by its name or id)
+  const askedVersion = new URLSearchParams(location.search).get('version');
+  loadConfig((store.versions.find(v => askedVersion ? v.name === askedVersion || v.id === askedVersion : v.id === store.active) || store.versions.find(v => v.id === store.active) || { config: {} }).config, true);
 
   // The form key: plays the beads into the bison and holds it there, or blows it away into the shape and holds that.
   // park is where the clock is heading and stops: null while the loop runs. While parked the shape keeps moving.
@@ -784,6 +788,7 @@
   };
   canvas.addEventListener('pointerup', end); canvas.addEventListener('pointercancel', end);
   canvas.addEventListener('wheel', e => {
+    if (EMBED) return;   // the page around it scrolls
     e.preventDefault();
     const unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? canvas.clientHeight : 1;
     const p = point(e), z = Math.max(0.5, Math.min(4, cam.zoom * Math.exp(-e.deltaY * unit * 0.002))), k = z / cam.zoom;
@@ -830,7 +835,7 @@
     gl.drawArrays(gl.POINTS, 0, shown);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     gl.viewport(0, 0, w, h);
-    gl.clearColor(0.016, 0.039, 0.075, 1);   // Night, #040A13
+    if (EMBED) gl.clearColor(0, 0, 0, 0); else gl.clearColor(0.016, 0.039, 0.075, 1);   // Night, #040A13; clear when embedded
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     gl.uniform1i(U.uShadowPass, 0);
     gl.bindTexture(gl.TEXTURE_2D, shadowTex);
@@ -892,10 +897,14 @@
     else if (!playing) tiltNow = tiltAt(t.releaseAt - sweepAt);   // scrubbed into the fall: where its hold left it
     // (playing through the fall: tiltNow stays where the hold left it)
     draw(now);
+    if (count && !canvas.classList.contains('is-ready')) requestAnimationFrame(() => canvas.classList.add('is-ready'));   // the first frame is in: fade up (embedded)
     const settling = (holding && tiltT < t.releaseAt - sweepAt) || shapeMix < 1 || sweepOn || Math.abs(sunNow[0] - sunTarget[0]) + Math.abs(sunNow[1] - sunTarget[1]) + Math.abs(sunNow[2] - sunTarget[2]) > 1e-3;
     if (playing || settling) wake();
   }
-  function wake() { if (!frame && !document.hidden && count) frame = requestAnimationFrame(tick); }
+  // embedded, it draws only while it's on screen
+  var offScreen = false;   // var: wake() runs before this line during start-up
+  if (EMBED) new IntersectionObserver(([e]) => { offScreen = !e.isIntersecting; if (!offScreen) { last = undefined; wake(); } }).observe(canvas);
+  function wake() { if (!frame && !document.hidden && !offScreen && count) frame = requestAnimationFrame(tick); }
   document.addEventListener('visibilitychange', () => { last = undefined; wake(); });
   new ResizeObserver(() => wake()).observe(canvas);
   reduce.addEventListener('change', () => { if (reduce.matches) { clock = timing().releaseAt - 0.01; setPlaying(false); } });

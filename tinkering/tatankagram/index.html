@@ -6,6 +6,7 @@
   <title>Tatankagram</title>
   <meta name="description" content="Thirty thousand beads rise out of a ring of dust and settle into a bison. Turn the animal and tune the light.">
   <meta name="color-scheme" content="dark">
+  <script>if (/[?&]embed\b/.test(location.search)) document.documentElement.classList.add('is-embed');</script>
   <link rel="stylesheet" href="../../styles.css">
   <link rel="stylesheet" href="../../matte.css?v=15">
   <style>
@@ -64,6 +65,17 @@
     .swatch input { width: 32px; height: 24px; padding: 0; border: 1px solid rgb(255 255 255 / 0.12); border-radius: 4px; background: none; cursor: pointer; }
     .swatch input::-webkit-color-swatch-wrapper { padding: 2px; }
     .swatch input::-webkit-color-swatch { border: 0; border-radius: 2px; }
+    /* ?embed: only the stage's canvas, on a clear ground (the bio page shows it in a frame) */
+    .is-embed body { min-height: 0; background: transparent; }
+    .is-embed .lab { display: block; min-height: 0; }
+    .is-embed .stage { position: fixed; inset: 0; height: auto; display: block; }
+    .is-embed .stage__head, .is-embed .transport, .is-embed .side { display: none; }
+    .is-embed .stage__view { position: absolute; inset: 0; }
+    .is-embed .stage__view canvas { cursor: default; }
+    /* embedded, it fades up once its first frame is drawn, rather than popping in */
+    .is-embed .stage__view canvas { opacity: 0; transition: opacity 1.2s cubic-bezier(0.25, 0.1, 0.25, 1); }
+    .is-embed .stage__view canvas.is-ready { opacity: 1; }
+    @media (prefers-reduced-motion: reduce) { .is-embed .stage__view canvas { transition-duration: 0.3s; } }
     @media (max-width: 900px) {
       .lab { grid-template-columns: 1fr; }
       .stage { position: static; height: 82vh; }

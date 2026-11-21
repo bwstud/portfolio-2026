@@ -3,6 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="../../../matte.css?v=16">   <!-- for the type scale (--step-*) -->
   <title>Kaleidoscope Lab · Brian Studwell</title>
   <meta name="description" content="Design new kaleidoscopes: choose the mirrors, what they reflect, how it moves, and the glass it's seen through.">
   <style>
@@ -34,7 +35,7 @@
     html, body { height: 100%; }
     body {
       background: var(--bg); color: var(--fg); overflow: hidden;
-      font: 13px/1.45 "Geist", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
+      font: var(--step--1)/1.45 "Geist", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
       -webkit-font-smoothing: antialiased;
       display: grid; grid-template-rows: auto 1fr;
     }
@@ -63,8 +64,8 @@
     }
     .back { color: var(--muted); text-decoration: none; white-space: nowrap; }
     .back:hover { color: var(--fg); }
-    .brand { font-size: 15px; font-weight: 650; white-space: nowrap; }
-    .mode { color: var(--muted); font-size: 12px; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+    .brand { font-size: var(--step-0); font-weight: 650; white-space: nowrap; }
+    .mode { color: var(--muted); font-size: var(--step--1); display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
     .mode::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--faint); }
     .mode.is-project::before { background: var(--good); }
     .top__end { margin-left: auto; display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
@@ -75,9 +76,9 @@
     .col--list { border-right: 1px solid var(--line); padding: 12px 10px; display: grid; align-content: start; gap: 14px; }
     .col--edit { border-left: 1px solid var(--line); padding: 12px 14px 90px; }
 
-    .group__title { font-size: 12px; font-weight: 620; color: var(--soft); padding: 0 6px 6px; display: flex; justify-content: space-between; align-items: baseline; }
-    .group__title small { font-weight: 400; color: var(--faint); font-size: 11px; }
-    .group__empty { color: var(--faint); font-size: 12px; padding: 2px 6px; }
+    .group__title { font-size: var(--step--1); font-weight: 620; color: var(--soft); padding: 0 6px 6px; display: flex; justify-content: space-between; align-items: baseline; }
+    .group__title small { font-weight: 400; color: var(--faint); font-size: var(--step--1); }
+    .group__empty { color: var(--faint); font-size: var(--step--1); padding: 2px 6px; }
     .item {
       display: grid; grid-template-columns: 36px 1fr auto; gap: 9px; align-items: center; width: 100%;
       padding: 5px 6px; border-radius: 8px; text-align: left; color: var(--soft);
@@ -102,13 +103,13 @@
       display: grid; gap: 6px; pointer-events: none;
     }
     .cell-inset canvas { display: block; border-radius: 4px; }
-    .cell-inset__label { font-size: 11px; color: var(--muted); }
+    .cell-inset__label { font-size: var(--step--1); color: var(--muted); }
     .view-tools { position: absolute; right: 12px; top: 12px; display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
     .view-tools .btn { background: rgba(12, 12, 12, 0.8); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
     .view-tools .btn[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
 
     .pics { border-top: 1px solid var(--line); padding: 8px 12px; display: flex; gap: 6px; overflow-x: auto; align-items: center; }
-    .pics__label { color: var(--soft); font-weight: 620; font-size: 12px; margin-right: 4px; white-space: nowrap; }
+    .pics__label { color: var(--soft); font-weight: 620; font-size: var(--step--1); margin-right: 4px; white-space: nowrap; }
     .pic { flex: 0 0 auto; width: 46px; height: 46px; border-radius: 7px; overflow: hidden; border: 2px solid transparent; padding: 0; background: #1a1a1a; }
     .pic img { width: 100%; height: 100%; object-fit: cover; display: block; }
     .pic[aria-pressed="true"] { border-color: var(--accent); }
@@ -117,29 +118,29 @@
 
     /* ---------- editor ---------- */
     .meta { display: grid; gap: 8px; padding-bottom: 12px; border-bottom: 1px solid var(--line); }
-    .meta label { display: grid; gap: 4px; font-size: 12px; color: var(--muted); }
+    .meta label { display: grid; gap: 4px; font-size: var(--step--1); color: var(--muted); }
     .meta input, .meta textarea {
       width: 100%; padding: 7px 9px; border-radius: 8px; border: 1px solid var(--line-strong); background: var(--raise);
     }
     .meta textarea { resize: vertical; min-height: 44px; }
-    .meta__origin { font-size: 12px; color: var(--muted); }
+    .meta__origin { font-size: var(--step--1); color: var(--muted); }
 
     .section { padding: 12px 0; border-bottom: 1px solid var(--line); }
     .section__head { display: flex; align-items: baseline; gap: 8px; margin-bottom: 4px; }
-    .section__title { font-size: 13px; font-weight: 650; }
-    .section__reset { margin-left: auto; font-size: 11.5px; color: var(--muted); }
+    .section__title { font-size: var(--step--1); font-weight: 650; }
+    .section__reset { margin-left: auto; font-size: var(--step--1); color: var(--muted); }
     .section__reset:hover { color: var(--fg); }
-    .section__note { color: var(--muted); font-size: 12px; margin-bottom: 6px; }
+    .section__note { color: var(--muted); font-size: var(--step--1); margin-bottom: 6px; }
 
     .field { padding: 6px 0; }
     .field__top { display: flex; align-items: baseline; gap: 6px; }
     .field__label { color: var(--soft); }
     .field.is-changed .field__label::after { content: ""; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--changed); margin-left: 6px; vertical-align: 2px; }
-    .field__value { margin-left: auto; color: var(--muted); font-variant-numeric: tabular-nums; font-size: 12px; }
-    .field__num { width: 64px; padding: 1px 4px; text-align: right; font-size: 12px; font-variant-numeric: tabular-nums; color: var(--fg); background: var(--raise); border: 1px solid var(--line-strong); border-radius: 5px; }   /* type a value in place of dragging */
-    .field__undo { color: var(--faint); font-size: 11.5px; padding: 0 2px; }
+    .field__value { margin-left: auto; color: var(--muted); font-variant-numeric: tabular-nums; font-size: var(--step--1); }
+    .field__num { width: 64px; padding: 1px 4px; text-align: right; font-size: var(--step--1); font-variant-numeric: tabular-nums; color: var(--fg); background: var(--raise); border: 1px solid var(--line-strong); border-radius: 5px; }   /* type a value in place of dragging */
+    .field__undo { color: var(--faint); font-size: var(--step--1); padding: 0 2px; }
     .field__undo:hover { color: var(--fg); }
-    .field__help { color: var(--faint); font-size: 11.5px; margin-top: 2px; }
+    .field__help { color: var(--faint); font-size: var(--step--1); margin-top: 2px; }
     .field input[type="range"] { width: 100%; accent-color: var(--accent); margin-top: 4px; }
     .field select {
       width: 100%; margin-top: 4px; padding: 6px 8px; border-radius: 8px; border: 1px solid var(--line-strong); background: var(--raise);
@@ -151,7 +152,7 @@
       background: rgba(11, 11, 11, 0.94); border-top: 1px solid var(--line); border-left: 1px solid var(--line);
       backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
     }
-    .savebar__status { width: 100%; font-size: 12px; color: var(--muted); }
+    .savebar__status { width: 100%; font-size: var(--step--1); color: var(--muted); }
     .savebar__status.is-changed { color: var(--changed); }
 
     .toast {

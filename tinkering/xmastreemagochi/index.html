@@ -39,9 +39,9 @@
     [hidden] { display: none !important; }
     html, body {
       height: 100%; overflow: hidden; background: var(--bg); color: var(--fg);
-      font: 13px/1.45 "Geist", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
+      font: var(--step--1)/1.45 "Geist", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
       -webkit-font-smoothing: antialiased;
-    }
+    } html { font-size: 100%; }   /* rem stays 16px, for the type scale */
     #scene { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
     body[data-cursor="pour"] #scene { cursor: none; }
     body[data-cursor="sweep"] #scene { cursor: none; }
@@ -71,7 +71,7 @@
     .overlay { position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; padding: 16px;
       background: radial-gradient(ellipse at 50% 30%, rgba(60,30,14,.55), rgba(10,7,5,.92)); }
     .card { width: min(460px, 100%); padding: 26px; display: grid; gap: 16px; }
-    .card h1 { font-size: 30px; line-height: 1.1; letter-spacing: -0.02em; font-weight: 700; }
+    .card h1 { font-size: var(--step-3); line-height: 1.1; letter-spacing: -0.02em; font-weight: 700; }
     .card p { color: var(--muted); }
     .field { display: grid; gap: 6px; }
     .field input { width: 100%; }                             /* a Matte input */
@@ -79,40 +79,40 @@
     .divider { height: 2px; background: linear-gradient(180deg, var(--m-well) 50%, rgb(255 255 255 / 0.055) 50%); }   /* a seam */
 
     .ended { position: fixed; inset: 0; z-index: 30; display: grid; place-items: center; background: #0b0807; }
-    .ended p { font-size: clamp(28px, 6vw, 56px); font-weight: 600; letter-spacing: -0.02em; }
+    .ended p { font-size: var(--step-5); font-weight: 600; letter-spacing: -0.02em; }
 
     /* status */
     .status { position: fixed; z-index: 4; top: 62px; left: 16px; width: 250px; padding: 14px; display: grid; gap: 10px; }
-    .status h2 { font-size: 15px; font-weight: 650; }
+    .status h2 { font-size: var(--step-0); font-weight: 650; }
     .meter { display: grid; gap: 4px; }
     .meter .bar { height: 7px; border-radius: 99px; background: var(--m-meter); box-shadow: var(--m-well-shadow); overflow: hidden; }   /* a bar of light in a well */
     .meter .bar i { display: block; height: 100%; width: 50%; border-radius: inherit; background: var(--water); transition: width .4s; }
     .meter.thirst .bar i { background: var(--green); }
     .meter .top-line { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 2px; }
-    .status .note { font-size: 12px; color: var(--muted); }
+    .status .note { font-size: var(--step--1); color: var(--muted); }
 
     /* tool rail */
     .tools { position: fixed; z-index: 4; left: 16px; bottom: 16px; display: flex; gap: 6px; padding: 9px 9px 8px; }
-    .tool { gap: 5px; padding: 8px 6px 6px; min-width: 66px; font-size: 8.5px; letter-spacing: 0.04em; }   /* a Matte tile key: the tool in hand stays down */
+    .tool { gap: 5px; padding: 8px 6px 6px; min-width: 66px; font-size: var(--step--2); letter-spacing: 0.04em; }   /* a Matte tile key: the tool in hand stays down */
     .tool svg { width: 20px; height: 20px; stroke-width: 1.7; }
 
     /* side panel */
     .side { position: fixed; z-index: 4; top: 62px; right: 16px; bottom: 16px; width: 330px; padding: 16px; display: flex; flex-direction: column; gap: 12px; overflow: hidden; }
-    .side h3 { font-size: 16px; font-weight: 650; }
+    .side h3 { font-size: var(--step-0); font-weight: 650; }
     .side .scroll { flex: 1; min-height: 0; overflow-y: auto; display: grid; gap: 12px; align-content: start; padding-right: 4px; margin-right: -4px; }
     .side .scroll::-webkit-scrollbar { width: 6px; } .side .scroll::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 9px; }
     .facts { display: grid; gap: 8px; }
     .fact { display: grid; gap: 4px; justify-items: start; padding: 10px 11px; border-radius: var(--m-radius-well); background: var(--m-well); box-shadow: var(--m-well-shadow); }   /* a fact read from a well */
     .fact b { font: 400 var(--m-text-legend)/1.2 var(--m-font); letter-spacing: 0.1em; text-transform: uppercase; color: var(--m-print-dim); }
     .fact.hot { box-shadow: var(--m-well-shadow), 0 0 0 1px var(--m-signal); }
-    .price { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; }
+    .price { font-size: var(--step-2); font-weight: 700; letter-spacing: -0.02em; }
     .options { display: grid; gap: 6px; }
     .opt { display: grid; gap: 2px; padding: 9px 11px; text-align: left; color: var(--m-print-hi); }   /* a row in a Matte list: the chosen one carries a signal mark */
     .opt small { color: var(--m-print-dim); }
     .swatches { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
     .swatch { aspect-ratio: 1; border-radius: var(--m-radius-key); background-size: cover; background-position: center; position: relative; overflow: hidden; box-shadow: 0 0 0 1px var(--m-edge); }   /* a fabric set in the body; the one in use is ringed in the signal colour */
     .swatch[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--m-body), 0 0 0 4px var(--m-signal); overflow: visible; }
-    .swatch span { position: absolute; left: 0; right: 0; bottom: 0; font-size: 10px; padding: 3px 4px; background: rgba(0,0,0,.55); line-height: 1.2; }
+    .swatch span { position: absolute; left: 0; right: 0; bottom: 0; font-size: var(--step--2); padding: 3px 4px; background: rgba(0,0,0,.55); line-height: 1.2; }
     .swatch.none { background: repeating-linear-gradient(45deg, #2a221c 0 6px, #221a15 6px 12px); }
     .orn-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
     .orn { aspect-ratio: 1; border-radius: var(--m-radius-well); background: var(--m-well) center/86% no-repeat; box-shadow: var(--m-well-shadow); }   /* each ornament in a well; the one in hand is ringed in the signal colour */
@@ -137,28 +137,28 @@
     @keyframes toast { from { opacity: 0; transform: translateY(-6px); } }
     .fade { position: fixed; inset: 0; z-index: 15; background: #0b0807; display: grid; place-items: center; opacity: 0; pointer-events: none; transition: opacity .6s; }
     .fade.on { opacity: 1; pointer-events: auto; }
-    .fade p { color: var(--muted); font-size: 16px; }
+    .fade p { color: var(--muted); font-size: var(--step-0); }
     .cursor-tool { position: fixed; z-index: 6; pointer-events: none; width: 26px; height: 26px; margin: -13px 0 0 -13px; border-radius: 50%; border: 2px solid var(--accent); }
 
     @media (max-width: 760px) {
       .top { top: calc(10px + env(safe-area-inset-top)); left: 12px; right: 12px; gap: 8px; }
       .title { display: none; }
-      .back { font-size: 12px; }
-      .clock { padding: 6px 10px; font-size: 12px; gap: 6px; }
+      .back { font-size: var(--step--1); }
+      .clock { padding: 6px 10px; font-size: var(--step--1); gap: 6px; }
       .clock span:first-child, .clock .sunline { display: none; }
       .chip { max-width: 46vw; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
       .status { width: auto; left: 12px; right: 12px; top: calc(52px + env(safe-area-inset-top)); padding: 9px 12px; grid-template-columns: 1fr 1fr; gap: 4px 12px; }
-      .status h2 { grid-column: 1 / -1; font-size: 13px; }
+      .status h2 { grid-column: 1 / -1; font-size: var(--step--1); }
       .status .note { display: none; }
       .tools { left: 12px; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom)); overflow-x: auto; scrollbar-width: none; }
       .tools::-webkit-scrollbar { display: none; }
       .tool { min-width: 58px; white-space: nowrap; }
       .side { top: auto; left: 12px; right: 12px; width: auto; height: 42svh; bottom: calc(86px + env(safe-area-inset-bottom)); padding: 12px; gap: 10px; }
-      .hint { bottom: calc(90px + env(safe-area-inset-bottom)); font-size: 12px; }
+      .hint { bottom: calc(90px + env(safe-area-inset-bottom)); font-size: var(--step--1); }
       body:has(.side:not([hidden])) .hint { display: none; }
       .toasts { top: calc(112px + env(safe-area-inset-top)); }
       .card { padding: 20px; }
-      .card h1 { font-size: 26px; }
+      .card h1 { font-size: var(--step-2); }
     }
     @media (prefers-reduced-motion: reduce) { .toast { animation: none; } .fade { transition: none; } }
   </style>
@@ -192,7 +192,7 @@
           <div class="error" id="authError"></div>
           <button class="btn primary m-key m-key--lg m-key--primary" type="submit" id="authSubmit">Sign in</button>
         </form>
-        <p class="faint" style="font-size:12px">Your trees are saved to your account, so they're there on any device.</p>
+        <p class="faint" style="font-size:var(--step--1)">Your trees are saved to your account, so they're there on any device.</p>
       </div>
       <p class="muted" id="noAccounts" hidden>Accounts aren't switched on for this server yet, so your trees will be saved in this browser.</p>
       <div class="divider"></div>

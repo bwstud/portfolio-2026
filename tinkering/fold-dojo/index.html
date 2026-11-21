@@ -39,9 +39,9 @@
     html, body {
       height: 100%; overflow: hidden;
       background: var(--bg); color: var(--fg);
-      font: 13px/1.45 "Geist", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
+      font: var(--step--1)/1.45 "Geist", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
       -webkit-font-smoothing: antialiased;
-    }
+    } html { font-size: 100%; }   /* rem stays 16px, for the type scale */
     [hidden] { display: none !important; }
 
     #scene { position: fixed; inset: 0; display: block; width: 100%; height: 100%; touch-action: none; }
@@ -54,7 +54,7 @@
       display: flex; align-items: center; gap: 14px; pointer-events: none;
     }
     .top > * { pointer-events: auto; }
-    .brand { font-size: 15px; font-weight: 650; }
+    .brand { font-size: var(--step-0); font-weight: 650; }
     .brand span { color: var(--muted); font-weight: 450; margin-left: 6px; }
     .modes {
       position: absolute; left: 50%; transform: translateX(-50%);
@@ -77,10 +77,10 @@
     .item { display: block; width: 100%; text-align: left; padding: 8px 10px; }   /* a row in a Matte list: the chosen one carries a signal mark */
     .item + .item { margin-top: 2px; }
     .item__name { display: block; font-weight: 580; color: var(--m-print-hi); }
-    .item__sum { display: block; color: var(--m-print); font-size: 12px; margin-top: 1px; }
-    .item__meta { display: block; color: var(--m-print-dim); font-size: 11.5px; margin-top: 2px; }
+    .item__sum { display: block; color: var(--m-print); font-size: var(--step--1); margin-top: 1px; }
+    .item__meta { display: block; color: var(--m-print-dim); font-size: var(--step--1); margin-top: 2px; }
     .about { border-top: 1px solid var(--m-well); box-shadow: 0 1px 0 rgb(255 255 255 / 0.055) inset; padding: 12px 18px 16px; max-height: 40%; overflow-y: auto; flex: none; }
-    .about__name { font-size: 14px; font-weight: 620; margin-bottom: 6px; }
+    .about__name { font-size: var(--step-0); font-weight: 620; margin-bottom: 6px; }
     .about p { color: var(--soft); }
     .about p + p { margin-top: 7px; }
     .empty { color: var(--muted); padding: 10px 8px; }
@@ -89,8 +89,8 @@
     .piece__open { flex: 1; padding: 6px; min-width: 0; }   /* a row in a Matte list */
     .piece img { width: 76px; height: 52px; object-fit: cover; border-radius: 6px; flex: none; background: #1c1c1c; }
     .piece b { display: block; font-weight: 570; color: var(--m-print-hi); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .piece small { display: block; color: var(--m-print-dim); font-size: 11.5px; line-height: 1.35; }
-    .piece__del { width: 26px; height: auto; font-size: 16px; }   /* a quiet Matte key */
+    .piece small { display: block; color: var(--m-print-dim); font-size: var(--step--1); line-height: 1.35; }
+    .piece__del { width: 26px; height: auto; font-size: var(--step-0); }   /* a quiet Matte key */
 
     /* ---------- options (right) ---------- */
     .options {
@@ -100,7 +100,7 @@
     .opt + .opt { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--m-well); box-shadow: 0 1px 0 rgb(255 255 255 / 0.055) inset; }   /* a seam between groups */
     .opt .label { margin-bottom: 10px; display: flex; justify-content: space-between; gap: 8px; }
     .opt .label output { color: var(--m-lit); letter-spacing: 0.02em; text-transform: none; }
-    .sub { margin: 12px 0 8px; color: var(--m-print-dim); font-size: 12px; }
+    .sub { margin: 12px 0 8px; color: var(--m-print-dim); font-size: var(--step--1); }
     .patterns { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
     .pat { aspect-ratio: 1; border-radius: var(--m-radius-well); overflow: hidden; box-shadow: 0 0 0 1px var(--m-edge), 0 1px 0 rgb(255 255 255 / 0.08); }   /* a pattern set in the body; the one in use is ringed in the signal colour */
     .pat canvas { width: 100%; height: 100%; display: block; }
@@ -109,12 +109,12 @@
     .swatch { width: auto; height: auto; aspect-ratio: 1; }     /* a colour set in the body (.m-dot) */
     .is-dim { opacity: 0.4; }
     .seg button { padding: 0 4px; letter-spacing: 0.06em; }      /* a Matte segmented control */
-    .note { color: var(--m-print-dim); font-size: 11.5px; margin-top: 8px; }
+    .note { color: var(--m-print-dim); font-size: var(--step--1); margin-top: 8px; }
     .rows { display: grid; gap: 2px; }
     .row { display: block; text-align: left; padding: 6px 8px; }   /* a row in a Matte list */
     .row b { display: block; font-weight: 550; color: var(--m-print-hi); }
     .row b span { color: var(--m-print-dim); font-weight: 450; margin-left: 4px; }
-    .row small { display: block; color: var(--m-print-dim); font-size: 11.5px; line-height: 1.3; }
+    .row small { display: block; color: var(--m-print-dim); font-size: var(--step--1); line-height: 1.3; }
     .row--swatch { display: flex; align-items: center; gap: 10px; }
     .row--swatch canvas { width: 34px; height: 18px; border-radius: 4px; flex: none; box-shadow: 0 0 0 1px var(--m-edge); }
     .views { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
@@ -124,7 +124,7 @@
     .m-fader { width: 100%; }
     .toggles { margin-top: 12px; display: grid; gap: 9px; justify-items: start; }   /* Matte tick boxes */
     .toggles .dim { color: var(--m-print-dim); }
-    .hint-text { margin-top: 10px; color: var(--m-print-dim); font-size: 11.5px; }
+    .hint-text { margin-top: 10px; color: var(--m-print-dim); font-size: var(--step--1); }
     .chips { display: flex; flex-wrap: wrap; gap: 8px 6px; }     /* Matte keys; the one in use stays down */
 
     .viewer-opts { display: none; }
@@ -140,9 +140,9 @@
     .step__meta { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
     .step__count { color: var(--m-signal); }                     /* a Matte legend in the signal colour */
     .step__time { color: var(--m-print-dim); }
-    .step__title { font-size: 16px; font-weight: 620; margin-top: 3px; }
+    .step__title { font-size: var(--step-0); font-weight: 620; margin-top: 3px; }
     .step__text { color: #cccccc; margin-top: 4px; min-height: 3em; }
-    .feedback { color: var(--m-signal); margin-top: 6px; font-size: 12.5px; min-height: 1.4em; }
+    .feedback { color: var(--m-signal); margin-top: 6px; font-size: var(--step--1); min-height: 1.4em; }
     .feedback:empty { display: none; }
     .steps { display: flex; gap: 3px; margin: 12px 0 10px; }
     .steps button {
@@ -168,7 +168,7 @@
     .viewer-card { display: none; }
     .is-viewer .stage:not(.viewer-card) { display: none; }
     .is-viewer .viewer-card { display: block; }
-    .viewer-card h2 { font-size: 16px; font-weight: 620; }
+    .viewer-card h2 { font-size: var(--step-0); font-weight: 620; }
     .viewer-card p { color: var(--m-print-dim); margin-top: 2px; }
     .save { display: flex; gap: 8px; margin-top: 12px; }
     .save input { flex: 1; min-width: 0; width: auto; }          /* a Matte input */
@@ -196,7 +196,7 @@
       .speed > span { display: none; }
       .tbtn { width: 34px; }
       .speed .seg button { padding: 0 5px; }
-      .step__title { font-size: 15px; }
+      .step__title { font-size: var(--step-0); }
       .step__text { min-height: 0; }
     }
     @media (max-width: 560px) {

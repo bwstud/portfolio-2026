@@ -20,8 +20,8 @@
   --string-color: var(--m-lit);
   --font-family: var(--m-font-text);
   --font-family-mono: var(--m-font);
-  --font-size: 12px;
-  --input-font-size: 11px;
+  --font-size: var(--step--1);
+  --input-font-size: var(--step--1);
   --widget-height: 24px;
   --spacing: 6px;
   --padding: 6px;
@@ -54,7 +54,7 @@
 .matte .lil-gui .controller.number .fill::after { content: ""; position: absolute; right: -6px; top: -7px; width: 12px; height: 22px; border-radius: 3px;      /* and its cap, with the white line */
   background: linear-gradient(90deg, transparent 42%, var(--m-mark) 42% 58%, transparent 58%), linear-gradient(180deg, var(--m-cap-hi), var(--m-cap));
   box-shadow: 0 1px 0 rgb(255 255 255 / calc(0.16 * var(--m-gloss))) inset, 0 0 0 1px var(--m-edge), 0 3px 5px rgb(0 0 0 / calc(0.7 * var(--m-shade))); }
-.matte .lil-gui .controller.option .display { font-family: var(--m-font); font-size: 11px; color: var(--m-ink); }
+.matte .lil-gui .controller.option .display { font-family: var(--m-font); font-size: var(--step--1); color: var(--m-ink); }
 
 /* tick box: a small well with a lamp in it */
 .matte .lil-gui input[type="checkbox"] { display: grid; place-items: center; border-radius: 4px; background: var(--m-well);
@@ -71,3 +71,6 @@
 .matte .lil-gui .controller button:active { transform: translateY(2px); box-shadow: 0 1px 0 rgb(255 255 255 / calc(0.08 * var(--m-gloss))) inset, 0 0 0 1px var(--m-edge), 0 1px 0 var(--m-wall); }
 .matte .lil-gui .controller button:focus-visible, .matte .lil-gui input:focus-visible, .matte .lil-gui select:focus-visible + .display { outline: 2px solid var(--m-signal); outline-offset: 2px; }
 .matte .lil-gui .controller.disabled { opacity: 0.4; }
+
+/* lil-gui leaves its menus at the browser default size: on the scale with the rest */
+.lil-gui select, .lil-gui option { font-size: var(--step--1); }

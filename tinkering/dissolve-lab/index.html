@@ -7,17 +7,17 @@
   <meta name="robots" content="noindex">
   <meta name="color-scheme" content="dark">
   <link rel="stylesheet" href="../../styles.css">
-  <link rel="stylesheet" href="../../matte.css?v=15">
+  <link rel="stylesheet" href="../../matte.css?v=16">
   <style>
     /* Dissolve Lab: tune how the cover's control panel dissolves when Recent Work is pressed.
        The stage is the cover itself in a frame, so the sand, the sentence, the key and the panel can be timed together;
        the faders are the exit's settings (cover/dissolve.js). A saved version marked
        "on the cover" is what the front page plays. Saving needs the local server (dvs). */
-    body { margin: 0; min-height: 100vh; background: var(--c-night); color: var(--c-mist); font: 400 15px/1.5 var(--font-sans); }
+    body { margin: 0; min-height: 100vh; background: var(--c-night); color: var(--c-mist); font: 400 var(--step-0)/1.5 var(--font-sans); }
     .lab { display: grid; grid-template-columns: minmax(0, 1fr) 372px; min-height: 100vh; }
     .stage { position: sticky; top: 0; height: 100vh; display: grid; grid-template-rows: auto 1fr auto; }
     .stage__head { display: flex; align-items: baseline; gap: 20px; padding: 20px 28px; }
-    .stage__head h1 { margin: 0; font: 600 22px/1 var(--font-display); letter-spacing: -0.01em; }
+    .stage__head h1 { margin: 0; font: 600 var(--step-1)/1 var(--font-display); letter-spacing: -0.01em; }
     .stage__cover { width: 100%; height: 100%; border: 0; display: block; background: var(--c-night); }
     .transport { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; padding: 20px 28px; }
     .transport .m-seg { margin: 0; }
@@ -30,7 +30,7 @@
     .row .m-legend:first-child { grid-column: 1 / -1; }
     .row .m-fader { width: 100%; }
     /* every fader has a number field beside it: type a value in place of dragging */
-    .matte .row__num { width: 100%; height: 24px; padding: 0 6px; text-align: right; font-size: 11px; font-variant-numeric: tabular-nums; }
+    .matte .row__num { width: 100%; height: 24px; padding: 0 6px; text-align: right; font-size: var(--step--1); font-variant-numeric: tabular-nums; }
     .saved { display: grid; gap: 10px; }
     .saved__row { display: flex; gap: 8px; align-items: center; }
     .saved__row .m-input { flex: 1; min-width: 0; }

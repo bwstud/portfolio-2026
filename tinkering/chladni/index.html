@@ -35,9 +35,9 @@
     html, body {
       height: 100%; overflow: hidden;
       background: var(--bg); color: var(--fg);
-      font: 13px/1.45 "Geist", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
+      font: var(--step--1)/1.45 "Geist", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
       -webkit-font-smoothing: antialiased;
-    }
+    } html { font-size: 100%; }   /* rem stays 16px, for the type scale */
 
     #scene { position: fixed; inset: 0; display: block; width: 100%; height: 100%; touch-action: none; cursor: grab; }
     #scene:active { cursor: grabbing; }
@@ -48,7 +48,7 @@
       display: flex; align-items: center; gap: 14px; pointer-events: none;
     }
     .top > * { pointer-events: auto; }
-    .brand { font-size: 15px; font-weight: 650; letter-spacing: 0.01em; }
+    .brand { font-size: var(--step-0); font-weight: 650; letter-spacing: 0.01em; }
     .brand span { color: var(--muted); font-weight: 450; margin-left: 6px; }
     .top .spacer { flex: 1; }
     .ghost { white-space: nowrap; }                           /* a Matte key */
@@ -65,10 +65,10 @@
     .side__sub { margin: 12px 0 8px; }
     .side__sep { height: 2px; margin: 14px -12px 12px; background: linear-gradient(180deg, var(--m-well) 50%, rgb(255 255 255 / 0.055) 50%); }   /* a seam */
     .swatches { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px 4px; }
-    .swatch { gap: 5px; padding: 7px 2px 6px; font-size: 7.5px; letter-spacing: 0.02em; }   /* a Matte tile key: the material over its name. The one on the plate stays down, ringed in the signal colour */
+    .swatch { gap: 5px; padding: 7px 2px 6px; font-size: var(--step--2); letter-spacing: 0.02em; }   /* a Matte tile key: the material over its name. The one on the plate stays down, ringed in the signal colour */
     .swatch__chip { width: 26px; height: 26px; border-radius: 50%; box-shadow: 0 0 0 1px var(--m-edge), 0 2px 4px rgb(0 0 0 / 0.5); }
     .swatch__name { line-height: 1.2; text-align: center; }
-    .about { margin-top: 12px; color: var(--m-print-dim); font-size: 12px; line-height: 1.45; min-height: 35px; }
+    .about { margin-top: 12px; color: var(--m-print-dim); font-size: var(--step--1); line-height: 1.45; min-height: 35px; }
     .seg button { padding: 0 4px; letter-spacing: 0.05em; }   /* a Matte segmented control */
     .mat-toggle { display: none; }
     .mat-toggle i { width: 12px; height: 12px; border-radius: 50%; box-shadow: 0 0 0 1px var(--m-edge); }
@@ -126,7 +126,7 @@
     .window { display: grid; gap: 6px; padding: 10px 10px 9px; border-radius: var(--m-radius-well); background: linear-gradient(180deg, #040404, #0b0b0b);
       box-shadow: 0 2px 5px rgb(0 0 0 / 0.95) inset, 0 0 0 1px var(--m-edge), 0 1px 0 rgb(255 255 255 / 0.08); }
     .freq { display: flex; align-items: flex-end; justify-content: space-between; font-variant-numeric: tabular-nums; }
-    .freq b { font: 400 25px/1 var(--m-font); letter-spacing: -0.02em; color: var(--m-lit); }
+    .freq b { font: 400 var(--step-2)/1 var(--m-font); letter-spacing: -0.02em; color: var(--m-lit); }
     .freq small { padding-bottom: 2px; font: 400 var(--m-text-glass)/1 var(--m-font); letter-spacing: 0.1em; text-transform: uppercase; color: var(--m-glass-dim); }
     .mode { font: 400 var(--m-text-glass)/1 var(--m-font); letter-spacing: 0.08em; text-transform: uppercase; color: var(--m-glass-dim); height: 10px; white-space: nowrap; overflow: hidden; }
     .mode.is-locked { color: var(--m-lit); }
@@ -146,7 +146,7 @@
     }
     .hint.is-gone { opacity: 0; transform: translate(-50%, 6px); }
 
-    .keys { position: fixed; z-index: 2; left: 16px; bottom: calc(22px + env(safe-area-inset-bottom)); color: var(--m-print-dim); font-size: 11.5px; line-height: 1.7; }
+    .keys { position: fixed; z-index: 2; left: 16px; bottom: calc(22px + env(safe-area-inset-bottom)); color: var(--m-print-dim); font-size: var(--step--1); line-height: 1.7; }
     .keys kbd { font: inherit; color: var(--muted); padding: 0 5px; border: 1px solid var(--line); border-radius: 4px; }
 
     @media (max-width: 1100px) { .keys { display: none; } }
@@ -160,8 +160,8 @@
       .dock > .m-seam { display: none; }
       .switch { column-gap: 8px; }
       .readout { width: auto; flex: 1; min-width: 0; }
-      .freq b { font-size: 22px; }
-      .hint { bottom: calc(150px + env(safe-area-inset-bottom)); font-size: 12px; }
+      .freq b { font-size: var(--step-1); }
+      .hint { bottom: calc(150px + env(safe-area-inset-bottom)); font-size: var(--step--1); }
       .scatter-label { display: none; }
       .mat-toggle { display: inline-flex; }
       .side {

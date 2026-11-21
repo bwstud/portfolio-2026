@@ -12,7 +12,7 @@
   <script src="../../button-versions.js"></script>
   <script src="../../buttons.js"></script>
   <link rel="stylesheet" href="../../styles.css">
-  <link rel="stylesheet" href="../../matte.css?v=15">   <!-- the Matte system itself -->
+  <link rel="stylesheet" href="../../matte.css?v=16">   <!-- the Matte system itself -->
   <link rel="stylesheet" href="../../matte-page.css">          <!-- the page shared with the work page: rail nav, off-black ground, card, footer band -->
   <style>
     /* The design system page. It is the one reference for Matte: what used to be the Matte Lab's catalogue and tuner
@@ -23,33 +23,33 @@
     .ds.ds--cont { padding-top: 0; }
     main > .home:last-child { padding-bottom: var(--space-9); }   /* the footer's halftone reaches up; keep the last section clear of it */
     .ds__name { margin: 0 0 var(--space-3); font-family: var(--font-mono); letter-spacing: 0.1em; text-transform: uppercase; }
-    .ds__title { margin: 0; max-width: 24ch; font: 600 clamp(28px, 2.95vw, 42px)/1.08 "Söhne Breit", sans-serif; letter-spacing: -0.01em; text-wrap: balance; }
-    .ds__intro { margin: 20px 0 0; max-width: 62ch; color: var(--muted); font-size: 17px; line-height: 1.6; text-wrap: pretty; }
-    .ds__flow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; margin: 28px 0 0; font-family: var(--font-mono); font-size: 13px; color: var(--muted); }
+    .ds__title { margin: 0; max-width: 24ch; font: 600 var(--step-4)/1.08 "Söhne Breit", sans-serif; letter-spacing: -0.01em; text-wrap: balance; }
+    .ds__intro { margin: 20px 0 0; max-width: 62ch; color: var(--muted); font-size: var(--step-1); line-height: 1.6; text-wrap: pretty; }
+    .ds__flow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; margin: 28px 0 0; font-family: var(--font-mono); font-size: var(--step--1); color: var(--muted); }
     .ds__flow b { font-weight: 400; color: var(--fg); padding: 4px 10px; border: 1px solid var(--line); border-radius: 999px; }
     .ds-toc { display: flex; flex-wrap: wrap; gap: 8px; margin: 32px 0 0; padding: 0; list-style: none; }
-    .ds-toc a { display: block; padding: 6px 12px; border: 1px solid var(--line); border-radius: 999px; font-size: 14px; color: var(--muted); text-decoration: none; transition: color 0.15s, border-color 0.15s; }
+    .ds-toc a { display: block; padding: 6px 12px; border: 1px solid var(--line); border-radius: 999px; font-size: var(--step--1); color: var(--muted); text-decoration: none; transition: color 0.15s, border-color 0.15s; }
     .ds-toc a:hover { color: var(--fg); border-color: var(--line-strong); }
-    .ds-toc a span { margin-right: 6px; font: 400 11px/1 var(--font-mono); letter-spacing: 0.06em; }
+    .ds-toc a span { margin-right: 6px; font: 400 var(--step--2)/1 var(--font-mono); letter-spacing: 0.06em; }
 
     /* a section: number, name, status, a short lede, then specimens */
     .sec { margin-top: 72px; padding-top: 28px; border-top: 1px solid var(--line); scroll-margin-top: var(--space-6); }
     .sec__head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px 14px; margin-bottom: 8px; }
-    .sec__no { font: 400 12px/1 var(--font-mono); letter-spacing: 0.1em; color: var(--muted); }
-    .sec h2 { margin: 0; font: 600 24px/1.1 var(--font-display); letter-spacing: -0.01em; }
+    .sec__no { font: 400 var(--step--1)/1 var(--font-mono); letter-spacing: 0.1em; color: var(--muted); }
+    .sec h2 { margin: 0; font: 600 var(--step-2)/1.1 var(--font-display); letter-spacing: -0.01em; }
     .sec > p { max-width: 62ch; margin: 0 0 32px; color: var(--muted); line-height: 1.6; text-wrap: pretty; }
     .sec > p + p { margin-top: -20px; }
-    .sec > p code, .ds-notes code, .rules code, .ds-issue code { font: 400 13px var(--font-mono); color: var(--fg); }
-    .ds-h3 { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 12px; margin: 56px 0 16px; font: 600 18px/1.2 var(--font-display); scroll-margin-top: var(--space-6); }
-    .ds-h3 small { font: 400 12px/1.4 var(--font-mono); color: var(--muted); }
+    .sec > p code, .ds-notes code, .rules code, .ds-issue code { font: 400 var(--step--1) var(--font-mono); color: var(--fg); }
+    .ds-h3 { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 12px; margin: 56px 0 16px; font: 600 var(--step-1)/1.2 var(--font-display); scroll-margin-top: var(--space-6); }
+    .ds-h3 small { font: 400 var(--step--1)/1.4 var(--font-mono); color: var(--muted); }
     .ds-h3 + p { margin-top: -4px; }
     .grid { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 44px 36px; }
     .spec { margin: 0; display: grid; gap: 14px; justify-items: start; max-width: 100%; }
-    .spec figcaption { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; font-size: 14px; }
-    .spec code, .ds-mono { font: 400 12px/1.4 var(--font-mono); color: var(--muted); }
+    .spec figcaption { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; font-size: var(--step--1); }
+    .spec code, .ds-mono { font: 400 var(--step--1)/1.4 var(--font-mono); color: var(--muted); }
 
     /* Status: settled is final and safe to build on; draft is still being tried; legacy is kept from the site before Matte */
-    .ds-status { font-family: var(--font-mono); font-size: 12px; font-weight: 400; letter-spacing: 0.04em; text-transform: uppercase; padding: 3px 8px; border-radius: 4px; border: 1px solid var(--line); color: var(--muted); }
+    .ds-status { font-family: var(--font-mono); font-size: var(--step--2); font-weight: 400; letter-spacing: 0.04em; text-transform: uppercase; padding: 3px 8px; border-radius: 4px; border: 1px solid var(--line); color: var(--muted); }
     .ds-status--settled { border-color: transparent; background: var(--c-teal); color: var(--c-night); }
     :root[data-theme="light"] .ds-status--settled { color: #fff; background: color-mix(in srgb, var(--c-teal) 80%, var(--c-night)); }
     .ds-status--legacy { border-style: dashed; border-color: var(--line-strong); }
@@ -79,8 +79,8 @@
     .rules > * { grid-column: span 4; }
     @media (max-width: 1299px) { .rules > * { grid-column: span 6; } }
     @media (max-width: 760px) { .rules > * { grid-column: 1 / -1; } }
-    .rules h3 { margin: 0 0 12px; font: 600 17px/1.2 var(--font-display); }
-    .rules ul { margin: 0; padding: 0 0 0 18px; display: grid; gap: 8px; color: var(--muted); font-size: 15px; line-height: 1.5; }
+    .rules h3 { margin: 0 0 12px; font: 600 var(--step-0)/1.2 var(--font-display); }
+    .rules ul { margin: 0; padding: 0 0 0 18px; display: grid; gap: 8px; color: var(--muted); font-size: var(--step-0); line-height: 1.5; }
     .icons svg { width: 16px; height: 16px; fill: none; stroke: var(--m-print); stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
 
     /* Site specimens */
@@ -89,13 +89,13 @@
     @media (max-width: 1099px) { .ds-swatches > *, .ds-radii > * { grid-column: span 3; } }
     @media (max-width: 600px) { .ds-swatches > *, .ds-radii > * { grid-column: span 6; } }
     .ds-swatch__chip { height: 88px; border-radius: 8px; border: 1px solid var(--line); background: var(--sw); }
-    .ds-swatch__name { margin: 10px 0 0; font-size: 15px; }
-    .ds-swatch__meta { margin: 2px 0 0; font-family: var(--font-mono); font-size: 12px; line-height: 1.5; color: var(--muted); }
-    .ds-table { width: 100%; border-collapse: collapse; font-size: 15px; }
-    .ds-table th { text-align: left; font-weight: 400; font-family: var(--font-mono); font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); padding: 0 16px 10px 0; border-bottom: 1px solid var(--line); }
+    .ds-swatch__name { margin: 10px 0 0; font-size: var(--step-0); }
+    .ds-swatch__meta { margin: 2px 0 0; font-family: var(--font-mono); font-size: var(--step--1); line-height: 1.5; color: var(--muted); }
+    .ds-table { width: 100%; border-collapse: collapse; font-size: var(--step-0); }
+    .ds-table th { text-align: left; font-weight: 400; font-family: var(--font-mono); font-size: var(--step--1); text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); padding: 0 16px 10px 0; border-bottom: 1px solid var(--line); }
     .ds-table td { padding: 14px 16px 14px 0; border-bottom: 1px solid var(--line); vertical-align: middle; line-height: 1.5; }
     .ds-table td:last-child, .ds-table th:last-child { padding-right: 0; }
-    .ds-table .ds-mono { white-space: nowrap; color: var(--fg); font-size: 13px; }
+    .ds-table .ds-mono { white-space: nowrap; color: var(--fg); font-size: var(--step--1); }
     .ds-dot { display: inline-block; width: 28px; height: 28px; border-radius: 6px; border: 1px solid var(--line); background: var(--sw); vertical-align: middle; }
     .ds-scroll { overflow-x: auto; }
     .ds-bands { display: grid; row-gap: 16px; }
@@ -103,21 +103,21 @@
     @media (max-width: 1099px) { .ds-bands > * { grid-column: span 6; } }
     @media (max-width: 600px) { .ds-bands > * { grid-column: 1 / -1; } }
     .ds-band { padding: 24px 20px; border-radius: 10px; background: var(--band-to); color: var(--fg); min-height: 200px; display: flex; flex-direction: column; gap: 10px; }
-    .ds-band__name { font-family: var(--font-display); font-size: 22px; font-weight: 600; }
-    .ds-band__muted { color: var(--muted); font-size: 14px; line-height: 1.5; }
+    .ds-band__name { font-family: var(--font-display); font-size: var(--step-2); font-weight: 600; }
+    .ds-band__muted { color: var(--muted); font-size: var(--step-0); line-height: 1.5; }
     .ds-band .project__tags { margin-top: auto; }
 
     .ds-type { display: grid; gap: 0; }
     .ds-type__row > :first-child { grid-column: 1 / span 3; }
     .ds-type__row > :last-child { grid-column: 4 / -1; }
     .ds-type__row { display: grid; row-gap: 24px; padding: 28px 0; border-bottom: 1px solid var(--line); align-items: baseline; }
-    .ds-type__spec { font-family: var(--font-mono); font-size: 12px; line-height: 1.6; color: var(--muted); }
-    .ds-type__spec strong { display: block; font-family: var(--font-sans); font-size: 15px; font-weight: 400; color: var(--fg); margin-bottom: 4px; }
+    .ds-type__spec { font-family: var(--font-mono); font-size: var(--step--1); line-height: 1.6; color: var(--muted); }
+    .ds-type__spec strong { display: block; font-family: var(--font-sans); font-size: var(--step-0); font-weight: 400; color: var(--fg); margin-bottom: 4px; }
     .ds-type__sample { min-width: 0; overflow-wrap: anywhere; }
     .ds-type__sample p { margin: 0; }
     .ds-type__sample .cover__name, .ds-type__sample .cover__work { text-align: left; }
     .ds-type__sample .cover__tagline { margin: 0; max-width: 60ch; text-wrap: pretty; }
-    .ds-type__sample .tinkering__title { font: 600 var(--text-page-title)/1 var(--font-display); letter-spacing: -0.03em; max-width: none; }   /* the token as documented; Experiments now sets its own smaller heading */
+    .ds-type__sample .tinkering__title { font: 600 var(--step-5)/1 var(--font-display); letter-spacing: -0.03em; max-width: none; }   /* the token as documented; Experiments now sets its own smaller heading */
     .ds-type__sample .tinkering__intro { display: block; }
     /* text styles shown in the text colour; each page decides whether to set them muted */
     .ds-type__sample .cover__tagline, .ds-type__sample .tinkering__intro, .ds-type__sample .project__desc, .ds-type__sample .card__desc, .ds-type__sample .card__meta { color: var(--fg); }
@@ -132,12 +132,12 @@
 
     .ds-stage { padding: 32px 24px; border: 1px solid var(--line); border-radius: 12px; }
     .ds-stage + .ds-notes { margin-top: 16px; }
-    .ds-notes { max-width: 64ch; margin: 0; padding: 0; color: var(--muted); font-size: 15px; line-height: 1.6; }
+    .ds-notes { max-width: 64ch; margin: 0; padding: 0; color: var(--muted); font-size: var(--step-0); line-height: 1.6; }
     ul.ds-notes { list-style: disc; }
     .ds-notes li { margin-left: 18px; }
     .ds-notes li + li { margin-top: 6px; }
     .ds-notes strong { color: var(--fg); font-weight: 400; }
-    .ds-label { display: block; margin: 0 0 10px; font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+    .ds-label { display: block; margin: 0 0 10px; font-family: var(--font-mono); font-size: var(--step--1); color: var(--muted); }
     .ds-row { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 24px 32px; }
     .home a.button { text-decoration: none; }
 
@@ -163,8 +163,8 @@
 
     .ds-issues { list-style: none; display: grid; gap: 12px; margin: 0; padding: 0; }
     .ds-issue { padding: 16px 18px; border: 1px solid var(--line); border-radius: 10px; }
-    .ds-issue__title { font-size: 16px; }
-    .ds-issue p { margin: 6px 0 0; color: var(--muted); font-size: 15px; line-height: 1.55; }
+    .ds-issue__title { font-size: var(--step-0); }
+    .ds-issue p { margin: 6px 0 0; color: var(--muted); font-size: var(--step-0); line-height: 1.55; }
 
     /* The tuner: the Matte Lab's bar. It rides the bottom of the window while the Matte sections are on screen,
        and every Matte part on the page follows it. */
@@ -279,7 +279,7 @@
     <!-- 02 Type -->
     <section class="sec matte" id="type" aria-labelledby="type-h">
       <div class="sec__head"><span class="sec__no">02</span><h2 id="type-h">Type</h2><span class="ds-status">Draft</span></div>
-      <p>Söhne from Klim, in three cuts: <strong>Söhne Breit</strong> semibold for display, <strong>Söhne</strong> book for text, <strong>Söhne Mono</strong> for legends, tags, captions and metadata. Geist appears only as the split-flap board’s letters, drawn on canvas. Every size is a <code>--text-*</code> token. Text styles are shown here in the text colour; each page can set them in <code>--muted</code> instead.</p>
+      <p>Söhne from Klim, in three cuts: <strong>Söhne Breit</strong> semibold for display, <strong>Söhne</strong> book for text, <strong>Söhne Mono</strong> for legends, tags, captions and metadata. Geist appears only as the split-flap board’s letters, drawn on canvas. Every size is a step of one fluid scale, <code>--step--2</code> to <code>--step-7</code>, defined with Matte.</p>
 
       <h3 class="ds-h3" id="legends">Legends</h3>
       <p>On a Matte part, type is printed on the body, small and in capitals, or it glows from behind glass. Nothing else carries text.</p>
@@ -305,59 +305,59 @@
       <div class="grid" style="margin-top: 44px">
         <figure class="spec">
           <div class="m-panel m-panel--col"><ul class="m-list" style="min-width: 300px">
-            <li><span>Legend</span><span>--m-text-legend · 10px</span></li>
-            <li><span>Large legend</span><span>--m-text-legend-lg · 12px</span></li>
-            <li><span>Behind glass</span><span>--m-text-glass · 9px</span></li>
-            <li><span>Help and errors</span><span>--m-text-help · 12px</span></li>
-            <li><span>Small text</span><span>--m-text-small · 13px</span></li>
-            <li><span>Running text</span><span>--m-text-body · 14px</span></li>
+            <li><span>Legend, behind glass</span><span>--m-text-legend · step −2</span></li>
+            <li><span>Large legend</span><span>--m-text-legend-lg · step −1</span></li>
+            <li><span>Help and errors</span><span>--m-text-help · step −1</span></li>
+            <li><span>Control text</span><span>--m-text-small · step −1</span></li>
+            <li><span>Prose, titles</span><span>--m-text-body · step 0</span></li>
+            <li><span>Display, notice title</span><span>--m-text-display · step 2</span></li>
           </ul></div>
           <figcaption><b>Matte sizes</b><code>--m-text-*</code></figcaption>
         </figure>
       </div>
 
-      <h3 class="ds-h3">Text styles</h3>
-      <p>The site’s scale. Name, Section title, Project tagline, Lead and Body were set for the earlier cover and work page; they are still in the stylesheet, and no current page uses them.</p>
+      <h3 class="ds-h3">The scale</h3>
+      <p>Fluid, after utopia.fyi. Body copy is 16px at every width. The steps above it grow smoothly from a ×1.2 scale at a 360px window to ×1.333 at 1600px, and hold either side; the two small steps stay fixed. Resize the window to see the larger steps move.</p>
       <div class="ds-type">
         <div class="ds-type__row">
-          <div class="ds-type__spec"><strong>Name</strong>.cover__name<br>--text-name<br>Breit 600 · 48–104px<br>line 0.95 · −0.03em</div>
-          <div class="ds-type__sample"><p class="cover__name">Brian Studwell</p></div>
+          <div class="ds-type__spec"><strong>Step −2</strong>--step--2<br>10px, fixed<br>Printed legends, legends behind glass</div>
+          <div class="ds-type__sample"><p style="font: 400 var(--step--2)/1.5 var(--font-mono); text-transform: uppercase; letter-spacing: 0.1em">Input selector</p></div>
         </div>
         <div class="ds-type__row">
-          <div class="ds-type__spec"><strong>Section title</strong>.cover__work<br>--text-section-title<br>Breit 600 · 36–68px<br>line 1.1 · −0.01em</div>
-          <div class="ds-type__sample"><p class="cover__work">Recent Work</p></div>
+          <div class="ds-type__spec"><strong>Step −1</strong>--step--1<br>12px, fixed<br>Small print: control text, mono metadata, tags, captions, the nav</div>
+          <div class="ds-type__sample"><p style="font: 400 var(--step--1)/1.5 var(--font-mono)">Canvas 2D · spring physics · Web Audio</p></div>
         </div>
         <div class="ds-type__row">
-          <div class="ds-type__spec"><strong>Project tagline</strong>.project__tagline<br>--text-tagline<br>Breit 600 · 36–64px<br>line 1.02 · −0.025em</div>
-          <div class="ds-type__sample"><p class="project__tagline">Who says enterprise can’t be pretty?</p></div>
+          <div class="ds-type__spec"><strong>Step 0</strong>--step-0<br>16px, fixed<br>Body copy, Matte prose, card descriptions</div>
+          <div class="ds-type__sample"><p style="font: 400 var(--step-0)/1.5 var(--font-sans)">Enterprises shouldn’t have to use slow, ugly, awkward software to meet their compliance obligations and stay safe.</p></div>
         </div>
         <div class="ds-type__row">
-          <div class="ds-type__spec"><strong>Page title</strong>.tinkering__title<br>--text-page-title<br>Breit 600 · 40–72px<br>line 1 · −0.03em</div>
-          <div class="ds-type__sample"><p class="tinkering__title">Experiments</p></div>
+          <div class="ds-type__spec"><strong>Step 1</strong>--step-1<br>19.2 → 21.3px<br>Card titles, intros, the project sheet’s copy</div>
+          <div class="ds-type__sample"><p style="font: 400 var(--step-1)/1.4 var(--font-sans)">Experiments, sketches, and things I built to see what would happen.</p></div>
         </div>
         <div class="ds-type__row">
-          <div class="ds-type__spec"><strong>Card title</strong>.card__title<br>--text-heading<br>Breit 600 · 20px</div>
-          <div class="ds-type__sample"><p class="card__title">Split-Flap Lab</p></div>
+          <div class="ds-type__spec"><strong>Step 2</strong>--step-2<br>23 → 28.4px<br>The bio’s paragraphs, display windows, a notice’s title</div>
+          <div class="ds-type__sample"><p style="font: 400 var(--step-2)/1.4 var(--font-sans)">I currently live in Rochester, NY.</p></div>
         </div>
         <div class="ds-type__row">
-          <div class="ds-type__spec"><strong>Lead</strong>.cover__tagline<br>--text-lead<br>Söhne 400 · 17–21px<br>line 1.5</div>
-          <div class="ds-type__sample"><p class="cover__tagline">I design human-in-the-loop agentic systems for high-stakes, regulated industries.</p></div>
+          <div class="ds-type__spec"><strong>Step 3</strong>--step-3<br>27.6 → 37.9px<br>The project sheet’s title, the line over the cover statement</div>
+          <div class="ds-type__sample"><p style="font: 600 var(--step-3)/1.05 var(--font-display)">Overhauling a flagship</p></div>
         </div>
         <div class="ds-type__row">
-          <div class="ds-type__spec"><strong>Intro</strong>.tinkering__intro<br>--text-lg<br>Söhne 400 · 18px<br>line 1.6 · max 46ch</div>
-          <div class="ds-type__sample"><p class="tinkering__intro" style="margin: 0">Experiments, sketches, and things I built to see what would happen.</p></div>
+          <div class="ds-type__spec"><strong>Step 4</strong>--step-4<br>33.2 → 50.6px<br>Record titles, the Experiments and design system titles</div>
+          <div class="ds-type__sample"><p style="font: 600 var(--step-4)/1.05 var(--font-display)">Agents that help workers</p></div>
         </div>
         <div class="ds-type__row">
-          <div class="ds-type__spec"><strong>Body</strong>.project__desc<br>--text-base<br>Söhne 400 · 17px<br>line 1.6 · max 56ch</div>
-          <div class="ds-type__sample"><p class="project__desc">Enterprises shouldn’t have to use slow, ugly, awkward software to meet their compliance obligations and stay safe.</p></div>
+          <div class="ds-type__spec"><strong>Step 5</strong>--step-5<br>39.8 → 67.4px<br>Page titles, the cover statement</div>
+          <div class="ds-type__sample"><p style="font: 600 var(--step-5)/1.05 var(--font-display)">How I Work</p></div>
         </div>
         <div class="ds-type__row">
-          <div class="ds-type__spec"><strong>Small</strong>.card__desc<br>--text-sm<br>Söhne 400 · 15px<br>line 1.5</div>
-          <div class="ds-type__sample"><p class="card__desc">A wall of flaps that clatter round to spell a name.</p></div>
+          <div class="ds-type__spec"><strong>Step 6</strong>--step-6<br>47.8 → 89.9px<br>Not in use yet</div>
+          <div class="ds-type__sample"><p style="font: 600 var(--step-6)/1.05 var(--font-display)">Recent work</p></div>
         </div>
         <div class="ds-type__row">
-          <div class="ds-type__spec"><strong>Mono</strong>.card__meta, tags, captions<br>--text-2xs<br>Söhne Mono 400 · 13px</div>
-          <div class="ds-type__sample"><p class="card__meta">Canvas 2D · spring physics · Web Audio</p></div>
+          <div class="ds-type__spec"><strong>Step 7</strong>--step-7<br>57.3 → 119.9px<br>The bio’s headline, the cover name</div>
+          <div class="ds-type__sample"><p style="font: 600 var(--step-7)/1.05 var(--font-display)">A Little History</p></div>
         </div>
       </div>
     </section>

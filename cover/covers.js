@@ -33,7 +33,7 @@
     @media (prefers-reduced-motion: reduce) { .covers__menu, .covers__caret { transition: none; } }
   `;
   const PLAIN = `
-    .covers { font: 400 13px/1 "Söhne Mono", ui-monospace, Menlo, monospace; letter-spacing: .02em; }
+    .covers { font: 400 var(--step--1)/1 "Söhne Mono", ui-monospace, Menlo, monospace; letter-spacing: .02em; }
     .covers__toggle, .covers__menu { background: rgba(4, 10, 19, .82); color: #DAE4E3; border: 1px solid rgba(218, 228, 227, .35);
       -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
     .covers__toggle { display: flex; align-items: center; gap: 8px; padding: 12px 16px; border-radius: 999px; font: inherit;

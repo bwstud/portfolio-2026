@@ -41,9 +41,9 @@
     html, body {
       height: 100%; overflow: hidden;
       background: var(--bg); color: var(--fg);
-      font: 13px/1.45 "Geist", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
+      font: var(--step--1)/1.45 "Geist", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
       -webkit-font-smoothing: antialiased;
-    }
+    } html { font-size: 100%; }   /* rem stays 16px, for the type scale */
 
     #scene { position: fixed; inset: 0; display: block; width: 100%; height: 100%; touch-action: none; }
     body[data-tool="look"] #scene { cursor: grab; }
@@ -59,7 +59,7 @@
       display: flex; align-items: center; gap: 14px; pointer-events: none;
     }
     .top > * { pointer-events: auto; }
-    .brand { font-size: 15px; font-weight: 650; letter-spacing: 0.01em; }
+    .brand { font-size: var(--step-0); font-weight: 650; letter-spacing: 0.01em; }
     .brand span { color: var(--muted); font-weight: 450; margin-left: 6px; }
     .top .spacer { flex: 1; }
     .ghost { white-space: nowrap; }                           /* a Matte key */
@@ -74,7 +74,7 @@
     .steps button { display: flex; align-items: center; gap: 7px; padding: 0 12px 0 7px; }
     .steps button i {
       width: 16px; height: 16px; border-radius: 50%; display: grid; place-items: center; font-style: normal;
-      font-size: 9px; letter-spacing: 0; box-shadow: 0 0 0 1px var(--m-print-dim); font-variant-numeric: tabular-nums;
+      font-size: var(--step--2); letter-spacing: 0; box-shadow: 0 0 0 1px var(--m-print-dim); font-variant-numeric: tabular-nums;
     }
     .steps button[aria-current="step"] i { background: var(--m-signal); color: #17110b; box-shadow: 0 0 5px color-mix(in srgb, var(--m-signal) 75%, transparent); }
     .steps button.is-done i { background: var(--m-lit); color: #17110b; box-shadow: none; }
@@ -84,11 +84,11 @@
     .choices--two { grid-template-columns: 1fr 1fr; }
     .choice { display: block; width: 100%; text-align: left; padding: 9px 11px; }   /* a row in a Matte list: the chosen one carries a signal mark */
     .choice b { display: block; font-weight: 580; color: var(--m-print-hi); }
-    .choice small { display: block; color: var(--m-print); font-size: 12px; margin-top: 3px; line-height: 1.4; }
+    .choice small { display: block; color: var(--m-print); font-size: var(--step--1); margin-top: 3px; line-height: 1.4; }
     .choice .swatch { display: flex; gap: 6px; align-items: center; margin-bottom: 6px; }
     .choice .swatch span { width: 22px; height: 22px; border-radius: 50%; box-shadow: 0 0 0 1px var(--m-edge); }
-    .choice .swatch em { font-style: normal; color: var(--m-print-dim); font-size: 11.5px; }
-    .choice .traits { display: flex; gap: 10px; margin-top: 6px; color: var(--m-print-dim); font-size: 11.5px; }
+    .choice .swatch em { font-style: normal; color: var(--m-print-dim); font-size: var(--step--1); }
+    .choice .traits { display: flex; gap: 10px; margin-top: 6px; color: var(--m-print-dim); font-size: var(--step--1); }
     .choice .thumb { display: block; height: 54px; border-radius: 6px; margin-bottom: 7px; background-size: cover; background-position: center; }
 
     /* Matte keys: the way forward is the primary, the one that acts is in the accent. Segmented controls and faders */
@@ -100,8 +100,8 @@
     .field > .label output { color: var(--m-lit); letter-spacing: 0.02em; text-transform: none; font-variant-numeric: tabular-nums; }
     .m-fader { width: 100%; }
     .row { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; align-items: center; }
-    .say { color: #c1c1c1; margin-top: 8px; font-size: 12.5px; }
-    .hint { color: var(--m-print-dim); font-size: 12px; margin-top: 6px; }
+    .say { color: #c1c1c1; margin-top: 8px; font-size: var(--step--1); }
+    .hint { color: var(--m-print-dim); font-size: var(--step--1); margin-top: 6px; }
 
     .tabs { display: flex; gap: 2px; padding: 4px 8px 0; border-bottom: 1px solid var(--m-well); flex: none; }   /* Matte tabs */
     .tabs button { flex: 1; }
@@ -113,17 +113,17 @@
       display: flex; flex-direction: column; overflow: hidden;
     }
     .setup__head { padding: 16px 16px 10px; flex: none; }
-    .setup h2 { font-size: 17px; font-weight: 640; }
+    .setup h2 { font-size: var(--step-1); font-weight: 640; }
     .setup .lede { color: #c3c3c3; margin-top: 4px; }
-    .setup__summary { margin-top: 8px; color: var(--m-signal); font-size: 12.5px; }
+    .setup__summary { margin-top: 8px; color: var(--m-signal); font-size: var(--step--1); }
     .setup__body { padding: 14px 16px; flex: 1; }
     .setup__foot { border-top: 1px solid var(--m-well); box-shadow: 0 1px 0 rgb(255 255 255 / 0.055) inset; padding: 14px 16px 13px; flex: none; display: flex; gap: 10px; align-items: center; }
     .setup__foot .hint { margin: 0; }
     .amount { text-align: center; padding: 6px 0 2px; }
-    .amount b { font-size: 34px; font-weight: 640; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+    .amount b { font-size: var(--step-4); font-weight: 640; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
     .amount span { display: block; color: var(--m-print-dim); margin-top: 2px; }
     .presets { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px 4px; margin-top: 14px; }
-    .presets button { font-size: 8px; letter-spacing: 0.02em; }   /* Matte tile keys: a shape drawn over its name */
+    .presets button { font-size: var(--step--2); letter-spacing: 0.02em; }   /* Matte tile keys: a shape drawn over its name */
     .presets button svg { display: block; width: 28px; height: 22px; stroke-width: 1.4; }
 
     /* ---------- tools ---------- */
@@ -149,11 +149,11 @@
       width: 230px; padding: 11px 13px; pointer-events: none;
       transition: opacity 0.2s;
     }
-    .toolhint b { color: var(--m-print-hi); font-weight: 620; display: block; font-size: 13.5px; }
-    .toolhint p { color: var(--m-print); font-size: 12.5px; margin-top: 4px; }
-    .toolhint .speed { color: var(--m-print-dim); font-size: 12px; margin-top: 6px; display: flex; gap: 6px; align-items: center; }
+    .toolhint b { color: var(--m-print-hi); font-weight: 620; display: block; font-size: var(--step-0); }
+    .toolhint p { color: var(--m-print); font-size: var(--step--1); margin-top: 4px; }
+    .toolhint .speed { color: var(--m-print-dim); font-size: var(--step--1); margin-top: 6px; display: flex; gap: 6px; align-items: center; }
     .toolhint .speed i { width: 6px; height: 6px; border-radius: 50%; background: var(--m-ok); box-shadow: 0 0 5px color-mix(in srgb, var(--m-ok) 70%, transparent); font-style: normal; }
-    .toolhint .warn { color: var(--m-warn); font-size: 12.5px; margin-top: 8px; display: block; }
+    .toolhint .warn { color: var(--m-warn); font-size: var(--step--1); margin-top: 8px; display: block; }
     .toolhint .warn:empty { display: none; }
     .toolhint.is-quiet { opacity: 0.0; }
 
@@ -167,7 +167,7 @@
     .sec + .sec { border-top: 1px solid var(--m-well); box-shadow: 0 1px 0 rgb(255 255 255 / 0.055) inset; }                           /* a seam between sections */
     .sec__head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
     .sec__head h3 { font: 400 var(--m-text-legend-lg)/1.2 var(--m-font); letter-spacing: 0.1em; text-transform: uppercase; color: var(--m-print-hi); }   /* a section's name, as a larger legend */
-    .sec__head .meta { color: var(--m-print-dim); font-size: 12px; }
+    .sec__head .meta { color: var(--m-print-dim); font-size: var(--step--1); }
     .facts { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; }
     .facts dt { color: var(--m-print-dim); }
     .facts dd { text-align: right; font-variant-numeric: tabular-nums; }
@@ -189,9 +189,9 @@
     .version { display: grid; grid-template-columns: 44px 1fr auto; gap: 10px; align-items: center; padding: 7px 8px; border-radius: var(--m-radius-well); background: var(--m-well); box-shadow: var(--m-well-shadow); }   /* each saved version in a well */
     .version svg { width: 44px; height: 44px; display: block; }
     .version b { font-weight: 580; display: block; color: var(--m-ink); }
-    .version small { color: var(--m-print-dim); font-size: 11.5px; }
+    .version small { color: var(--m-print-dim); font-size: var(--step--1); }
     .version .row { margin: 0; flex-wrap: nowrap; }
-    .empty { color: var(--m-print-dim); font-size: 12.5px; padding: 6px 0; }
+    .empty { color: var(--m-print-dim); font-size: var(--step--1); padding: 6px 0; }
     .name-row { display: flex; gap: 8px; }
     .name-row input { flex: 1; min-width: 0; width: auto; }       /* a Matte input */
 
@@ -207,34 +207,34 @@
     .spin svg { position: relative; z-index: 1; display: block; margin: auto; width: 16px; height: 16px; fill: currentColor; transform: translateY(calc(var(--rise) * -1)); transition: transform var(--m-travel) var(--m-ease-detent); }
     .spin[aria-pressed="true"] svg { transform: none; color: var(--m-signal); }
     .rpm { min-width: 76px; }
-    .rpm b { display: block; font-size: 17px; font-weight: 640; font-variant-numeric: tabular-nums; }
-    .rpm span { color: var(--m-print-dim); font-size: 12px; }
+    .rpm b { display: block; font-size: var(--step-1); font-weight: 640; font-variant-numeric: tabular-nums; }
+    .rpm span { color: var(--m-print-dim); font-size: var(--step--1); }
     .speed { position: relative; flex: 1; height: 30px; }
     .speed input { position: absolute; inset: 0; width: 100%; height: 30px; margin: 0; opacity: 0.001; cursor: pointer; z-index: 2; }
     .speed__track { position: absolute; left: 0; right: 0; top: 12px; height: 6px; border-radius: 3px; background: var(--m-well); box-shadow: 0 1px 2px rgb(0 0 0 / 0.9) inset, 0 1px 0 rgb(255 255 255 / 0.08); }   /* the fader's slot */
     .speed__fill { position: absolute; left: 0; top: 12px; height: 6px; border-radius: 3px; background: color-mix(in srgb, var(--m-print) 45%, transparent); }
     .speed__band { position: absolute; top: 9px; height: 12px; border-radius: 6px; background: color-mix(in srgb, var(--m-ok) 16%, transparent); border: 1px solid color-mix(in srgb, var(--m-ok) 55%, transparent); }   /* the speed this tool wants */
     .speed__knob { position: absolute; top: 2px; width: 16px; height: 26px; margin-left: -8px; border-radius: 3px; background: linear-gradient(90deg, transparent 43%, var(--m-mark) 43% 57%, transparent 57%), linear-gradient(180deg, var(--m-cap-hi), var(--m-cap)); box-shadow: 0 1px 0 rgb(255 255 255 / 0.16) inset, 0 0 0 1px var(--m-edge), 0 4px 6px rgb(0 0 0 / 0.7); }   /* and its cap, with the white line */
-    .speed__ticks { position: absolute; left: 0; right: 0; top: 24px; color: var(--m-print-dim); font-size: 10.5px; }
+    .speed__ticks { position: absolute; left: 0; right: 0; top: 24px; color: var(--m-print-dim); font-size: var(--step--2); }
     .speed__ticks span { position: absolute; transform: translateX(-50%); }
     .speed input:focus-visible ~ .speed__knob { outline: 2px solid var(--m-signal); outline-offset: 3px; }
-    .dir { width: 36px; min-width: 0; padding: 0; margin-left: 8px; font-size: 14px; }
+    .dir { width: 36px; min-width: 0; padding: 0; margin-left: 8px; font-size: var(--step--1); }
     .hist { flex: 1; display: flex; align-items: center; gap: 10px; }
     .hist input { flex: 1; }
-    .hist output { color: var(--m-print-dim); font-size: 12px; min-width: 128px; text-align: right; font-variant-numeric: tabular-nums; }
+    .hist output { color: var(--m-print-dim); font-size: var(--step--1); min-width: 128px; text-align: right; font-variant-numeric: tabular-nums; }
     .hist output b { color: var(--m-lit); font-weight: 560; }
 
     /* ---------- glaze ---------- */
     .glaze { top: 56px; right: 16px; width: 330px; bottom: 16px; display: flex; flex-direction: column; overflow: hidden; }
     .glaze .scroll { flex: 1; padding: 0 16px 12px; }
     .glaze__head { padding: 16px 16px 4px; }
-    .glaze__head h2 { font-size: 17px; font-weight: 640; }
+    .glaze__head h2 { font-size: var(--step-1); font-weight: 640; }
     .glaze__head p { color: #c3c3c3; margin-top: 4px; }
     .glazes { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px 6px; }
     .glazes button { align-items: stretch; padding: 6px 6px 5px; text-align: left; }   /* Matte tile keys: the glaze over its name */
     .glazes button span { display: block; height: 38px; border-radius: 3px; box-shadow: 0 0 0 1px var(--m-edge); }
-    .glazes button b { font-weight: 400; font-size: 8.5px; letter-spacing: 0.04em; display: block; line-height: 1.25; }
-    .glaze__note { color: #c3c3c3; margin-top: 8px; font-size: 12.5px; min-height: 2.9em; }
+    .glazes button b { font-weight: 400; font-size: var(--step--2); letter-spacing: 0.04em; display: block; line-height: 1.25; }
+    .glaze__note { color: #c3c3c3; margin-top: 8px; font-size: var(--step--1); min-height: 2.9em; }
     .glaze__foot { border-top: 1px solid var(--m-well); box-shadow: 0 1px 0 rgb(255 255 255 / 0.055) inset; padding: 14px 16px 13px; display: flex; gap: 8px; align-items: center; }
     .glaze__foot .primary { margin-left: auto; }
 
@@ -245,8 +245,8 @@
       opacity: 0; pointer-events: none; transition: opacity 0.6s;
     }
     .kiln.is-on { opacity: 1; pointer-events: auto; }
-    .kiln b { display: block; font-size: 46px; font-weight: 640; font-variant-numeric: tabular-nums; color: #fff4e6; letter-spacing: -0.02em; text-shadow: 0 0 40px rgba(255, 210, 150, 0.8); }
-    .kiln span { color: rgba(255, 236, 214, 0.85); font-size: 14px; }
+    .kiln b { display: block; font-size: var(--step-4); font-weight: 640; font-variant-numeric: tabular-nums; color: #fff4e6; letter-spacing: -0.02em; text-shadow: 0 0 40px rgba(255, 210, 150, 0.8); }
+    .kiln span { color: rgba(255, 236, 214, 0.85); font-size: var(--step--1); }
     .kiln::after { content: ""; position: absolute; inset: 0; background: radial-gradient(circle at 50% 55%, rgba(255, 240, 200, 0.35), transparent 50%); animation: flicker 0.9s infinite alternate; }
     @keyframes flicker { from { opacity: 0.5; } to { opacity: 1; } }
 
@@ -260,9 +260,9 @@
     .plaque {
       left: 16px; bottom: 16px; width: 260px; padding: 14px 16px;
     }
-    .plaque input { user-select: text; -webkit-user-select: text; width: 100%; font-size: 16px; font-weight: 640; background: none; border: 0; border-bottom: 1px dashed transparent; padding: 0 0 2px; }
+    .plaque input { user-select: text; -webkit-user-select: text; width: 100%; font-size: var(--step-0); font-weight: 640; background: none; border: 0; border-bottom: 1px dashed transparent; padding: 0 0 2px; }
     .plaque input:hover, .plaque input:focus { border-bottom-color: var(--m-print-dim); outline: none; }
-    .plaque p { color: #c3c3c3; margin-top: 4px; font-size: 12.5px; }
+    .plaque p { color: #c3c3c3; margin-top: 4px; font-size: var(--step--1); }
     .plaque dl { margin-top: 8px; }
     .is-viewing .top .brand span, .is-viewing .notes { display: none; }
 

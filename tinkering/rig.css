@@ -32,7 +32,7 @@
 /* ---- Legend as a link (the way back), and a read-out printed beside a control ---- */
 .matte a.m-legend { text-decoration: none; transition: color var(--m-hover); }
 .matte a.m-legend:hover { color: var(--m-print-hi); }
-.m-value { font: 400 11px/1.2 var(--m-font); letter-spacing: 0.02em; color: var(--m-lit); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.m-value { font: 400 var(--step--1)/1.2 var(--m-font); letter-spacing: 0.02em; color: var(--m-lit); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .m-rule { border: 0; height: 2px; margin: 0; background: linear-gradient(180deg, var(--m-well) 50%, rgb(255 255 255 / calc(0.055 * var(--m-gloss))) 50%); }   /* a seam, as a rule between groups */
 
 /* ---- Key bridges ---- */
@@ -50,7 +50,7 @@
 .matte .m-key--tile:is([aria-pressed="true"], [aria-checked="true"], [aria-selected="true"], .is-on) { color: var(--m-print-hi); transform: translateY(2px); background: linear-gradient(180deg, var(--m-cap), var(--m-body));
   box-shadow: 0 2px 3px rgb(0 0 0 / calc(0.55 * var(--m-shade))) inset, 0 0 0 1px var(--m-signal), 0 1px 0 var(--m-wall); }
 .matte .m-key--left { justify-content: flex-start; align-items: flex-start; text-align: left; }
-.matte .m-key--plain { text-transform: none; letter-spacing: 0.02em; font-size: 11px; }  /* a legend that reads as a name, not a label */
+.matte .m-key--plain { text-transform: none; letter-spacing: 0.02em; font-size: var(--step--1); }  /* a legend that reads as a name, not a label */
 
 /* a pad that carries a legend, and one lit by the page's own .is-on */
 .matte .m-key--pad.m-key--label { width: auto; padding: 0 12px; }
@@ -83,14 +83,14 @@ input.m-switch:checked::after { transform: translateX(28px); }
 input.m-switch--sm:checked::after { transform: translateX(20px); }
 
 /* ---- Entry bridges: a shorter well for a dense rack ---- */
-.m-input--sm { width: auto; height: 28px; padding: 0 9px; font-size: 11px; }
+.m-input--sm { width: auto; height: 28px; padding: 0 9px; font-size: var(--step--1); }
 select.m-input--sm { padding-right: 26px; background-position: calc(100% - 13px) 12px, calc(100% - 8px) 12px; }
 .m-fader:disabled { opacity: 0.4; pointer-events: none; }
 .m-fader--v { writing-mode: vertical-lr; direction: rtl; width: 28px; height: 168px; }
 
 /* ---- A row in a list that can be chosen: the menu item, lit by a signal mark down its left edge ---- */
 .matte .m-menu__item:is([aria-pressed="true"], [aria-selected="true"], [aria-current="true"], [aria-checked="true"], .is-on, .is-active) { color: var(--m-print-hi); background: color-mix(in srgb, var(--m-print) 10%, transparent); box-shadow: 2px 0 0 var(--m-signal) inset; }
-.matte .m-menu__item--plain { text-transform: none; letter-spacing: 0.01em; font: 400 12px/1.35 var(--m-font-text); }
+.matte .m-menu__item--plain { text-transform: none; letter-spacing: 0.01em; font: 400 var(--step--1)/1.35 var(--m-font-text); }
 .matte .m-menu__item--plain > :last-child:not(:first-child) { margin-left: 0; color: inherit; }   /* its last part is text, not a shortcut pushed to the far side */
 
 /* ---- A colour set in the body: a round window, ringed in the signal colour when it is the one in use ---- */

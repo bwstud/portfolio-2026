@@ -65,8 +65,10 @@
 }
 /* Phones: one row, with the links in the Menu panel (styles.css and nav.js) */
 /* Below the rail the nav spans the window. The iron filings' canvas reaches past each key (filings.js), and past
-   the window's edge on the last one, which made the page scroll sideways; the bar clips it there. */
-@media (max-width: 1099px) { .nav { overflow-x: clip; } }
+   the window's edge on the last one, which made the page scroll sideways; the bar trims it at its sides. A clip-path,
+   open above and below, not overflow-x: clip: on an iPhone, Safari let the Menu panel (which hangs below the bar) show
+   while it animated open, then clipped it away, so the menu flashed open and shut. */
+@media (max-width: 1099px) { .nav { clip-path: inset(-100vh 0 -100vh 0); } html, body { overflow-x: clip; } }   /* the clip-path trims what shows; clipped on both, body keeps its own clip (not handed to the window), so nothing can widen the page */
 /* Between phone and rail the row can't hold every button, so it wraps */
 @media (min-width: 601px) and (max-width: 1099px) {
   .nav { height: auto; min-height: var(--nav-h); flex-wrap: wrap; row-gap: var(--space-2); padding-block: var(--space-3); }

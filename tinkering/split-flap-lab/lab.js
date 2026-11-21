@@ -925,10 +925,10 @@
   refreshCount();
   readStore().then(data => {
     canWrite = true;
+    $('versions').hidden = false;
     $('version-tools').hidden = false;
     return data;
   }).catch(async () => {
-    status('Read only here. Run the lab locally with dvs to save versions.');
     return parseStore(await (await fetch(FILE_URL, { cache: 'no-store' })).text());
   }).then(data => {
     store = data;

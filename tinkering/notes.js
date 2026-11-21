@@ -20,7 +20,7 @@
       background: var(--m-grain, none), var(--m-body, rgba(8, 11, 16, 0.78));
       box-shadow: 0 1px 0 var(--m-shine, transparent) inset;
       backdrop-filter: var(--notes-blur, blur(10px)); -webkit-backdrop-filter: var(--notes-blur, blur(10px));
-      color: var(--m-print, #e8ecf2); font: 13px/1.5 "Geist", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
+      color: var(--m-print, #e8ecf2); font: var(--step--1, 12px)/1.5 "Geist", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
       overflow: hidden; cursor: auto;
     }
     .notes__head {

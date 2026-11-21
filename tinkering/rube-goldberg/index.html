@@ -24,12 +24,12 @@
     }
     html, body {
       height: 100%; overflow: hidden; background: #0d0d0d; color: var(--m-print-hi);
-      font: 13px/1.45 "Geist", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
+      font: var(--step--1)/1.45 "Geist", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
       -webkit-font-smoothing: antialiased;
-    }
+    } html { font-size: 100%; }   /* rem stays 16px, for the type scale */
     [hidden] { display: none !important; }
     kbd {                                                        /* a key cap, printed on the body */
-      font: 400 10px/1 var(--m-font); color: var(--m-print);
+      font: 400 var(--step--2)/1 var(--m-font); color: var(--m-print);
       padding: 2px 5px; border-radius: 3px; box-shadow: 0 0 0 1px var(--m-edge), 0 1px 0 rgb(255 255 255 / 0.08); background: var(--m-well);
     }
 
@@ -45,7 +45,7 @@
     .top > * { pointer-events: auto; }
     .top__start { display: flex; align-items: center; gap: 14px; height: 36px; padding: 0 14px; }   /* a small Matte body */
     .back { white-space: nowrap; }
-    .brand { font-size: 15px; font-weight: 650; white-space: nowrap; color: var(--m-print-hi); }
+    .brand { font-size: var(--step-0); font-weight: 650; white-space: nowrap; color: var(--m-print-hi); }
     .top__end { margin-left: auto; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
     .hbtn { white-space: nowrap; }                              /* a Matte key; the panels that are open stay down */
     .hbtn svg { width: 14px; height: 14px; stroke-width: 1.7; }
@@ -56,7 +56,7 @@
     .chain { top: 62px; left: 16px; width: 270px; max-height: calc(100% - 180px); display: flex; flex-direction: column; overflow: hidden; }
     .phead { display: flex; align-items: center; gap: 8px; padding: 12px 10px 10px 14px; border-bottom: 1px solid var(--m-well); box-shadow: 0 1px 0 rgb(255 255 255 / 0.04); }
     .phead h2 { flex: 1; }                                       /* a Matte legend */
-    .phead .meta { color: var(--m-print-dim); font: 400 11px/1 var(--m-font); }
+    .phead .meta { color: var(--m-print-dim); font: 400 var(--step--1)/1 var(--m-font); }
     .pclose svg { width: 14px; height: 14px; }                  /* a quiet Matte key */
     .links { list-style: none; overflow: auto; padding: 6px; }
     .link { display: grid; grid-template-columns: 14px 1fr auto; align-items: center; gap: 8px; width: 100%; text-align: left; padding: 6px 8px; border-radius: 4px; color: var(--m-print); }   /* a row in a Matte list */
@@ -65,7 +65,7 @@
     .dot.is-live { background: var(--m-signal); box-shadow: 0 0 0 1px var(--m-edge), 0 0 7px color-mix(in srgb, var(--m-signal) 80%, transparent); }
     .dot.is-fail { background: var(--m-danger); box-shadow: 0 0 0 1px var(--m-edge), 0 0 6px color-mix(in srgb, var(--m-danger) 70%, transparent); }
     .dot.is-never { background: transparent; box-shadow: 0 0 0 1px var(--m-print-dim) inset; }
-    .link time { color: var(--m-print-dim); font: 400 11px/1 var(--m-font); font-variant-numeric: tabular-nums; }
+    .link time { color: var(--m-print-dim); font: 400 var(--step--1)/1 var(--m-font); font-variant-numeric: tabular-nums; }
     .story { margin: 4px 10px 10px; padding: 9px 11px 10px; min-height: 58px; border-radius: var(--m-radius-well); background: var(--m-well); box-shadow: var(--m-well-shadow); color: var(--m-glass-dim); }   /* read from a window */
     .story.is-fail { color: color-mix(in srgb, var(--m-danger) 60%, var(--m-lit)); }
     .story strong { display: block; font-weight: 600; color: var(--m-lit); margin-bottom: 2px; }
@@ -81,16 +81,16 @@
     .param + .param { border-top: 1px solid var(--m-well); box-shadow: 0 1px 0 rgb(255 255 255 / 0.04) inset; }
     .param__head { display: flex; align-items: center; gap: 6px; }
     .param__head label { flex: 1; color: var(--m-print); }
-    .param__num { width: 68px; height: 22px; padding: 0 5px; text-align: right; font-size: 11px; font-variant-numeric: tabular-nums; -moz-appearance: textfield; appearance: textfield; }   /* a Matte number well */
+    .param__num { width: 68px; height: 22px; padding: 0 5px; text-align: right; font-size: var(--step--1); font-variant-numeric: tabular-nums; -moz-appearance: textfield; appearance: textfield; }   /* a Matte number well */
     .param__num::-webkit-inner-spin-button, .param__num::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
-    .param__head .unit { color: var(--m-print-dim); font-size: 11.5px; min-width: 14px; }
+    .param__head .unit { color: var(--m-print-dim); font-size: var(--step--1); min-width: 14px; }
     .param.is-changed .param__head label { color: var(--m-signal); }
-    .param__reset { width: 18px; height: 18px; border-radius: 3px; color: var(--m-print-dim); font-size: 13px; line-height: 1; visibility: hidden; }
+    .param__reset { width: 18px; height: 18px; border-radius: 3px; color: var(--m-print-dim); font-size: var(--step--1); line-height: 1; visibility: hidden; }
     .param.is-changed .param__reset { visibility: visible; }
     .param__reset:hover { color: var(--m-print-hi); background: color-mix(in srgb, var(--m-print) 12%, transparent); }
     .param .m-fader { width: 100%; margin-top: 2px; }
     .param input[type="color"] { width: 44px; height: 22px; border: 0; border-radius: var(--m-radius-well); background: var(--m-well); box-shadow: var(--m-well-shadow); padding: 2px; cursor: pointer; }
-    .note { color: var(--m-print-dim); font-size: 12px; margin-top: 2px; }
+    .note { color: var(--m-print-dim); font-size: var(--step--1); margin-top: 2px; }
     .toggle { flex: 1; }                                         /* a Matte tick box */
     .pfoot { display: flex; gap: 6px; padding: 12px 10px 8px; flex-wrap: wrap; }
     .btn { min-width: 0; white-space: nowrap; }                  /* a Matte key; the one that saves is the primary */
@@ -105,16 +105,16 @@
     .tbtn { width: 36px; min-width: 0; padding: 0; position: relative; }   /* Matte keys; Play is the primary */
     .tbtn svg { width: 14px; height: 14px; fill: currentColor; }
     .tbtn--play { width: 48px; }
-    .tbtn .badge { position: absolute; right: 3px; bottom: 2px; font: 400 7.5px/1 var(--m-font); color: var(--m-signal); }
+    .tbtn .badge { position: absolute; right: 3px; bottom: 2px; font: 400 var(--step--2)/1 var(--m-font); color: var(--m-signal); }
     .scrub { position: relative; height: 32px; display: flex; align-items: center; }
     .scrub .m-fader { width: 100%; position: relative; z-index: 1; }
     .marks { position: absolute; left: 8px; right: 8px; top: 0; bottom: 0; pointer-events: none; }
     .mark { position: absolute; top: 1px; width: 2px; height: 6px; border-radius: 1px; background: var(--m-print-dim); transform: translateX(-1px); }   /* printed ticks above the slot */
     .mark.is-fail { background: var(--m-danger); top: 0; height: 100%; }
     .mark.is-boom { background: var(--m-signal); height: 8px; }
-    .clock { font: 400 12px/1.3 var(--m-font); font-variant-numeric: tabular-nums; color: var(--m-lit); white-space: nowrap; text-align: right; min-width: 160px; }
+    .clock { font: 400 var(--step--1)/1.3 var(--m-font); font-variant-numeric: tabular-nums; color: var(--m-lit); white-space: nowrap; text-align: right; min-width: 160px; }
     .clock .dim { color: var(--m-print-dim); }
-    .clock .meta { color: var(--m-print-dim); font-size: 10.5px; display: block; }
+    .clock .meta { color: var(--m-print-dim); font-size: var(--step--2); display: block; }
     .speed { min-width: 46px; font-variant-numeric: tabular-nums; }   /* a small Matte key */
 
     /* ---------- versions and help popovers ---------- */
@@ -126,11 +126,11 @@
     .vlist { list-style: none; margin-top: 12px; display: grid; gap: 6px; }
     .vitem { display: grid; grid-template-columns: 1fr; gap: 2px 8px; padding: 8px 10px 9px; border-radius: var(--m-radius-well); background: var(--m-well); box-shadow: var(--m-well-shadow); }
     .vitem .name { font-weight: 600; color: var(--m-lit); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .vitem .when { color: var(--m-glass-dim); font-size: 11.5px; }
+    .vitem .when { color: var(--m-glass-dim); font-size: var(--step--1); }
     .vitem .acts { display: flex; gap: 6px; align-items: center; margin-top: 7px; }
     .vitem.is-current { box-shadow: var(--m-well-shadow), 0 0 0 1px var(--m-signal); }
     .empty { color: var(--m-print-dim); padding: 8px 2px; }
-    .status { color: var(--m-print-dim); font-size: 12px; margin-top: 8px; min-height: 16px; }
+    .status { color: var(--m-print-dim); font-size: var(--step--1); margin-top: 8px; min-height: 16px; }
     .keys { display: grid; grid-template-columns: auto 1fr; gap: 7px 12px; align-items: center; color: var(--m-print); }
     .keys dt { white-space: nowrap; }
     .keys dd { color: var(--m-print-dim); }
@@ -164,7 +164,7 @@
       .tbtns { gap: 4px; }
       .tbtn { width: 30px; }
       .tbtn--play { width: 40px; }
-      .clock { min-width: 0; font-size: 11px; }
+      .clock { min-width: 0; font-size: var(--step--1); }
       .clock .dim, .clock .meta { display: none; }   /* room for the time alone beside the keys */
       .toast { bottom: 150px; }
     }

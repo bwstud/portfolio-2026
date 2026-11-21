@@ -27,7 +27,7 @@
 @media (min-width: 2200px) { .page > .page__body { grid-column: 1 / span 4; } }
 .home { position: relative; z-index: 1; }   /* above the halftone's canvas, which reaches up behind the last project */
 .home a, .foot-col a { text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
-.mono { font: 400 var(--text-2xs)/1.5 "Söhne Mono", ui-monospace, Menlo, monospace; color: var(--muted); }
+.mono { font: 400 var(--step--1)/1.5 "Söhne Mono", ui-monospace, Menlo, monospace; color: var(--muted); }
 
 
 /* Going from one of these pages to another, the browser carries the nav across as its own layer and cross-fades the rest
@@ -65,8 +65,10 @@
 }
 /* Phones: one row, with the links in the Menu panel (styles.css and nav.js) */
 /* Below the rail the nav spans the window. The iron filings' canvas reaches past each key (filings.js), and past
-   the window's edge on the last one, which made the page scroll sideways; the bar clips it there. */
-@media (max-width: 1099px) { .nav { overflow-x: clip; } }
+   the window's edge on the last one, which made the page scroll sideways; the bar trims it at its sides. A clip-path,
+   open above and below, not overflow-x: clip: on an iPhone, Safari let the Menu panel (which hangs below the bar) show
+   while it animated open, then clipped it away, so the menu flashed open and shut. */
+@media (max-width: 1099px) { .nav { clip-path: inset(-100vh 0 -100vh 0); } html, body { overflow-x: clip; } }   /* the clip-path trims what shows; clipped on both, body keeps its own clip (not handed to the window), so nothing can widen the page */
 /* Between phone and rail the row can't hold every button, so it wraps */
 @media (min-width: 601px) and (max-width: 1099px) {
   .nav { height: auto; min-height: var(--nav-h); flex-wrap: wrap; row-gap: var(--space-2); padding-block: var(--space-3); }
@@ -90,8 +92,8 @@
 
 .foot { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: var(--space-6) var(--grid-gutter); }
 .foot > * { grid-column: span 4; }   /* three columns of four */
-.foot h2 { font: 400 var(--text-2xs)/1.5 "Söhne Mono", monospace; color: var(--c-mist); margin: 0 0 var(--space-2); }
-.foot p, .foot ul { margin: 0; padding: 0; list-style: none; font-size: var(--text-md); line-height: 1.55; }
+.foot h2 { font: 400 var(--step--1)/1.5 "Söhne Mono", monospace; color: var(--c-mist); margin: 0 0 var(--space-2); }
+.foot p, .foot ul { margin: 0; padding: 0; list-style: none; font-size: var(--step-0); line-height: 1.55; }
 .foot li { padding: 2px 0; }
 .foot a:has(.foot__icon) { display: inline-flex; align-items: center; gap: var(--space-2); }
 .foot__icon { flex: none; width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
@@ -122,7 +124,7 @@
    small mono capitals for their labels. */
 .endfoot { display: block; margin-top: var(--space-8); padding-block: var(--space-4) var(--space-6); }
 .endfoot .foot { padding-top: var(--space-5); border-top: 1px solid var(--line); }
-.endfoot .foot h2 { margin: 0; padding-bottom: var(--space-2); font: 400 var(--text-2xs)/1.5 var(--font-mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+.endfoot .foot h2 { margin: 0; padding-bottom: var(--space-2); font: 400 var(--step--1)/1.5 var(--font-mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
 .bison-run { position: relative; height: clamp(300px, 46vw, 86svh); margin-top: var(--space-4); color: var(--c-paper); overflow: hidden; }
 :root[data-theme="light"] .bison-run { color: var(--c-night); }
 .bison-run canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
@@ -144,8 +146,8 @@
 .cards.matte .card__thumb { border-radius: calc(var(--m-radius) - 8px); background: var(--m-well);
   box-shadow: 0 1px 0 rgb(255 255 255 / calc(0.08 * var(--m-gloss))), 0 0 0 1px var(--m-edge); }
 .cards.matte .card__body { padding: var(--space-4) 6px 6px; }
-.cards.matte .card__title { color: var(--m-print-hi); font: 600 var(--text-heading)/1.2 "Söhne Breit", sans-serif; }
-.cards.matte .card__desc { color: var(--m-print); font-size: var(--text-sm); line-height: 1.5; }
+.cards.matte .card__title { color: var(--m-print-hi); font: 600 var(--step-1)/1.2 "Söhne Breit", sans-serif; }
+.cards.matte .card__desc { color: var(--m-print); font-size: var(--step-0); line-height: 1.5; }
 .cards.matte .card__meta { margin-top: var(--space-2); color: var(--m-print-dim); font: 400 var(--m-text-legend)/1.5 var(--m-font); letter-spacing: 0.1em; text-transform: uppercase; }
 .cards.matte .card--soon { background: none; box-shadow: 0 0 0 1px var(--line-strong); color: var(--m-print-dim); font: 400 var(--m-text-legend)/1 var(--m-font); letter-spacing: 0.1em; text-transform: uppercase; }
 .cards.matte .card--soon::before { content: none; }
@@ -162,4 +164,4 @@ html.lenis { scroll-behavior: auto; }
 .tuner__row { display: grid; grid-template-columns: 1fr 64px; align-items: center; gap: 8px 10px; }
 .tuner__row label { grid-column: 1 / -1; }
 .tuner .m-fader { width: 100%; }
-.matte .tuner__num { width: 100%; height: 24px; padding: 0 6px; text-align: right; font-size: 11px; font-variant-numeric: tabular-nums; }
+.matte .tuner__num { width: 100%; height: 24px; padding: 0 6px; text-align: right; font-size: var(--step--1); font-variant-numeric: tabular-nums; }

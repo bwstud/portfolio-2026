@@ -41,9 +41,9 @@
     html, body {
       height: 100%; overflow: hidden;
       background: var(--bg); color: var(--fg);
-      font: 13px/1.45 "Geist", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
+      font: var(--step--1)/1.45 "Geist", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
       -webkit-font-smoothing: antialiased;
-    }
+    } html { font-size: 100%; }   /* rem stays 16px, for the type scale */
     [hidden] { display: none !important; }
     a { color: inherit; }
 
@@ -55,7 +55,7 @@
     }
     .top > * { pointer-events: auto; }
     .back { color: var(--m-print-hi); white-space: nowrap; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6); }
-    .brand { font-size: 15px; font-weight: 650; white-space: nowrap; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6); }
+    .brand { font-size: var(--step-0); font-weight: 650; white-space: nowrap; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6); }
     .top__end { margin-left: auto; display: flex; gap: 8px; align-items: center; }
     .hbtn { white-space: nowrap; }                              /* a Matte key; Slow motion stays down while it is on */
 

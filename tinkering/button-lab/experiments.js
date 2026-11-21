@@ -16,24 +16,24 @@
       .xp { --ground: #0d0d0e; position: relative; }
       .xp__row { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 28px 48px; padding: 36px 24px 28px; }
       .xp__key { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 260px; height: 76px; margin: 44px 0; border-radius: 8px;
-        font: 400 12px/1 var(--font-mono); letter-spacing: 0.12em; text-transform: uppercase; color: #b4b4b6; cursor: pointer;
+        font: 400 var(--step--1)/1 var(--font-mono); letter-spacing: 0.12em; text-transform: uppercase; color: #b4b4b6; cursor: pointer;
         background: linear-gradient(180deg, #2e2e30, #1f1f21);
         box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.11), 0 0 0 1px #070707, 0 4px 0 #0c0c0c, 0 9px 12px rgb(0 0 0 / 0.5);
         transition: transform 110ms cubic-bezier(0.23, 1, 0.32, 1), box-shadow 110ms cubic-bezier(0.23, 1, 0.32, 1); }
       .xp__key:active { transform: translateY(2px); box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.08), 0 0 0 1px #070707, 0 2px 0 #0c0c0c, 0 4px 6px rgb(0 0 0 / 0.5); }
-      .xp__tune { display: grid; grid-template-columns: auto 160px 5em; gap: 8px 12px; align-items: center; color: var(--muted); font-size: 12px; }
+      .xp__tune { display: grid; grid-template-columns: auto 160px 5em; gap: 8px 12px; align-items: center; color: var(--muted); font-size: var(--step--1); }
       .xp__tune output { color: var(--fg); font-variant-numeric: tabular-nums; }
       .xp__tune input[type="number"] { width: 64px; padding: 2px 4px; text-align: right; background: var(--bg); border: 1px solid var(--line); border-radius: 4px; color: var(--fg); font-variant-numeric: tabular-nums; }   /* type a value in place of dragging */
       .xp__tune input[type="color"] { width: 44px; height: 24px; padding: 0; border: 1px solid var(--line); border-radius: 4px; background: none; }
-      .xp__saved { display: grid; gap: 10px; width: 280px; font-size: 12px; color: var(--muted); }
-      .xp__saved h3 { margin: 0; font-size: 12px; font-weight: 600; color: var(--fg); }
+      .xp__saved { display: grid; gap: 10px; width: 280px; font-size: var(--step--1); color: var(--muted); }
+      .xp__saved h3 { margin: 0; font-size: var(--step--1); font-weight: 600; color: var(--fg); }
       .xp__saved select, .xp__saved input[type="text"] { width: 100%; min-width: 0; padding: 4px 6px; background: var(--bg); border: 1px solid var(--line); border-radius: 4px; box-sizing: border-box; }
       .xp__line { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
       .xp__line input[type="text"] { flex: 1; width: auto; }
-      .xp__saved .btn { font-size: 12px; color: var(--fg); }
+      .xp__saved .btn { font-size: var(--step--1); color: var(--fg); }
       .xp__try { display: flex; gap: 8px; align-items: center; color: var(--fg); cursor: pointer; }
       .xp__status { min-height: 2.8em; margin: 0; }
-      .xp__note { max-width: 60ch; padding: 0 24px; margin: 0; color: var(--muted); font-size: 12px; }
+      .xp__note { max-width: 60ch; padding: 0 24px; margin: 0; color: var(--muted); font-size: var(--step--1); }
     </style>
     <div class="strip__label">Experiments</div>
     <div class="xp__row">

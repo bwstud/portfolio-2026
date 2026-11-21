@@ -7,17 +7,17 @@
   <meta name="robots" content="noindex">
   <meta name="color-scheme" content="dark">
   <link rel="stylesheet" href="../../styles.css">
-  <link rel="stylesheet" href="../../matte.css?v=15">
+  <link rel="stylesheet" href="../../matte.css?v=16">
   <style>
     /* Peek Lab: tune the project sheet on the work page, and above all its peek: how the sheet scoots over when the
        pointer moves onto the page showing beside it. The stage is the work page itself in a frame, with the first
        project's sheet open, so the real thing is what moves; the faders are the sheet's settings (TUNE in work.html).
        A saved version marked "on the site" is what the work page uses. Saving needs the local server (dvs). */
-    body { margin: 0; min-height: 100vh; background: var(--c-night); color: var(--c-mist); font: 400 15px/1.5 var(--font-sans); }
+    body { margin: 0; min-height: 100vh; background: var(--c-night); color: var(--c-mist); font: 400 var(--step-0)/1.5 var(--font-sans); }
     .lab { display: grid; grid-template-columns: minmax(0, 1fr) 372px; min-height: 100vh; }
     .stage { position: sticky; top: 0; height: 100vh; display: grid; grid-template-rows: auto 1fr auto; }
     .stage__head { display: flex; align-items: baseline; gap: 20px; padding: 20px 28px; }
-    .stage__head h1 { margin: 0; font: 600 22px/1 var(--font-display); letter-spacing: -0.01em; }
+    .stage__head h1 { margin: 0; font: 600 var(--step-1)/1 var(--font-display); letter-spacing: -0.01em; }
     .stage__page { width: 100%; height: 100%; border: 0; display: block; background: var(--c-night); }
     .transport { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; padding: 20px 28px; }
     .side { display: flex; flex-direction: column; gap: 16px; padding: 20px; background: #08090b; border-left: 1px solid rgb(255 255 255 / 0.06); overflow-y: auto; max-height: 100vh; box-sizing: border-box; }
@@ -29,9 +29,9 @@
     .row label { grid-area: 1 / 1; align-self: end; }
     .row .m-fader { grid-area: 2 / 1; }
     /* every fader has a number field beside it: type a value in place of dragging */
-    .matte .row__num { grid-area: 2 / 2; width: 100%; height: 24px; padding: 0 6px; text-align: right; font-size: 11px; font-variant-numeric: tabular-nums; }
+    .matte .row__num { grid-area: 2 / 2; width: 100%; height: 24px; padding: 0 6px; text-align: right; font-size: var(--step--1); font-variant-numeric: tabular-nums; }
     /* a fader moved off the value it was loaded with gets a Reset beside its name, which puts it back */
-    .matte .row__reset { grid-area: 1 / 2; justify-self: end; align-self: end; height: 16px; margin-right: -5px; padding: 0 5px; border-radius: 3px; color: var(--m-signal); font: 400 9px/16px var(--m-font); letter-spacing: 0.1em; text-transform: uppercase; }
+    .matte .row__reset { grid-area: 1 / 2; justify-self: end; align-self: end; height: 16px; margin-right: -5px; padding: 0 5px; border-radius: 3px; color: var(--m-signal); font: 400 var(--step--2)/16px var(--m-font); letter-spacing: 0.1em; text-transform: uppercase; }
     .matte .row__reset:hover { color: var(--m-print-hi); background: color-mix(in srgb, var(--m-print) 12%, transparent); }
     .matte .row__reset[hidden] { display: none; }
     .row.is-changed .row__num { color: var(--m-signal); }

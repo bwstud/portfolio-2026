@@ -8,17 +8,17 @@
   <meta name="color-scheme" content="dark">
   <script>if (/[?&]embed\b/.test(location.search)) document.documentElement.classList.add('is-embed');</script>
   <link rel="stylesheet" href="../../styles.css">
-  <link rel="stylesheet" href="../../matte.css?v=15">
+  <link rel="stylesheet" href="../../matte.css?v=16">
   <style>
     /* Tatankagram: a bison made of thirty thousand small metal beads. They ride a ring of dust low on the ground, rise
        into the animal from the hooves up, hold, and are blown off by the wind, left to right, back into the ring.
        The points come from the 3DRT bison model (tools/bison/tatankagram.py); tatankagram.js draws them. The stage is the canvas;
        the panel is the instrument: every fader has a typed number beside it. */
-    body { margin: 0; min-height: 100vh; background: var(--c-night); color: var(--c-mist); font: 400 15px/1.5 var(--font-sans); }
+    body { margin: 0; min-height: 100vh; background: var(--c-night); color: var(--c-mist); font: 400 var(--step-0)/1.5 var(--font-sans); }
     .lab { display: grid; grid-template-columns: minmax(0, 1fr) 340px; min-height: 100vh; }
     .stage { position: sticky; top: 0; height: 100vh; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; }
     .stage__head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 20px; padding: 20px 28px; }
-    .stage__head h1 { margin: 0; font: 600 22px/1 var(--font-display); letter-spacing: -0.01em; }
+    .stage__head h1 { margin: 0; font: 600 var(--step-1)/1 var(--font-display); letter-spacing: -0.01em; }
     .stage__view { position: relative; min-height: 0; }
     .stage__view canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; cursor: grab; }
     .stage__view canvas.is-turning { cursor: grabbing; }
@@ -41,10 +41,10 @@
     .row label { grid-area: 1 / 1; align-self: end; }
     .row .m-fader { grid-area: 2 / 1; width: 100%; }
     /* every fader has a number field beside it: type a value in place of dragging */
-    .matte .row__num, .matte .transport__num { grid-area: 2 / 2; width: 100%; height: 24px; padding: 0 6px; text-align: right; font-size: 11px; font-variant-numeric: tabular-nums; }
+    .matte .row__num, .matte .transport__num { grid-area: 2 / 2; width: 100%; height: 24px; padding: 0 6px; text-align: right; font-size: var(--step--1); font-variant-numeric: tabular-nums; }
     .matte .transport__num { grid-area: auto; }
     /* a fader moved off where it started gets a Reset beside its name, which puts it back */
-    .matte .row__reset { grid-area: 1 / 2; justify-self: end; align-self: end; height: 16px; margin-right: -5px; padding: 0 5px; border-radius: 3px; color: var(--m-signal); font: 400 9px/16px var(--m-font); letter-spacing: 0.1em; text-transform: uppercase; }
+    .matte .row__reset { grid-area: 1 / 2; justify-self: end; align-self: end; height: 16px; margin-right: -5px; padding: 0 5px; border-radius: 3px; color: var(--m-signal); font: 400 var(--step--2)/16px var(--m-font); letter-spacing: 0.1em; text-transform: uppercase; }
     .matte .row__reset:hover { color: var(--m-print-hi); background: color-mix(in srgb, var(--m-print) 12%, transparent); }
     .matte .row__reset[hidden] { display: none; }
     .row.is-changed .row__num { color: var(--m-signal); }

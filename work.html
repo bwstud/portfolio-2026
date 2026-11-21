@@ -23,7 +23,7 @@
   <link rel="preload" href="fonts/soehne-buch.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="fonts/soehne-mono-buch.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="styles.css">
-  <link rel="stylesheet" href="matte.css?v=15">   <!-- the Matte system: the nav keys, the menu and the board's housing -->
+  <link rel="stylesheet" href="matte.css?v=16">   <!-- the Matte system: the nav keys, the menu and the board's housing -->
   <link rel="stylesheet" href="board.css">   <!-- the project board's finish, shared with the Split-Flap Lab -->
   <link rel="stylesheet" href="drift-wall.css">   <!-- the drifting wall of screenshots in a project's record -->
   <link rel="stylesheet" href="matte-page.css">   <!-- the shared page: rail nav, off-black ground, footer band -->
@@ -39,7 +39,7 @@
     /* the board sits at the top of the page, its plate 32px down, level with the rail's first button; Project and Released
        sit centred in the space above it, as far from the window's top as from the plate (15px of label in 32) */
     @media (min-width: 1100px) { .top { padding-top: 0; } .board.matte .board__head { padding-block: 8.5px; } .board.matte .board__head span:last-child { top: 8.5px; } }
-    .top__name { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }   /* read out, not shown */
+    .top__name { position: absolute; font-size: var(--step-0); width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }   /* read out, not shown */
     /* From the cover: the bar, then the work, rising into place */
     @media (prefers-reduced-motion: no-preference) {
       @view-transition { navigation: auto; }
@@ -56,7 +56,7 @@
     /* Rows as links: the default, and what phones keep */
     .rows { display: grid; gap: 1px; background: var(--line); border: 1px solid var(--line); margin: 0; padding: 0; list-style: none; }
     .rows a { display: flex; justify-content: space-between; gap: var(--space-4); background: var(--ground); padding: var(--space-4);
-      font: 600 var(--text-2xs)/1.2 "Söhne Breit", sans-serif; letter-spacing: .06em; text-transform: uppercase; text-decoration: none; }
+      font: 600 var(--step--1)/1.2 "Söhne Breit", sans-serif; letter-spacing: .06em; text-transform: uppercase; text-decoration: none; }
     .rows a span:last-child { color: var(--signal); }
 
     /* The board, once split-flap.js has mounted it */
@@ -115,7 +115,7 @@
     .bay__media .wall__pause { z-index: 1; }
     /* what the press does, said in the corner of the wall when the pointer or the focus is on it */
     .bay__open span { position: absolute; left: 12px; bottom: 12px; padding: 7px 10px; border-radius: 4px; background: rgb(8 10 10 / 0.72); color: #fff;
-      font: 400 var(--text-2xs)/1 var(--font-mono); letter-spacing: 0.1em; text-transform: uppercase; opacity: 0; translate: 0 4px; transition: opacity 160ms ease-out, translate 160ms ease-out; }
+      font: 400 var(--step--1)/1 var(--font-mono); letter-spacing: 0.1em; text-transform: uppercase; opacity: 0; translate: 0 4px; transition: opacity 160ms ease-out, translate 160ms ease-out; }
     .bay__open:focus-visible span { opacity: 1; translate: 0 0; }
     @media (hover: hover) and (pointer: fine) { .bay__open:hover span { opacity: 1; translate: 0 0; } }
     @media (hover: none), (pointer: coarse) { .bay__open span { opacity: 1; translate: 0 0; } }   /* no hover to bring it up, so it stays */
@@ -176,18 +176,34 @@
     /* the content starts below the close button: its top, its height (a 28px key), and a gap the same as its top */
     .sheet { --sheet-top: calc(var(--space-5) + 28px + var(--space-5)); }
     .sheet__scroll { overflow-y: auto; overscroll-behavior: contain; height: 100dvh; padding: var(--sheet-top) var(--space-5) var(--space-8); }
-    .sheet__side h2 { font: 600 clamp(26px, 2.4vw, 36px)/1.1 "Söhne Breit", sans-serif; letter-spacing: -.01em; text-wrap: balance; margin: var(--space-3) 0 0; }
+    .sheet__side h2 { font: 600 var(--step-3)/1.1 "Söhne Breit", sans-serif; letter-spacing: -.01em; text-wrap: balance; margin: var(--space-3) 0 0; }
     .sheet__side .mono, .sheet h3 { font-family: var(--font-mono); letter-spacing: 0.1em; text-transform: uppercase; }
     .sheet__name { margin: 0; }
     /* the project's facts under the title: each a small label over its value */
     .sheet__facts { display: grid; gap: var(--space-3); margin: var(--space-5) 0 0; }
-    .sheet__facts dt { font-family: var(--font-mono); font-size: var(--text-2xs); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+    .sheet__facts dt { font-family: var(--font-mono); font-size: var(--step--1); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
     .sheet__facts dd { margin: 2px 0 0; line-height: 1.45; text-wrap: pretty; }   /* a value can run to a paragraph, as Summary does */
     .sheet__index { display: none; }
     .sheet__body { display: grid; gap: var(--space-7); margin-top: var(--space-7); }
-    .sheet h3 { font-size: var(--text-2xs); font-weight: 400; color: var(--muted); margin: 0 0 var(--space-3); }
+    .sheet h3 { font-size: var(--step--1); font-weight: 400; color: var(--muted); margin: 0 0 var(--space-3); }
     .sheet section { scroll-margin-top: var(--space-7); }
-    .sheet section p { margin: 0; max-width: 38em; font-size: var(--text-heading); line-height: 1.45; text-wrap: pretty; }
+    .sheet section p { margin: 0; max-width: 38em; font-size: var(--step-1); line-height: 1.45; text-wrap: pretty; }
+    /* the body copy: a serif on trial, chosen in the font switcher (Shift+F, or ?fonts), at a step of the type scale.
+       Facts, index and legends stay in Söhne */
+    .sheet section :is(p, li) { font-family: var(--sheet-serif, "Newsreader"), Georgia, serif; font-size: var(--sheet-serif-step, var(--step-1)); }
+    @font-face { font-family: "Geist Serif"; font-weight: 400; font-display: swap; src: url("fonts/GeistSerif-Regular.woff2") format("woff2"); }        /* Vercel, OFL */
+    @font-face { font-family: "Newsreader"; font-weight: 200 800; font-display: swap; src: url("fonts/Newsreader-Variable.woff2") format("woff2"); } /* Production Type, OFL; Latin */
+    @font-face { font-family: "Neco"; font-weight: 400; font-display: swap; src: url("fonts/Neco-Regular.woff2") format("woff2"); }                  /* Indian Type Foundry, Fontshare free licence */
+    @font-face { font-family: "Vollkorn"; font-weight: 400 900; font-display: swap; src: url("fonts/Vollkorn-Variable.woff2") format("woff2"); }    /* OFL; Latin */
+    @font-face { font-family: "STIX Two Text"; font-weight: 400 700; font-display: swap; src: url("fonts/STIXTwoText-Variable.woff2") format("woff2"); } /* OFL; Latin */
+    @font-face { font-family: "Spectral"; font-weight: 400; font-display: swap; src: url("fonts/Spectral-Regular.woff2") format("woff2"); }          /* Production Type, OFL; Latin */
+    @font-face { font-family: "Literata"; font-weight: 200 900; font-display: swap; src: url("fonts/Literata-Variable.woff2") format("woff2"); }    /* TypeTogether, OFL; Latin */
+    /* the font switcher: a Matte panel in the sheet's bottom-right corner (inside the dialog, so it can be used while the sheet is open) */
+    .fontpick { position: fixed; right: var(--space-5); bottom: var(--space-5); z-index: 5; display: flex; width: 260px; }
+    .fontpick[hidden] { display: none; }
+    .fontpick .m-cell { width: 100%; box-sizing: border-box; justify-items: stretch; gap: 10px; }
+    .fontpick__row { display: grid; gap: 8px; }
+    .fontpick select { width: 100%; }
     .sheet section p + p { margin-top: var(--space-2); }   /* a second result, as on the record */
     .sheet .sheet__prose p + p { margin-top: var(--space-4); }   /* written paragraphs, a step further apart */
     .sheet__prose > .sheet__film { margin-bottom: var(--space-7); }
@@ -197,7 +213,7 @@
     .sheet .is-result h3 { color: var(--signal); }
     .sheet__lead { margin: 0; padding: clamp(var(--space-4), 4vw, var(--space-8)); border-radius: var(--radius-lg); background: var(--surface); }
     .sheet__lead img { display: block; width: 100%; height: auto; border-radius: var(--radius-sm); }
-    .sheet__lead figcaption { margin-top: var(--space-4); font-family: var(--font-mono); font-size: var(--text-2xs); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+    .sheet__lead figcaption { margin-top: var(--space-4); font-family: var(--font-mono); font-size: var(--step--1); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
     /* Before and after: three pictures of the same screen in one place, and two lines to drag across them. Left of the
        first line is the redesign; left of the second, which follows behind it, is the redesign's dark mode. --a and --b
        are the lines' places, 0 at the left edge and 1 at the right; both start at 0, so the old screen shows whole. */
@@ -218,7 +234,7 @@
     .compare__line:focus-visible .compare__knob { outline: 2px solid var(--signal); outline-offset: 3px; }
     /* the line's name rides above its knob, and slides from the line's right to its left as the line crosses, so it never leaves the picture */
     .compare__tag { position: absolute; top: calc(var(--knob-y) - 52px); left: 0; translate: calc(var(--v) * -100%) 0; padding: 4px 8px; border-radius: 4px; white-space: nowrap;
-      background: rgb(12 14 16 / 0.86); color: #fff; font-family: var(--font-mono); font-size: var(--text-2xs); letter-spacing: 0.1em; text-transform: uppercase; }
+      background: rgb(12 14 16 / 0.86); color: #fff; font-family: var(--font-mono); font-size: var(--step--1); letter-spacing: 0.1em; text-transform: uppercase; }
     .sheet__screens { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--grid-gutter); margin: 0; padding: 0; list-style: none; }
     @media (max-width: 600px) { .sheet__screens { grid-template-columns: minmax(0, 1fr); } }
     .sheet__film { margin: 0; }
@@ -240,7 +256,7 @@
       .sheet__body:has(> :first-child .sheet__film, > .sheet__film:first-child) { margin-top: 0; }   /* a film starts the details level with the name and title beside it */
     }
     .bay__name { margin: 0 0 var(--space-3); }
-    .bay h2 { font: 600 clamp(28px, 2.95vw, 42px)/1.08 "Söhne Breit", sans-serif; letter-spacing: -.01em; text-wrap: balance; margin: 0; }
+    .bay h2 { font: 600 var(--step-4)/1.08 "Söhne Breit", sans-serif; letter-spacing: -.01em; text-wrap: balance; margin: 0; }
     .bay__meta { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-1); margin: var(--space-5) 0 0; padding: 0; list-style: none; }   /* one tag a line */
     .bay__media { display: grid; place-items: center start; min-width: 0; margin: 0; }   /* a picture narrower than its columns keeps to their left edge */
     .bay__media img { border-radius: var(--radius-sm); max-height: 26rem; width: auto; max-width: 100%; height: auto; }
@@ -249,7 +265,7 @@
     .fields { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: var(--space-6) var(--grid-gutter); margin: 0; padding-top: var(--space-5); border-top: 1px solid var(--line); }
     .fields > div { grid-column: span 4; }   /* three fields of four columns, under the record's grid */
     .fields dt { padding-bottom: var(--space-2); }
-    .fields dd { margin: 0; font-size: var(--text-md); line-height: 1.55; text-wrap: pretty; }
+    .fields dd { margin: 0; font-size: var(--step-0); line-height: 1.55; text-wrap: pretty; }
     .fields .m-panel dt { color: var(--signal); }
     .fields dd + dd { margin-top: var(--space-2); }   /* a second result, on its own line */
     /* each field is the design system's Module (matte.css): a raised body, its label in a header cell, a seam, then the words */
@@ -1209,6 +1225,45 @@
         };
         addEventListener('load', () => { try { parent.peekLab && parent.peekLab.ready(); } catch (e) { /* opened on its own */ } });
       }
+    })();
+
+    /* ---- The font switcher, for choosing the sheet's body face: Shift+F, or ?fonts in the address. A face, and a step of
+       the type scale to set it at; the choice is remembered on this browser. Visitors never see it. ---- */
+    (function () {
+      const sheet = document.querySelector('.sheet');
+      if (!sheet) return;
+      const FACES = ['Söhne', 'Geist Serif', 'Newsreader', 'Neco', 'Vollkorn', 'STIX Two Text', 'Spectral', 'Literata'];
+      const STEPS = [['0', 'Step 0 · 16px'], ['1', 'Step 1 · 19–21px'], ['2', 'Step 2 · 23–28px']];
+      const pick = document.createElement('div');
+      pick.className = 'fontpick m-panel m-panel--col matte';
+      pick.setAttribute('role', 'group'); pick.setAttribute('aria-label', 'Body font');
+      pick.hidden = true;
+      pick.innerHTML = `<div class="m-cell">
+        <div class="fontpick__row"><label class="m-legend" for="fontpick-face">Body font</label>
+          <select class="m-input" id="fontpick-face">${FACES.map(n => `<option>${n}</option>`).join('')}</select></div>
+        <div class="fontpick__row"><label class="m-legend" for="fontpick-step">Size</label>
+          <select class="m-input" id="fontpick-step">${STEPS.map(([v, t]) => `<option value="${v}">${t}</option>`).join('')}</select></div>
+      </div>`;
+      sheet.append(pick);
+      const face = pick.querySelector('#fontpick-face'), step = pick.querySelector('#fontpick-step');
+      let saved = {};
+      try { saved = JSON.parse(localStorage.getItem('sheet-serif') || '{}'); } catch (e) { /* the defaults */ }
+      const state = { face: FACES.includes(saved.face) ? saved.face : 'Newsreader', step: STEPS.some(([v]) => v === saved.step) ? saved.step : '1' };
+      const apply = () => {
+        sheet.style.setProperty('--sheet-serif', `"${state.face}"`);
+        sheet.style.setProperty('--sheet-serif-step', `var(--step-${state.step})`);
+        face.value = state.face; step.value = state.step;
+        try { localStorage.setItem('sheet-serif', JSON.stringify(state)); } catch (e) { /* not remembered */ }
+      };
+      face.addEventListener('change', () => { state.face = face.value; apply(); });
+      step.addEventListener('change', () => { state.step = step.value; apply(); });
+      apply();
+      const toggle = () => { pick.hidden = !pick.hidden; };
+      document.addEventListener('keydown', e => {
+        if (e.key !== 'F' || !e.shiftKey || e.metaKey || e.ctrlKey || e.altKey || e.target.closest('input, textarea, select, [contenteditable]')) return;
+        toggle();
+      });
+      if (new URLSearchParams(location.search).has('fonts')) toggle();
     })();
 
     /* ---- The work-in-progress notice: it comes up as the first record arrives (with the project section, once the board

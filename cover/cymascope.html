@@ -7,6 +7,7 @@
   <meta name="robots" content="noindex">
   <meta name="color-scheme" content="dark">
   <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="../matte.css?v=16">   <!-- for the type scale (--step-*) -->
   <style>
     /* An alternative cover, reached from the Covers menu. The Cymascope from Experiments fills the page and slowly breathes; the
        sentence and Recent Work sit on a pane of blurred glass. "Tune" opens the Cymascope's own
@@ -25,13 +26,13 @@
       opacity: 0; transform: translateY(10px) scale(0.985);
       transition: opacity 700ms ease, transform 900ms cubic-bezier(0.23, 1, 0.32, 1), scale 400ms cubic-bezier(0.23, 1, 0.32, 1), translate 400ms cubic-bezier(0.23, 1, 0.32, 1); }
     .is-in .glass { opacity: 1; transform: none; }
-    .hook__text { margin: 0; text-wrap: balance; font: 600 clamp(28px, 4.7vw, 68px)/1.08 var(--font-display); letter-spacing: -.01em; color: var(--c-mist); }
-    .hook__name { display: block; margin-bottom: 16px; font-size: clamp(20px, 2.9vw, 42px); line-height: 1.1; letter-spacing: -.005em; color: var(--c-ochre); }
+    .hook__text { margin: 0; text-wrap: balance; font: 600 var(--step-5)/1.08 var(--font-display); letter-spacing: -.01em; color: var(--c-mist); }
+    .hook__name { display: block; margin-bottom: 16px; font-size: var(--step-3); line-height: 1.1; letter-spacing: -.005em; color: var(--c-ochre); }
     .word { display: inline-block; opacity: 0; transform: translateY(.18em); filter: blur(6px); }
     .is-in .word { animation: word 520ms cubic-bezier(0.23, 1, 0.32, 1) forwards; animation-delay: calc(var(--i) * 70ms + 350ms); }
     @keyframes word { to { opacity: 1; transform: none; filter: none; } }
     .hook__cta { margin-top: 36px; display: inline-flex; align-items: center; gap: .6em;
-      font: 400 14px/1 var(--font-mono); letter-spacing: .02em; text-decoration: none;
+      font: 400 var(--step--1)/1 var(--font-mono); letter-spacing: .02em; text-decoration: none;
       color: var(--c-mist); border: 1px solid var(--c-mist); border-radius: 999px; padding: 15px 22px;
       opacity: 0; transform: translateY(8px); transition: opacity 600ms ease, transform 600ms cubic-bezier(0.23, 1, 0.32, 1), background 150ms, color 150ms; }
     .is-done .hook__cta { opacity: 1; transform: none; }
@@ -39,7 +40,7 @@
 
     /* the tuning bar, bottom left */
     .tune { position: fixed; left: 20px; bottom: 20px; z-index: 100; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; max-width: calc(100vw - 180px);
-      font: 400 12px/1 var(--font-mono); letter-spacing: .02em; color: #DAE4E3; }
+      font: 400 var(--step--1)/1 var(--font-mono); letter-spacing: .02em; color: #DAE4E3; }
     .tune button, .tune label { display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 999px; font: inherit; letter-spacing: inherit; text-transform: inherit; color: inherit;
       background: rgba(4, 10, 19, .82); border: 1px solid rgba(218, 228, 227, .35); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
     .tune button { cursor: pointer; transition: border-color 150ms, background 150ms, scale 120ms ease-out; }
@@ -56,22 +57,22 @@
       background: rgba(4, 10, 19, .9); border: 1px solid rgba(218, 228, 227, .35); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); box-shadow: 0 24px 60px rgba(0, 0, 0, .5); }
     .tunes[hidden] { display: none; }
     .tunes__save { display: flex; gap: 8px; }
-    .tunes__save input { flex: 1; min-width: 0; height: 40px; padding: 0 14px; border-radius: 999px; font: 400 14px/1 var(--font-sans); color: #DAE4E3;
+    .tunes__save input { flex: 1; min-width: 0; height: 40px; padding: 0 14px; border-radius: 999px; font: 400 var(--step--1)/1 var(--font-sans); color: #DAE4E3;
       background: rgba(218, 228, 227, .08); border: 1px solid rgba(218, 228, 227, .25); }
     .tunes__save input::placeholder { color: rgba(218, 228, 227, .5); }
     .tunes__save button { flex: none; letter-spacing: .02em; }
     .tunes__list { list-style: none; margin: 8px 0 0; padding: 0; max-height: 40vh; overflow-y: auto; }
-    .tunes__list:empty::after { content: "No saved tunes yet."; display: block; padding: 10px 6px 4px; font: 400 13px/1.4 var(--font-sans); color: rgba(218, 228, 227, .6); }
+    .tunes__list:empty::after { content: "No saved tunes yet."; display: block; padding: 10px 6px 4px; font: 400 var(--step--1)/1.4 var(--font-sans); color: rgba(218, 228, 227, .6); }
     .tunes__row { display: flex; align-items: center; gap: 4px; }
     .tune .tunes__row button { height: 40px; border-radius: 8px; border-color: transparent; background: none; -webkit-backdrop-filter: none; backdrop-filter: none; }
     .tune .tunes__row button:hover { background: rgba(218, 228, 227, .1); border-color: transparent; }
-    .tune .tunes__load { flex: 1; min-width: 0; justify-content: flex-start; padding: 0 10px; font: 400 14px/1 var(--font-sans); text-transform: none; letter-spacing: 0; }
+    .tune .tunes__load { flex: 1; min-width: 0; justify-content: flex-start; padding: 0 10px; font: 400 var(--step--1)/1 var(--font-sans); text-transform: none; letter-spacing: 0; }
     .tunes__load span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .tunes__load::before { content: ""; flex: none; width: 6px; height: 6px; border-radius: 50%; }
     .tunes__row.is-active .tunes__load { color: #DFC06C; }
     .tunes__row.is-active .tunes__load::before { background: currentColor; }
-    .tunes__tag { flex: none; margin-left: auto; font: 400 10px/1 var(--font-mono); letter-spacing: .02em; opacity: .8; }
-    .tune .tunes__del { flex: none; width: 40px; padding: 0; justify-content: center; font-size: 16px; color: rgba(218, 228, 227, .6); }
+    .tunes__tag { flex: none; margin-left: auto; font: 400 var(--step--2)/1 var(--font-mono); letter-spacing: .02em; opacity: .8; }
+    .tune .tunes__del { flex: none; width: 40px; padding: 0; justify-content: center; font-size: var(--step-0); color: rgba(218, 228, 227, .6); }
     .tune .tunes__del:hover { color: #DAE4E3; }
     .tune output { min-width: 3.2em; text-align: right; font-variant-numeric: tabular-nums; color: #DFC06C; }
     @media (prefers-reduced-motion: reduce) {

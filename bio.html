@@ -17,7 +17,7 @@
   <link rel="preload" href="fonts/soehne-buch.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="fonts/soehne-mono-buch.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="styles.css">
-  <link rel="stylesheet" href="matte.css?v=15">   <!-- the Matte system: the nav keys and the menu -->
+  <link rel="stylesheet" href="matte.css?v=16">   <!-- the Matte system: the nav keys and the menu -->
   <link rel="stylesheet" href="matte-page.css">                          <!-- the page shared with the work page: rail nav, off-black ground -->
   <style>
     /* Bio: a page of its own, laid out like the work page (work.html), with the same nav rail.
@@ -25,11 +25,11 @@
     .home { padding-bottom: var(--space-9); }
     .top { padding-top: calc(var(--space-7) + var(--space-5)); }
     /* 110px, eased down on narrow screens so it fits; trimmed to its capitals so the letters, not the line box, sit on the top line */
-    .page h1 { font: 600 clamp(42px, 8.5vw, 110px)/1.05 "Söhne Breit", sans-serif; letter-spacing: -.01em; text-wrap: balance; margin: 0;
+    .page h1 { font: 600 var(--step-7)/1.05 "Söhne Breit", sans-serif; letter-spacing: -.01em; text-wrap: balance; margin: 0;
       text-box: trim-both cap alphabetic; }
     .page__body { margin-top: var(--space-8); }   /* its columns: .page in matte-page.css */
     .page__body.is-empty { opacity: .6; }
-    .page__body p { margin: 0; font-size: 26px; line-height: 1.35; text-wrap: pretty; }
+    .page__body p { margin: 0; font-size: var(--step-2); line-height: 1.35; text-wrap: pretty; }
     .page__body p + p { margin-top: var(--space-4); }
     /* the time-period legends that break the story into eras: a small mono legend, more room above than below */
     .page__era { margin: var(--space-8) 0 var(--space-3); letter-spacing: 0.1em; text-transform: uppercase; }

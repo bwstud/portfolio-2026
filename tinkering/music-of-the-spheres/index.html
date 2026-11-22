@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#04060d">
+  <link rel="icon" href="data:,">
+  <title>Music of the Spheres · Brian Studwell</title>
+  <meta name="description" content="Six short movements on orbital mechanics, from Newton's cannon to a transfer to Mars, where every orbit makes a sound.">
+  <style>
+    @layer base, matte;
+    @import url("../../matte.css") layer(matte);   /* the Matte system, under this page's own layout rules */
+    @import url("../rig.css") layer(matte);        /* and what the rigs share on top of it */
+    @font-face { font-family: "Geist"; font-weight: 100 900; font-display: swap; src: url("../../fonts/Geist-Variable.woff2") format("woff2"); }
+    @font-face { font-family: "Newsreader"; font-weight: 200 800; font-display: swap; src: url("../../fonts/Newsreader-Variable.woff2") format("woff2"); }   /* Production Type, OFL */
+
+    :root {
+      --ink-0: #020308;
+      --ink-1: #060913;
+      --ink-2: #0e1530;
+      --brass: #e7d7a8;
+      --brass-dim: rgb(231 215 168 / 0.6);
+      --paper: #f1e9d2;                  /* text on the card: warm, like a lit placard */
+      --paper-dim: rgb(241 233 210 / 0.78);
+      --copper: #e08a3c;
+      --serif: "Newsreader", "Iowan Old Style", Georgia, serif;
+      --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+      --card-w: 356px;
+      --panel-w: 296px;
+      --gutter: 16px;
+      --top-h: 56px;
+      --dock-h: 64px;
+    }
+
+    @layer base {
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      button { font: inherit; color: inherit; cursor: pointer; background: none; border: 0; }
+      ul { list-style: none; }
+    }
+    [hidden] { display: none !important; }
+    html, body { height: 100%; overflow: hidden; }
+    html { font-size: 100%; }
+    body {
+      background: radial-gradient(120% 90% at 58% 42%, var(--ink-2) 0%, var(--ink-1) 42%, var(--ink-0) 100%);
+      color: var(--paper);
+      font: var(--step--1)/1.45 "Geist", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      font-synthesis: none;
+    }
+
+    /* Sentence case everywhere: Matte prints its legends, keys, tabs and displays in capitals; this page doesn't. */
+    .matte * { text-transform: none; }
+    .matte :is(.m-legend, .m-key, .m-seg button, .m-display__label, .m-display__unit, .m-tabs [role="tab"]) { letter-spacing: 0.02em; }
+
+    #scene { position: fixed; inset: 0; display: block; width: 100%; height: 100%; touch-action: none; }
+    .labels { position: fixed; inset: 0; pointer-events: none; z-index: 1; overflow: hidden; }
+    .label {
+      position: absolute; left: 0; top: 0; translate: -50% -50%; white-space: nowrap;
+      font: 400 13px/1 var(--serif); letter-spacing: 0.01em; color: rgb(231 215 168 / 0.86);
+      text-shadow: 0 0 6px var(--ink-0), 0 0 2px var(--ink-0);
+      transition: opacity 140ms ease;
+    }
+    .label--planet { font-size: 13px; font-weight: 500; color: rgb(241 233 210 / 0.9); }
+    .label--quiet { font-size: 12px; color: rgb(231 215 168 / 0.6); }
+    .label--copper { color: var(--copper); }
+    .label--right { translate: 0 -50%; }
+    .label--left { translate: -100% -50%; }
+    .label--hint { font-size: 12px; color: var(--copper); animation: hint 2.4s ease-in-out infinite; }
+    @keyframes hint { 50% { opacity: 0.45; } }
+
+    /* ---------- top bar ---------- */
+    .top {
+      position: fixed; z-index: 4; top: 12px; left: var(--gutter); right: var(--gutter); height: 36px;
+      display: flex; align-items: center; gap: 18px; pointer-events: none;
+    }
+    .top > * { pointer-events: auto; }
+    .brand { display: flex; align-items: baseline; gap: 12px; white-space: nowrap; }
+    .brand__name { font: 500 var(--step-0)/1 var(--serif); letter-spacing: 0.005em; color: var(--paper); }
+    .index { flex: 1; display: flex; justify-content: center; gap: 2px; min-width: 0; }
+    .index__item {
+      display: inline-flex; align-items: baseline; gap: 6px; height: 32px; padding: 0 10px; border-radius: 8px;
+      color: rgb(241 233 210 / 0.55); font: 400 var(--step--1)/32px var(--serif); font-size: 15px; white-space: nowrap;
+      transition: color 160ms ease, background-color 160ms ease;
+    }
+    .index__lamp { width: 5px; height: 5px; align-self: center; margin-left: -1px; opacity: 0; transition: opacity 300ms ease; }
+    .index__item.is-done .index__lamp { opacity: 1; }
+    .index__n { font: 400 10px/1 var(--m-font); color: rgb(241 233 210 / 0.38); font-variant-numeric: tabular-nums; }
+    @media (hover: hover) and (pointer: fine) { .index__item:hover { color: var(--paper); } }
+    .index__item[aria-current="step"] { color: var(--paper); background: rgb(231 215 168 / 0.07); box-shadow: inset 0 -2px 0 var(--copper); }
+    .index__item[aria-current="step"] .index__n { color: var(--copper); }
+    .index__item:focus-visible { outline: 2px solid var(--copper); outline-offset: 1px; }
+    .is-overture :is(.index, .card, .panel, .dock, .sheet) { opacity: 0; pointer-events: none; }
+    .sound { gap: 8px; }
+
+    /* ---------- the lesson card ---------- */
+    .sheet { display: contents; }
+    .sheet__tabs { display: none; }
+    .card {
+      position: fixed; z-index: 3; left: var(--gutter); top: var(--top-h); bottom: calc(var(--dock-h) + 22px); width: var(--card-w);
+      display: flex; flex-direction: column; overflow: hidden; transition: opacity 400ms ease;
+    }
+    .card__scroll { flex: 1; overflow-y: auto; overscroll-behavior: contain; padding: 20px 22px 8px; scrollbar-width: thin; scrollbar-color: rgb(255 255 255 / 0.15) transparent; }
+    .card__body.is-in { animation: card-in 380ms var(--ease-out) both; }
+    @keyframes card-in { from { opacity: 0; transform: translateY(6px); } }
+    .card__count { margin-bottom: 10px; }
+    .card__title { font: 420 clamp(1.6rem, 1.1rem + 0.9vw, 2.1rem)/1.08 var(--serif); letter-spacing: -0.012em; color: var(--paper); text-wrap: balance; margin-bottom: 14px; }
+    .card__prose p { font: 400 var(--step-0)/1.55 var(--serif); color: var(--paper-dim); text-wrap: pretty; }
+    .card__prose p + p { margin-top: 0.7em; }
+    .card__prose b, .predict b, .story b { font-weight: 600; color: var(--paper); }
+
+    .predict { margin-top: 18px; padding: 14px 14px 12px; border-radius: 10px; background: rgb(0 0 0 / 0.22); box-shadow: inset 0 0 0 1px rgb(231 215 168 / 0.1); }
+    .predict__tag { display: block; margin-bottom: 6px; font: 400 10px/1 var(--m-font); letter-spacing: 0.02em; color: var(--copper); }
+    .predict__q { font: 500 var(--step-0)/1.4 var(--serif); color: var(--paper); margin-bottom: 12px; text-wrap: pretty; }
+    .predict__opts { display: grid; gap: 6px; }
+    .matte .predict__opt { width: 100%; min-height: 36px; padding: 8px 12px; font: 400 14px/1.3 var(--serif); letter-spacing: 0; color: var(--paper-dim); }
+    .matte .predict__opt:disabled { opacity: 1; pointer-events: none; }
+    .matte .predict__opt:disabled:not(.is-answer):not([aria-pressed="true"]) { opacity: 0.45; }
+    .matte .predict__opt.is-answer { color: var(--paper); box-shadow: 0 2px 3px rgb(0 0 0 / 0.5) inset, 0 0 0 1px var(--copper), 0 1px 0 var(--m-wall); }
+    .predict__reveal { margin-top: 12px; }
+    .predict__reveal p { font: 400 15px/1.5 var(--serif); color: var(--paper-dim); text-wrap: pretty; }
+    .predict__reveal .predict__verdict { color: var(--paper); font-weight: 600; margin-bottom: 4px; }
+    .predict.is-answered .predict__reveal { animation: card-in 300ms var(--ease-out) both; }
+
+    .goals { margin-top: 18px; display: grid; gap: 9px; }
+    .goal { display: grid; grid-template-columns: 6px 1fr; gap: 10px; align-items: baseline; font: 400 15px/1.35 var(--serif); color: var(--paper-dim); }
+    .goal .m-led { translate: 0 -2px; }
+    .goal.is-met { color: var(--paper); }
+    .goal.is-met .goal__text { text-decoration: none; }
+
+    .finale { margin: 0 16px 10px; padding: 12px 14px; border-radius: 10px; background: rgb(231 215 168 / 0.07); box-shadow: inset 0 0 0 1px rgb(231 215 168 / 0.18); font: 500 15px/1.45 var(--serif); color: var(--paper); text-wrap: pretty; animation: card-in 500ms var(--ease-out) both; }
+    .finale__coda { display: block; margin-top: 8px; padding-top: 8px; border-top: 1px solid rgb(231 215 168 / 0.16); color: var(--brass); }
+    .story { margin-top: 16px; border-top: 1px solid rgb(231 215 168 / 0.1); padding-top: 12px; }
+    .story summary { cursor: pointer; font: 500 15px/1.3 var(--serif); color: var(--brass); list-style: none; display: flex; gap: 8px; align-items: center; }
+    .story summary::-webkit-details-marker { display: none; }
+    .story summary::before { content: ""; width: 6px; height: 6px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; rotate: -45deg; transition: rotate 160ms ease; }
+    .story[open] summary::before { rotate: 45deg; }
+    .story__body { padding-top: 8px; }
+    .story__body p { font: 400 15px/1.5 var(--serif); color: var(--paper-dim); }
+    .story__body p + p { margin-top: 0.6em; }
+
+    .card__nav { display: flex; justify-content: space-between; gap: 8px; padding: 12px 16px 14px; border-top: 1px solid rgb(0 0 0 / 0.35); box-shadow: 0 1px 0 rgb(255 255 255 / 0.04) inset; }
+    .matte .next.is-ready { background: linear-gradient(180deg, color-mix(in srgb, var(--m-accent) 92%, #fff), color-mix(in srgb, var(--m-accent) 82%, #000)); color: #17110b; }
+    .matte .next.is-ready:hover { color: #000; }
+
+    /* ---------- the instrument panel ---------- */
+    .panel {
+      position: fixed; z-index: 3; right: var(--gutter); top: var(--top-h); width: var(--panel-w);
+      max-height: calc(100% - var(--top-h) - var(--dock-h) - 22px); overflow-y: auto; overscroll-behavior: contain;
+      padding: 6px 16px 14px; scrollbar-width: thin; scrollbar-color: rgb(255 255 255 / 0.15) transparent;
+    }
+    .group { padding: 12px 0 4px; display: grid; gap: 10px; }
+    .group + .group { border-top: 1px solid rgb(0 0 0 / 0.4); box-shadow: 0 1px 0 rgb(255 255 255 / 0.035) inset; margin-top: 8px; padding-top: 14px; }
+    .group__title { color: var(--m-print); }
+    .row { display: grid; grid-template-columns: 1fr 66px; grid-template-rows: auto auto; column-gap: 10px; row-gap: 4px; align-items: center; }
+    .row label { grid-column: 1 / -1; }
+    .row .unit { color: var(--m-print-dim); opacity: 0.8; }
+    .row .m-fader { width: 100%; }
+    .matte .row__num { -moz-appearance: textfield; appearance: textfield; }
+    .matte .row__num::-webkit-inner-spin-button, .matte .row__num::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+    .matte .row__num { width: 100%; height: 26px; padding: 0 7px; text-align: right; font-size: var(--step--1); font-variant-numeric: tabular-nums; }
+    .keys { display: flex; flex-wrap: wrap; gap: 6px; }
+    .matte .keys .m-key { padding: 0 10px; }
+    .matte .keys .m-key:disabled { opacity: 0.4; }
+    .segrow { display: grid; gap: 6px; }
+    .matte .segrow .m-seg button { padding: 0 9px; }
+    .readouts { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; align-items: baseline; }
+    .readouts dt { font: 400 var(--step--2)/1.3 var(--m-font); letter-spacing: 0.02em; color: var(--m-print-dim); }
+    .readouts dd { font: 400 var(--step--1)/1.3 var(--m-font); color: var(--m-lit); text-align: right; font-variant-numeric: tabular-nums; text-wrap: balance; }
+    .readouts dt { white-space: nowrap; }
+    .note { font: 400 var(--step--1)/1.45 var(--m-font-text); color: var(--m-print-dim); }
+    .inset { margin: 0; border-radius: 8px; background: var(--m-glass); box-shadow: var(--m-well-shadow, inset 0 1px 3px rgb(0 0 0 / 0.8)); overflow: hidden; }
+    .inset canvas { display: block; width: 100%; }
+    .ktable { width: 100%; border-collapse: collapse; font: 400 var(--step--2)/1.2 var(--m-font); font-variant-numeric: tabular-nums; color: var(--m-print); }
+    .ktable th, .ktable td { padding: 4px 2px; text-align: right; font-weight: 400; }
+    .ktable thead th { color: var(--m-print-dim); vertical-align: bottom; }
+    .ktable th[scope="row"], .ktable thead th:first-child { text-align: left; }
+    .ktable td:last-child { color: var(--m-lit); }
+    .ktable tbody tr { border-top: 1px solid rgb(255 255 255 / 0.05); }
+
+    /* ---------- dock ---------- */
+    .dock {
+      position: fixed; z-index: 3; bottom: calc(16px + env(safe-area-inset-bottom)); left: calc(var(--gutter) + var(--card-w) + 16px); right: calc(var(--gutter) + var(--panel-w) + 16px);
+      display: flex; justify-content: center; pointer-events: none;
+    }
+    .dock__inner { display: flex; align-items: center; gap: 12px; padding: 10px 14px; pointer-events: auto; max-width: 100%; }
+    .matte .play { width: 34px; min-width: 0; padding: 0; }
+    .play svg { fill: currentColor; }
+    .scale { font: 400 var(--step--2)/1.3 var(--m-font); letter-spacing: 0.02em; color: var(--m-print-dim); max-width: 260px; }
+    .dock .m-seg button { padding: 0 9px; }
+
+    /* ---------- overture ---------- */
+    .overture {
+      position: fixed; z-index: 5; inset: 0; display: flex; align-items: flex-end; padding: 0 clamp(20px, 6vw, 96px) clamp(40px, 11vh, 120px);
+      background: linear-gradient(0deg, rgb(2 3 8 / 0.82) 0%, rgb(2 3 8 / 0.25) 45%, transparent 70%);
+      transition: opacity 600ms ease;
+    }
+    .overture.is-gone { opacity: 0; pointer-events: none; }
+    .overture__inner { max-width: 640px; }
+    .overture h1 { font: 380 var(--step-7)/0.94 var(--serif); letter-spacing: -0.025em; color: var(--paper); text-wrap: balance; }
+    .overture p { margin-top: 20px; max-width: 34em; font: 400 var(--step-1)/1.45 var(--serif); color: var(--paper-dim); text-wrap: pretty; }
+    .overture__go { margin-top: 28px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+    .matte .overture__go .m-key { height: 40px; padding: 0 18px; font-size: var(--step--1); }
+    .overture__hint { font: 400 var(--step--1)/1.4 var(--m-font-text); color: var(--m-print-dim); }
+    .overture h1, .overture p, .overture__go { animation: rise 1100ms var(--ease-out) both; }
+    .overture p { animation-delay: 160ms; }
+    .overture__go { animation-delay: 300ms; }
+    @keyframes rise { from { opacity: 0; transform: translateY(14px); } }
+
+    .visually-hidden { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+    /* ---------- narrower: the panel tucks under the card ---------- */
+    @media (max-width: 1180px) {
+      :root { --card-w: 328px; --panel-w: 272px; }
+      .index__item { padding: 0 7px; font-size: 14px; }
+      .index__n { display: none; }
+    }
+    @media (max-width: 960px) {
+      .brand__back { display: none; }
+    }
+
+    /* ---------- phone: one sheet at the bottom, the scene above it ---------- */
+    @media (max-width: 720px) {
+      :root { --gutter: 10px; }
+      .top { top: calc(8px + env(safe-area-inset-top)); flex-wrap: wrap; height: auto; row-gap: 6px; }
+      .brand { flex: 1; }
+      .index { order: 3; flex: 1 0 100%; justify-content: flex-start; overflow-x: auto; scrollbar-width: none; margin: 0 calc(-1 * var(--gutter)); padding: 0 var(--gutter); mask-image: linear-gradient(90deg, transparent, #000 12px, #000 calc(100% - 24px), transparent); }
+      .index::-webkit-scrollbar { display: none; }
+      .index__item { font-size: 15px; padding: 0 9px; }
+      .sheet {
+        display: flex; flex-direction: column; position: fixed; z-index: 3; left: 0; right: 0; bottom: 0; height: 47%;
+        overflow-y: auto; overscroll-behavior: contain; padding-bottom: env(safe-area-inset-bottom);
+        border-radius: 18px 18px 0 0;
+      }
+      .sheet__tabs { display: flex; position: sticky; top: 0; z-index: 2; margin: 10px 12px 0; }
+      .matte .sheet__tabs button { flex: 1; height: 38px; font-size: var(--step--1); }
+      .sheet[data-tab="lesson"] .panel, .sheet[data-tab="controls"] .card__scroll { display: none !important; }
+      .card, .panel { position: static; width: auto; max-height: none; inset: auto; box-shadow: none; background: none; border-radius: 0; overflow: visible; }
+      .card { display: block; }
+      .card__scroll { overflow: visible; padding: 16px 18px 4px; }
+      .card__title { font-size: var(--step-2); }
+      .card__nav { position: sticky; bottom: 0; z-index: 1; background: linear-gradient(180deg, var(--m-body-hi, #1c1c1d), var(--m-body-lo, #161617)); }
+      .panel { padding: 0 18px 16px; }
+      .dock { left: 0; right: 0; bottom: calc(47% + 8px); }
+      .dock__inner { padding: 6px 8px; gap: 8px; }
+      .scale { display: none; }
+      .overture { padding-bottom: 48px; }
+      .matte .row__num { height: 44px; font-size: 16px; }   /* 16px: iOS doesn't zoom into the field */
+      .matte .keys .m-key, .matte .card__nav .m-key { height: 44px; }
+      .matte .m-seg button { height: 44px; }
+      .index__item { height: 44px; line-height: 44px; }
+      .matte .sound, .matte .play { height: 44px; min-width: 44px; }
+      .matte .sheet__tabs button { height: 44px; }
+      .matte .predict__opt { min-height: 44px; }
+      .matte .next, .matte #back { height: 44px; }
+      .row .m-fader { height: 44px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .label--hint { animation: none; }
+      .card__body.is-in, .predict.is-answered .predict__reveal, .overture h1, .overture p, .overture__go { animation-name: fade; }
+      @keyframes fade { from { opacity: 0; } }
+    }
+  </style>
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/"
+    }
+  }
+  </script>
+</head>
+<body class="matte is-overture">
+  <canvas id="scene" aria-label="The orbit scene. Drag to turn the view, scroll or pinch to zoom."></canvas>
+  <div class="labels" id="labels" aria-hidden="true"></div>
+
+  <header class="top">
+    <div class="brand">
+      <a class="m-legend brand__back" href="../">Experiments</a>
+      <span class="brand__name">Music of the Spheres</span>
+    </div>
+    <nav class="index" id="index" aria-label="Movements"></nav>
+    <button class="m-key sound" id="sound" type="button" aria-pressed="false"><span class="m-led" aria-hidden="true"></span>Sound</button>
+  </header>
+
+  <div class="sheet m-body" id="sheet" data-tab="lesson">
+    <div class="sheet__tabs m-seg" id="sheet-tabs" role="radiogroup" aria-label="Show"><button type="button" role="radio" data-tab="lesson" aria-checked="true">Lesson</button><button type="button" role="radio" data-tab="controls" aria-checked="false">Controls</button></div>
+    <section class="card m-body" id="card" aria-labelledby="card-title">
+      <div class="card__scroll" id="card-scroll">
+        <div class="card__body" id="card-body">
+          <p class="m-legend m-legend--dim card__count" id="card-count"></p>
+          <h2 class="card__title" id="card-title"></h2>
+          <div class="card__prose" id="card-prose"></div>
+          <div class="predict" id="predict" hidden></div>
+          <ul class="goals" id="goals" aria-label="Things to try"></ul>
+          <details class="story" id="story" hidden><summary>The story</summary><div class="story__body"></div></details>
+        </div>
+      </div>
+      <p class="finale" id="finale" hidden aria-live="polite"></p>
+      <nav class="card__nav" aria-label="Previous and next movement">
+        <button class="m-key" id="back" type="button">Back</button>
+        <button class="m-key next" id="next" type="button">Next: <span class="next__name"></span></button>
+      </nav>
+    </section>
+    <section class="panel m-body" id="panel" aria-label="Controls" hidden></section>
+  </div>
+
+  <div class="dock">
+    <div class="dock__inner m-body m-body--low">
+      <button class="m-key play" id="play" type="button" aria-label="Pause" aria-pressed="false"><span class="play__icon"></span></button>
+      <div class="dock__speed"><div class="m-seg" id="speed" role="radiogroup" aria-label="Time speed"></div></div>
+      <p class="scale" id="scale" aria-live="polite"></p>
+    </div>
+  </div>
+
+  <div class="overture" id="overture">
+    <div class="overture__inner">
+      <h1>Music of the Spheres</h1>
+      <p>In 1619 Johannes Kepler went looking for the music the planets make. He found the laws that move them. Six short movements on how orbits work, from a falling cannonball to a flight to Mars. Every orbit here makes a sound.</p>
+      <div class="overture__go">
+        <button class="m-key m-key--accent" id="begin" type="button">Begin, with sound</button>
+        <button class="m-key" id="begin-quiet" type="button">Begin quietly</button>
+      </div>
+    </div>
+  </div>
+
+  <p class="visually-hidden" id="live" aria-live="polite"></p>
+  <noscript><p style="position:fixed;inset:auto 16px 16px;color:#f1e9d2">This piece needs JavaScript and WebGL.</p></noscript>
+  <script type="module" src="app.js"></script>
+</body>
+</html>

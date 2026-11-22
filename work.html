@@ -143,6 +143,7 @@
     .sheet::backdrop { background: rgb(0 0 0 / 0); transition: background var(--sheet-ms) ease-out, overlay var(--sheet-ms) allow-discrete, display var(--sheet-ms) allow-discrete; }
     .sheet[open]::backdrop { background: rgb(0 0 0 / var(--sheet-dim, 0.5)); }
     @starting-style { .sheet[open]::backdrop { background: rgb(0 0 0 / 0); } }
+    .sheet:focus-visible { outline: none; }   /* the sheet takes focus as it opens; the site's focus ring is for controls, not for the whole sheet's edge */
     html:has(.sheet[open]) { overflow: hidden; }   /* the page behind holds still */
     @media (min-width: 760px) { .sheet { --sheet-left: var(--sheet-rest, 40px); --sheet-peek: 8px; border-radius: var(--sheet-radius, 16px) 0 0 0; } }
     @media (min-width: 1100px) { .sheet { --sheet-peek: calc(var(--space-5) + var(--rail-w) + var(--space-4) + 1px + var(--sheet-past, 0px) - var(--sheet-left)); } }   /* over to the rail's divider, or a little past it */
@@ -175,7 +176,8 @@
     .sheet__close { position: absolute; top: var(--space-5); right: var(--space-5); z-index: 1; }
     /* the content starts below the close button: its top, its height (a 28px key), and a gap the same as its top */
     .sheet { --sheet-top: calc(var(--space-5) + 28px + var(--space-5)); }
-    .sheet__scroll { overflow-y: auto; overscroll-behavior: contain; height: 100dvh; padding: var(--sheet-top) var(--space-5) var(--space-8); }
+    .sheet__scroll::-webkit-scrollbar { display: none; }   /* no scrollbar on the sheet's details either (scrollbar-width below, for the rest) */
+    .sheet__scroll { overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; height: 100dvh; padding: var(--sheet-top) var(--space-5) var(--space-8); }
     .sheet__side h2 { font: 600 var(--step-3)/1.1 "Söhne Breit", sans-serif; letter-spacing: -.01em; text-wrap: balance; margin: var(--space-3) 0 0; }
     .sheet__side .mono, .sheet h3 { font-family: var(--font-mono); letter-spacing: 0.1em; text-transform: uppercase; }
     .sheet__name { margin: 0; }
@@ -247,7 +249,9 @@
       .sheet__scroll { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--grid-gutter); padding: var(--sheet-top) var(--space-7) var(--space-8); }
       .sheet__side { grid-column: 1 / span 4; }
       .sheet__body { grid-column: 5 / -1; }
-      .sheet__side { position: sticky; top: 0; align-self: start; display: flex; flex-direction: column; min-height: calc(100dvh - var(--sheet-top) - var(--space-8)); }
+      /* the side is one window tall and scrolls on its own when a short window can't fit it, so the index is never cut off */
+      .sheet__side { position: sticky; top: 0; align-self: start; display: flex; flex-direction: column; height: calc(100dvh - var(--sheet-top) - var(--space-8)); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; }
+      .sheet__side::-webkit-scrollbar { display: none; }   /* no scrollbar on the side, even while it scrolls (Safari reads this, not scrollbar-width) */
       .sheet__index { display: grid; gap: var(--space-2); justify-items: start; margin-top: auto; padding-top: var(--space-7); }
       .sheet__index a { display: inline-flex; align-items: center; gap: var(--space-2); color: var(--muted); text-decoration: none; transition: color var(--m-light-off); }
       .sheet__index a:hover, .sheet__index a:focus-visible, .sheet__index a[aria-current] { color: var(--fg); }
@@ -469,7 +473,7 @@
   <dialog class="sheet matte" id="sheet" aria-labelledby="sheet-title">
     <button class="sheet__close m-key" type="button">Close</button>
     <div class="sheet__scroll">
-      <div class="sheet__side">
+      <div class="sheet__side" data-lenis-prevent>
         <p class="sheet__name mono"></p>
         <h2 id="sheet-title"></h2>
         <dl class="sheet__facts"></dl>

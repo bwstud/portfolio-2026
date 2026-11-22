@@ -313,8 +313,7 @@
     </ul>
     </main>
   </div>
-  <div class="endframe">
-    <footer class="project--band endband">
+  <footer class="endfoot">
       <div class="foot-col">
         <div class="foot">
           <div id="contact"><h2>Contact</h2>
@@ -338,20 +337,19 @@
         </div>
       </div>
     </footer>
-  </div>
+  <!-- The page ends on a bison galloping in type (bison.js, the Bison Lab's drawing), as the work page does -->
+  <section class="bison-run" aria-label="A bison galloping, drawn in characters">
+    <canvas role="img" aria-label="A bison galloping in place, drawn as a grid of characters"></canvas>
+  </section>
 
   <script src="../nav.js"></script>
   <script src="../spark.js" defer></script>
   <script src="../filings-versions.js"></script>
   <script src="../filings.js"></script>
-  <script src="../halftone.js"></script>
-  <script src="../halftone-versions.js"></script>
+  <script src="../bison-versions.js"></script>   <!-- the version the Bison Lab has put on the site -->
+  <script src="../bison.js"></script>
   <script>
-    /* the halftone above the footer, drawn from the active Halftone Lab version */
-    if (window.Halftone) {
-      const edge = Halftone.mount(document.querySelectorAll('.endband'), Halftone.activeConfig());
-      document.addEventListener('themechange', () => edge.redraw());   // it reads its colours from CSS
-    }
+    if (window.Bison) Bison.mount(document.querySelector('.bison-run canvas'), { src: 'bison-lab/bison.png', marks: 'bison-lab/bison-marks.png', config: Bison.activeConfig() });
     /* the rail's first button sits level with the top of the heading */
     const place = () => {
       let top = 0;

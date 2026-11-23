@@ -19,7 +19,11 @@ export const SCENES = [
   ['Smoke', 'Letters of smoke lit by the light behind, drifting and coming apart.'],
 ];
 
-export const TEXTURES = [[0, 'None'], [1, 'Sandblast grain'], [2, 'Paper fibres'], [3, 'Weave'], [4, 'Reeds'], [5, 'Hammered'], [6, 'Glass block'], [7, 'Ice'], [8, 'Ripple']];
+export const TEXTURES = [[0, 'None'], [1, 'Sandblast grain'], [2, 'Paper fibres'], [3, 'Weave'], [4, 'Reeds'], [5, 'Hammered'], [6, 'Glass block'], [7, 'Ice'], [8, 'Ripple'],
+  [9, 'Wire mesh'], [10, 'Etched stripes'], [11, 'Leaded panes'], [12, 'Crumpled'], [13, 'Bubble wrap'], [14, 'Perforated'], [15, 'Weave in a breeze'], [16, 'Running water'], [17, 'Seeds']];
+// which textures use the amount and the refraction faders
+export const TEX_AMOUNT = [1, 2, 3, 6, 7, 9, 10, 11, 12, 13, 14, 15, 16, 17];
+export const TEX_REFRACT = [4, 5, 6, 7, 8, 11, 12, 13, 15, 16, 17];
 
 // pane settings, in order: scatter °, straight-through, tail, tail spread ×, tint, absorption, texture, texture
 // scale cm, texture amount, refraction, texture angle °, surface reflection, micro-relief, cleared by water
@@ -38,6 +42,16 @@ export const MATERIALS = {
   ice:       mat('Ice',                16, 0.45, 0.2, 2.5, '#e4f1fb', 0.12, 7, 9,   0.5,  0.25, 0, 0.07, 0.2,  0.6),
   ripple:    mat('Cathedral glass',    3,  0.85, 0,   2,   '#f3ead2', 0.06, 8, 5,   0,    0.4, 0, 0.06, 0,    0),
   clear:     mat('Clear glass',        0,  1,    0,   2,   '#eef5f1', 0.03, 0, 1,   0,    0,   0, 0.06, 0,    0),
+  wired:     mat('Wired glass',        22, 0,    0.3, 3,   '#e3efe8', 0.1,  9, 2.5, 0.3,  0,   0, 0.05, 0.2,  0.9),
+  wiredclr:  mat('Wired clear glass',  0,  1,    0,   2,   '#eef5f1', 0.04, 9, 2.5, 0.25, 0,   45, 0.06, 0,   0),
+  privacy:   mat('Etched stripes',     26, 0,    0.25, 3,  '#eef3f0', 0.08, 10, 1.2, 0.55, 0,  0, 0.05, 0.15, 0.8),
+  stained:   mat('Leaded stained glass', 4, 0.7, 0.1, 2,   '#ffffff', 0.25, 11, 9,  0.4,  0.25, 0, 0.06, 0.1, 0),
+  crumpled:  mat('Crumpled plastic',   14, 0.3,  0.2, 2.5, '#f2f4f6', 0.12, 12, 12, 0.7,  0.6, 0, 0.08, 0,    0.2),
+  bubble:    mat('Bubble wrap',        6,  0.7,  0.1, 2,   '#f4f6f6', 0.08, 13, 1.1, 0.8, 0.6, 0, 0.07, 0,    0),
+  perforated: mat('Perforated metal',  0,  1,    0,   2,   '#ffffff', 0,    14, 0.8, 0.35, 0,  0, 0.05, 0,    0),
+  breeze:    mat('Voile in a breeze',  20, 0.45, 0.2, 2,   '#f5f2ec', 0.1,  15, 0.3, 0.45, 0.5, 0, 0.04, 0,   0.3),
+  sheet:     mat('Water running down glass', 0, 1, 0, 2,   '#eef5f1', 0.04, 16, 6,  0.5,  0.6, 0, 0.08, 0,    0),
+  seeded:    mat('Seeded glass',       1,  0.95, 0,   2,   '#eef5ee', 0.05, 17, 1.5, 0.5, 0.5, 0, 0.06, 0,    0),
 };
 const paneDefaults = (slot, m) => Object.fromEntries(PANE.map((k) => [`${slot}.${k}`, MATERIALS[m].set[k]]));
 
@@ -45,7 +59,14 @@ const lightDefaults = (slot, o) => ({
   [`${slot}.on`]: true, [`${slot}.shape`]: 0, [`${slot}.x`]: 0, [`${slot}.y`]: 0, [`${slot}.dist`]: 45,
   [`${slot}.w`]: 6, [`${slot}.h`]: 6, [`${slot}.rot`]: 0, [`${slot}.temp`]: 2800, [`${slot}.gel`]: '#ffffff', [`${slot}.ev`]: 9,
   [`${slot}.slats`]: 12, [`${slot}.open`]: 0.5, [`${slot}.mull`]: 4, [`${slot}.flicker`]: 0, [`${slot}.fspeed`]: 1,
-  [`${slot}.motion`]: 0, [`${slot}.mspeed`]: 0.3, [`${slot}.mamt`]: 10,
+  [`${slot}.motion`]: 0, [`${slot}.mspeed`]: 0.3, [`${slot}.mamt`]: 10, [`${slot}.cycle`]: 0,
+  ...Object.fromEntries(Object.entries(o).map(([k, v]) => [`${slot}.${k}`, v])),
+});
+
+const layerDefaults = (slot, o) => ({
+  [`${slot}.on`]: false, [`${slot}.text`]: 'Words', [`${slot}.family`]: '', [`${slot}.weight`]: 600, [`${slot}.italic`]: false,
+  [`${slot}.size`]: 16, [`${slot}.track`]: 0, [`${slot}.x`]: 0, [`${slot}.y`]: 0, [`${slot}.rot`]: 0, [`${slot}.depth`]: 30,
+  [`${slot}.mode`]: 0, [`${slot}.color`]: '#ffffff', [`${slot}.opacity`]: 1, [`${slot}.ev`]: 2,
   ...Object.fromEntries(Object.entries(o).map(([k, v]) => [`${slot}.${k}`, v])),
 });
 
@@ -57,6 +78,11 @@ export const DEFAULTS = {
   // where they are
   'tx.x': 0, 'tx.y': 0, 'tx.rot': 0, 'tx.mirror': false, 'tx.depth': 2, 'tx.tiltx': 0, 'tx.tilty': 0, 'tx.scatter': 0,
   'tx.wave': 0, 'tx.wavelen': 4, 'tx.wavespd': 1, 'tx.appr': 0, 'tx.period': 7, 'tx.stagger': 0.08, 'tx.persp': true, 'tx.seed': 1,
+  'tx.thick': 0,
+  // more words, each at its own depth
+  ...layerDefaults('l1', { text: 'Behind', depth: 8, mode: 2, size: 12, y: -24, color: '#ffb36b' }),
+  ...layerDefaults('l2', { text: 'Far away', depth: 30, mode: 0, size: 34, y: 20, color: '#101010' }),
+  ...layerDefaults('l3', { text: 'Near', depth: 0.3, mode: 1, size: 9, x: 32, y: -30, color: '#d9a487' }),
   // what they are
   scene: 1,
   'sil.opacity': 1, 'sil.round': 1.5, 'sil.color': '#151515',
@@ -81,28 +107,49 @@ export const DEFAULTS = {
   'c.drops': 0, 'c.dropsz': 0.35, 'c.dropspd': 1, 'c.breath': 0, 'c.breathsz': 25, 'c.wet': 0,
   'c.dust': 0, 'c.dustsz': 0.12, 'c.smudge': 0, 'c.scratch': 0, 'c.scratchlen': 4, 'c.glint': 1,
   'c.frost': 0, 'c.frostreach': 30, 'c.crack': 0, 'c.crackx': 15, 'c.cracky': 10, 'c.shimmer': 0, 'c.shimspd': 1, 'c.streak': 0,
+  'c.creep': 0, 'c.warm': 0, 'c.steam': 0, 'c.steamspd': 0.3,
   'tool.size': 3, 'tool.str': 1,
   // the light
   ...lightDefaults('k1', { x: 22, y: 16, dist: 45, w: 6, h: 6, temp: 2800, ev: 9 }),
   ...lightDefaults('k2', { on: false, shape: 1, x: -30, y: -10, dist: 80, w: 40, h: 60, temp: 6500, ev: 4 }),
+  ...lightDefaults('k3', { on: false, shape: 4, x: 0, y: -35, dist: 30, w: 80, h: 3, temp: 4000, ev: 3 }),
+  // a pattern between the lamps and the glass
+  'gb.kind': 0, 'gb.dist': 6, 'gb.scale': 14, 'gb.amt': 0.85, 'gb.sway': 0.4, 'gb.angle': 0, 'gb.speed': 1,
   fall: true,
   'in.ev': -5, 'in.temp': 3200, 'in.az': 30, 'in.el': 40, 'in.amb': 0.02,
   'fr.ev': -3, 'fr.temp': 5000, 'fr.x': -20, 'fr.y': 25, 'fr.spread': 50, 'fr.gloss': 60,
   // the room and the camera
-  'rm.wall': '#2f3a36', 'rm.bright': 0.4, 'rm.dist': 120, 'rm.wash': 1, 'rm.haze': 0, 'rm.hazecol': '#ffffff',
-  'rf.amt': 0, 'rf.soft': 0.5, 'pane.w': 110, 'pane.h': 82, 'pane.surround': '#1c1d1f',
+  'rm.wall': '#2f3a36', 'rm.bright': 0.4, 'rm.dist': 120, 'rm.wash': 1, 'rm.haze': 0, 'rm.hazecol': '#ffffff', 'rm.shafts': false, 'rm.hg': 0.6, 'rm.shaftamt': 1.5,
+  'rf.amt': 0, 'rf.soft': 0.5, 'pane.w': 110, 'pane.h': 82, 'pane.fit': true, 'pane.surround': '#1c1d1f',
   'cam.zoom': 1, 'cam.panx': 0, 'cam.pany': 0, 'cam.roll': 0, 'cam.yaw': 0, 'cam.pitch': 0,
   'cam.ev': 0, 'cam.wb': 5000, 'cam.contrast': 1, 'cam.sat': 1, 'cam.tone': 0, 'cam.bloom': 0.4, 'cam.bloomr': 0.5,
-  'cam.halation': 0, 'cam.vig': 0.25, 'cam.grain': 0.25, 'cam.grains': 1.2, 'cam.ca': 0, 'cam.focus': 0, 'cam.bokeh': 0,
+  'cam.halation': 0, 'cam.vig': 0.25, 'cam.grain': 0.25, 'cam.grains': 1.2, 'cam.ca': 0, 'cam.focus': 0, 'cam.bokeh': 0, 'cam.focusd': 0, 'cam.camd': 150,
   'cam.split': 0, 'cam.shadow': '#2a4a5a', 'cam.high': '#e8c8a0', 'cam.scale': 1,
+  // the timeline: length in seconds, looping, and each animated setting's keys [{ t, v, e }]
+  tl: { dur: 8, loop: true, tracks: {} },
 };
+export const LAYER_TEXT_KEYS = new Set(['l1', 'l2', 'l3'].flatMap((l) => ['on', 'text', 'family', 'weight', 'italic', 'size', 'track', 'x', 'y', 'rot'].map((k) => `${l}.${k}`)));
+
+// Lamp presets: a light behind, set in one go
+export const LAMP_PRESETS = [
+  ['Candle', { shape: 0, w: 1.6, temp: 1850, gel: '#ffffff', ev: 7, flicker: 0.55, fspeed: 2.2, motion: 1, mspeed: 0.6, mamt: 0.6, cycle: 0 }],
+  ['Fireplace', { shape: 4, w: 70, h: 6, y: -40, temp: 1900, gel: '#ffd2a0', ev: 4.5, flicker: 0.7, fspeed: 1.3, motion: 0, cycle: 0 }],
+  ['Television', { shape: 1, w: 50, h: 32, temp: 8500, gel: '#d8e4ff', ev: 1.5, flicker: 0.45, fspeed: 3, motion: 0, cycle: 0.05 }],
+  ['Street lamp', { shape: 0, w: 5, y: 40, dist: 400, temp: 1800, gel: '#ffb347', ev: 9, flicker: 0, motion: 0, cycle: 0 }],
+  ['Fluorescent tube', { shape: 4, w: 90, h: 2.5, temp: 4200, gel: '#ecffec', ev: 3.5, flicker: 0.12, fspeed: 9, motion: 0, cycle: 0 }],
+  ['Overcast window', { shape: 2, w: 90, h: 100, dist: 200, temp: 6800, gel: '#ffffff', ev: 1, mull: 4, flicker: 0, motion: 0, cycle: 0 }],
+  ['Sunset through blinds', { shape: 3, w: 100, h: 100, dist: 220, temp: 2600, gel: '#ffb07a', ev: 2, slats: 14, open: 0.4, flicker: 0, motion: 0, cycle: 0 }],
+  ['Passing headlights', { shape: 0, w: 4, dist: 260, temp: 4500, gel: '#ffffff', ev: 9, flicker: 0, motion: 3, mspeed: 0.5, mamt: 30, cycle: 0 }],
+  ['Party light', { shape: 0, w: 6, temp: 6500, gel: '#ff4fd8', ev: 8, flicker: 0.2, fspeed: 1.5, motion: 2, mspeed: 0.4, mamt: 20, cycle: 0.25 }],
+];
+export const GOBOS = [[0, 'None'], [1, 'Leaves'], [2, 'Window bars'], [3, 'Blinds'], [4, 'Lace'], [5, 'Water caustics'], [6, 'Branches'], [7, 'Chain-link']];
 
 // Settings a look leaves alone unless it names them: the words and how they are set.
 export const TYPE_KEYS = ['tx.text', 'tx.family', 'tx.face', 'tx.weight', 'tx.italic', 'tx.stretch', 'tx.track', 'tx.lead', 'tx.word',
   'tx.align', 'tx.case', 'tx.kern', 'tx.liga', 'tx.outline', 'tx.hscale', 'tx.skew'];
 
 // Keys whose change means the words must be set again (the text canvas re-rendered).
-export const TEXT_KEYS = new Set([...TYPE_KEYS, 'tx.size', 'tx.x', 'tx.y', 'tx.rot', 'tx.mirror', 'ne.tube', 'cam.scale', 'scene']);
+export const TEXT_KEYS = new Set([...TYPE_KEYS, 'tx.size', 'tx.x', 'tx.y', 'tx.rot', 'tx.mirror', 'ne.tube', 'cam.scale', 'scene', 'pane.fit']);
 
 // ---- the panel ----
 // rows: ['n', key, label, min, max, step] a fader with a typed field; ['s', key, label, options] a select;
@@ -114,6 +161,7 @@ const sc = (n) => (S) => S.scene === n;
 const lightGroup = (slot, title) => ({
   t: title, rows: [
     ['w', `${slot}.on`, 'On'],
+    ['lpreset', slot, 'Preset'],
     ['s', `${slot}.shape`, 'Shape', SHAPES],
     ['n', `${slot}.ev`, 'Intensity, EV', -4, 16, 0.1],
     ['n', `${slot}.temp`, 'Colour temperature, K', 1200, 12000, 50],
@@ -129,9 +177,30 @@ const lightGroup = (slot, title) => ({
     ['n', `${slot}.mull`, 'Window bars, cm', 0, 20, 0.5, (S) => S[`${slot}.shape`] === 2],
     ['n', `${slot}.flicker`, 'Flicker', 0, 1, 0.01],
     ['n', `${slot}.fspeed`, 'Flicker speed', 0.1, 10, 0.1, (S) => S[`${slot}.flicker`] > 0],
+    ['n', `${slot}.cycle`, 'Colour cycles, per s', 0, 2, 0.01],
     ['s', `${slot}.motion`, 'Moves', MOTIONS],
     ['n', `${slot}.mspeed`, 'Speed', 0.02, 3, 0.01, (S) => S[`${slot}.motion`] > 0],
     ['n', `${slot}.mamt`, 'Travel, cm', 0, 150, 0.5, (S) => S[`${slot}.motion`] > 0],
+  ],
+});
+const LAYER_MODES = [[0, 'Shadow'], [1, 'Lit'], [2, 'Glowing'], [3, 'Gel']];
+const layerGroup = (slot, title) => ({
+  t: title, rows: [
+    ['w', `${slot}.on`, 'On'],
+    ['t', `${slot}.text`, 'Words', (S) => S[`${slot}.on`]],
+    ['lfont', slot, 'Font', (S) => S[`${slot}.on`]],
+    ['n', `${slot}.weight`, 'Weight', 100, 900, 10, (S) => S[`${slot}.on`]],
+    ['w', `${slot}.italic`, 'Italic', (S) => S[`${slot}.on`]],
+    ['n', `${slot}.size`, 'Size, cm', 1, 120, 0.1, (S) => S[`${slot}.on`]],
+    ['n', `${slot}.track`, 'Tracking, ‰ em', -100, 400, 1, (S) => S[`${slot}.on`]],
+    ['n', `${slot}.x`, 'Across, cm', -200, 200, 0.1, (S) => S[`${slot}.on`]],
+    ['n', `${slot}.y`, 'Up, cm', -200, 200, 0.1, (S) => S[`${slot}.on`]],
+    ['n', `${slot}.rot`, 'Rotation, °', -180, 180, 0.5, (S) => S[`${slot}.on`]],
+    ['n', `${slot}.depth`, 'Behind the glass, cm', 0, 400, 0.1, (S) => S[`${slot}.on`]],
+    ['g', `${slot}.mode`, 'They are', LAYER_MODES, (S) => S[`${slot}.on`]],
+    ['c', `${slot}.color`, 'Colour', (S) => S[`${slot}.on`]],
+    ['n', `${slot}.opacity`, 'Opacity', 0, 1, 0.01, (S) => S[`${slot}.on`]],
+    ['n', `${slot}.ev`, 'Glow, EV', -4, 10, 0.1, (S) => S[`${slot}.on`] && S[`${slot}.mode`] === 2],
   ],
 });
 const paneGroup = (slot, title, when) => ({
@@ -145,8 +214,8 @@ const paneGroup = (slot, title, when) => ({
     ['n', `${slot}.grain`, 'Micro-relief', 0, 1, 0.01],
     ['s', `${slot}.tex`, 'Texture', TEXTURES],
     ['n', `${slot}.scale`, 'Texture scale, cm', 0.1, 40, 0.1, (S) => S[`${slot}.tex`] > 0],
-    ['n', `${slot}.amount`, 'Texture amount', 0, 1, 0.01, (S) => [1, 2, 3, 6, 7].includes(S[`${slot}.tex`])],
-    ['n', `${slot}.refract`, 'Refraction', 0, 3, 0.01, (S) => [4, 5, 6, 7, 8].includes(S[`${slot}.tex`])],
+    ['n', `${slot}.amount`, 'Texture amount', 0, 1, 0.01, (S) => TEX_AMOUNT.includes(S[`${slot}.tex`])],
+    ['n', `${slot}.refract`, 'Refraction', 0, 3, 0.01, (S) => TEX_REFRACT.includes(S[`${slot}.tex`])],
     ['n', `${slot}.angle`, 'Texture angle, °', -90, 90, 1, (S) => S[`${slot}.tex`] > 0],
     ['n', `${slot}.reflect`, 'Surface reflection', 0, 0.5, 0.005],
     ['n', `${slot}.wet`, 'Cleared by water', 0, 1, 0.01],
@@ -181,6 +250,7 @@ export const TABS = [
       ['n', 'tx.tilty', 'Tipped, top to bottom, °', -80, 80, 0.5],
       ['w', 'tx.persp', 'Shadows grow toward the lamp'],
       ['w', 'tx.mirror', 'Mirrored'],
+      ['n', 'tx.thick', 'Thickness, cm (in a still)', 0, 30, 0.1],
     ] },
     { t: 'Motion in depth', rows: [
       ['n', 'tx.appr', 'Comes and goes, cm', 0, 80, 0.1],
@@ -192,6 +262,9 @@ export const TABS = [
       ['n', 'tx.wavelen', 'Wave length, letters', 1, 20, 0.1, (S) => S['tx.wave'] > 0],
       ['n', 'tx.wavespd', 'Wave speed', -6, 6, 0.05, (S) => S['tx.wave'] > 0],
     ] },
+    layerGroup('l1', 'Second words'),
+    layerGroup('l2', 'Third words'),
+    layerGroup('l3', 'Fourth words'),
   ] },
   { id: 'scene', label: 'Scenario', groups: [
     { t: 'Scenario', rows: [['scene']] },
@@ -212,8 +285,8 @@ export const TABS = [
       ['n', 'in.ev', 'Intensity, EV', -8, 8, 0.1], ['n', 'in.temp', 'Colour temperature, K', 1200, 12000, 50],
       ['n', 'in.az', 'From, °', -180, 180, 1], ['n', 'in.el', 'Height, °', 0, 90, 1], ['n', 'in.amb', 'Fill', 0, 1, 0.005]] },
   ] },
-  { id: 'material', label: 'Material', groups: [
-    { t: 'Arrangement', rows: [
+  { id: 'arrangement', label: 'Arrangement', groups: [
+    { t: 'Panes', rows: [
       ['s', 'arr', 'Panes', [[0, 'One pane'], [1, 'Side by side'], [2, 'A band across'], [3, 'Graded'], [4, 'Stacked'], [5, 'Checkerboard'], [6, 'Louvres']]],
       ['n', 'arr.split', 'Seam at, cm', -80, 80, 0.5, (S) => S.arr === 1],
       ['n', 'arr.bandy', 'Band at, cm', -80, 80, 0.5, (S) => S.arr === 2],
@@ -225,9 +298,14 @@ export const TABS = [
       ['n', 'arr.louvre', 'Louvre width, cm', 2, 60, 0.5, (S) => S.arr === 6],
       ['n', 'arr.frame', 'Frame bars, cm', 0, 12, 0.1, (S) => [1, 2, 5, 6].includes(S.arr)],
       ['c', 'arr.framecol', 'Frame colour', (S) => [1, 2, 5, 6].includes(S.arr) && S['arr.frame'] > 0],
-      ['n', 'pane.w', 'Pane width, cm', 20, 400, 1], ['n', 'pane.h', 'Pane height, cm', 20, 400, 1],
+    ] },
+    { t: 'Size', rows: [
+      ['w', 'pane.fit', 'Pane fits the words'],
+      ['n', 'pane.w', 'Pane width, cm', 20, 1000, 1, (S) => !S['pane.fit']], ['n', 'pane.h', 'Pane height, cm', 20, 1000, 1, (S) => !S['pane.fit']],
       ['c', 'pane.surround', 'Wall around the pane'],
     ] },
+  ] },
+  { id: 'material', label: 'Material', groups: [
     paneGroup('a', 'Pane A'),
     paneGroup('b', 'Pane B', (S) => S.arr > 0),
   ] },
@@ -253,10 +331,24 @@ export const TABS = [
       ['n', 'c.crack', 'Cracked', 0, 1, 0.01], ['n', 'c.crackx', 'Break at, across, cm', -80, 80, 0.5, (S) => S['c.crack'] > 0],
       ['n', 'c.cracky', 'Break at, up, cm', -80, 80, 0.5, (S) => S['c.crack'] > 0]] },
     { t: 'Air', rows: [['n', 'c.shimmer', 'Heat shimmer', 0, 3, 0.01], ['n', 'c.shimspd', 'Shimmer speed', 0, 5, 0.01, (S) => S['c.shimmer'] > 0]] },
+    { t: 'Over time', rows: [
+      ['n', 'c.creep', 'Fog creeps in from the edges, cm/s', 0, 20, 0.1],
+      ['n', 'c.warm', 'Warm lights clear fog and melt frost', 0, 3, 0.01],
+      ['n', 'c.steam', 'Steam rising', 0, 1, 0.01],
+      ['n', 'c.steamspd', 'Steam speed', 0.02, 2, 0.01, (S) => S['c.steam'] > 0]] },
   ] },
   { id: 'light', label: 'Light', groups: [
     lightGroup('k1', 'Light behind'),
     lightGroup('k2', 'Second light behind'),
+    lightGroup('k3', 'Third light behind'),
+    { t: 'Pattern in the light', rows: [
+      ['s', 'gb.kind', 'Pattern', GOBOS],
+      ['n', 'gb.dist', 'Behind the glass, cm', 0.5, 400, 0.5, (S) => S['gb.kind'] > 0],
+      ['n', 'gb.scale', 'Size, cm', 1, 120, 0.1, (S) => S['gb.kind'] > 0],
+      ['n', 'gb.amt', 'Strength', 0, 1, 0.01, (S) => S['gb.kind'] > 0],
+      ['n', 'gb.angle', 'Angle, °', -90, 90, 1, (S) => S['gb.kind'] > 0],
+      ['n', 'gb.sway', 'Sway', 0, 3, 0.01, (S) => [1, 6].includes(S['gb.kind'])],
+      ['n', 'gb.speed', 'Speed', 0, 4, 0.01, (S) => [1, 5, 6].includes(S['gb.kind'])]] },
     { t: 'Falloff', rows: [['w', 'fall', 'Dims with distance']] },
     { t: 'Light on your side', rows: [
       ['n', 'fr.ev', 'Intensity, EV', -10, 6, 0.1], ['n', 'fr.temp', 'Colour temperature, K', 1200, 12000, 50],
@@ -266,7 +358,10 @@ export const TABS = [
   { id: 'room', label: 'Room', groups: [
     { t: 'Room behind', rows: [
       ['c', 'rm.wall', 'Wall colour'], ['n', 'rm.bright', 'Wall brightness', 0, 4, 0.01], ['n', 'rm.dist', 'Wall behind the glass, cm', 10, 600, 1],
-      ['n', 'rm.wash', 'Lamps light the wall', 0, 5, 0.01], ['n', 'rm.haze', 'Haze', 0, 3, 0.01], ['c', 'rm.hazecol', 'Haze colour', (S) => S['rm.haze'] > 0]] },
+      ['n', 'rm.wash', 'Lamps light the wall', 0, 5, 0.01], ['n', 'rm.haze', 'Haze', 0, 3, 0.01], ['c', 'rm.hazecol', 'Haze colour', (S) => S['rm.haze'] > 0],
+      ['w', 'rm.shafts', 'Light shafts in the haze', (S) => S['rm.haze'] > 0],
+      ['n', 'rm.shaftamt', 'Shaft brightness', 0, 5, 0.01, (S) => S['rm.haze'] > 0 && S['rm.shafts']],
+      ['n', 'rm.hg', 'Glows toward you', 0, 0.95, 0.01, (S) => S['rm.haze'] > 0 && S['rm.shafts']]] },
     { t: 'Your side', rows: [['n', 'rf.amt', 'Reflection of the room', 0, 4, 0.01], ['n', 'rf.soft', 'Reflection softness', 0, 1, 0.01, (S) => S['rf.amt'] > 0]] },
   ] },
   { id: 'camera', label: 'Camera', groups: [
@@ -279,7 +374,10 @@ export const TABS = [
       ['n', 'cam.ev', 'Exposure, EV', -6, 6, 0.05], ['n', 'cam.wb', 'White balance, K', 2000, 12000, 50],
       ['s', 'cam.tone', 'Tone curve', [[0, 'Filmic'], [1, 'Soft'], [2, 'Punchy'], [3, 'Linear']]],
       ['n', 'cam.contrast', 'Contrast', 0.3, 2.5, 0.01], ['n', 'cam.sat', 'Saturation', 0, 2, 0.01],
-      ['n', 'cam.bokeh', 'Behind the pane out of focus, px', 0, 80, 0.1],
+      ['n', 'cam.bokeh', 'Lens blur, px', 0, 80, 0.1],
+      ['n', 'cam.focusd', 'Focus, cm behind the glass', 0, 400, 0.1, (S) => S['cam.bokeh'] > 0],
+      ['focus', 'cam.focusd', 'Focus on', (S) => S['cam.bokeh'] > 0],
+      ['n', 'cam.camd', 'Camera from the glass, cm', 20, 800, 1, (S) => S['cam.bokeh'] > 0],
       ['n', 'cam.focus', 'Everything out of focus, px', 0, 60, 0.1],
       ['n', 'cam.bloom', 'Bloom', 0, 3, 0.01], ['n', 'cam.bloomr', 'Bloom size', 0, 1, 0.01, (S) => S['cam.bloom'] > 0],
       ['n', 'cam.halation', 'Halation', 0, 3, 0.01], ['n', 'cam.ca', 'Colour fringing', 0, 5, 0.01],
@@ -300,19 +398,19 @@ export const LOOKS = [
     'k1.temp': 3400, 'k1.ev': 8.5, 'k1.y': 40, 'rm.wall': '#3d4a4f', 'rm.haze': 0.6, 'c.streak': 0.4 } },
   { name: 'Shoji at dusk', set: { scene: 0, 'tx.tiltx': -3, ...pane('a', 'rice'), 'arr': 5, 'arr.grid': 30, ...pane('b', 'rice', { tint: '#ffdfb5' }), 'arr.frame': 1.6, 'arr.framecol': '#2a1c12',
     'tx.depth': 2, 'k1.temp': 2100, 'k1.ev': 9.5, 'k1.x': 10, 'k1.y': 5, 'k1.dist': 50, 'k1.w': 8, 'k1.flicker': 0.15, 'k1.fspeed': 0.6, 'rm.wall': '#3a2a1c', 'cam.wb': 4200 } },
-  { name: 'Rainy window', set: { scene: 5, 'tx.depth': 70, ...pane('a', 'clear'), 'c.rain': 0.35, 'c.beadsz': 0.5, 'c.drops': 1.2, 'c.dropsz': 0.55, 'c.fog': 0.1, 'c.streak': 0.2, 'cam.bokeh': 9, 'fr.ev': -1.5,
+  { name: 'Rainy window', set: { scene: 5, 'tx.depth': 70, ...pane('a', 'clear'), 'c.rain': 0.35, 'c.beadsz': 0.5, 'c.drops': 1.2, 'c.dropsz': 0.55, 'c.fog': 0.1, 'c.streak': 0.2, 'cam.bokeh': 28, 'fr.ev': -1.5,
     'ne.color': '#ff3d6e', 'ne.int': 2.4, 'k1.on': true, 'k1.shape': 0, 'k1.temp': 2400, 'k1.ev': 7, 'k1.x': -35, 'k1.y': -15, 'k1.dist': 300, 'k1.w': 3,
     'k2.on': true, 'k2.shape': 0, 'k2.x': 38, 'k2.y': 22, 'k2.dist': 500, 'k2.w': 4, 'k2.temp': 9000, 'k2.ev': 7, 'rm.wall': '#0e1418', 'rm.bright': 0.25, 'cam.focus': 0, 'tx.persp': false } },
   { name: 'Morning mirror', set: { scene: 10, 'tx.depth': 40, ...pane('a', 'clear'), 'c.fog': 0.85, 'c.bead': 0.25, 'c.beadsz': 0.2, 'wr.drips': 0.6, 'c.regrow': 0.02,
-    'k1.shape': 2, 'k1.x': 5, 'k1.y': 10, 'k1.w': 90, 'k1.h': 90, 'k1.dist': 250, 'k1.temp': 7000, 'k1.ev': 0.6, 'cam.bokeh': 5, 'k1.mull': 4, 'rm.wall': '#5c6870', 'rm.bright': 0.6, 'fr.ev': -2 } },
+    'k1.shape': 2, 'k1.x': 5, 'k1.y': 10, 'k1.w': 90, 'k1.h': 90, 'k1.dist': 250, 'k1.temp': 7000, 'k1.ev': 0.6, 'cam.bokeh': 24, 'k1.mull': 4, 'rm.wall': '#5c6870', 'rm.bright': 0.6, 'fr.ev': -2 } },
   { name: 'Breath on glass', set: { scene: 11, 'tx.depth': 60, ...pane('a', 'clear'), 'c.fog': 0, 'c.breath': 6, 'c.breathsz': 45, 'c.evap': 0.35, 'c.regrow': 1.5, 'c.smudge': 0.3,
-    'k1.shape': 3, 'k1.x': 0, 'k1.y': 0, 'k1.w': 90, 'k1.h': 90, 'k1.dist': 200, 'k1.temp': 5200, 'k1.ev': 0.8, 'cam.bokeh': 6, 'k1.slats': 14, 'k1.open': 0.45, 'rm.wall': '#202629' } },
+    'k1.shape': 3, 'k1.x': 0, 'k1.y': 0, 'k1.w': 90, 'k1.h': 90, 'k1.dist': 200, 'k1.temp': 5200, 'k1.ev': 0.8, 'cam.bokeh': 21, 'k1.slats': 14, 'k1.open': 0.45, 'rm.wall': '#202629' } },
   { name: 'Lightbox', set: { scene: 3, 'tx.depth': 0.25, ...pane('a', 'opal', { tail: 0.2 }), 'st.fill': false, 'st.margin': 14, 'k1.shape': 1, 'k1.w': 110, 'k1.h': 80, 'k1.x': 0, 'k1.y': 0, 'k1.dist': 12, 'k1.temp': 5600, 'k1.ev': -0.6, 'fall': false,
     'rm.wall': '#101112', 'rm.bright': 0.1, 'c.dust': 0.2 } },
   { name: 'Marquee', set: { scene: 8, 'tx.depth': 0.5, 'led.int': 3, ...pane('a', 'sandblast'), 'led.scroll': -12, 'k1.on': false, 'rm.bright': 0.05, 'rm.wall': '#151515', 'cam.bloom': 0.9 } },
   { name: 'Halo sign', set: { scene: 6, 'tx.depth': 25, ...pane('a', 'voile'), 'k1.on': false, 'rm.wall': '#2a2622', 'rm.bright': 0.15, 'ha.int': 1.2, 'ha.spread': 3 } },
   { name: 'Glass block', set: { scene: 4, 'tx.depth': 30, ...pane('a', 'block'), 'gl.color': '#7fd8ff', 'gl.int': 1.5, 'k1.on': false, 'rm.bright': 0.8, 'rm.wash': 0, 'rm.wall': '#16202a', 'rm.bright': 0.4, 'fr.ev': -1.5 } },
-  { name: 'Smoke', set: { scene: 12, 'tx.depth': 20, ...pane('a', 'clear'), 'cam.bokeh': 3, 'k1.shape': 0, 'k1.x': 0, 'k1.y': 38, 'k1.dist': 70, 'k1.w': 4, 'k1.ev': 8, 'k1.temp': 4300,
+  { name: 'Smoke', set: { scene: 12, 'tx.depth': 20, ...pane('a', 'clear'), 'cam.bokeh': 25, 'k1.shape': 0, 'k1.x': 0, 'k1.y': 38, 'k1.dist': 70, 'k1.w': 4, 'k1.ev': 8, 'k1.temp': 4300,
     'rm.haze': 0.8, 'rm.wall': '#0b0c0d', 'rm.bright': 0.1, 'sm.bright': 1.5 } },
   { name: 'Stained window', set: { scene: 7, 'tx.depth': 1.5, ...pane('a', 'vellum'), 'k1.shape': 2, 'k1.x': 0, 'k1.y': 0, 'k1.w': 90, 'k1.h': 100, 'k1.dist': 60, 'k1.temp': 5800, 'k1.ev': -1.2, 'k1.mull': 3,
     'ge.mode': 1, 'ge.density': 2.5, 'rm.bright': 0.15 } },

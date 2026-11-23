@@ -12,7 +12,10 @@
 //   composite per pixel: the material and its conditions decide how far light is spread and how much passes
 //             straight through; the words are read from the pyramids at the radius their depth calls for; the
 //             lamps and the wall behind are drawn analytically, already spread; the front light lands on the pane
-//   final     bloom, exposure, white balance, tone curve, split tone, vignette, grain
+//   gobo      a pattern (leaves, bars, lace, caustics) standing between the lamps and the glass
+//   shaft     haze lit by the lamps, ray-marched with the shadows of everything between (a quarter size)
+//   final     orbit, the glass's focus, bloom, exposure, white balance, tone curve, split tone, vignette, grain
+// And, for a still: trace, a Monte Carlo ray tracer of the same scene, averaged over many passes.
 
 export const VS = `#version 300 es
 out vec2 vUv;
@@ -66,21 +69,31 @@ vec4 bspline(sampler2D t, vec2 uv, int lod){
   return g0.y * (g0.x * textureLod(t, vec2(h0.x, h0.y), l) + g1.x * textureLod(t, vec2(h1.x, h0.y), l))
        + g1.y * (g0.x * textureLod(t, vec2(h0.x, h1.y), l) + g1.x * textureLod(t, vec2(h1.x, h1.y), l));
 }
-float lodFor(float r){ return clamp(r < 2. ? r * .5 : log2(r), 0., uMaxLod); }
-vec4 pyr(sampler2D t, vec2 uv, float r){
-  float lod = lodFor(r); int l0 = int(floor(lod)); float f = lod - float(l0);
+float lodForM(float r, float m){ return clamp(r < 2. ? r * .5 : log2(r), 0., m); }
+float lodFor(float r){ return lodForM(r, uMaxLod); }
+vec4 pyrM(sampler2D t, vec2 uv, float r, float m){
+  float lod = lodForM(r, m); int l0 = int(floor(lod)); float f = lod - float(l0);
   vec4 a = l0 == 0 ? textureLod(t, uv, 0.) : bspline(t, uv, l0);
   if (f < .002) return a;
-  return mix(a, bspline(t, uv, min(l0 + 1, int(uMaxLod))), f);
+  return mix(a, bspline(t, uv, min(l0 + 1, int(m))), f);
 }
+vec4 pyr(sampler2D t, vec2 uv, float r){ return pyrM(t, uv, r, uMaxLod); }
+float lum(vec3 c){ return dot(c, vec3(.2126, .7152, .0722)); }
 `;
 
 // The lamps behind the pane, drawn already spread. Each lamp is four vec4s:
 //   (x cm, y cm, distance behind the glass cm, shape) (half width, half height, rotation, intensity)
 //   (r, g, b, slats) (slat opening, mullion width, —, —)
-// Shapes: 0 bulb, 1 softbox, 2 window with cross bars, 3 blinds, 4 strip, 5 ring.
+// Shapes: 0 bulb, 1 softbox, 2 window with cross bars, 3 blinds, 4 strip, 5 ring. Four lamps: three you set,
+// and the projector's.
+//
+// The lens: a camera uCamD cm in front of the glass, focused uFd cm behind it, blurs a thing d cm behind the glass
+// by defoc(d) px (uBk is the blur of something far away when the glass is in focus).
 const LAMPS = `
-uniform vec4 uL[12];
+uniform vec4 uL[16];
+uniform float uPxCm;
+uniform float uBk, uFd, uCamD;
+float defoc(float d){ return uBk * uCamD * abs(1. / (uCamD + uFd) - 1. / (uCamD + max(d, 0.))); }
 vec3 lampOne(int i, vec2 p, float s){
   vec4 a = uL[i * 4], b = uL[i * 4 + 1], c = uL[i * 4 + 2], d = uL[i * 4 + 3];
   if (b.w <= 0.) return vec3(0);
@@ -96,17 +109,158 @@ vec3 lampOne(int i, vec2 p, float s){
   return max(v, 0.) * b.w * c.rgb;
 }
 // every lamp, seen through a surface that spreads by k (and k2 for a second pane gap cm further back), its image
-// shifted by the surface's slope times the lamp's distance (refraction moves far things more)
+// shifted by the surface's slope times the lamp's distance (refraction moves far things more). s0 below zero: the
+// lamp seen straight through, blurred by the lens at its distance.
 vec3 lamps(vec2 p, vec2 slope, float k, float k2, float gap, float s0){
   vec3 o = vec3(0);
-  for (int i = 0; i < 3; i++){
+  for (int i = 0; i < 4; i++){
     float dist = uL[i * 4].z;
-    float s = sqrt(pow(k * dist, 2.) + pow(k2 * max(dist - gap, 0.), 2.) + s0 * s0);
+    float s0i = s0 < 0. ? defoc(dist) / uPxCm + .05 : s0;
+    float s = sqrt(pow(k * dist, 2.) + pow(k2 * max(dist - gap, 0.), 2.) + s0i * s0i);
     o += lampOne(i, p + slope * dist, s);
   }
   return o;
 }
 `;
+
+
+// A pattern standing between the lamps and the glass, uGobD cm behind it: leaves, window bars, blinds, lace, water
+// caustics, branches, chain-link. It multiplies the light from everything behind it (caustics can brighten).
+const GOBO_FN = `
+uniform int uGobK; uniform vec4 uGob; uniform float uGobT;   // kind (-1 none); scale cm, amount, sway, angle rad; time
+float gobo(vec2 p){
+  if (uGobK < 0) return 1.;
+  float ca = cos(uGob.w), sa = sin(uGob.w);
+  vec2 q = mat2(ca, -sa, sa, ca) * p / max(uGob.x, .1);
+  float t = uGobT, amt = uGob.y;
+  vec2 w = uGob.z * vec2(sin(t * .9 + q.y * .7) + .5 * sin(t * 2.3 + q.x * 1.3), cos(t * .7 + q.x * .6)) * .12;
+  if (uGobK == 0){                                         // leaves on branches
+    vec2 cc, cid; vec2 lq = q * 1.5 + w * 2.; vec3 v = voro(lq, cc, cid);
+    vec2 d = lq - cc; float an = h21(cid) * 6.28; d = mat2(cos(an), sin(an), -sin(an), cos(an)) * d; d.x *= 1.7;
+    float leaf = (1. - smoothstep(.4, .46, length(d))) * step(.12, v.z);
+    vec2 cc2, cid2; vec2 lq2 = q * 2.6 + 7. + w * 3.; vec3 v2 = voro(lq2, cc2, cid2);
+    vec2 d2 = lq2 - cc2; float an2 = h21(cid2) * 6.28; d2 = mat2(cos(an2), sin(an2), -sin(an2), cos(an2)) * d2; d2.x *= 1.7;
+    leaf = max(leaf, (1. - smoothstep(.36, .42, length(d2))) * step(.2, v2.z));
+    float canopy = smoothstep(.3, .5, fbm(q * .35 + w));
+    float br = smoothstep(.955, .985, ridged(q * .22 + w * .5));
+    return 1. - amt * clamp(max(leaf * canopy, br), 0., 1.);
+  }
+  if (uGobK == 1){ vec2 e = .5 - abs(fract(q) - .5); return 1. - amt * (1. - smoothstep(.03, .045, min(e.x, e.y))); }
+  if (uGobK == 2){ float f = fract(q.y * 4.); return 1. - amt * (1. - smoothstep(.53, .57, f)); }
+  if (uGobK == 3){                                         // lace
+    vec2 g = fract(q) - .5; float r = length(g), an = atan(g.y, g.x);
+    float ring = 1. - smoothstep(.025, .045, abs(r - (.27 + .07 * cos(an * 6.))));
+    float hub = 1. - smoothstep(.06, .08, r);
+    vec2 m4 = abs(fract(q * 5.) - .5); float mesh = 1. - smoothstep(.06, .12, min(m4.x, m4.y));
+    return 1. - amt * clamp(max(max(ring, hub), mesh * .55), 0., 1.);
+  }
+  if (uGobK == 4){                                         // water caustics: light gathered into moving lines
+    vec2 pp = mod(q * 6.2832, 6.2832) - 250.; vec2 i = pp; float c = 1.;
+    for (int n = 0; n < 4; n++){ float tt = t * .5 * (1. - 3.5 / float(n + 1));
+      i = pp + vec2(cos(tt - i.x) + sin(tt + i.y), sin(tt - i.y) + cos(tt + i.x));
+      c += 1. / length(vec2(pp.x / (sin(i.x + tt) / .005), pp.y / (cos(i.y + tt) / .005))); }
+    c /= 4.; c = 1.17 - pow(c, 1.4);
+    return mix(1., .35 + clamp(pow(abs(c), 8.), 0., 3.) * 1.6, amt);
+  }
+  if (uGobK == 5){                                         // bare branches
+    float b1 = smoothstep(.94, .98, ridged(q * .3 + w)), b2 = smoothstep(.95, .985, ridged(q * .9 + 3. + w * 2.)) * .8;
+    return 1. - amt * clamp(b1 + b2, 0., 1.);
+  }
+  vec2 dq = vec2(q.x + q.y, q.x - q.y) * 2.12; vec2 f = abs(fract(dq) - .5);   // chain-link
+  return 1. - amt * (1. - smoothstep(.04, .09, min(f.x, f.y)));
+}
+`;
+
+// What the composite, the light-shaft march and the still renderer share: the camera, the words' images, the extra
+// layers of words (coverage in r, g, b of uLay; each layer's depth, mode and colour), the pattern plane, the haze.
+const COMMON = `
+uniform sampler2D uN1, uN2, uMask, uState, uLay, uGobTex, uShTex;
+uniform vec2 uRes, uPaneCm; uniform float uTime;
+uniform vec2 uO, uAx, uAy; uniform mat2 uToUv;
+vec2 paneAt(vec2 uv){ return uO + uAx * uv.x + uAy * uv.y; }
+vec2 toUv(vec2 p){ return uToUv * (p - uO); }
+uniform vec2 uView; uniform vec3 uSurround;
+uniform int uScene; uniform float uDepth; uniform vec4 uP, uQ; uniform vec3 uColA, uColB;
+uniform vec4 uLayD; uniform vec4 uLayM[3]; uniform vec3 uLayC[3]; uniform vec3 uLit;   // on, mode, opacity, glow
+uniform float uGobD, uLampD;
+uniform float uHg, uShDen, uShD, uShTop; uniform int uShOn;
+// a layer's coverage c as what it lets through (T) and gives off (E): 0 shadow, 1 lit from the front, 2 glowing, 3 gel
+void layerTE(int i, float c, out vec3 T, out vec3 E){
+  float a = clamp(c * uLayM[i].z, 0., 1.); int mode = int(uLayM[i].y + .5); vec3 col = uLayC[i];
+  T = vec3(1. - a); E = vec3(0);
+  if (mode == 0) E = col * a * .03;
+  else if (mode == 1) E = col * a * uLit;
+  else if (mode == 2) E = col * a * uLayM[i].w;
+  else T = mix(vec3(1), pow(max(col, vec3(.001)), vec3(1.5)), a);
+}
+`;
+
+// Light scattered toward you by the haze at a point x (pane cm, z cm behind the glass): each lamp's light, dimmed
+// by distance, shaped by the haze's forward glow (Henyey-Greenstein), and shadowed by whatever stands between that
+// point and the lamp (the words, the other layers, the pattern), softened by the lamp's size.
+const SHAFT_FN = `
+vec3 shaftVis(vec3 x, vec3 Lp, float lampR){
+  vec3 T = vec3(1);
+  float span = max(Lp.z - x.z, 1e-3);
+  if (uDepth > x.z && uDepth < Lp.z){
+    vec2 q = mix(x.xy, Lp.xy, (uDepth - x.z) / span); float pen = lampR * (uDepth - x.z) / max(Lp.z - uDepth, 1.);
+    vec2 u = toUv(q); if (u == clamp(u, 0., 1.)) T *= textureLod(uN1, u, lodFor(pen * uPxCm)).rgb;
+  }
+  for (int i = 0; i < 3; i++){
+    float d = uLayD[i];
+    if (uLayM[i].x < .5 || d <= x.z || d >= Lp.z) continue;
+    vec2 q = mix(x.xy, Lp.xy, (d - x.z) / span); float pen = lampR * (d - x.z) / max(Lp.z - d, 1.);
+    vec2 u = toUv(q); if (u != clamp(u, 0., 1.)) continue;
+    vec3 lt, le; layerTE(i, textureLod(uLay, u, lodFor(pen * uPxCm))[i], lt, le); T *= lt;
+  }
+  if (uGobK >= 0 && uGobD > x.z && uGobD < Lp.z) T *= gobo(mix(x.xy, Lp.xy, (uGobD - x.z) / span));
+  return T;
+}
+vec3 inscatter(vec3 x, vec3 vdir){
+  vec3 s = vec3(0);
+  for (int i = 0; i < 4; i++){
+    vec4 a = uL[i * 4], b = uL[i * 4 + 1], c = uL[i * 4 + 2];
+    if (b.w <= 0. || a.z <= x.z) continue;
+    vec3 Lp = a.xyz; vec3 dv = x - Lp;
+    float r2 = dot(dv, dv) + b.x * b.x;
+    float g = uHg, ct = dot(dv, vdir) / sqrt(max(dot(dv, dv), 1e-4));
+    float ph = (1. - g * g) / pow(max(1. + g * g - 2. * g * ct, 1e-4), 1.5) * .0796;
+    float pw = b.w * max(b.x * b.y, .25) * 4.;
+    s += c.rgb * pw * ph / r2 * shaftVis(x, Lp, b.x);
+  }
+  return s;
+}
+`;
+
+// ---- pattern plane: the gobo, drawn on the pane's grid so it can be spread like everything else ----
+export const GOBO = HEAD + LIB + LAMPS + GOBO_FN + COMMON + `
+out vec4 o;
+void main(){ o = vec4(gobo(paneAt(vUv)), 0., 0., 1.); }`;
+
+// ---- light shafts: march each straight-through ray into the box, gathering the haze's glow (a quarter size) ----
+export const SHAFT = HEAD + LIB + LAMPS + GOBO_FN + COMMON + SHAFT_FN + `
+out vec4 o;
+void main(){
+  vec2 p = paneAt(vUv);
+  vec3 vdir = normalize(vec3(-uView, -1.));
+  float j = fract(52.9829189 * fract(dot(gl_FragCoord.xy, vec2(.06711056, .00583715))));   // interleaved steps
+  vec3 acc = vec3(0), Tv = vec3(1);
+  float zPrev = 0.;
+  for (int i = 0; i < 40; i++){
+    float z = (float(i) + j) / 40. * uShD;
+    // the eye's own view passes the words and layers on the way out: haze behind them is seen through them
+    if (uDepth > zPrev && uDepth <= z){ vec2 u = toUv(p + uView * uDepth); if (u == clamp(u, 0., 1.)) Tv *= textureLod(uN1, u, 0.).rgb; }
+    for (int k = 0; k < 3; k++){
+      float d = uLayD[k];
+      if (uLayM[k].x < .5 || d <= zPrev || d > z) continue;
+      vec2 u = toUv(p + uView * d); if (u != clamp(u, 0., 1.)) continue;
+      vec3 lt, le; layerTE(k, textureLod(uLay, u, 0.)[k], lt, le); Tv *= lt;
+    }
+    zPrev = z;
+    acc += Tv * inscatter(vec3(p + uView * z, z), vdir);
+  }
+  o = vec4(acc * uShD / 40. * uShDen, 1.);
+}`;
 
 // ---- copy: the text canvas into the mask pyramid's sharp level ----
 export const COPY = HEAD + `
@@ -127,7 +281,7 @@ void main(){
 // Scenario parameters arrive generically in uP, uQ, uColA, uColB; app.js maps each scenario onto them.
 export const SOURCE = HEAD + LIB + LAMPS + `
 uniform sampler2D uMask; uniform sampler2D uText;
-uniform vec2 uRes; uniform float uPxCm, uTime, uSeed;
+uniform vec2 uRes; uniform float uTime, uSeed;
 uniform int uScene;
 uniform float uDepth; uniform vec2 uTilt; uniform vec2 uTextCm;
 // The camera: a render pixel's uv maps onto the pane, in cm, through an affine (zoom, pan, roll)
@@ -243,27 +397,54 @@ void main(){
   oE = vec4(E, cov);
 }`;
 
-// ---- surface state: condensation (r), water film (g), grease (b) ----
-export const STATE = HEAD + `
-uniform sampler2D uPrev; uniform vec2 uPaneCm; uniform float uDt;
+// ---- surface state: condensation (r), water film (g), grease (b), melt (a) ----
+export const STATE = HEAD + LIB + `
+uniform sampler2D uPrev; uniform vec2 uPaneCm; uniform float uDt, uTime;
 uniform float uFogTarget, uRegrow, uEvap, uDry;
 uniform vec4 uBrush;          // x y (uv), previous x y
 uniform vec4 uBrushP;         // radius cm, strength, tool (1 wipe 2 wet 3 breathe 4 grease 5 clean), down
 uniform vec4 uBreath;         // x y (uv), radius cm, amount
 uniform vec4 uDrops[48]; uniform int uDropN;
 uniform float uReset;
+uniform vec4 uTimeC;          // creep cm/s, seconds since the surface was set, warmth, steam
+uniform float uSteamSpd;
+uniform vec4 uL[16];
 out vec4 o;
 float seg(vec2 p, vec2 a, vec2 b){ vec2 pa = p - a, ba = b - a; float h = clamp(dot(pa, ba) / max(dot(ba, ba), 1e-6), 0., 1.); return length(pa - ba * h); }
 void main(){
   vec4 s = texture(uPrev, vUv);
-  float fog = s.r, wet = s.g, gr = s.b;
-  if (uReset > .5){ fog = uFogTarget; wet = 0.; gr = 0.; }
+  float fog = s.r, wet = s.g, gr = s.b, melt = s.a;
+  if (uReset > .5){ fog = uTimeC.x > 0. ? 0. : uFogTarget; wet = 0.; gr = 0.; melt = 0.; }
   vec2 p = vUv * uPaneCm;
   // condensation settles toward the level the air sets, never onto a water film or grease, and evaporates back down
   float target = uFogTarget * (1. - gr * .92) * (1. - wet);
+  if (uTimeC.x > 0.){                                      // creeping in from the edges, a front that advances
+    float e = min(min(p.x, uPaneCm.x - p.x), min(p.y, uPaneCm.y - p.y));
+    float front = uTimeC.y * uTimeC.x;
+    target *= 1. - smoothstep(front - 5., front + 5., e + (fbm(p * .07) - .5) * 18.);
+  }
+  if (uTimeC.w > 0.){                                      // steam rising from below
+    vec2 q = p * .03; float t = uTime * uSteamSpd;
+    float plume = fbm(vec2(q.x * 1.2, q.y * .7 - t) + vec2(fbm(q * 2. + t * .3) * 1.4, 0.));
+    float rise = 1. - .7 * smoothstep(0., uPaneCm.y, p.y);
+    target = max(target, smoothstep(.45, .75, plume) * rise * uTimeC.w * (1. - gr * .92));
+  }
+  float heat = 0.;
+  if (uTimeC.z > 0.){                                      // warmth from the lamps: near them fog lifts and frost melts
+    vec2 pc = p - uPaneCm * .5;
+    for (int i = 0; i < 4; i++){
+      vec4 a = uL[i * 4], b = uL[i * 4 + 1];
+      if (b.w <= 0.) continue;
+      float r = a.z * .8 + b.x + 4.; vec2 d = pc - a.xy;
+      heat += clamp(log2(1. + b.w * max(b.x * b.y, 1.)) / 12., 0., 1.5) * exp(-dot(d, d) / (2. * r * r));
+    }
+    heat *= uTimeC.z;
+    target *= 1. - clamp(heat, 0., 1.) * .95;
+    melt = min(1., melt + uDt * heat * .12);
+  }
   if (uBreath.w > 0.){ float d = length(p - uBreath.xy * uPaneCm) / max(uBreath.z, .1); target = max(target, uBreath.w * (1. - smoothstep(.4, 1., d)) * (1. - gr * .92)); }
-  fog += target > fog ? (target - fog) * (1. - exp(-uDt * uRegrow)) : (target - fog) * (1. - exp(-uDt * uEvap));
-  wet = max(0., wet - uDt * uDry);
+  fog += target > fog ? (target - fog) * (1. - exp(-uDt * uRegrow)) : (target - fog) * (1. - exp(-uDt * (uEvap + heat * 1.5)));
+  wet = max(0., wet - uDt * uDry * (1. + heat * 2.));
   if (uBrushP.w > .5){
     float d = seg(p, uBrush.xy * uPaneCm, uBrush.zw * uPaneCm) / max(uBrushP.x, .1);
     float b = (1. - smoothstep(.55, 1., d)) * uBrushP.y;
@@ -272,7 +453,7 @@ void main(){
     else if (tool == 2) wet = max(wet, b);
     else if (tool == 3) fog = min(1., fog + b * uDt * 2.5);
     else if (tool == 4) gr = max(gr, b);
-    else if (tool == 5){ fog = mix(fog, uFogTarget, b); wet *= 1. - b; gr *= 1. - b; }
+    else if (tool == 5){ fog = mix(fog, uFogTarget, b); wet *= 1. - b; gr *= 1. - b; melt *= 1. - b; }
   }
   for (int i = 0; i < 48; i++){
     if (i >= uDropN) break;
@@ -281,30 +462,21 @@ void main(){
     float b = 1. - smoothstep(dr.z * .7, dr.z * 1.05, length(q));
     fog *= 1. - b; wet = max(wet, b);
   }
-  o = vec4(clamp(fog, 0., 1.), clamp(wet, 0., 1.), clamp(gr, 0., 1.), 1.);
+  o = vec4(clamp(fog, 0., 1.), clamp(wet, 0., 1.), clamp(gr, 0., 1.), clamp(melt, 0., 1.));
 }`;
 
 // ---- composite: the pane and everything seen through it ----
-export const COMPOSITE = HEAD + LIB + LAMPS + `
-uniform sampler2D uN1, uN2, uMask, uState;
-uniform vec2 uRes, uPaneCm; uniform float uPxCm, uTime;
+const SURF = `
+// The pane's surface: its material(s), arrangement and every condition on it.
 uniform vec4 uPA[4], uPB[4];
-uniform vec2 uView; uniform vec3 uSurround;
-// The camera: a render pixel's uv maps onto the pane, in cm, through an affine (zoom, pan, roll)
-uniform vec2 uO, uAx, uAy; uniform mat2 uToUv;
-vec2 paneAt(vec2 uv){ return uO + uAx * uv.x + uAy * uv.y; }
-vec2 toUv(vec2 p){ return uToUv * (p - uO); }
-
 uniform int uArr; uniform vec4 uArrP; uniform float uFrameW; uniform vec3 uFrameCol;
 uniform vec4 uC0, uC1, uC2, uC3, uC4;
 uniform vec4 uDrops[48]; uniform int uDropN;
-uniform int uScene; uniform float uDepth; uniform vec4 uP, uQ; uniform vec3 uColA, uColB;
 uniform vec2 uPen;
 uniform vec3 uWall; uniform float uWallDist, uWash;
 uniform float uHaze; uniform vec3 uHazeCol;
 uniform vec3 uFront; uniform vec2 uFrontPos; uniform float uFrontSpread, uFrontGloss;
-uniform vec2 uRefl; uniform float uBokeh;
-out vec4 o;
+uniform vec2 uRefl;
 
 struct Surf { float k; float k2; float gap; float clar; float tail; float spread; vec3 tr; vec2 slope; float refl; vec3 n; float wetc; float white; };
 
@@ -334,7 +506,7 @@ Surf surf(vec4 P0, vec4 P1, vec4 P2, vec4 P3, vec2 p){
       f += smoothstep(.78, 1., vnoise(vec2(r.x * .35, r.y * 6.) + float(i) * 7.)) * (.5 + .5 * h11(float(i))); }
     float cloud = fbm(q * 1.1) * .7 + fbm(q * 4.) * .3;
     s.tr *= (1. - am * .42 * (cloud - .3)) * (1. + am * .22 * f * fine); s.k *= 1. + am * .3 * (cloud - .5); s.white += am * .05 * f;
-  } else if (tx == 3){                                     // weave: threads scatter, the gaps between them don't
+  } else if (tx == 3 || tx == 15){                        // weave: threads scatter, the gaps between them don't
     vec2 g = fract(q) - .5;
     float tw = mix(.35, .95, am);
     float aa = 1.2 / max(px, 1.);
@@ -346,6 +518,11 @@ Surf surf(vec4 P0, vec4 P1, vec4 P2, vec4 P3, vec2 p){
     float over = mod(floor(q.x) + floor(q.y), 2.);
     s.tr *= mix(vec3(1), vec3(.82 + .1 * over), (1. - open));
     s.n = normalize(vec3(g.x * tY - g.y * 0., g.y * tX, 2.));
+    if (tx == 15){                                         // in a breeze: folds that sway, bunching the cloth
+      float f = sin(p.x * .22 + sin(uTime * .6 + p.y * .05) * 2. + uTime * .45);
+      s.clar *= .65 + .35 * (.5 + .5 * f); s.tr *= .9 + .1 * f; s.k *= 1.1 - .2 * f;
+      s.slope += vec2(cos(p.x * .22 + uTime * .45), 0.) * rf * .03;
+    }
   } else if (tx == 4){                                     // reeds: a row of cylindrical lenses
     float fx = fract(q.x) - .5;
     vec2 sl = vec2(fx * 2.2 * rf, 0.);
@@ -377,6 +554,53 @@ Surf surf(vec4 P0, vec4 P1, vec4 P2, vec4 P3, vec2 p){
   } else if (tx == 8){                                     // ripple: poured cathedral glass
     vec2 sl = vec2(sin(q.y * 6.28 + sin(q.x * 3.1) * 1.5), cos(q.x * 4.4 + sin(q.y * 2.3))) * rf * .25;
     s.slope = rot(ang) * sl; s.n = normalize(vec3(-s.slope * 1.4, 1.));
+  } else if (tx == 9){                                     // wired: a square mesh of fine wire set in the glass
+    vec2 e = .5 - abs(fract(q) - .5); float ww = .012 + am * .03, aa = 1.2 / max(px, 1.);
+    float wire = mix(ww * 4., 1. - smoothstep(ww - aa, ww + aa, min(e.x, e.y)), fine);
+    s.tr *= 1. - .93 * wire; s.clar *= 1. - wire; s.white += wire * .05; s.refl += wire * .05;
+  } else if (tx == 10){                                    // etched stripes: frosted bands, clear between
+    float aa = 1.2 / max(px, 1.), f = fract(q.y);
+    float etch = mix(am, 1. - smoothstep(am - aa, am + aa, f), fine);
+    s.k *= etch; s.clar = mix(1., s.clar, etch); s.white *= etch; s.tail *= etch;
+  } else if (tx == 11){                                    // leaded glass: coloured panes in lead cames
+    vec2 cc, cid; vec3 v = voro(q, cc, cid);
+    float h = h21(cid + 7.);
+    vec3 pal = h < .2 ? vec3(.85, .12, .1) : h < .38 ? vec3(.12, .3, .85) : h < .55 ? vec3(.95, .7, .15) : h < .7 ? vec3(.2, .62, .3) : h < .82 ? vec3(.55, .2, .7) : vec3(.92, .9, .82);
+    float lw = .04 + am * .08, lead = 1. - smoothstep(lw, lw + .04 + 1.2 / max(px, 1.), v.y - v.x);
+    s.tr *= mix(pal, vec3(.02), lead);
+    s.slope += ((h22(cid) - .5) * .5 + (vec2(vnoise(q * 3.), vnoise(q * 3. + 5.)) - .5) * .5) * rf * .12 * (1. - lead);
+    s.clar *= 1. - lead; s.white += lead * .03; s.n = normalize(vec3((h22(cid) - .5) * rf * .4, 1.));
+  } else if (tx == 12){                                    // crumpled plastic: creased, each facet bending light
+    float e = .06; vec2 gr = vec2(ridged(q + vec2(e, 0)) - ridged(q - vec2(e, 0)), ridged(q + vec2(0, e)) - ridged(q - vec2(0, e))) / (2. * e);
+    float crease = smoothstep(.78, .95, ridged(q));
+    s.slope = rot(ang) * gr * rf * .1; s.n = normalize(vec3(-rot(ang) * gr * rf * .25, 1.));
+    s.white += crease * am * .12; s.k *= 1. + crease * am; s.clar *= 1. - crease * am * .6;
+  } else if (tx == 13){                                    // bubble wrap: domes of air, each a little lens
+    vec2 r = vec2(1., 1.732), hh = r * .5;
+    vec2 a = mod(q, r) - hh, b = mod(q - hh, r) - hh; vec2 gv = dot(a, a) < dot(b, b) ? a : b;
+    float R = .3 + am * .12, d = length(gv) / R;
+    if (d < 1.){
+      s.slope += -gv / R * rf * .35; s.n = normalize(vec3(gv / R * 1.4, sqrt(max(1. - d * d, .05))));
+      float rim = smoothstep(.75, 1., d); s.white += rim * .08; s.tr *= 1. - rim * .2; s.refl = max(s.refl, .06);
+    }
+  } else if (tx == 14){                                    // perforated metal: an opaque sheet with round holes
+    vec2 g = q; g.x += .5 * mod(floor(g.y), 2.); g = fract(g) - .5;
+    float R = .15 + am * .3, aa = 1.2 / max(px, 1.);
+    float hole = mix(3.1416 * R * R, 1. - smoothstep(R - aa, R + aa, length(g)), fine);
+    s.tr *= hole; s.clar = mix(s.clar, 1., hole); s.k *= hole; s.white += (1. - hole) * .22; s.refl += (1. - hole) * .08;
+  } else if (tx == 16){                                    // water running down the glass
+    float t = uTime * 1.4;
+    vec2 wv = vec2(vnoise(vec2(q.x * 2., q.y * .6 + t)), vnoise(vec2(q.x * 2. + 5., q.y * .6 + t))) - .5;
+    float str = sin(q.x * 3. + vnoise(q * .5 + vec2(0, t * .3)) * 4.);
+    s.slope += rot(ang) * (wv * rf * .3 + vec2(str * rf * .04, 0.));
+    s.n = normalize(vec3(-wv * rf * .8, 1.)); s.white += am * .03 * smoothstep(.3, .5, abs(wv.x));
+    s.k *= 1. - am * .8; s.clar = mix(s.clar, 1., am * .7);
+  } else if (tx == 17){                                    // seeded glass: small bubbles caught in it
+    vec2 cc, cid; vec3 v = voro(q, cc, cid);
+    if (v.z < am){
+      float r = .08 + .14 * h21(cid + 2.), d = v.x / r;
+      if (d < 1.){ vec2 gv = (q - cc) / r; s.slope += -gv * rf * .2; float rim = smoothstep(.6, 1., d); s.white += rim * .12; s.tr *= 1. - rim * .3; s.n = normalize(vec3(gv, 1.)); }
+    }
   }
   return s;
 }
@@ -416,14 +640,12 @@ void bead(inout Surf M, vec2 dq, float strength){
   M.refl = max(M.refl, .06);
 }
 
-void main(){
-  vec2 uv = vUv;
-  vec2 p = paneAt(uv);
+
+void paneSurface(vec2 p, vec2 uv, out Surf M, out float fr, out float glint, out float inside){
   vec2 pin = uPaneCm * .5 - abs(p);
-  float inside = smoothstep(-aaCm(), aaCm(), min(pin.x, pin.y));
-  float w, fr; arrange(p, w, fr);
+  inside = smoothstep(-aaCm(), aaCm(), min(pin.x, pin.y));
+  float w; arrange(p, w, fr);
   Surf A = surf(uPA[0], uPA[1], uPA[2], uPA[3], p);
-  Surf M;
   if (uArr == 4){                                          // stacked: pane B stands gap cm behind pane A
     Surf B = surf(uPB[0], uPB[1], uPB[2], uPB[3], p);
     M = A; M.k2 = B.k; M.gap = uArrP.x; M.clar = A.clar * B.clar; M.tr = A.tr * B.tr; M.slope = A.slope + B.slope;
@@ -496,7 +718,7 @@ void main(){
     if (v2.z < uC1.x * .8){ float r = uC1.y * .35 * (.3 + .7 * h21(cid)) / (cs * .4); float sp = 1. - smoothstep(r * .5, r, v2.x); M.tr *= 1. - .7 * sp; }
   }
   // scratches catch the front light when they lie across it
-  float glint = 0.;
+  glint = 0.;
   if (uC1.w > 0.){
     vec2 g = p / 9.; vec2 c = floor(g);
     for (int y = -1; y <= 1; y++) for (int x = -1; x <= 1; x++){
@@ -518,7 +740,7 @@ void main(){
     float reach = 1. - e / max(uC2.z, 1.);
     vec2 wp = p + (vec2(fbm(p * .06), fbm(p * .06 + 3.)) - .5) * 14.;
     float fern = ridged(wp * .16) * .6 + ridged(wp * .7 + 2.) * .4;
-    float fz = smoothstep(.58, .8, fern * .55 + reach * uC2.y * .75) * smoothstep(0., .15, uC2.y);
+    float fz = smoothstep(.58, .8, fern * .55 + reach * uC2.y * .75) * smoothstep(0., .15, uC2.y) * (1. - st.a);   // warm lights melt it (state a)
     M.k = sqrt(M.k * M.k + pow(1.6 * fz, 2.)); M.clar *= 1. - fz * .9; M.white += fz * .4; M.tr *= 1. - .1 * fz;
   }
   // cracks: a star of breaks around a point, each shard bending what is behind a little differently
@@ -548,78 +770,28 @@ void main(){
     M.tr *= 1. - uC4.x * .45 * s; M.white += uC4.x * .06 * s;
   }
 
-  // ---- how far behind: depth from the words' own record, finest first ----
-  float num = 0., den = 0.;
-  float lw[4] = float[4](4., 2., 1., .35); float ll[4] = float[4](0., 2., 4., 7.);
-  for (int i = 0; i < 4; i++){ float l = min(ll[i], uMaxLod); num += lw[i] * textureLod(uN1, uv, l).a; den += lw[i] * textureLod(uN2, uv, l).a; }
-  float Dt = den > .002 ? num / den : uDepth;
-  Dt = mix(uDepth, Dt, smoothstep(.002, .05, den));
+}
 
-  float kpx = M.k * uPxCm, k2px = M.k2 * uPxCm;
-  float rE = sqrt(pow(kpx * Dt, 2.) + pow(k2px * max(Dt - M.gap, 0.), 2.) + .25);
-  float pen = uPen.x > 0. ? uPxCm * uPen.x * Dt / max(uPen.y - Dt, 2.) : 0.;
-  rE = sqrt(rE * rE + uBokeh * uBokeh);
-  float rT = sqrt(rE * rE + pen * pen);
-  // scattered light leaves from the surface, so it stays put as the camera moves; light passing straight
-  // through comes from behind, and shifts with the camera's angle (parallax)
-  vec2 nuv = uv + uToUv * (M.slope * Dt);
-  vec2 suv = uv + uToUv * ((M.slope + uView) * Dt);
-
-  vec3 Td = pyr(uN1, nuv, rT).rgb, Ed = pyr(uN2, nuv, rE).rgb;
-  if (M.tail > 0.){ Td = mix(Td, pyr(uN1, nuv, rT * M.spread).rgb, M.tail); Ed = mix(Ed, pyr(uN2, nuv, rE * M.spread).rgb, M.tail); }
-  vec3 Ts = Td, Es = Ed;
-  if (M.clar > .001){ float rb = sqrt(.25 + uBokeh * uBokeh); Ts = pyr(uN1, suv, sqrt(rb * rb + pen * pen * .25)).rgb; Es = pyr(uN2, suv, rb).rgb; }
-
-  // ---- what is behind the words: the lamps, the wall, the halo ----
-  float s0 = sqrt(.25 + uBokeh * uBokeh) / uPxCm;
-  vec3 Ld = lamps(p, M.slope, M.k, M.k2, M.gap, s0);
-  if (M.tail > 0.) Ld = mix(Ld, lamps(p, M.slope, M.k * M.spread, M.k2 * M.spread, M.gap, s0), M.tail);
-  vec3 Ls = M.clar > .001 ? lamps(p, M.slope + uView, 0., 0., 0., s0) : Ld;
-  vec2 pw = p + M.slope * uWallDist, pws = p + (M.slope + uView) * uWallDist;
+// the wall behind, and the lamps' light on it
+vec3 wallAt(vec2 pw){
   vec3 wall = uWall * (.75 + .35 * smoothstep(-uPaneCm.y * .6, uPaneCm.y * .6, pw.y));
-  vec3 wallS = uWall * (.75 + .35 * smoothstep(-uPaneCm.y * .6, uPaneCm.y * .6, pws.y));
-  if (uWash > 0.){                                          // the lamps light the wall behind them
-    for (int i = 0; i < 3; i++){
+  if (uWash > 0.){
+    for (int i = 0; i < 4; i++){
       vec4 a = uL[i * 4], b = uL[i * 4 + 1], c = uL[i * 4 + 2];
       if (b.w <= 0.) continue;
       float spread = max(uWallDist - a.z, 10.) * .9 + b.x;
-      vec2 dq = pw - a.xy, dqs = pws - a.xy;
-      float k = uWash * b.w * (b.x * b.y + 4.) / (spread * spread) * .08;
-      wall += k * c.rgb * exp(-dot(dq, dq) / (2. * spread * spread));
-      wallS += k * c.rgb * exp(-dot(dqs, dqs) / (2. * spread * spread));
+      vec2 dq = pw - a.xy;
+      wall += uWash * b.w * (b.x * b.y + 4.) / (spread * spread) * .08 * c.rgb * exp(-dot(dq, dq) / (2. * spread * spread));
     }
   }
-  vec3 haloD = vec3(0), haloS = vec3(0);
-  if (uScene == 6){                                        // halo: intensity P.x, spread cm P.y, standoff cm P.z
-    float dh = uDepth + uP.z;
-    vec2 huv = uv + uToUv * (M.slope * dh), huvS = uv + uToUv * ((M.slope + uView) * dh);
-    float sp = uP.y * uPxCm;
-    float rh = sqrt(sp * sp + pow(kpx * dh, 2.) + pow(k2px * max(dh - M.gap, 0.), 2.) + uBokeh * uBokeh);
-    sp = sqrt(sp * sp + uBokeh * uBokeh);
-    haloD = uColB * uP.x * pyr(uMask, huv, rh).r;
-    haloS = uColB * uP.x * pyr(uMask, huvS, sp).r;
-  }
-  vec3 behindD = Ld + wall + haloD, behindS = Ls + wallS + haloS;
+  return wall;
+}
 
-  vec3 frontD = behindD * Td + Ed, frontS = behindS * Ts + Es;
-  if (uHaze > 0.){                                         // haze in the box: light scattered between the words and the glass
-    float hz = 1. - exp(-uHaze * Dt * .02);
-    vec3 wide = lamps(p, vec2(0), 1.1, 0., 0., 1.) * uHazeCol;
-    frontD = mix(frontD, wide, hz) + wide * uHaze * .15; frontS = mix(frontS, wide, hz) + wide * uHaze * .15;
-  }
-  vec3 col = mix(frontD, frontS, clamp(M.clar, 0., 1.)) * M.tr;
-
-  if (uScene == 9){                                        // projected: intensity P.x, focus offset cm P.y
-    float r = abs(uP.y) * uPxCm * .12 + .5;
-    vec3 pj = uColA * uP.x * pyr(uMask, uv, r).r;
-    col += pj * (1. - .95 * clamp(M.clar, 0., 1.)) * M.tr;
-  }
-
-  // ---- your side: the front light on the pane, and the room reflected in it ----
+// your side: the front light on the pane, the room reflected in it, steam in the air, the frame, the wall around
+vec3 yourSide(vec3 col, Surf M, vec2 p, vec3 behind, float glint, float fr, float inside){
   vec2 fd = p - uFrontPos;
   vec3 fl = uFront * (exp(-dot(fd, fd) / (2. * uFrontSpread * uFrontSpread)) * .85 + .15);
-  // what scatters on the surface (frost, fog, dust, fibres) is lit from the front and, glowing, from behind
-  col += fl * (M.refl * (1. - clamp(M.clar, 0., 1.)) + M.white) + M.white * behindD * .18;
+  col += fl * (M.refl * (1. - clamp(M.clar, 0., 1.)) + M.white) + M.white * behind * .18;
   vec3 L = normalize(vec3(uFrontPos - p, uFrontSpread * 1.5)); vec3 H = normalize(L + vec3(0, 0, 1));
   float spec = pow(max(dot(M.n, H), 0.), uFrontGloss);
   col += uFront * spec * mix(.08, .9, smoothstep(0., .03, 1. - M.n.z)) * (.3 + M.refl * 4.);
@@ -630,10 +802,212 @@ void main(){
     r -= rectB(p - rc, vec2(.8, uPaneCm.y * .32), uRefl.y * uPaneCm.x * .06 + .3) * .9;
     col += uRefl.x * r * (.05 + .1 * clamp(M.clar, 0., 1.)) * vec3(.85, .92, 1.);
   }
+  if (uC4.z > 0.){                                         // steam drifting up in front of the glass
+    vec2 q = p * .03; float t = uTime * uC4.w;
+    float plume = fbm(vec2(q.x * 1.2, q.y * .7 - t) + vec2(fbm(q * 2. + t * .3) * 1.4, 0.));
+    float rise = 1. - .7 * smoothstep(-uPaneCm.y * .5, uPaneCm.y * .5, p.y);
+    col = mix(col, fl * .55 + col * .4 + .015, smoothstep(.5, .8, plume) * rise * uC4.z * .45);
+  }
   col = mix(col, uFrameCol * (.05 + fl * .5), fr);
-  // beyond the pane's edge: the wall it is set in
-  col = mix(uSurround * (.04 + fl * .6), col, inside);
-  o = vec4(max(col, 0.), 1.);
+  return mix(uSurround * (.04 + fl * .6), col, inside);
+}
+`;
+
+export const COMPOSITE = HEAD + LIB + LAMPS + GOBO_FN + COMMON + SHAFT_FN + SURF + `
+out vec4 o;
+// what lies behind, applied far to near: each thing dims what is behind it and adds its own light
+vec3 chain(vec3 c, float dz[6], vec3 T[6], vec3 E[6]){
+  bool used[6] = bool[6](false, false, false, false, false, false);
+  for (int n = 0; n < 6; n++){
+    int b = 0; float bd = -1e9;
+    for (int i = 0; i < 6; i++) if (!used[i] && dz[i] > bd){ bd = dz[i]; b = i; }
+    used[b] = true; c = c * T[b] + E[b];
+  }
+  return c;
+}
+void main(){
+  vec2 uv = vUv;
+  vec2 p = paneAt(uv);
+  Surf M; float fr, glint, inside;
+  paneSurface(p, uv, M, fr, glint, inside);
+
+  // ---- how far behind: depth from the words' own record, finest first ----
+  float num = 0., den = 0.;
+  float lw[4] = float[4](4., 2., 1., .35); float ll[4] = float[4](0., 2., 4., 7.);
+  for (int i = 0; i < 4; i++){ float l = min(ll[i], uMaxLod); num += lw[i] * textureLod(uN1, uv, l).a; den += lw[i] * textureLod(uN2, uv, l).a; }
+  float Dt = den > .002 ? num / den : uDepth;
+  Dt = mix(uDepth, Dt, smoothstep(.002, .05, den));
+
+  float kpx = M.k * uPxCm, k2px = M.k2 * uPxCm;
+  float rE = sqrt(pow(kpx * Dt, 2.) + pow(k2px * max(Dt - M.gap, 0.), 2.) + .25);
+  float pen = uPen.x > 0. ? uPxCm * uPen.x * Dt / max(uPen.y - Dt, 2.) : 0.;
+  float rT = sqrt(rE * rE + pen * pen);
+  // scattered light leaves from the surface, so it stays put as the camera moves (and is focused with the
+  // glass); light passing straight through comes from behind, shifts with the camera's angle (parallax) and is
+  // focused with its own distance
+  vec2 nuv = uv + uToUv * (M.slope * Dt);
+  vec2 suv = uv + uToUv * ((M.slope + uView) * Dt);
+  float clar = clamp(M.clar, 0., 1.);
+
+  vec3 Td = pyr(uN1, nuv, rT).rgb, Ed = pyr(uN2, nuv, rE).rgb;
+  if (M.tail > 0.){ Td = mix(Td, pyr(uN1, nuv, rT * M.spread).rgb, M.tail); Ed = mix(Ed, pyr(uN2, nuv, rE * M.spread).rgb, M.tail); }
+  vec3 Ts = Td, Es = Ed;
+  if (clar > .001){ float rb = sqrt(.25 + pow(defoc(Dt), 2.)); Ts = pyr(uN1, suv, sqrt(rb * rb + pen * pen * .25)).rgb; Es = pyr(uN2, suv, rb).rgb; }
+
+  // ---- what is behind: the lamps, the wall, the halo ----
+  vec3 Ld = lamps(p, M.slope, M.k, M.k2, M.gap, .05);
+  if (M.tail > 0.) Ld = mix(Ld, lamps(p, M.slope, M.k * M.spread, M.k2 * M.spread, M.gap, .05), M.tail);
+  vec3 Ls = clar > .001 ? lamps(p, M.slope + uView, 0., 0., 0., -1.) : Ld;
+  vec3 wallD = wallAt(p + M.slope * uWallDist), wallS = wallAt(p + (M.slope + uView) * uWallDist);
+  vec3 haloD = vec3(0), haloS = vec3(0);
+  if (uScene == 6){                                        // halo: intensity P.x, spread cm P.y, standoff cm P.z
+    float dh = uDepth + uP.z;
+    vec2 huv = uv + uToUv * (M.slope * dh), huvS = uv + uToUv * ((M.slope + uView) * dh);
+    float sp = uP.y * uPxCm;
+    float rh = sqrt(sp * sp + pow(kpx * dh, 2.) + pow(k2px * max(dh - M.gap, 0.), 2.));
+    haloD = uColB * uP.x * pyr(uMask, huv, rh).r;
+    haloS = uColB * uP.x * pyr(uMask, huvS, sqrt(sp * sp + pow(defoc(dh), 2.))).r;
+  }
+
+  // ---- the things between, each at its own depth ----
+  float dz[6]; vec3 tD[6], eD[6], tS[6], eS[6];
+  dz[0] = uLampD; tD[0] = vec3(1); eD[0] = Ld; tS[0] = vec3(1); eS[0] = Ls;
+  dz[1] = Dt; tD[1] = Td; eD[1] = Ed; tS[1] = Ts; eS[1] = Es;
+  for (int i = 0; i < 3; i++){
+    float d = uLayD[i]; dz[2 + i] = d;
+    tD[2 + i] = vec3(1); eD[2 + i] = vec3(0); tS[2 + i] = vec3(1); eS[2 + i] = vec3(0);
+    if (uLayM[i].x < .5) continue;
+    float rD = sqrt(pow(kpx * d, 2.) + pow(k2px * max(d - M.gap, 0.), 2.) + .25);
+    layerTE(i, pyr(uLay, uv + uToUv * (M.slope * d), rD)[i], tD[2 + i], eD[2 + i]);
+    if (clar > .001) layerTE(i, pyr(uLay, uv + uToUv * ((M.slope + uView) * d), sqrt(.25 + pow(defoc(d), 2.)))[i], tS[2 + i], eS[2 + i]);
+  }
+  dz[5] = uGobD; tD[5] = vec3(1); eD[5] = vec3(0); tS[5] = vec3(1); eS[5] = vec3(0);
+  if (uGobK >= 0){
+    float rD = sqrt(pow(kpx * uGobD, 2.) + pow(k2px * max(uGobD - M.gap, 0.), 2.) + .25);
+    tD[5] = vec3(pyr(uGobTex, uv + uToUv * (M.slope * uGobD), rD).r);
+    if (clar > .001) tS[5] = vec3(pyr(uGobTex, uv + uToUv * ((M.slope + uView) * uGobD), sqrt(.25 + pow(defoc(uGobD), 2.))).r);
+  }
+  vec3 frontD = chain(wallD + haloD, dz, tD, eD);
+  vec3 frontS = clar > .001 ? chain(wallS + haloS, dz, tS, eS) : frontD;
+
+  // ---- the haze: ray-marched shafts, and the veil it lays over distance ----
+  if (uShOn == 1){
+    float dS = uShD * .5;
+    frontD += pyrM(uShTex, uv + uToUv * (M.slope * dS), sqrt(pow(kpx * dS, 2.) + .25) * .25, uShTop).rgb;
+    frontS += pyrM(uShTex, uv + uToUv * ((M.slope + uView) * dS), sqrt(.25 + pow(defoc(dS), 2.)) * .25, uShTop).rgb;
+  }
+  if (uHaze > 0.){
+    float hz = 1. - exp(-uHaze * Dt * .02);
+    vec3 wide = lamps(p, vec2(0), 1.1, 0., 0., 1.) * uHazeCol;
+    vec3 add = uShOn == 1 ? vec3(0) : wide * uHaze * .15;
+    frontD = mix(frontD, wide, hz) + add; frontS = mix(frontS, wide, hz) + add;
+  }
+  vec3 col = mix(frontD, frontS, clar) * M.tr;
+  float direct = lum(frontS * clar * M.tr);
+
+  if (uScene == 9){                                        // projected: intensity P.x, focus offset cm P.y
+    float r = abs(uP.y) * uPxCm * .12 + .5;
+    col += uColA * uP.x * pyr(uMask, uv, r).r * (1. - .95 * clar) * M.tr;
+  }
+  col = yourSide(col, M, p, Ld + wallD, glint, fr, inside);
+  // alpha: the share of this pixel that came straight through, focused at its own distance, not the glass's
+  o = vec4(max(col, 0.), clamp(direct / max(lum(col), 1e-4), 0., 1.));
+}`;
+
+// ---- the still: one ray per pixel per pass, traced through the pane and into the box, averaged ----
+// A ray leaves a point on a lens, crosses the glass and is scattered by its surface (by the material's own spread,
+// or straight through, by chance in proportion to how clear it is), then travels back: through the words (a march
+// through their depth record), the other layers, the pattern, the lamps, the haze, to the wall.
+export const TRACE = HEAD + LIB + LAMPS + GOBO_FN + COMMON + SHAFT_FN + SURF + `
+uniform sampler2D uAcc; uniform float uN, uLensA, uTextZ, uThick;
+out vec4 o;
+uint rs;
+uint pcg(uint v){ uint s = v * 747796405u + 2891336453u; uint w = ((s >> ((s >> 28u) + 4u)) ^ s) * 277803737u; return (w >> 22u) ^ w; }
+float rnd(){ rs = pcg(rs); return float(rs) * (1. / 4294967296.); }
+vec2 gauss2(){ float u = max(rnd(), 1e-7), v = rnd(); return sqrt(-2. * log(u)) * vec2(cos(6.2832 * v), sin(6.2832 * v)); }
+vec2 gp, gs, gs2, ga; float ggap; bool gdirect;
+vec2 at(float z){ return gp + gs * z + gs2 * max(z - ggap, 0.) + (gdirect ? ga * z / (uCamD + z) : vec2(0)); }
+bool inUv(vec2 u){ return u == clamp(u, 0., 1.); }
+// a lamp seen by a scattered ray: rather than hope the ray lands on a small bright lamp (which speckles the picture),
+// take the lamp already spread by the surface, as the live view does; the ray still carries the shadows in front of it
+vec3 lampSpread(int i, vec2 p, Surf M){
+  float dist = uL[i * 4].z;
+  float s = sqrt(pow(M.k * dist, 2.) + pow(M.k2 * max(dist - M.gap, 0.), 2.) + .0025);
+  vec3 v = lampOne(i, p + M.slope * dist, s);
+  if (M.tail > 0.) v = mix(v, lampOne(i, p + M.slope * dist, s * M.spread), M.tail);
+  return v;
+}
+void main(){
+  ivec2 fc = ivec2(gl_FragCoord.xy);
+  rs = pcg(uint(fc.x) * 1973u + uint(fc.y) * 9277u + uint(uN) * 26699u + 1u);
+  rs = pcg(rs + uint(uN));
+  vec2 uv = vUv + (vec2(rnd(), rnd()) - .5) / uRes;
+  vec2 p0 = paneAt(uv);
+  ga = gauss2() * uLensA;
+  vec2 p = p0 - ga * uFd / (uCamD + uFd);                  // where this lens ray meets the glass
+  Surf M; float fr, glint, inside;
+  paneSurface(p, toUv(p), M, fr, glint, inside);
+  float clar = clamp(M.clar, 0., 1.);
+  gdirect = rnd() < clar; gp = p; ggap = M.gap; gs2 = vec2(0);
+  if (gdirect) gs = M.slope + uView;
+  else { float tl = rnd() < M.tail ? M.spread : 1.; gs = M.slope + gauss2() * M.k * tl; gs2 = gauss2() * M.k2 * tl; }
+
+  // the fixed planes, nearest first
+  float ed[10]; int ek[10]; int ei[10]; int n = 0;
+  for (int i = 0; i < 4; i++) if (uL[i * 4 + 1].w > 0.){ ed[n] = uL[i * 4].z; ek[n] = 0; ei[n] = i; n++; }
+  for (int i = 0; i < 3; i++) if (uLayM[i].x > .5){ ed[n] = uLayD[i]; ek[n] = 1; ei[n] = i; n++; }
+  if (uGobK >= 0){ ed[n] = uGobD; ek[n] = 2; ei[n] = 0; n++; }
+  if (uScene == 6){ ed[n] = uDepth + uP.z; ek[n] = 3; ei[n] = 0; n++; }
+  bool hazy = uShOn == 1 && uShDen > 0.;
+  if (hazy){ ed[n] = rnd() * uWallDist; ek[n] = 4; ei[n] = 0; n++; }
+  for (int i = 1; i < 10; i++){ if (i >= n) break; float d = ed[i]; int k = ek[i], x = ei[i]; int j = i - 1;
+    while (j >= 0 && ed[j] > d){ ed[j + 1] = ed[j]; ek[j + 1] = ek[j]; ei[j + 1] = ei[j]; j--; } ed[j + 1] = d; ek[j + 1] = k; ei[j + 1] = x; }
+
+  vec3 L = vec3(0), Tp = vec3(1);
+  vec3 vdir = normalize(vec3(-uView, -1.));
+  bool textDone = false, glowDone = false;
+  float zT = uTextZ + uThick + .5, z0 = 0.; int j = 0;
+  for (int i = 1; i <= 40; i++){
+    float z1 = zT * float(i) / 40.;
+    while (j < n && ed[j] <= z1){
+      float d = ed[j]; int k = ek[j], x = ei[j];
+      if (k == 0) L += Tp * (gdirect ? lampOne(x, at(d), .03) : lampSpread(x, p, M));
+      else if (k == 1){ vec2 u = toUv(at(d)); if (inUv(u)){ vec3 T, E; layerTE(x, textureLod(uLay, u, 0.)[x], T, E); L += Tp * E; Tp *= T; } }
+      else if (k == 2) Tp *= gobo(at(d));
+      else if (k == 3) L += Tp * uColB * uP.x * pyr(uMask, toUv(at(d)), uP.y * uPxCm).r;
+      else L += Tp * inscatter(vec3(at(d), d), vdir) * uShDen * uWallDist;
+      j++;
+    }
+    if (!textDone){
+      vec2 u = toUv(at(z1));
+      if (inUv(u)){
+        vec4 n1 = textureLod(uN1, u, 0.), n2 = textureLod(uN2, u, 0.);
+        if (n2.a > .02){ float D = n1.a / n2.a; if (D <= z1 && D + uThick >= z0){ L += Tp * n2.rgb; Tp *= n1.rgb; textDone = true; } }
+        else if (!glowDone && uDepth > z0 && uDepth <= z1){ L += Tp * n2.rgb; glowDone = true; }   // glow beyond the letters' edges
+      }
+    }
+    z0 = z1;
+  }
+  while (j < n){
+    float d = ed[j]; int k = ek[j], x = ei[j];
+    if (k == 0) L += Tp * (gdirect ? lampOne(x, at(d), .03) : lampSpread(x, p, M));
+    else if (k == 1){ vec2 u = toUv(at(d)); if (inUv(u)){ vec3 T, E; layerTE(x, textureLod(uLay, u, 0.)[x], T, E); L += Tp * E; Tp *= T; } }
+    else if (k == 2) Tp *= gobo(at(d));
+    else if (k == 3) L += Tp * uColB * uP.x * pyr(uMask, toUv(at(d)), uP.y * uPxCm).r;
+    else L += Tp * inscatter(vec3(at(d), d), vdir) * uShDen * uWallDist;
+    j++;
+  }
+  L += Tp * wallAt(at(uWallDist));
+  if (uHaze > 0.){
+    float hz = 1. - exp(-uHaze * uDepth * .02);
+    vec3 wide = lamps(p, vec2(0), 1.1, 0., 0., 1.) * uHazeCol;
+    L = mix(L, wide, hz) + (hazy ? vec3(0) : wide * uHaze * .15);
+  }
+  vec3 col = L * M.tr;
+  if (uScene == 9){ float r = abs(uP.y) * uPxCm * .12 + .5; col += uColA * uP.x * pyr(uMask, toUv(p), r).r * (1. - .95 * clar) * M.tr; }
+  col = yourSide(col, M, p, L, glint, fr, inside);
+  vec4 prev = texelFetch(uAcc, fc, 0);
+  o = mix(prev, vec4(max(col, 0.), 1.), 1. / (uN + 1.));
 }`;
 
 // ---- final: the camera ----
@@ -642,6 +1016,7 @@ uniform sampler2D uC; uniform vec2 uRes; uniform float uTime;
 uniform float uExposure, uContrast, uSat, uBloom, uBloomR, uHalation, uVig, uGrain, uGrainSize, uCA, uFocus, uSplit;
 uniform vec3 uWB, uShadow, uHigh; uniform int uTone;
 uniform mat3 uOrbit; uniform float uF0, uAspect; uniform vec4 uBB; uniform vec3 uBg;
+uniform float uPaneBlur; uniform sampler2D uAB; uniform float uSplitX;
 out vec4 o;
 vec3 aces(vec3 x){ return clamp((x * (2.51 * x + .03)) / (x * (2.43 * x + .59) + .14), 0., 1.); }
 vec3 toSRGB(vec3 c){ c = clamp(c, 0., 1.); return mix(c * 12.92, 1.055 * pow(c, vec3(1. / 2.4)) - .055, step(.0031308, c)); }
@@ -657,7 +1032,13 @@ void main(){
   hit = hit && all(greaterThanEqual(uv, vec2(0))) && all(lessThanEqual(uv, vec2(1)));
   vec3 c;
   if (!hit) c = uBg;
-  else if (uFocus > .01) c = pyr(uC, uv, uFocus).rgb; else c = textureLod(uC, uv, 0.).rgb;
+  else {
+    vec4 cs = textureLod(uC, uv, 0.);
+    c = uFocus > .01 ? pyr(uC, uv, uFocus).rgb : cs.rgb;
+    // the glass and all on it blur when the lens is focused behind it; what came straight through (alpha) was
+    // already focused at its own distance
+    if (uPaneBlur > .3) c = mix(pyr(uC, uv, sqrt(uPaneBlur * uPaneBlur + uFocus * uFocus)).rgb, c, cs.a);
+  }
   if (uCA > 0. && hit){
     vec2 d = (uv - .5) * uCA * .004;
     float r = (uFocus > .01 ? pyr(uC, uv + d, uFocus).r : textureLod(uC, uv + d, 0.).r);
@@ -689,6 +1070,10 @@ void main(){
     vec2 g = floor(gl_FragCoord.xy / max(uGrainSize, 1.));
     float n = h21(g + fract(uTime * 13.7) * 91.7) + h21(g * 1.31 + fract(uTime * 7.3) * 37.1) - 1.;
     s += n * uGrain * .09 * (1. - abs(luma(s) - .5));
+  }
+  if (uSplitX > 0.){
+    if (vUv.x < uSplitX) s = texture(uAB, vUv).rgb;
+    float lw = 1. / uRes.x; s = mix(s, vec3(.92), (1. - smoothstep(lw, lw * 2.5, abs(vUv.x - uSplitX))) * .85);
   }
   o = vec4(s, 1.);
 }`;

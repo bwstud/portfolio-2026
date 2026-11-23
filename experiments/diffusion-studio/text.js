@@ -100,10 +100,16 @@ export function setWords(S, W, H, family, cam, wantPoints) {
   const corners = [[-maxW / 2, top], [maxW / 2, top], [-maxW / 2, top + blockH], [maxW / 2, top + blockH]].map(([x, y]) => local(x, y));
   const xs = corners.map((c) => c[0]), ys = corners.map((c) => c[1]);
   const bbox = [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)];
+  // the same box on the pane, in cm, for sizing the pane to the words
+  const cmCorners = [[-maxW / 2, top], [maxW / 2, top], [-maxW / 2, top + blockH], [maxW / 2, top + blockH]].map(([x, y]) => {
+    const xs = (x + sk * y) * hs / pxCm, ys = -y / pxCm;
+    return [S['tx.x'] + xs * Math.cos(rot) - ys * Math.sin(rot), S['tx.y'] + xs * Math.sin(rot) + ys * Math.cos(rot)];
+  });
+  const boxCm = [Math.min(...cmCorners.map((c) => c[0])), Math.min(...cmCorners.map((c) => c[1])), Math.max(...cmCorners.map((c) => c[0])), Math.max(...cmCorners.map((c) => c[1]))];
 
   // drip starts: inside a letter, with nothing a little below
   const points = [];
-  if (!wantPoints) return { canvas, bbox, points: null, centre: toUvCm(S['tx.x'], S['tx.y']) };
+  if (!wantPoints) return { canvas, bbox, boxCm, points: null, centre: toUvCm(S['tx.x'], S['tx.y']) };
   const step = Math.max(2, Math.round(W / 320));
   const img = ctx.getImageData(0, 0, W, H).data;
   const below = Math.max(2, Math.round(pxCm * 0.6));
@@ -112,5 +118,48 @@ export function setWords(S, W, H, family, cam, wantPoints) {
       if (img[(y * W + x) * 4] > 200 && img[((y + below) * W + x) * 4] < 40) points.push([x / W, 1 - y / H]);
     }
   }
-  return { canvas, bbox, points, centre: toUvCm(S['tx.x'], S['tx.y']) };
+  return { canvas, bbox, boxCm, points, centre: toUvCm(S['tx.x'], S['tx.y']) };
+}
+
+// The other layers of words: up to three, each drawn in its own channel (red, green, blue) of one canvas, through
+// the same camera. Returns each layer's box on the pane, in cm, for sizing the pane to the words.
+const lcanvas = document.createElement('canvas');
+const lctx = lcanvas.getContext('2d');
+export const LAYERS = ['l1', 'l2', 'l3'];
+export function setLayers(S, W, H, cam, famOf) {
+  if (lcanvas.width !== W || lcanvas.height !== H) { lcanvas.width = W; lcanvas.height = H; }
+  const c = lctx, pxCm = cam.pxCm;
+  c.setTransform(1, 0, 0, 1, 0, 0);
+  c.globalCompositeOperation = 'source-over';
+  c.fillStyle = '#000'; c.fillRect(0, 0, W, H);
+  c.globalCompositeOperation = 'lighter';
+  const [a, b, cc, d] = cam.toUv, [ox, oy] = cam.O;
+  const base = [W * a, -H * b, W * cc, -H * d, -W * (a * ox + cc * oy), H * (1 + b * ox + d * oy)];
+  const boxes = [];
+  LAYERS.forEach((L, i) => {
+    const text = S[`${L}.text`] || '';
+    if (!S[`${L}.on`] || !text.trim()) return;
+    const size = S[`${L}.size`] * pxCm;
+    c.setTransform(1, 0, 0, 1, 0, 0);
+    c.font = `${S[`${L}.italic`] ? 'italic ' : ''}${S[`${L}.weight`]} ${size}px "${famOf(L)}", sans-serif`;
+    c.letterSpacing = `${(S[`${L}.track`] / 1000) * size}px`;
+    c.textAlign = 'center'; c.textBaseline = 'alphabetic';
+    const lines = text.split('\n');
+    const m = c.measureText('Hxgy');
+    const asc = m.fontBoundingBoxAscent ?? size * 0.8, desc = m.fontBoundingBoxDescent ?? size * 0.2;
+    const lead = size * 1.05, blockH = lead * (lines.length - 1) + asc + desc, top = -blockH / 2;
+    const maxW = Math.max(1, ...lines.map((l) => c.measureText(l).width));
+    const rot = (S[`${L}.rot`] * Math.PI) / 180;
+    c.setTransform(...base); c.translate(S[`${L}.x`], S[`${L}.y`]); c.rotate(rot); c.scale(1 / pxCm, -1 / pxCm);
+    c.fillStyle = ['#f00', '#0f0', '#00f'][i];
+    lines.forEach((l, k) => c.fillText(l, 0, top + asc + k * lead));
+    const pts = [[-maxW / 2, top], [maxW / 2, top], [-maxW / 2, top + blockH], [maxW / 2, top + blockH]].map(([x, y]) => {
+      const xs = x / pxCm, ys = -y / pxCm;
+      return [S[`${L}.x`] + xs * Math.cos(rot) - ys * Math.sin(rot), S[`${L}.y`] + xs * Math.sin(rot) + ys * Math.cos(rot)];
+    });
+    boxes.push([Math.min(...pts.map((q) => q[0])), Math.min(...pts.map((q) => q[1])), Math.max(...pts.map((q) => q[0])), Math.max(...pts.map((q) => q[1]))]);
+  });
+  c.setTransform(1, 0, 0, 1, 0, 0);
+  c.globalCompositeOperation = 'source-over';
+  return { canvas: lcanvas, boxes };
 }

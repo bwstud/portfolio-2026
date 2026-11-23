@@ -2,13 +2,13 @@
 
 The page uses painted cut-outs, the way the koi page does: each creature is one painting seen from
 straight above, bent along a moving spine. Generate the paintings, drop them in
-`tinkering/raptor-run/source/` (local only, never committed or deployed), then run:
+`experiments/raptor-run/source/` (local only, never committed or deployed), then run:
 
 ```
 python3 tools/raptor-art.py
 ```
 
-It keys out the plain background, cleans the edge, crops, and writes `tinkering/raptor-run/art/*.webp`
+It keys out the plain background, cleans the edge, crops, and writes `experiments/raptor-run/art/*.webp`
 and `art/manifest.json`, which are what ship. Anything you haven't made yet falls back to the
 code-sculpted version, so you can add images a few at a time.
 

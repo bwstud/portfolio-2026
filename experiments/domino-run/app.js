@@ -1543,7 +1543,7 @@ const modalOpen = () => !$('#modal').hidden;
 async function saveDialog() {
   if (!L.dominoes.length) return;
   const mode = await store.storeMode();
-  const where = mode === 'project' ? 'Saves go in this project, in <code>tinkering/domino-run/saves/states/</code>.' : 'There’s no local server here, so saves stay in this browser.';
+  const where = mode === 'project' ? 'Saves go in this project, in <code>experiments/domino-run/saves/states/</code>.' : 'There’s no local server here, so saves stay in this browser.';
   const name = S.saveName || `Run ${new Date().toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`;
   openModal(`<h2>Save this run</h2><p>${where} ${L.dominoes.length} dominoes, with the camera where it is now.</p>
     <div class="field"><label class="m-legend" for="save-name">Name</label><input class="m-input" type="text" id="save-name" value="${esc(name)}" maxlength="80"></div>
@@ -1559,7 +1559,7 @@ async function saveDialog() {
 }
 async function openDialog() {
   const mode = await store.storeMode();
-  openModal(`<h2>Open a saved run</h2><p>${mode === 'project' ? 'From <code>tinkering/domino-run/saves/states/</code> in this project.' : 'Saved in this browser.'}</p><div class="saves" id="save-list"><p class="empty">Loading…</p></div>
+  openModal(`<h2>Open a saved run</h2><p>${mode === 'project' ? 'From <code>experiments/domino-run/saves/states/</code> in this project.' : 'Saved in this browser.'}</p><div class="saves" id="save-list"><p class="empty">Loading…</p></div>
     <div class="modal__actions"><button class="btn m-key" data-x="close">Close</button></div>`, async m => {
     m.querySelector('[data-x="close"]').onclick = closeModal;
     const box = m.querySelector('#save-list');
@@ -1779,7 +1779,7 @@ $('#lab-save').addEventListener('click', async () => {
     await store.saveParams(changedFromDefaults());
     savedParams = { ...PARAMS };
     const n = Object.keys(changedFromDefaults()).length;
-    $('#lab-status').textContent = `Saved ${n} ${n === 1 ? 'setting' : 'settings'} to tinkering/domino-run/params.json. Everyone gets ${n === 1 ? 'it' : 'them'} once it’s committed.`;
+    $('#lab-status').textContent = `Saved ${n} ${n === 1 ? 'setting' : 'settings'} to experiments/domino-run/params.json. Everyone gets ${n === 1 ? 'it' : 'them'} once it’s committed.`;
     labCount();
   } catch (err) { $('#lab-status').textContent = err.message; }
 });

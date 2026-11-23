@@ -1,4 +1,4 @@
-// node tinkering/music-of-the-spheres/test/physics.test.mjs
+// node experiments/music-of-the-spheres/test/physics.test.mjs
 import * as P from '../physics.js';
 let fails = 0;
 const check = (name, got, want, tol) => {

@@ -580,7 +580,7 @@ async function start() {
   mode.classList.toggle('is-project', state.mode === 'project');
   mode.textContent = state.mode === 'project' ? 'Saving to the project' : 'Saving in this browser';
   mode.title = state.mode === 'project'
-    ? 'Running on the local server: saves go to tinkering/kaleidoscopes/configs.json, which ships with the site.'
+    ? 'Running on the local server: saves go to experiments/kaleidoscopes/configs.json, which ships with the site.'
     : 'No local server: saves stay in this browser. Run npm run dev to save into the project.';
 
   buildEditor();

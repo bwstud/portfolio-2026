@@ -1,4 +1,4 @@
-# The points the Tatankagram experiment (tinkering/tatankagram/) makes the animal from. Run by Blender:
+# The points the Tatankagram experiment (experiments/tatankagram/) makes the animal from. Run by Blender:
 #   /Applications/Blender.app/Contents/MacOS/Blender -b model/src/bison_blender.blend --python tatankagram.py
 # It stands the model in its stand pose, scatters N points over its surface (each triangle gets points in proportion
 # to its area, so the beads lie evenly), and gives each one the coat's brightness under it (bison.tga) and which way
@@ -16,7 +16,7 @@ import numpy as np
 
 N = 60000
 RANGE = 1.8                     # positions are stored from -RANGE to RANGE (the frame is -1 to 1)
-OUT = os.path.join(os.path.dirname(bpy.data.filepath), '..', '..', '..', '..', 'tinkering', 'tatankagram')
+OUT = os.path.join(os.path.dirname(bpy.data.filepath), '..', '..', '..', '..', 'experiments', 'tatankagram')
 SEED = 1887                     # the year of Muybridge's buffalo, so the scatter is the same every run
 
 sc = bpy.context.scene

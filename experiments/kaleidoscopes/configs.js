@@ -2,7 +2,7 @@
    new ones made in the lab are kept.
 
    Saved configurations live in one of two places:
-   - In the project, as tinkering/kaleidoscopes/configs.json, when the lab runs on the local
+   - In the project, as experiments/kaleidoscopes/configs.json, when the lab runs on the local
      server (`npm run dev`). That file ships with the site, so they appear for everyone.
    - In this browser's localStorage, anywhere else (the deployed site has no server to write
      to). Those are only visible in the browser that made them.

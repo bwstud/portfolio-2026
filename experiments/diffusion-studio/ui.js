@@ -10,7 +10,9 @@ const idOf = (k) => 'c-' + k.replace(/[^a-z0-9]/gi, '-');
 export function buildPanel(root, tabs, S, { onChange, custom = {}, onMaterial, materials }) {
   const rows = [];          // { el, when, key, kind, range }
   const groups = [];        // { el, when }
+  const meta = {};          // key → { kind, label, min, max, step }
   let base = { ...S };
+  let groupTitle = '';
 
   const tablist = document.createElement('div');
   tablist.className = 'm-tabs tabs';
@@ -40,6 +42,7 @@ export function buildPanel(root, tabs, S, { onChange, custom = {}, onMaterial, m
       wrap.append(cell);
       pane.append(wrap);
       groups.push({ el: wrap, when: g.when });
+      groupTitle = g.t;
       if (g.mat) cell.append(materialRow(g.mat));
       for (const r of g.rows) cell.append(row(r));
     }
@@ -61,6 +64,7 @@ export function buildPanel(root, tabs, S, { onChange, custom = {}, onMaterial, m
     const when = typeof r[r.length - 1] === 'function' ? r[r.length - 1] : null;
     const [kind, key, label] = r;
     const el = document.createElement('div');
+    if (!custom[kind] && key) meta[key] = { kind, label, group: groupTitle, min: r[3], max: r[4], step: r[5] };
     if (custom[kind]) {
       el.className = 'row row--custom';
       el.append(custom[kind](key, label));
@@ -93,7 +97,7 @@ export function buildPanel(root, tabs, S, { onChange, custom = {}, onMaterial, m
       num.addEventListener('input', () => { const v = num.valueAsNumber; if (Number.isFinite(v) && v >= min && v <= max) put(v, 'number'); });
       num.addEventListener('change', () => { const v = num.valueAsNumber; put(Number.isFinite(v) ? Math.min(max, Math.max(min, v)) : S[key]); });
       reset.addEventListener('click', () => { put(base[key]); fader.focus(); });
-      rows.push({ el, when, key, kind, sync: () => { fader.value = S[key]; num.value = fmt(S[key], step); mark(); } });
+      rows.push({ el, when, key, kind, group: groups.length - 1, sync: () => { fader.value = S[key]; num.value = fmt(S[key], step); mark(); } });
     } else if (kind === 's') {
       const opts = r[3];
       el.className = 'row row--pick';
@@ -129,7 +133,7 @@ export function buildPanel(root, tabs, S, { onChange, custom = {}, onMaterial, m
         <input class="swatch" type="color" id="${id}">`;
       const c = el.querySelector('input');
       c.addEventListener('input', () => { S[key] = c.value; onChange(key); });
-      rows.push({ el, when, key, kind, sync: () => { c.value = S[key]; } });
+      rows.push({ el, when, key, kind, group: groups.length - 1, sync: () => { c.value = S[key]; } });
     } else if (kind === 't') {
       el.className = 'row row--text';
       el.innerHTML = `<textarea class="m-input" id="${id}" rows="2" aria-label="${esc(label)}" spellcheck="false"></textarea>`;
@@ -158,6 +162,11 @@ export function buildPanel(root, tabs, S, { onChange, custom = {}, onMaterial, m
   }
 
   return {
+    meta: (k) => meta[k],
+    // the faders and colours a person can see in their tab and context (not hidden by another setting)
+    liveKeys() { return rows.filter((r) => (r.kind === 'n' || r.kind === 'c') && !r.el.hidden && !(groups[r.group]?.el.hidden)).map((r) => r.key); },
+    // a small mark beside settings the timeline animates
+    markKeyed(keys) { const set = new Set(keys); for (const r of rows) if (r.key) r.el.classList.toggle('is-keyed', set.has(r.key)); },
     sync() { for (const r of rows) r.sync?.(); visibility(); },
     syncKeys(keys) { for (const r of rows) if (keys.includes(r.key)) r.sync?.(); visibility(); },
     visibility,

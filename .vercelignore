@@ -1,6 +1,7 @@
 # Allowlist: upload only the site. Everything else in this folder (Work/, etc.) stays local.
 /*
 !index.html
+!vercel.json
 !work.html
 !bio.html
 !how-i-work.html
@@ -31,18 +32,18 @@
 !fonts
 !images
 !reels
-!tinkering
+!experiments
 !api
 
 # Raw scans and licensed reference model stay local
-/tinkering/taxidermy/source
-/tinkering/raptor-run/source
+/experiments/taxidermy/source
+/experiments/raptor-run/source
 
 # Domino Run saves are written by the local server and only mean anything on this machine
-/tinkering/domino-run/saves
+/experiments/domino-run/saves
 
 # Font order downloads include the invoice: never deploy
 /fonts/Klim-Order-*
 
 # Draft home page alternatives from the design review: kept in the repo, not deployed
-/tinkering/alternatives
+/experiments/alternatives

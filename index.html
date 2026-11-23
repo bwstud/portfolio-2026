@@ -50,7 +50,7 @@
       .hook__go { transform: none; transition: opacity 200ms ease-out; }
     }
     /* Sound switch and tuning knob as a matte black hi-fi faceplate: an opaque body with panel seams, printed legends
-       and one copper accent. The controls came from the Chladni lab (tinkering/chladni). */
+       and one copper accent. The controls came from the Chladni lab (experiments/chladni). */
     .dock { --accent: #e08a3c; --d-muted: #8a8a8c; --d-print: #b4b4b6; --d-fg: #ebe8e1;
       margin-top: 36px; display: inline-flex; align-items: stretch; pointer-events: auto; text-align: left; border-radius: 16px;
       background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.1' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .9 -.42'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='.16'/%3E%3C/svg%3E"),
@@ -184,7 +184,7 @@
     hz.spinTiming = { duration: 360, easing: 'cubic-bezier(0.23, 1, 0.32, 1)' };
     hz.opacityTiming = { duration: 200, easing: 'ease-out' };
   </script>
-  <script src="cover/covers.js" data-skin="matte" data-lab="tinkering/dissolve-lab/" data-lab-name="Dissolve Lab"></script>
+  <script src="cover/covers.js" data-skin="matte" data-lab="experiments/dissolve-lab/" data-lab-name="Dissolve Lab"></script>
   <script src="cover/dissolve-versions.js"></script>
   <script src="cover/dissolve.js"></script>
   <script src="cover/boom.js"></script>
@@ -384,7 +384,7 @@
 
     // ---- leaving: press Recent Work. The sand winks out at once, the sentence and the key rise away, and the panel
     //      dissolves into particles that fall upward, slowly and then in a rush (cover/dissolve.js). Its timing and feel are
-    //      the active version from the Dissolve Lab (tinkering/dissolve-lab/). Then the work page opens. ----
+    //      the active version from the Dissolve Lab (experiments/dissolve-lab/). Then the work page opens. ----
     let leaving = null;
     const inLab = new URLSearchParams(location.search).has('lab') && parent !== window;   // shown inside the Dissolve Lab, which supplies the settings and replays it
     if (inLab) document.documentElement.classList.add('is-lab');

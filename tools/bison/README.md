@@ -1,6 +1,6 @@
 # Bison sheet
 
-Builds `tinkering/bison-lab/bison.png` and `bison-marks.png`, the frames the Bison Lab sets in type.
+Builds `experiments/bison-lab/bison.png` and `bison-marks.png`, the frames the Bison Lab sets in type.
 
 ## From the 3D model (what the lab uses)
 
@@ -14,7 +14,7 @@ Builds `tinkering/bison-lab/bison.png` and `bison-marks.png`, the frames the Bis
   `/Applications/Blender.app/Contents/MacOS/Blender -b model/src/bison_blender.blend --python render.py`
 - `sheet.py` packs those into the sheet: the coat lit from above and ahead, a height made of the rounded outline
   and the model's nearness, the outline, and the horn and eye as marks. Its settings (`LIGHT`, `AMBIENT`, `COAT`,
-  `DEPTH`) are at the top. `python3 sheet.py ../../tinkering/bison-lab/bison.png`. It needs numpy and Pillow.
+  `DEPTH`) are at the top. `python3 sheet.py ../../experiments/bison-lab/bison.png`. It needs numpy and Pillow.
 
 Run both from this folder. On a Mac without the model, the sheet in the repo is used as it is.
 
@@ -31,6 +31,6 @@ Run both from this folder. On a Mac without the model, the sheet in the repo is 
 
 - `tatankagram.py` is run by Blender. It stands the model in `stand_pose` and scatters 30,000 points over its surface,
   each with the coat's tone under it (`bison.tga`), a size, and the surface's facing, into
-  `tinkering/tatankagram/head.bin` (a bust: the head, beard and front of the hump, the scatter weighted toward
+  `experiments/tatankagram/head.bin` (a bust: the head, beard and front of the hump, the scatter weighted toward
   the surfaces facing forward; each bead lifted off the skin a little, most in the dark shag) and `whole.bin` (the whole animal, from the side). The file format is at its top.
   `/Applications/Blender.app/Contents/MacOS/Blender -b model/src/bison_blender.blend --python tatankagram.py`

@@ -5,7 +5,7 @@
 # (0 at the outline, rounding up inside it, and higher the nearer the camera, so a leg stands off the belly behind
 # it), B = the outline. Beside it, <out>-marks.png in the same layout: the
 # lights on the head (the horn and the eye), which the page sets brighter than any tone.
-# Usage, from this folder: python3 sheet.py ../../tinkering/bison-lab/bison.png
+# Usage, from this folder: python3 sheet.py ../../experiments/bison-lab/bison.png
 import sys, glob, json, numpy as np
 from PIL import Image, ImageFilter
 out = sys.argv[1]

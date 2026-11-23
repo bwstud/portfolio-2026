@@ -7,14 +7,14 @@ Work/
 .env*
 
 # Local screen recordings of tinkering projects
-tinkering/*/v1.0 Recording/
+experiments/*/v1.0 Recording/
 .superpowers/
 
 # Taxidermy raw scans and the purchased reference model: local only
-tinkering/taxidermy/source/
+experiments/taxidermy/source/
 
 # Raptor Run: the generated source paintings (the cut-out WebPs in art/ are what ship): local only
-tinkering/raptor-run/source/
+experiments/raptor-run/source/
 
 # Font order downloads (invoice, duplicate files): local only
 fonts/Klim-Order-*/
@@ -22,8 +22,8 @@ fonts/Klim-Order-*/
 # Xmastreemagochi local accounts (the dev server's stand-in for Redis)
 tools/.xmas-local-db.json
 # lighting lab: what Blender's live link writes
-tinkering/lighting-lab/scenes/live.glb
-tinkering/lighting-lab/scenes/.live-tmp.glb
+experiments/lighting-lab/scenes/live.glb
+experiments/lighting-lab/scenes/.live-tmp.glb
 
 # Local agent tooling (skills installed per machine, Impeccable triage)
 .agents/

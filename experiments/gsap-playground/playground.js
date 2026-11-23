@@ -531,7 +531,7 @@ els.reset.addEventListener('click', () => {
   toast('Restored the original code for this lesson.');
 });
 els.ask.addEventListener('click', async () => {
-  const prompt = `Use the ${current.skill} skill. I'm working through the "${current.title}" lesson in my GSAP Playground (tinkering/gsap-playground). Here is my current code:
+  const prompt = `Use the ${current.skill} skill. I'm working through the "${current.title}" lesson in my GSAP Playground (experiments/gsap-playground). Here is my current code:
 
 \`\`\`js
 ${els.code.value.trim()}

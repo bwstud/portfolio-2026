@@ -1,7 +1,7 @@
 /* Saved runs and elements.
    Running on the local server (`npm run dev`), they're files in this project:
-     tinkering/domino-run/saves/states/<id>.json (+ .jpg thumbnail)
-     tinkering/domino-run/saves/elements/<id>.json
+     experiments/domino-run/saves/states/<id>.json (+ .jpg thumbnail)
+     experiments/domino-run/saves/elements/<id>.json
    Anywhere else (the deployed site), there's no server to write to, so they're kept in this
    browser's localStorage instead, and the page says so. */
 const API = '/__domino';
@@ -70,7 +70,7 @@ export async function remove(kind, id) {
   lsWrite(kind, lsRead(kind).filter(x => x.id !== id));
 }
 
-/* the lab's settings, written to tinkering/domino-run/params.json */
+/* the lab's settings, written to experiments/domino-run/params.json */
 export async function saveParams(values) {
   if ((await storeMode()) !== 'project') throw new Error('Saving settings to the project needs the local server.');
   const res = await fetch(`${API}/params`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(values) });

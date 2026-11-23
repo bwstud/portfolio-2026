@@ -1,5 +1,5 @@
 /* Dissolve: a panel crumbles into particles that fall upward, slowly at first and then in a rush.
-   Used by the cover when Recent Work is pressed, and tuned in tinkering/dissolve-lab/.
+   Used by the cover when Recent Work is pressed, and tuned in experiments/dissolve-lab/.
 
    At several points along the panel's upper edge a bite opens and grows, slowly at first. Crumbs break off each
    bite's rim and are pulled upward, as if gravity had turned over; the pull strengthens as it goes. At the rush

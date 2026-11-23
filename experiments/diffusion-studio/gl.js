@@ -65,7 +65,7 @@ export function levelsFor(w, h) { return Math.floor(Math.log2(Math.max(w, h))) +
 export function texture(gl, w, h, { levels = 1, format = 'rgba16f' } = {}) {
   const t = gl.createTexture();
   gl.bindTexture(gl.TEXTURE_2D, t);
-  gl.texStorage2D(gl.TEXTURE_2D, levels, format === 'rgba8' ? gl.RGBA8 : gl.RGBA16F, w, h);
+  gl.texStorage2D(gl.TEXTURE_2D, levels, format === 'rgba8' ? gl.RGBA8 : format === 'rgba32f' ? gl.RGBA32F : gl.RGBA16F, w, h);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, levels > 1 ? gl.LINEAR_MIPMAP_LINEAR : gl.LINEAR);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);

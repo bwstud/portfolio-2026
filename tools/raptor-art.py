@@ -3,7 +3,7 @@
 
     python3 tools/raptor-art.py
 
-Reads every image in tinkering/raptor-run/source/ named
+Reads every image in experiments/raptor-run/source/ named
     raptor-<coat>.png      a raptor from directly above, head to the right
     person-<role>.png      a runner from directly above, running to the right
 (png, jpg or webp). For each one it:
@@ -12,7 +12,7 @@ Reads every image in tinkering/raptor-run/source/ named
   2. feathers the edge and pulls the background colour out of the edge pixels, so no white
      halo shows on the green ground,
   3. crops to the figure with a small margin and scales it (raptors 2048 px wide, people 768),
-  4. writes tinkering/raptor-run/art/<name>.webp with transparency,
+  4. writes experiments/raptor-run/art/<name>.webp with transparency,
 and writes art/manifest.json listing what is there. The page uses the art it finds and
 falls back to the code-sculpted creatures for anything missing.
 """
@@ -23,7 +23,7 @@ import sys
 import numpy as np
 from PIL import Image, ImageDraw, ImageFilter
 
-ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'tinkering', 'raptor-run')
+ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'experiments', 'raptor-run')
 SRC = os.path.join(ROOT, 'source')
 OUT = os.path.join(ROOT, 'art')
 TOL = 34          # how far (RGB distance) from the background colour still counts as background

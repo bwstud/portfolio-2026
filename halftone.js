@@ -1,5 +1,5 @@
 /* Halftone transition: the dot band at the top of each coloured work section. It's drawn on a
-   canvas so the Halftone Lab (tinkering/halftone-lab/) can reshape and distort it.
+   canvas so the Halftone Lab (experiments/halftone-lab/) can reshape and distort it.
    halftone-versions.js holds saved settings, and the site draws the one named "active".
 
    How it draws: every pixel finds its nearest dots on a screen (a grid of dot centres). Each dot

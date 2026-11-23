@@ -3,7 +3,7 @@
 # Out: a sheet, four frames across. Each frame: R = tones inside the animal, G = a rounded height (0 at the outline,
 # 1 deep inside), B = the outline. Beside it, <out>-marks.png in the same layout: the lights drawn on the animal
 # (the horn, the eye's pinpoint, the light on the nose), which the page sets brighter than any tone.
-# Usage, from this folder: python3 pack.py ../../tinkering/bison-lab/bison.png
+# Usage, from this folder: python3 pack.py ../../experiments/bison-lab/bison.png
 import sys, glob, math, numpy as np
 from PIL import Image, ImageFilter, ImageDraw
 out = sys.argv[1]

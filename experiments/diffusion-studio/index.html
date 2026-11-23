@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Diffusion Studio</title>
+  <meta name="description" content="A virtual studio for words seen through frosted glass, paper, fabric, ice and fog: placed behind the material, lit, and coming into focus as they touch it.">
+  <meta name="color-scheme" content="dark">
+  <link rel="stylesheet" href="../../styles.css">
+  <link rel="stylesheet" href="../../matte.css?v=16">
+  <style>
+    /* Diffusion Studio: the stage is the pane, seen from the front, with the words somewhere behind it; the panel
+       beside it is the studio. Matte is the instrument; the stage is its own. */
+    body { margin: 0; height: 100vh; overflow: hidden; background: var(--c-night); color: var(--c-mist); font: 400 var(--step-0)/1.5 var(--font-sans); }
+    .lab { display: grid; grid-template-columns: minmax(0, 1fr) 408px; height: 100vh; }
+    .stage-col { display: grid; grid-template-rows: auto minmax(0, 1fr) auto auto; min-width: 0; }
+    .head { display: flex; align-items: center; gap: 12px 20px; padding: 16px 24px; border-bottom: 1px solid rgb(255 255 255 / 0.06); flex-wrap: wrap; }
+    .head h1 { margin: 0; font: 600 var(--step-1)/1 var(--font-display); letter-spacing: -0.01em; }
+    .head__end { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+    .head select.m-input { width: 190px; height: 32px; }
+    .stage { position: relative; min-height: 0; background: #000; }
+    #view { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; cursor: grab; }
+    #view.is-dragging { cursor: grabbing; }
+    #view:not([data-tool="move"]) { cursor: crosshair; }
+    .fail { position: absolute; inset: auto 24px 24px; margin: 0; padding: 12px 14px; border-radius: 6px; background: #2a1210; color: #ffb4a8; font: 400 var(--step--1)/1.4 var(--font-mono); }
+    .transport { display: flex; align-items: center; gap: 12px 16px; padding: 14px 24px; border-top: 1px solid rgb(255 255 255 / 0.06); flex-wrap: wrap; }
+    .transport .m-seg { flex-wrap: wrap; }
+    .view { margin-left: auto; display: flex; align-items: center; gap: 6px; }
+    .view__zoom { min-width: 48px; text-align: center; font-variant-numeric: tabular-nums; }
+    #view.is-panning { cursor: move; }
+    #view[data-tool="pan"] { cursor: move; }
+    #view[data-tool="orbit"] { cursor: ew-resize; }
+    #view.is-near-split { cursor: col-resize; }
+    #view.is-still { object-fit: contain; cursor: default; }
+    .frame-guide { position: absolute; pointer-events: none; box-shadow: 0 0 0 100vmax rgb(0 0 0 / 0.55); outline: 1px solid rgb(255 255 255 / 0.5); }
+    .frame-guide[hidden] { display: none; }
+
+    /* popovers from the header: saved versions, render still */
+    .pop { position: fixed; inset: auto; margin: 0; width: 340px; max-height: min(70vh, 560px); overflow: auto; padding: 16px; border: 0; border-radius: 10px;
+      background: #121417; color: var(--c-mist); box-shadow: 0 1px 0 rgb(255 255 255 / 0.06) inset, 0 18px 48px rgb(0 0 0 / 0.55); scrollbar-width: none; }
+    .pop::-webkit-scrollbar { display: none; }
+    .pop:popover-open { display: grid; gap: 12px; }
+    .sv__save { display: flex; gap: 8px; }
+    .sv__save .m-input { flex: 1; min-width: 0; height: 32px; }
+    .sv__list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+    .sv__item { display: grid; grid-template-columns: 1fr auto auto; gap: 6px; align-items: center; }
+    .sv__load { display: grid; grid-template-columns: 64px 1fr; grid-template-rows: auto auto; column-gap: 10px; align-items: center; padding: 4px; border: 0; border-radius: 6px; background: none; color: inherit; text-align: left; cursor: pointer; }
+    .sv__load:hover { background: rgb(255 255 255 / 0.05); }
+    .sv__load img, .sv__blank { grid-row: 1 / 3; width: 64px; height: 40px; object-fit: cover; border-radius: 3px; background: #000; }
+    .sv__name { font: 500 var(--step--1)/1.3 var(--font-sans); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .sv__foot { display: flex; gap: 8px; justify-content: flex-end; }
+    .matte .is-warn { color: #ff9b8a; }
+    .st__row { display: grid; grid-template-columns: 1fr 120px; align-items: center; gap: 10px; }
+    .st__row .m-input { height: 32px; width: 100%; text-align: right; font-variant-numeric: tabular-nums; }
+    .st__row select.m-input { text-align: left; }
+    .st__run { display: grid; gap: 10px; }
+    .st__run[hidden] { display: none; }
+    .st__bar { height: 4px; border-radius: 2px; background: var(--m-well); box-shadow: var(--m-well-shadow); overflow: hidden; }
+    .st__bar::after { content: ''; display: block; height: 100%; width: calc(var(--p, 0) * 100%); background: var(--m-signal); transition: width 200ms cubic-bezier(0.23, 1, 0.32, 1); }
+    .st__keys { display: flex; gap: 8px; justify-content: flex-end; }
+    .focus-keys { display: flex; gap: 6px; flex-wrap: wrap; }
+
+    /* the timeline strip */
+    .tl { border-top: 1px solid rgb(255 255 255 / 0.06); padding: 10px 24px 12px; display: grid; gap: 8px; background: #07080a; }
+    .tl[hidden] { display: none; }
+    .tl__head { display: flex; align-items: center; gap: 8px 12px; flex-wrap: wrap; }
+    .tl__field { display: flex; align-items: center; gap: 6px; }
+    .tl__field .m-input { width: 70px; height: 28px; text-align: right; font-variant-numeric: tabular-nums; }
+    .tl__sw { display: flex; align-items: center; gap: 8px; }
+    .tl__key { display: flex; gap: 8px; align-items: center; }
+    .tl__key[hidden] { display: none; }
+    .tl__key select.m-input { height: 28px; width: 150px; }
+    .tl__export { margin-left: auto; }
+    .matte .tl__rec.is-on { color: var(--m-signal); }
+    .tl__body { display: grid; grid-template-columns: 220px 1fr; max-height: 132px; overflow-y: auto; scrollbar-width: none; outline: none; }
+    .tl__body[hidden] { display: none; }
+    .tl__body::-webkit-scrollbar { display: none; }
+    .tl__names { padding-top: 20px; }
+    .tl__name { height: 22px; display: flex; align-items: center; justify-content: space-between; gap: 6px; padding-right: 10px; }
+    .tl__name .m-legend { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .tl__x { border: 0; background: none; color: var(--m-print-dim, #777); cursor: pointer; font-size: 14px; line-height: 1; padding: 2px 4px; border-radius: 3px; }
+    .tl__x:hover { color: var(--m-print-hi); background: rgb(255 255 255 / 0.06); }
+    .tl__lanes { position: relative; padding: 0 8px; cursor: pointer; touch-action: none; }
+    .tl__ruler { position: relative; height: 20px; border-bottom: 1px solid rgb(255 255 255 / 0.08); }
+    .tl__tick { position: absolute; bottom: 3px; transform: translateX(-50%); font: 400 10px/1 var(--font-mono); color: rgb(255 255 255 / 0.4); font-variant-numeric: tabular-nums; }
+    .tl__lane { position: relative; height: 22px; border-bottom: 1px solid rgb(255 255 255 / 0.04); }
+    .matte .tl__dia { position: absolute; top: 50%; width: 10px; height: 10px; margin: -5px 0 0 -5px; padding: 0; border: 0; transform: rotate(45deg); background: rgb(255 255 255 / 0.78); border-radius: 1px; cursor: grab; }
+    .matte .tl__dia:hover { background: #fff; }
+    .matte .tl__dia.is-sel { background: var(--m-signal); box-shadow: 0 0 0 2px rgb(0 0 0 / 0.6); }
+    .tl__head-line { position: absolute; top: 0; bottom: 0; width: 1px; margin-left: 8px; background: var(--m-signal); pointer-events: none; }
+    .tl__empty { margin: 0; }
+    .tl__empty[hidden] { display: none; }
+    /* a setting the timeline animates carries a small key mark */
+    .row.is-keyed > label::after, .row.is-keyed > .m-legend:first-child::after { content: ''; display: inline-block; width: 6px; height: 6px; margin-left: 7px; transform: rotate(45deg) translateY(-1px); background: var(--m-signal); }
+
+    .side { display: flex; flex-direction: column; min-height: 0; background: #08090b; border-left: 1px solid rgb(255 255 255 / 0.06); }
+    .matte .tabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; padding: 4px 8px 0; border-bottom: 1px solid rgb(255 255 255 / 0.06); }
+    .matte .tabs [role="tab"] { justify-content: center; text-align: center; padding-left: 4px; padding-right: 4px; }
+    .tabs [role="tab"]::after { left: 12px; right: 12px; }
+    .side__body { flex: 1; min-height: 0; overflow-y: auto; padding: 16px; scrollbar-width: none; }
+    .side__body::-webkit-scrollbar { display: none; }
+    .tabpane { display: grid; gap: 16px; }
+    .tabpane[hidden] { display: none; }
+    .side .m-panel { display: flex; }
+    .side .m-panel[hidden] { display: none; }
+    .group { display: grid; gap: 14px; justify-items: stretch; }
+    .group h2 { margin: 0; }
+    .row { display: grid; grid-template-columns: 1fr 68px; align-items: center; gap: 4px 10px; }
+    .row[hidden] { display: none; }
+    .row label, .row > .m-legend { grid-area: 1 / 1; align-self: end; }
+    .row .m-fader { grid-area: 2 / 1; width: 100%; }
+    .matte .row__num { grid-area: 2 / 2; width: 100%; height: 24px; padding: 0 6px; text-align: right; font-size: var(--step--1); font-variant-numeric: tabular-nums; -moz-appearance: textfield; appearance: textfield; }
+    .row__num::-webkit-inner-spin-button, .row__num::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+    .matte .row__reset { grid-area: 1 / 2; justify-self: end; align-self: end; height: 16px; margin-right: -5px; padding: 0 5px; border-radius: 3px; color: var(--m-signal); font: 400 var(--step--2)/16px var(--m-font); letter-spacing: 0.1em; text-transform: uppercase; }
+    .matte .row__reset:hover { color: var(--m-print-hi); background: color-mix(in srgb, var(--m-print) 12%, transparent); }
+    .matte .row__reset[hidden] { display: none; }
+    .row.is-changed .row__num { color: var(--m-signal); }
+    /* a select or a segmented choice: its name above, the choice across the full width */
+    .row--pick { grid-template-columns: 1fr; }
+    .row--pick .m-input { grid-area: 2 / 1; width: 100%; height: 32px; }
+    .row--pick .m-seg { grid-area: 2 / 1; justify-self: start; }
+    /* a switch or a colour: name on the left, the control at the right edge */
+    .row--switch { grid-template-columns: 1fr auto; }
+    .row--switch > :first-child { grid-area: 1 / 1; align-self: center; }
+    .row--switch > :last-child { grid-area: 1 / 2; }
+    .row--text { grid-template-columns: 1fr; }
+    .row--text textarea { width: 100%; font: 400 var(--step-0)/1.4 var(--font-sans); }
+    .row--custom { grid-template-columns: 1fr; }
+    .swatch { width: 56px; height: 28px; padding: 0; border: 0; border-radius: 4px; background: var(--m-well); box-shadow: var(--m-well-shadow); cursor: pointer; }
+    .swatch::-webkit-color-swatch-wrapper { padding: 4px; }
+    .swatch::-webkit-color-swatch { border: 0; border-radius: 2px; }
+    .swatch::-moz-color-swatch { border: 0; border-radius: 2px; }
+    .font { display: grid; gap: 6px; }
+    .font__pick { display: flex; gap: 8px; }
+    .font__pick .m-input { flex: 1; min-width: 0; width: auto; height: 32px; }
+    .font .m-input[hidden], .font [hidden] { display: none; }
+    .font__list { height: 220px; overflow-y: auto; border-radius: var(--m-radius-well); background: var(--m-well); box-shadow: var(--m-well-shadow); padding: 4px; scrollbar-width: none; }
+    .font__list::-webkit-scrollbar { display: none; }
+    .font__item { padding: 6px 8px; border-radius: 3px; color: var(--m-print); font-size: 17px; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
+    .font__item:hover { background: color-mix(in srgb, var(--m-print) 8%, transparent); }
+    .font__item.is-active { background: color-mix(in srgb, var(--m-print) 12%, transparent); }
+    .font__item[aria-selected="true"] { color: var(--m-print-hi); box-shadow: inset 2px 0 0 var(--m-signal); }
+    .font__none { padding: 8px; }
+    .font select.m-input { width: 100%; height: 32px; }
+    .font label:not(:first-child) { margin-top: 8px; }
+    .scenes { display: grid; grid-template-columns: 1fr 1fr; width: 100%; box-sizing: border-box; }
+    .matte .scenes button { justify-content: flex-start; text-align: left; }
+    @media (max-width: 900px) {
+      body { height: auto; overflow: auto; }
+      .lab { grid-template-columns: 1fr; height: auto; }
+      .stage-col { height: 82vh; }
+      .side { border-left: 0; border-top: 1px solid rgb(255 255 255 / 0.06); }
+    .side__body { overflow: visible; }
+      .head { padding: 12px 16px; } .transport { padding: 12px 16px; }
+      .head select.m-input { width: 150px; }
+    }
+  </style>
+</head>
+<body class="matte matte--dark">
+  <div class="lab">
+    <section class="stage-col" aria-label="The pane">
+      <header class="head">
+        <a class="m-legend" href="../">← Experiments</a>
+        <h1>Diffusion Studio</h1>
+        <div class="head__end">
+          <select class="m-input" id="looks" aria-label="Looks"></select>
+          <button class="m-key" id="versions" type="button" popovertarget="versions-panel">Versions</button>
+          <button class="m-key" id="mutate" type="button" data-tip="Nudge several of the settings in view at random">Mutate</button>
+          <button class="m-key" id="compare" type="button" aria-pressed="false" data-tip="Split the stage: how it is now on the left, your next changes on the right">Compare</button>
+          <button class="m-key" id="play" type="button" aria-pressed="false" data-tip="Pause or play time (P)">Pause</button>
+          <button class="m-key" id="still" type="button" popovertarget="still-panel" aria-pressed="false" data-tip="Ray trace a finished picture">Render still</button>
+          <button class="m-key" id="snap" type="button">Save image</button>
+          <button class="m-key m-key--quiet" id="reset-all" type="button">Start over</button>
+        </div>
+      </header>
+      <div class="stage" id="stage">
+        <canvas id="view" aria-label="The pane, with the words behind it. Drag to move them; scroll to zoom; Shift and scroll pushes them toward or away from the glass."></canvas>
+        <div class="frame-guide" id="frame-guide" hidden></div>
+        <p class="fail" id="fail" hidden role="alert"></p>
+      </div>
+      <section class="tl" id="timeline" hidden aria-label="Timeline"></section>
+      <footer class="transport">
+        <div id="tools"></div>
+        <button class="m-key" id="tl-toggle" type="button" aria-expanded="false" aria-controls="timeline">Timeline</button>
+        <div class="view" role="group" aria-label="View">
+          <button class="m-key" id="zoom-out" type="button" aria-label="Zoom out" data-tip="Zoom out (−)">−</button>
+          <span class="m-legend view__zoom" id="zoom" aria-live="polite">100%</span>
+          <button class="m-key" id="zoom-in" type="button" aria-label="Zoom in" data-tip="Zoom in (+)">+</button>
+          <button class="m-key m-key--quiet" id="fit" type="button" data-tip="Back to the whole pane, square on (0)">Fit</button>
+        </div>
+      </footer>
+    </section>
+    <aside class="side" id="panel" aria-label="Studio"></aside>
+  </div>
+  <div class="pop matte matte--dark" id="versions-panel" popover aria-label="Saved versions"></div>
+  <div class="pop matte matte--dark" id="still-panel" popover aria-label="Render still">
+    <label class="st__row"><span class="m-legend m-legend--dim">Shape</span>
+      <select class="m-input" data-a="aspect"><option value="stage">As the stage</option><option>1:1</option><option>4:5</option><option>3:2</option><option>16:9</option><option>9:16</option><option>2:1</option></select></label>
+    <label class="st__row"><span class="m-legend m-legend--dim">Long edge, px</span><input class="m-input" type="number" data-a="long" min="400" max="3200" value="2400" step="any" aria-label="Long edge, px, typed"></label>
+    <label class="st__row"><span class="m-legend m-legend--dim">Passes</span><input class="m-input" type="number" data-a="passes" min="16" max="4096" value="384" step="any" aria-label="Passes, typed"></label>
+    <button class="m-key" type="button" data-a="go">Render</button>
+    <div class="st__run" hidden>
+      <span class="m-legend st__count"></span>
+      <div class="st__bar"></div>
+      <div class="st__keys"><button class="m-key m-key--quiet" type="button" data-a="stop">Stop</button><button class="m-key" type="button" data-a="savestill">Save PNG</button></div>
+    </div>
+  </div>
+  <script src="../../filings-versions.js"></script>
+  <script src="../../filings.js"></script>
+  <script src="../../matte.js?v=8"></script>
+  <script type="module" src="app.js"></script>
+</body>
+</html>

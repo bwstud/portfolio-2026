@@ -1,4 +1,4 @@
-/* A galloping bison set in type, for the foot of a page. The same drawing as the Bison Lab (tinkering/bison-lab/),
+/* A galloping bison set in type, for the foot of a page. The same drawing as the Bison Lab (experiments/bison-lab/),
    with the lab's settings as they stood when it was placed here: the sheet holds fourteen frames of a 3D model's
    gallop (red its tones, green a height, blue the outline; the marks sheet the horn and eye), a grid is laid over the
    animal and each cell gets one character by how bright it is. It comes in as a wall of flickering characters that

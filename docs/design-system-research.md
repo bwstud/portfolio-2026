@@ -6,8 +6,8 @@ Date: 2026-11-12. Status: findings and a proposed backlog. Nothing here is built
 
 - Top-tier systems are built in five layers: foundations, tokens, components, patterns and guidance. We have
   parts of the first three and almost none of the last two.
-- The site design system (`tinkering/design-system/`) is strongest on type, colour roles, space and radius.
-  Matte (`tinkering/matte-lab/`) is strongest on controls. Neither has interaction states, forms, overlays,
+- The site design system (`experiments/design-system/`) is strongest on type, colour roles, space and radius.
+  Matte (`experiments/matte-lab/`) is strongest on controls. Neither has interaction states, forms, overlays,
   feedback, layout rules, accessibility rules, content rules or motion tokens.
 - Motion is the least systematic part of both. The site lists five durations and one curve with no tokens.
   Matte has about ten raw durations and four different overshoot curves.
@@ -88,7 +88,7 @@ rules, accessibility notes, do and don't, the tokens it uses, a status label and
 
 ## 4. Where we stand
 
-### 4.1 Site design system (`tinkering/design-system/`)
+### 4.1 Site design system (`experiments/design-system/`)
 
 | Area | What exists | Status on the page |
 |---|---|---|
@@ -99,7 +99,7 @@ rules, accessibility notes, do and don't, the tokens it uses, a status label and
 | Components | Nav button, controls menu, buttons, tags, card, split-flap board, project section and halftone, reel player, static spark | Two settled, seven draft |
 | Process | Lab → settle → token → document; Settled and Draft labels; an open issues list | In use |
 
-### 4.2 Matte (`tinkering/matte-lab/`)
+### 4.2 Matte (`experiments/matte-lab/`)
 
 | Area | What exists |
 |---|---|
@@ -171,7 +171,7 @@ Not done: the site's own older transitions still use their own values, and legen
 
 ### Tier 2: components that are missing
 
-Status, 2026-11-12: all 27 have a first version in `tinkering/matte-lab/` (sections 04 to 09 of the lab), in
+Status, 2026-11-12: all 27 have a first version in `experiments/matte-lab/` (sections 04 to 09 of the lab), in
 both finishes. They are drafts: none has states beyond those shown, a written page, or motion tokens yet.
 
 13. **Text field.** A recessed well with a cursor: label, help text, error, disabled.

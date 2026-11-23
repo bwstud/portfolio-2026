@@ -10,7 +10,7 @@ Run it with the dev server from the repo root:
 npm run dev
 ```
 
-then open http://127.0.0.1:8080/tinkering/lighting-lab/. Add `?debug` to expose `window.__lab`.
+then open http://127.0.0.1:8080/experiments/lighting-lab/. Add `?debug` to expose `window.__lab`.
 
 ## The course
 

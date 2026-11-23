@@ -1,0 +1,6 @@
+{
+  "redirects": [
+    { "source": "/tinkering", "destination": "/experiments/", "permanent": true },
+    { "source": "/tinkering/:path*", "destination": "/experiments/:path*", "permanent": true }
+  ]
+}

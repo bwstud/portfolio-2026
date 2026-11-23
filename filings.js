@@ -6,12 +6,12 @@
    shoving filings outward and throwing them over, and behind it they stay pushed away, lying pointed outward.
    On release the field comes back over most of a second.
 
-   This is how a Matte key answers the pointer (tinkering/design-system/): with this file loaded, Matte.init() puts it on
+   This is how a Matte key answers the pointer (experiments/design-system/): with this file loaded, Matte.init() puts it on
    every plain .m-key. The iron takes two Matte tokens where they are set: --m-iron, a colour that replaces the
    tuned one (the light finish sets a dark iron), and --m-iron-lift, what tips and resting specks lean toward
    (255, paler, on a dark body; 0, darker, on a grey one).
 
-   Tuned in the Button Lab (tinkering/button-lab/, Experiments), which saves versions to filings-versions.js.
+   Tuned in the Button Lab (experiments/button-lab/, Experiments), which saves versions to filings-versions.js.
    On a page that loads this file, every nav button gets the version named "active" there, unless that is "off".
 
    Filings.attach(element, config, options) puts the effect on one element and returns { wake(), hold(), press(), release(), remove() }.

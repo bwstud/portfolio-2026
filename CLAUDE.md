@@ -1,7 +1,7 @@
 # Portfolio site
 
 Static site (HTML, CSS, vanilla JS, no build step) deployed on Vercel. `.vercelignore` is an
-allowlist: only `index.html`, `styles.css`, `nav.js`, `fonts/`, `reels/` and `tinkering/` ship.
+allowlist: only `index.html`, `styles.css`, `nav.js`, `fonts/`, `reels/` and `experiments/` ship.
 `.env.local` and `.vercel/` are local only, so don't touch them.
 
 ## Work log
@@ -37,7 +37,7 @@ the columns (`nav.js`). The cover, the experiments themselves and the labs are f
 
 Every lab page uses the Matte system (`matte.css`) for its chrome and controls: keys, faders, fields, selects,
 legends and panels. This holds for new labs and when a lab is reworked. A full-page lab loads Matte the way the Peek
-Lab does; an experiment with its own layout loads it in a cascade layer through `tinkering/rig.css` (its header says
+Lab does; an experiment with its own layout loads it in a cascade layer through `experiments/rig.css` (its header says
 how). The stage or canvas a lab tunes is its own; Matte is the instrument around it.
 
 Every control in a tuning lab that sets a number (a slider, fader, knob, stepper or drag handle) must also

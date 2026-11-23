@@ -7,8 +7,8 @@ Options after a "--":
     -- --samples 1024 --size 1024 --light 60
 
 Writes:
-    tinkering/lighting-lab/reference/cornell-cycles.png   (drop it on lesson 9's viewport)
-    tinkering/lighting-lab/scenes/cornell.glb             (or press "Load scenes/cornell.glb")
+    experiments/lighting-lab/reference/cornell-cycles.png   (drop it on lesson 9's viewport)
+    experiments/lighting-lab/scenes/cornell.glb             (or press "Load scenes/cornell.glb")
 
 Coordinates: the lab is Y-up, Blender is Z-up. The glTF exporter converts, so here a lab point
 (x, y, z) is built at Blender (x, -z, y).
@@ -21,7 +21,7 @@ import sys
 import bpy
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-LAB = os.path.join(ROOT, "tinkering", "lighting-lab")
+LAB = os.path.join(ROOT, "experiments", "lighting-lab")
 
 argv = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
 ap = argparse.ArgumentParser()

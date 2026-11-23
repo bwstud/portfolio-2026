@@ -2,7 +2,7 @@
    Each frame is drawn at several instants across a simulated camera shutter and averaged,
    so fast flaps smear and neighbouring letters overlap like on film.
 
-   Used by the home page and by the Split-Flap Lab (tinkering/split-flap-lab/).
+   Used by the home page and by the Split-Flap Lab (experiments/split-flap-lab/).
    DEFAULTS is the base configuration. A config is a set of overrides for it, passed as the
    second argument to SplitFlap.mount(). The site runs the version marked active in
    split-flap-versions.js, which the lab writes. */

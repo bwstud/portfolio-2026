@@ -1,8 +1,8 @@
 /* Local server for the site. It serves exactly what .vercelignore ships, lets the
    Split-Flap Lab write split-flap-versions.js, the Halftone Lab halftone-versions.js and the
-   Button Lab button-versions.js, the Dissolve Lab cover/dissolve-versions.js, the Peek Lab sheet-versions.js, the Bison Lab bison-versions.js and Tatankagram tinkering/tatankagram/versions.js,
-   lets Domino Run save runs, elements and lab settings into tinkering/domino-run/, and lets
-   the Kaleidoscope Lab write tinkering/kaleidoscopes/configs.json, and runs api/xmas.mjs
+   Button Lab button-versions.js, the Dissolve Lab cover/dissolve-versions.js, the Peek Lab sheet-versions.js, the Bison Lab bison-versions.js and Tatankagram experiments/tatankagram/versions.js,
+   lets Domino Run save runs, elements and lab settings into experiments/domino-run/, and lets
+   the Kaleidoscope Lab write experiments/kaleidoscopes/configs.json, and runs api/xmas.mjs
    (Xmastreemagochi accounts) against a local JSON file instead of Redis. Never deployed. Start it with `dvs`. */
 import { spawn } from 'node:child_process';
 import { createReadStream } from 'node:fs';
@@ -47,7 +47,7 @@ const STORES = {
     header: '/* Written by the Bison Lab. The work page\'s bison uses the version named by "active". */\n',
   },
   '/__lab/tatankagram': {
-    file: path.join(ROOT, 'tinkering', 'tatankagram', 'versions.js'),
+    file: path.join(ROOT, 'experiments', 'tatankagram', 'versions.js'),
     global: 'TATANKAGRAM_VERSIONS',
     header: '/* Written by Tatankagram. The experiment opens with the version named by "active". */\n',
   },
@@ -207,7 +207,7 @@ async function versionsApi(req, res, target) {
 
 /* ---- Domino Run: saved runs, elements and lab settings ---- */
 const DOMINO = '/__domino';
-const DOMINO_DIR = path.join(ROOT, 'tinkering', 'domino-run');
+const DOMINO_DIR = path.join(ROOT, 'experiments', 'domino-run');
 const DOMINO_KINDS = { states: path.join(DOMINO_DIR, 'saves', 'states'), elements: path.join(DOMINO_DIR, 'saves', 'elements') };
 const DOMINO_MAX = 12 * 1024 * 1024;
 const ID = /^[a-z0-9][a-z0-9-]{0,99}$/;
@@ -301,7 +301,7 @@ async function dominoApi(req, res, pathname) {
 
 /* ---- Kaleidoscopes: configurations made in the Kaleidoscope Lab ---- */
 const KALEIDO = '/__kaleido';
-const KALEIDO_FILE = path.join(ROOT, 'tinkering', 'kaleidoscopes', 'configs.json');
+const KALEIDO_FILE = path.join(ROOT, 'experiments', 'kaleidoscopes', 'configs.json');
 const COLOUR = /^#[0-9a-f]{6}$/i;
 
 async function kaleidoApi(req, res, pathname) {
@@ -402,7 +402,7 @@ server.on('error', e => {
 
 server.on('listening', () => {
   const url = `http://127.0.0.1:${server.address().port}/`;
-  console.log(`Site:  ${url}\nLab:   ${url}tinkering/split-flap-lab/\nHalftone: ${url}tinkering/halftone-lab/\nDominoes: ${url}tinkering/domino-run/\nKaleidoscopes: ${url}tinkering/kaleidoscopes/\nXmastreemagochi: ${url}tinkering/xmastreemagochi/`);
+  console.log(`Site:  ${url}\nLab:   ${url}experiments/split-flap-lab/\nHalftone: ${url}experiments/halftone-lab/\nDominoes: ${url}experiments/domino-run/\nKaleidoscopes: ${url}experiments/kaleidoscopes/\nXmastreemagochi: ${url}experiments/xmastreemagochi/`);
   if (process.argv.includes('--open')) spawn('open', [url], { stdio: 'ignore' }).on('error', () => {});
 });
 

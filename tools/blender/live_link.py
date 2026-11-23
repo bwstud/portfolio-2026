@@ -2,7 +2,7 @@
 
 Open this file in Blender's Scripting workspace (Text > Open) and press Run Script.
 From then on, every time you save the .blend it exports the scene to
-    tinkering/lighting-lab/scenes/live.glb
+    experiments/lighting-lab/scenes/live.glb
 and the lab (with "Live link with Blender" on, served by `npm run dev`) reloads it.
 Run the script again to turn the link off.
 
@@ -23,9 +23,9 @@ def scenes_dir():
     for t in bpy.data.texts:
         if t.filepath and os.path.basename(t.filepath) == "live_link.py":
             here = os.path.dirname(bpy.path.abspath(t.filepath))
-            return os.path.abspath(os.path.join(here, "..", "..", "tinkering", "lighting-lab", "scenes"))
+            return os.path.abspath(os.path.join(here, "..", "..", "experiments", "lighting-lab", "scenes"))
     here = os.path.dirname(os.path.abspath(__file__))
-    return os.path.abspath(os.path.join(here, "..", "..", "tinkering", "lighting-lab", "scenes"))
+    return os.path.abspath(os.path.join(here, "..", "..", "experiments", "lighting-lab", "scenes"))
 
 
 OUT_DIR = scenes_dir()

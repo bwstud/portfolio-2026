@@ -307,6 +307,6 @@ export const LESSONS = [
     more: `<p><b>Running the Cornell script</b>, after installing Blender:</p>
       <pre class="code">/Applications/Blender.app/Contents/MacOS/Blender -b \\
   -P tools/blender/cornell.py</pre>
-      <p>It writes <code>tinkering/lighting-lab/reference/cornell-cycles.png</code> and <code>tinkering/lighting-lab/scenes/cornell.glb</code>. Run it from the repo root.</p>`,
+      <p>It writes <code>experiments/lighting-lab/reference/cornell-cycles.png</code> and <code>experiments/lighting-lab/scenes/cornell.glb</code>. Run it from the repo root.</p>`,
   },
 ];

@@ -5,7 +5,8 @@
    </figure>
 
    The folder holds 01.webp, 02.webp and so on up to data-count. Optional: data-cols (columns, default 6) and
-   data-speed (how far a column travels each second, as a percentage of the wall's height; default 2).
+   data-speed (how far a column travels each second, as a percentage of the wall's height; default 2), data-tilt (degrees
+   the wall is laid back; default 66) and data-turn (degrees it is turned; default -45, columns running down to the right).
    The far and near tiles are out of focus. The wall leans a few degrees toward the pointer. It stops while it is off screen, and has a pause button. */
 (function () {
   'use strict';
@@ -23,6 +24,8 @@
     var cols = parseInt(el.dataset.cols, 10) || 6;
     var speed = parseFloat(el.dataset.speed) || 2;
     if (!count) return;
+    if (el.dataset.tilt) el.style.setProperty('--wall-tilt', parseFloat(el.dataset.tilt) + 'deg');
+    if (el.dataset.turn) el.style.setProperty('--wall-turn', parseFloat(el.dataset.turn) + 'deg');
 
     var stage = make('div', 'wall__stage');
     // the stage is the picture, named by data-label; the element itself stays plain so it can hold buttons as well

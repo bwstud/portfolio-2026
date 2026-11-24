@@ -12,7 +12,7 @@
   <!-- arriving from the cover's sand: the page builds itself in. One visit only, so a reload or any other way in is plain. -->
   <script>try { if (sessionStorage.getItem('arrive') === 'cover') { sessionStorage.removeItem('arrive'); document.documentElement.classList.add('from-cover'); } } catch (e) {}</script>
   <!-- Where the board will be (wide screens): the page's content is kept out of sight until the board has mounted, picked
-       the record in view and, on a return visit, folded, so nothing shows in one place and then jumps to another.
+       lit the record in view, so nothing shows in one place and then jumps to another.
        The board's script lifts it; the timer makes sure it is lifted whatever happens. -->
   <script>if (matchMedia('(min-width: 1100px)').matches) { document.documentElement.classList.add('board-pending'); setTimeout(() => document.documentElement.classList.remove('board-pending'), 2000); }</script>
   <script src="button-versions.js"></script>
@@ -28,9 +28,9 @@
   <link rel="stylesheet" href="drift-wall.css">   <!-- the drifting wall of screenshots in a project's record -->
   <link rel="stylesheet" href="matte-page.css">   <!-- the shared page: rail nav, off-black ground, footer band -->
   <style>
-    /* Home page. The split-flap board is the table of contents: one row per project. Choosing a
-       row lightens its flaps and opens that project's record in the bay below.
-       Without the board (phones, no script) the rows are links and every record is on the page.
+    /* Home page. The split-flap board is the table of contents: one row per project. Every record
+       is on the page, one after another; choosing a row scrolls to its record, and the row of the record in view has
+       lighter flaps and a lit lamp. Without the board (phones, no script) the rows are plain links.
        Colours, spacing, radii and type sizes come from the tokens in styles.css. */
     /* main clips sideways (styles.css) at its own edge, which is the text's left edge: widen it by the column's padding,
        so words sliding in from the left aren't cut off as they arrive */
@@ -64,7 +64,6 @@
     .has-board .rows { display: none; }
     /* The board spans the content column, edge to edge, whatever its module count. */
     .has-board .board { display: block; }
-    .board.is-instant, .board.is-instant * { transition: none !important; }   /* a return visit: it starts folded, without folding */
     .board-pending main { visibility: hidden; }                                /* until the board has settled the layout (see the head) */
     /* the board's own look (housing, labels, lamps, lit row) is in board.css, which the Split-Flap Lab shares */
 
@@ -73,15 +72,14 @@
       display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: var(--space-7) var(--grid-gutter); scroll-margin-top: var(--space-5); }
     .bay > div:first-child { grid-column: 1 / span 4; }   /* the words on four columns, the picture on the other eight, */
     .bay > .bay__media { grid-column: 5 / -1; }           /* its left edge in line with the second field under it */
-    .bay[hidden] { display: none; }
     /* With the rail (1100px and up) the page column sits beside the rail's hairline and runs to --space-5 from the window's
        edge (matte-page.css); the board runs the whole width (its script adds columns to fill it). */
     @media (min-width: 1100px) {
       .home main { margin-right: calc(-1 * var(--space-5)); padding-right: var(--space-5); }
     }
     .has-board .bay { margin-top: 100px; }   /* clear air under the board; the stacked small-screen records keep the tighter gap */
-    /* On load the record stays unseen until the board's last flaps land, then comes in as a piece of choreography; it
-       plays again each time another project is chosen (a record that was hidden restarts its animations).
+    /* On load the records stay unseen until the board's last flaps land, then the first comes in as a piece of
+       choreography (the others are further down the page and are simply there).
        First, together and on one curve: the words slide in from the left and the picture drops in from above.
        Then the three fields along the bottom resolve out of a blur, one after another.
        All of it follows the Split-Flap Lab's project panel settings: Duration (--record-ms) and the curve (--record-ease)
@@ -91,18 +89,41 @@
     .is-arriving .bay { opacity: 0; }
     @media (prefers-reduced-motion: no-preference) {
       .has-board:not(.is-arriving) .bay { --bay-ms: var(--record-ms, 700ms); --bay-ease: var(--record-ease, cubic-bezier(0.23, 1, 0.32, 1)); }
-      .has-board:not(.is-arriving) .bay > div:first-child > * { animation: bay-left var(--bay-ms) var(--bay-ease) both; }
-      .has-board:not(.is-arriving) .bay__media { animation: bay-drop var(--bay-ms) var(--bay-ease) both; }
-      .has-board:not(.is-arriving) .fields { animation: bay-fade calc(var(--bay-ms) * 0.11) linear calc(var(--bay-ms) * 0.1) both; }   /* the rule above the fields */
-      .has-board:not(.is-arriving) .fields > div { animation: bay-resolve calc(var(--bay-ms) * 0.16) var(--ease-out) calc(var(--bay-ms) * (0.1 + var(--i, 0) * 0.03)) both; }
+      .has-board:not(.is-arriving) .bay:first-of-type > div:first-child > * { animation: bay-left var(--bay-ms) var(--bay-ease) both; }
+      .has-board:not(.is-arriving) .bay:first-of-type .bay__media { animation: bay-drop var(--bay-ms) var(--bay-ease) both; }
+      .has-board:not(.is-arriving) .bay:first-of-type .fields { animation: bay-fade calc(var(--bay-ms) * 0.11) linear calc(var(--bay-ms) * 0.1) both; }   /* the rule above the fields */
+      .has-board:not(.is-arriving) .bay:first-of-type .fields > div { animation: bay-resolve calc(var(--bay-ms) * 0.16) var(--ease-out) calc(var(--bay-ms) * (0.1 + var(--i, 0) * 0.03)) both; }
       .fields > div:nth-child(2) { --i: 1; } .fields > div:nth-child(3) { --i: 2; }
       @keyframes bay-left { from { opacity: 0; transform: translateX(calc(-1 * var(--record-drop, 24px))); } }
       @keyframes bay-drop { from { opacity: 0; transform: translateY(calc(-1 * var(--record-drop, 24px))); } }
       @keyframes bay-fade { from { opacity: 0; } }
       @keyframes bay-resolve { from { opacity: 0; filter: blur(var(--record-blur, 0px)); } }
     }
+    /* Further down the page, each record plays the same entrance, but the scroll is its clock: the words come in from
+       the left and the picture drops into place as each one rises into the window, the rule over the fields is drawn
+       left to right, and the fields resolve one after another. Every part runs on its own place in the window, so they
+       arrive in the order you read them, and all of it is finished by the time a part is a third of the way up, so
+       nothing waits on the motion. Scrolling back runs it backwards. Browsers without scroll timelines show the records still. */
+    @supports ((animation-timeline: view()) and (animation-range: 0% 100%)) {
+      @media (prefers-reduced-motion: no-preference) {
+        .bay:not(:first-of-type) > div:first-child > *, .bay:not(:first-of-type) .bay__media, .bay:not(:first-of-type) .fields > div, .bay:not(:first-of-type) .fields::before {
+          animation-duration: auto; animation-timing-function: cubic-bezier(0.33, 1, 0.68, 1); animation-fill-mode: both;
+          animation-timeline: view(); animation-range: entry 10% cover 40%;
+        }
+        .bay:not(:first-of-type) > div:first-child > * { animation-name: bay-left; }
+        .bay:not(:first-of-type) .bay__media { animation-name: bay-drop; }
+        .bay:not(:first-of-type) .fields > div { animation-name: bay-resolve; animation-timing-function: linear; }
+        .bay:not(:first-of-type) .fields > div:nth-child(2) { animation-range: entry 25% cover 45%; }
+        .bay:not(:first-of-type) .fields > div:nth-child(3) { animation-range: entry 40% cover 50%; }
+        /* the rule over the fields, drawn like a dimension line */
+        .bay:not(:first-of-type) .fields { position: relative; border-top-color: transparent; }
+        .bay:not(:first-of-type) .fields::before { content: ""; position: absolute; inset: -1px 0 auto; height: 1px; background: var(--line);
+          transform-origin: left; animation-name: bay-rule; animation-range: entry 0% cover 35%; }
+        @keyframes bay-rule { from { scale: 0 1; } }
+      }
+    }
     /* reduced motion: a record fades in, with no slide, drop or blur */
-    @media (prefers-reduced-motion: reduce) { .has-board .bay { animation: bay-still 200ms ease-out both; } }
+    @media (prefers-reduced-motion: reduce) { .has-board .bay:first-of-type { animation: bay-still 200ms ease-out both; } }
     @keyframes bay-still { from { opacity: 0; } }
     /* ---- The project sheet. Pressing a project's wall of screens pulls a sheet in from the right, over the page, where
        the project's details live. It covers the nav and stops just short of the window's left edge (--sheet-left), so
@@ -260,6 +281,7 @@
       .sheet__body:has(> :first-child .sheet__film, > .sheet__film:first-child) { margin-top: 0; }   /* a film starts the details level with the name and title beside it */
     }
     .bay__name { margin: 0 0 var(--space-3); }
+    .bay__name .vh { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }   /* read out; the flaps beside it are what shows */
     .bay h2 { font: 600 var(--step-4)/1.08 "Söhne Breit", sans-serif; letter-spacing: -.01em; text-wrap: balance; margin: 0; }
     .bay__meta { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-1); margin: var(--space-5) 0 0; padding: 0; list-style: none; }   /* one tag a line */
     .bay__media { display: grid; place-items: center start; min-width: 0; margin: 0; }   /* a picture narrower than its columns keeps to their left edge */
@@ -461,14 +483,73 @@
         <div>
           <p class="bay__name mono">Mazlan Builder</p>
           <h2 id="mazlan-builder-h">Professional Services on demand, on point, ready to help.</h2>
-          <ul class="bay__meta mono"><li>Designer</li><li>AI UX</li><li>Trust + Safety</li><li>Judgment gates</li></ul>
+          <ul class="bay__meta mono"><li>AX Patterns</li><li>Autonomy Levels</li><li>Judgment Gates</li></ul>
         </div>
-        <figure class="bay__media is-empty mono">Image to come</figure>
+        <figure class="bay__media" data-wall="images/mazlan-wall/" data-count="59" data-tilt="56" data-turn="40"
+                data-label="A drifting wall of screens from Mazlan Builder: conversations with Mazlan, module snapshots, process diagrams, requirements and specifications, in light and dark">
+          <img src="images/mazlan-builder-1200.webp" width="1200" height="753" decoding="async"
+               alt="Mazlan Builder: a conversation with Mazlan beside the requirements it is gathering for a configuration change">
+        </figure>
         <dl class="fields">
           <div class="matte m-panel m-panel--col"><dt class="mono">Problem</dt><dd>By man-hours spent, configuration was the biggest bucket of work our company had.</dd></div>
           <div class="matte m-panel m-panel--col"><dt class="mono">What I did</dt><dd>I designed Ideagen’s agentic configuration tool, Mazlan Builder, which puts the power of self-serve customization in the customers’ hands.</dd></div>
           <div class="is-result matte m-panel m-panel--col"><dt class="mono">Outcome</dt><dd>Benchmark tasks went from hours to minutes, without losing an ounce of capability.</dd></div>
         </dl>
+        <!-- the project sheet, section by section, as for Groom Lake: pressing the picture opens it -->
+        <template class="bay__facts">
+          <div><dt>Role</dt><dd>Sole designer</dd></div>
+          <div><dt>When</dt><dd>6 months</dd></div>
+          <div><dt>Partner</dt><dd>Director of Product</dd></div>
+        </template>
+        <template class="bay__section" data-title="Intro" data-untitled>
+          <p>Mazlan Builder is an agentic configuration tool for Ideagen EHS Enterprise. It lets customer administrators and Ideagen staff change an implementation by describing what they want in plain language. I was the sole designer. Over 6 months I worked with our Director of Product to define what agentic configuration could be, from the first conversation through to the rules for when the agent may act on its own.</p>
+          <p>EHS Enterprise is extraordinarily configurable. Customers can tailor nearly every field, rule, workflow and notification to the way their business runs. That’s why they choose it, and it’s also expensive: by man-hours, configuration was the biggest bucket of work our company had.</p>
+        </template>
+        <template class="bay__section" data-title="Monaco">
+          <figure class="sheet__clip">
+            <img src="images/mazlan-monaco-1200.webp"
+                 srcset="images/mazlan-monaco-1200.webp 1200w, images/mazlan-monaco-2400.webp 2400w"
+                 sizes="(max-width: 760px) 100vw, 60vw" width="1200" height="721" loading="lazy" decoding="async"
+                 alt="A collage of Monaco, Ideagen’s internal configuration tool: dense tables of module fields, rules written in DXL, role permission checkboxes, region trees and a field behaviors dialog">
+          </figure>
+          <p>Every change went through an internal tool called Monaco. It was a brutally dense series of screens, cobbled together over the years, that controlled everything about an implementation: who gets notified about what, what can be seen and when, and where things go in this case or that. It was capable of amazing things, but the learning curve was steep and the documentation was sparse.</p>
+          <p>Customers never saw it. I’d been with the company for over 2 years before I did. Only our Technical Account Managers and Solution Engineers could make a change, and customers could only define one by working with them. Adding an option to a dropdown could take weeks.</p>
+          <!-- to come: a typical turnaround for a change, if there is one -->
+          <p>But a sprawling configuration that only experts can read is exactly the kind of material AI reads well. The question was never whether an agent could make these changes. It was where it should be allowed to.</p>
+        </template>
+        <template class="bay__section" data-title="The Spec">
+          <p>Early on, Product and I agreed that we didn’t want people firing off changes on a whim. It was hard enough for our experts to get changes right, and we had strict SQA procedures to uphold. So in its first version, the agent’s only output was a specification.</p>
+          <p>I wanted the experience to begin the moment someone noticed something wrong. I pictured an admin with two windows open: the running app in one and Mazlan Builder in the other. Spotting a mislabeled field or a step out of order, they’d describe it in their own words. Mazlan would ask the questions a consultant would ask and turn the answers into a spec, with a summary, numbered requirements, what’s out of scope, edge cases and a worked example. One edge case reads: “Records raised before this change and edited after it must not fire a notification.”</p>
+          <p>The spec is the checkpoint. Before anything moves, Mazlan asks whether the spec accurately reflects your intent. Each revision is versioned and can be compared with the last. Once a change is applied, it keeps the spec that produced it, so an auditor can trace any configuration back to the request behind it.</p>
+          <!-- to come: one sentence on what this cost. It's slower than going straight from chat to action, so what was traded, and who pushed back? -->
+        </template>
+        <template class="bay__section" data-title="Self Knowledge">
+          <p>There was a very human flaw in the plan: no one had ever worked this way. Customers didn’t love how configuration was done, but they understood it. It’s easier to have a question and say “Bill knows this stuff, I’ll go ask him” than to learn the raw material yourself. Chatbots had a bad reputation, and our audience was serious, risk-averse and not eager to learn new tools. Even if we gave them Builder, would they know what to do with it?</p>
+          <p>So the first step toward self-service was helping people understand the configuration they already had. Builder reads a module’s definition as it exists in that customer’s environment and answers questions about its fields, rules, workflow and assignments. No one was going to spend hours studying the underpinnings of their subscription. But they would ask what happens when a near miss involving a fleet vehicle is submitted.</p>
+          <p>I designed a set of focused assistants for these jobs, and several of them change nothing at all. Compare Two Roles puts two roles side by side, so a gap or an overlap is visible before you touch either. Trace a Field’s Impact shows everywhere a field is used. The safest way into a powerful tool is to understand your own system before you change it.</p>
+          <!-- to come: evidence, such as usage of the read-only assistants, or a quote from an admin -->
+        </template>
+        <template class="bay__section" data-title="Blast Radius">
+          <p>Any change to a configuration carries risk. A workflow moves data between people, and that data triggers conditions and decides who can see and do what. Our customers do dangerous work, so a mistake can have dire consequences.</p>
+          <p>For a person, tracing everything upstream and downstream of a change is a serious challenge. For an agent, it’s quick. While Mazlan drafts the spec, it studies the relevant configuration and shows its work as plain steps: it loads the module definition and its change log, checks open records and dependent rules, and confirms what the change would do to records already filed. The step list replaces a spinner, so people can see what was checked.</p>
+          <p>The agent also narrows its own scope. It frames a change as an extension of an existing rule rather than a second rule beside it. When a request doesn’t name a module, it asks instead of guessing. When it finds a conflict, or a change big enough to need a person, it says so before anything is staged.</p>
+          <!-- to come: one real conflict it caught -->
+        </template>
+        <template class="bay__section" data-title="Autonomy Thresholds">
+          <p>An agent that learns an implementation faster than any person raises the obvious next question: should it change the configuration on its own? Agents aren’t infallible, and in the industries we serve, every change to the software has to be auditable. There had to be a threshold of risk above which a person decides.</p>
+          <p>I worked with Product and Application Engineering to decide where that line sits. Some changes can degrade the product, some can disrupt work, and some can cause harm. A button label sits at the low end, and adding or removing a workflow step sits at the high end. But even a simple rename can break a rule somewhere non-obvious that uses that name, so the score depends on what a change touches, not just what kind of change it is.</p>
+          <p>That gives Builder two gates. The first is who’s asking. People with rights work in Make Change, while everyone else works in Request Change, where Mazlan finalises the spec for them to hand to an administrator. The second is the risk of the change. Below the threshold, the agent stages the change and applies it once someone with rights approves. Above it, the spec goes to an application engineer for review. The agent’s confidence never decides whether a change is written.</p>
+          <!-- to come: one paragraph on how agent-made changes map to the SDLC: staged, tested and promoted through which environments -->
+          <p>Tuning the threshold is ongoing work.</p>
+          <!-- to come: the debate: what was argued, and what was won or lost -->
+        </template>
+        <template class="bay__section" data-title="Impact">
+          <p>Benchmark configuration tasks fell from about 3 hours to about 20 minutes. <!-- to come: which tasks, how many, how they were measured, and who ran them -->Mazlan Builder entered beta in August 2026 and went live with customers in early October.<!-- to come: an adoption signal --></p>
+          <!-- to come, once the gaps are filled: "The agent patterns I defined, [name 2 or 3], have since been adopted across [where]." -->
+        </template>
+        <template class="bay__section" data-title="Reflection">
+          <p>Copy to come.</p>
+        </template>
       </article>
 
     </main>
@@ -589,7 +670,6 @@
       // The row buttons lie over the board, so the module under the cursor is found by position.
       function moduleAt(x, y) {
         for (let i = 0; i < flap.count; i++) {
-          if (folded && Math.floor(i / flap.grid.cols) - cols.padY !== current) continue;   // folded, the rows lie on one another: only the top one is there to touch
           const box = flap.cell(i).getBoundingClientRect();
           if (x >= box.left && x < box.right && y >= box.top && y < box.bottom) return i;
         }
@@ -626,32 +706,6 @@
       // dancer in shades and the K in Lake to a flipped table, centred on the middle row. It stays
       // until the board is clicked again, anywhere, which turns it back to the projects.
       let shrugging = false;
-      /* The board folds down to the row in view once it has flipped in, and opens under the pointer or the keyboard's
-         focus (board.css has the movement). It stays open while it shows one of the easter eggs. */
-      const boardEl = document.querySelector('.board'), stageEl = document.querySelector('.board__stage');
-      let folded = false, resolved = false, over = false, foldTimer = 0;
-      function setFold(on) {
-        folded = on && resolved && !shrugging;
-        boardEl.classList.toggle('is-folded', folded);
-      }
-      // The pointer opens and shuts it at once (no wait): it opens the moment the pointer is on the plate or the leaves
-      // under it, and starts to fold the moment the pointer is off. The waits are for the keyboard and for a choice by touch.
-      const foldSoon = (on, ms) => { clearTimeout(foldTimer); if (ms > 0) foldTimer = setTimeout(() => setFold(on), ms); else setFold(on); };
-      // Not while the project sheet is over the page, or on its way out: the pointer was on the sheet then (on its Close
-      // key, which lies over the board), and finding itself on the board as the sheet leaves is no reason to open. It
-      // opens the next time the pointer comes onto it.
-      const sheetUp = () => document.documentElement.classList.contains('has-sheet');
-      stageEl.addEventListener('pointerenter', e => { if (e.pointerType !== 'touch' && !sheetUp()) { over = true; foldSoon(false, 0); } });
-      stageEl.addEventListener('pointerleave', e => {
-        if (e.pointerType === 'touch') return;
-        over = false;
-        if (!keys.querySelector(':focus-visible')) foldSoon(true, 0);
-      });
-      keys.addEventListener('focusin', () => { if (keys.querySelector(':focus-visible')) foldSoon(false, 0); });
-      keys.addEventListener('focusout', () => { if (!over) foldSoon(true, 320); });
-      // a touch has no hover: the first tap on the folded board opens it, and a tap anywhere else shuts it
-      keys.addEventListener('click', e => { if (folded) { e.stopPropagation(); setFold(false); } }, true);
-      document.addEventListener('pointerdown', e => { if (e.pointerType === 'touch' && !stageEl.contains(e.target)) foldSoon(true, 0); });
       const flapEl = document.getElementById('flap');
       const EGGS = [   // a character in one project's row, and what clicking it turns the board to
         { id: 'blackbird', ch: '0', released: true, show: SHRUG },
@@ -676,7 +730,6 @@
         shrugging = false;
         flapEl.classList.remove('is-aside');
         turnTo(lines, 2);
-        if (!over) foldSoon(true, 900);
       }, true);
       keys.addEventListener('click', e => {
         const i = moduleAt(e.clientX, e.clientY);
@@ -690,13 +743,75 @@
       });
 
       const boardRows = () => [...document.querySelectorAll('#flap .sf-row')];
-      let current = 0;
-      function choose(i, { remember = true } = {}) {
-        bays.forEach((bay, k) => bay.hidden = k !== i);
-        [...keys.children].forEach((key, k) => key.setAttribute('aria-pressed', k === i));
+      /* A record's nameplate is a row of the board in miniature. Below the first, they stay blank until their record is
+         the one in view; then, as its lamp lights, the name flips in, letter by letter from the left, the way the board's
+         rows do. Once each, so scrolling back and forth doesn't keep it chattering. */
+      const DRUM = ' ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789', BLANK = '\u00a0';
+      const FLIP_MS = 45, STAGGER_MS = 35;
+      let plates = [];
+      function makePlates() {
+        if (still) return;
+        plates = bays.map((bay, k) => {
+          const p = bay.querySelector('.bay__name');
+          if (k === 0 || !p) return null;
+          const name = p.textContent.trim(), read = document.createElement('span'), shown = document.createElement('span');
+          read.className = 'vh'; read.textContent = name;
+          shown.setAttribute('aria-hidden', 'true'); shown.textContent = name.replace(/./g, BLANK);
+          p.replaceChildren(read, shown);
+          return { shown, name, done: false };
+        });
+      }
+      function flipIn(i) {
+        const plate = plates[i];
+        if (!plate || plate.done) return;
+        // while the page's records are still held back for the board, wait for them
+        if (document.documentElement.classList.contains('is-arriving')) return document.addEventListener('recordarrive', () => flipIn(i), { once: true });
+        plate.done = true;
+        const chars = [...plate.name.toUpperCase()].map((ch, j) => {
+          const at = DRUM.indexOf(ch), flips = 5 + Math.floor(Math.random() * 4);
+          return { ch, at, flips, from: at < 0 ? 0 : (at - flips + DRUM.length) % DRUM.length, start: j * STAGGER_MS };
+        });
+        const t0 = performance.now(), end = Math.max(...chars.map(c => c.start + c.flips * FLIP_MS));
+        requestAnimationFrame(function frame(t) {
+          const elapsed = t - t0;
+          plate.shown.textContent = chars.map(c => {
+            if (c.ch === ' ') return BLANK;
+            const step = Math.floor((elapsed - c.start) / FLIP_MS);
+            if (step < 0) return BLANK;
+            if (step >= c.flips || c.at < 0) return c.ch;
+            const face = DRUM[(c.from + step) % DRUM.length];
+            return face === ' ' ? BLANK : face;
+          }).join('');
+          if (elapsed < end) requestAnimationFrame(frame); else plate.shown.textContent = plate.name;
+        });
+      }
+
+      // All the records are on the page, one after another. The lamp and the lighter flaps mark the one in view.
+      let current = -1;
+      function light(i) {
+        if (i === current) return;
+        flipIn(i);
+        [...keys.children].forEach((key, k) => { if (k === i) key.setAttribute('aria-current', 'location'); else key.removeAttribute('aria-current'); });
         boardRows().forEach((row, k) => row.classList.toggle('is-chosen', k === i));
         current = i;
-        if (remember) history.replaceState(null, '', '#' + rows[i].id);
+      }
+      // the record in view: the last whose top has passed a third of the way down the window (the last of all at the page's end)
+      function inView() {
+        const line = innerHeight / 3;
+        let at = 0;
+        bays.forEach((bay, k) => { if (bay.getBoundingClientRect().top <= line) at = k; });
+        if (scrollY + innerHeight >= document.documentElement.scrollHeight - 2) at = bays.length - 1;
+        return at;
+      }
+      let spying = 0;
+      addEventListener('scroll', () => { if (!spying) spying = requestAnimationFrame(() => { spying = 0; light(inView()); }); }, { passive: true });
+      // choosing a row scrolls to its record (gliding with the page's smooth scroll, where it has one)
+      function jump(i, { instant = false } = {}) {
+        const bay = bays[i];
+        if (location.hash !== '#' + rows[i].id) history.replaceState(null, '', '#' + rows[i].id);
+        const offset = -parseFloat(getComputedStyle(bay).scrollMarginTop || 0);
+        if (window.siteLenis) siteLenis.scrollTo(bay, { offset, immediate: instant });
+        else bay.scrollIntoView({ behavior: still || instant ? 'auto' : 'smooth' });
       }
 
       const cols = { nameCols: 16, statusCols: 4, padX: 0, padY: 0, ...config };   // 16 + 4 for a version saved before boards had columns
@@ -742,16 +857,8 @@
         let top = 0;
         for (let el = document.querySelector('.sf-board.is-framed') || document.getElementById('flap'); el; el = el.offsetParent) top += el.offsetTop;
         document.documentElement.style.setProperty('--rail-top', top + 'px');
-        // what the fold needs: the open plate's height, a row and its gap, and how many rows (offsets, which the fold doesn't move)
-        const rowEls = boardRows(), row0 = rowEls[0], last = rowEls.at(-1);
-        if (rowEls.length > 1 && row0.offsetParent === row0.parentElement) {
-          boardEl.style.setProperty('--plate-h', row0.offsetTop + last.offsetTop + last.offsetHeight + 'px');
-          boardEl.style.setProperty('--pitch', rowEls[1].offsetTop - row0.offsetTop + 'px');
-          boardEl.style.setProperty('--rows', rowEls.length);
-          boardEl.classList.add('can-fold');
-        } else boardEl.classList.remove('can-fold');
-        // the lamps: half way across the plate's left margin, each level with the middle of its row (a row and its
-        // button move together when the board folds, so this holds whatever state it is measured in)
+        const rowEls = boardRows();
+        // the lamps: half way across the plate's left margin, each level with the middle of its row
         const plate = keys.getBoundingClientRect();
         keys.style.setProperty('--lamp-x', (flap.cell(first).getBoundingClientRect().left - plate.left) / 2 + 'px');
         [...keys.children].forEach((key, k) => {
@@ -760,7 +867,7 @@
         });
       }
       placeHeads();
-      // on a change of width only: the fold changes the board's height on every frame
+      // on a change of width only
       let boardWidth = 0;
       new ResizeObserver(([entry]) => {
         if (Math.abs(entry.contentRect.width - boardWidth) < 0.5) return;
@@ -776,13 +883,14 @@
           key.type = 'button';
           key.innerHTML = '<span class="m-led" aria-hidden="true"></span>';
           key.setAttribute('aria-label', r.name + ', released ' + r.status.toLowerCase());
-          key.addEventListener('click', () => { choose(i); if (!over) foldSoon(true, 900); });   // chosen by touch or keyboard: shut again shortly
+          key.addEventListener('click', () => jump(i));
           key.addEventListener('pointerenter', () => boardRows()[i]?.classList.add('is-hover'));
           key.addEventListener('pointerleave', () => boardRows()[i]?.classList.remove('is-hover'));
         }
         keys.appendChild(key);
       });
       placeHeads();   // again, now the lamps exist
+      makePlates();
       // a window made wider or narrower: the board is rebuilt with the columns that fit now, showing what it showed
       let refit = 0;
       addEventListener('resize', () => {
@@ -796,7 +904,7 @@
           flapEl.classList.remove('is-aside');
           flap.update(boardConfig());
           flap.seek(still ? Infinity : now());
-          choose(current, { remember: false });
+          const was = current; current = -1; light(was);   // the rebuilt rows take the light again
           placeHeads();
         }, 150);
       });
@@ -813,30 +921,25 @@
       root.setProperty('--record-blur', entrance.recordBlur + 'px');
       if (!still && !seen) document.documentElement.classList.add('is-arriving');   // the first time, the record holds back until the board resolves
 
-      const fromHash = () => Math.max(0, rows.findIndex(r => '#' + r.id === location.hash));
+      const fromHash = () => rows.findIndex(r => '#' + r.id === location.hash);
       flap.ready.then(() => {
-        const first = fromHash();
-        bays.forEach((bay, k) => bay.hidden = k !== first);
-        choose(first, { remember: false });
-        const settle = () => { resolved = true; if (!over) setFold(true); };
-        if (seen) {   // back again this session: the board is already folded to the row in view, with no fold to watch
-          boardEl.classList.add('is-instant'); settle();
-          requestAnimationFrame(() => requestAnimationFrame(() => boardEl.classList.remove('is-instant')));   // after the folded state has painted
-        }
-        unpend();   // one record chosen, the others hidden, and the board in its place
-        if (still) { settle(); arrive(); return flap.seek(Infinity); }
+        unpend();   // every record on the page, and the board in its place
+        // a link to one project lands on its record, now that the board has its height
+        if (fromHash() > 0) jump(fromHash(), { instant: true });
+        current = -1; light(inView());
+        if (still) { arrive(); return flap.seek(Infinity); }
         run();   // the rows flip in once; choosing a row leaves the board as it is
-        setTimeout(settle, flap.duration + 450);   // a beat after the last flap lands, the board folds to the row in view
         if (seen) arrive();   // the record is already showing
         // the record starts down as the last flaps are landing, so the two finish together
         else setTimeout(() => { document.documentElement.classList.remove('is-arriving'); arrive(); }, Math.max(0, flap.duration - entrance.recordLeadMs));
       });
-      addEventListener('hashchange', () => { if (rows.some(r => '#' + r.id === location.hash)) choose(fromHash(), { remember: false }); });
+      addEventListener('hashchange', () => { if (fromHash() >= 0) jump(fromHash()); });
       document.addEventListener('themechange', () => { flap.restyle(SplitFlap.activeStyle(mode())); if (!running) flap.seek(now()); });
       // crossing to phone width hands back to the links and shows every record
       wide.addEventListener('change', e => {
         document.documentElement.classList.toggle('has-board', e.matches);
-        if (!e.matches) bays.forEach(bay => bay.hidden = false); else choose(fromHash(), { remember: false });
+        if (e.matches) { current = -1; light(inView()); }
+        else plates.forEach(plate => { if (plate && !plate.done) { plate.done = true; plate.shown.textContent = plate.name; } });   // no board to light them: every name shows
       });
     })();
 
@@ -995,7 +1098,7 @@
         lightIndex();
       }
       document.querySelectorAll('.bay').forEach(bay => {
-        const media = bay.querySelector('.bay__media[data-wall]');
+        const media = bay.querySelector('.bay__media[data-wall]') || (bay.querySelector('template.bay__section') && bay.querySelector('.bay__media'));   // a wall, or a record with its own sections
         if (!media) return;
         const open = make('button', 'bay__open');
         open.type = 'button';

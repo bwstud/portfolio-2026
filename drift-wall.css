@@ -24,8 +24,9 @@
   position: absolute; top: 50%; left: 50%; height: 240cqh; display: flex;
   transform-style: preserve-3d; transform-origin: 50% 50%; will-change: transform;
   /* Laid back 66 degrees, a low look across the wall, and turned 45, so a column runs down and to the right and a line of
-     text climbs to the right. --wall-px and --wall-py are the few degrees the wall leans toward the pointer. */
-  transform: translate(-50%, -50%) scale(1.5) rotateX(calc(66deg + var(--wall-py, 0deg))) rotateY(var(--wall-px, 0deg)) rotateZ(-45deg);
+     text climbs to the right. A wall can take its own angle (data-tilt and data-turn, set as --wall-tilt and --wall-turn).
+     --wall-px and --wall-py are the few degrees the wall leans toward the pointer. */
+  transform: translate(-50%, -50%) scale(1.5) rotateX(calc(var(--wall-tilt, 66deg) + var(--wall-py, 0deg))) rotateY(var(--wall-px, 0deg)) rotateZ(var(--wall-turn, -45deg));
 }
 .wall__col { flex: none; width: calc(var(--wall-tile-w) + var(--wall-gap)); }
 .wall__track { display: flex; flex-direction: column; will-change: transform; }

@@ -99,15 +99,16 @@
       @keyframes bay-fade { from { opacity: 0; } }
       @keyframes bay-resolve { from { opacity: 0; filter: blur(var(--record-blur, 0px)); } }
     }
-    /* Further down the page, each record plays the same entrance as a short timed movement, set off as each part comes
-       into the window (the script at the end of the page adds .is-in): the words come in from the left and the picture
-       drops into place as the record rises in, then, as the fields rise in, the rule over them is drawn left to right and
-       they resolve out of the blur one after another. Each part starts once it is an eighth of the way up the window,
-       so the fields are sharp while they are still low on the screen, and it plays once. The timing is the page's own,
-       quicker than the first record's: 700ms for the words and the picture, 320ms for each field, 60ms apart. Without
-       the script (no .has-reveal), the records are simply there. */
+    /* Further down the page, each record plays the same entrance as a short timed movement, in one sequence the script
+       at the end of the page runs (it says when each part goes): the name flips in as the words slide in from the left,
+       the title inks in, the tags follow (.is-up), then the rule over the cards is drawn left to right and the cards
+       resolve out of the blur one after another (.fields.is-in). The picture drops into place as it comes into the
+       window (.is-in). The timing is the page's own, quicker than the first record's: 700ms for the words and the
+       picture, 320ms for each card, 60ms apart. Without the script (no .has-reveal), the records are simply there. */
     @media (prefers-reduced-motion: no-preference) {
-      .has-reveal .bay:not(:first-of-type) > div:first-child > * { animation: bay-left 700ms cubic-bezier(0.23, 1, 0.32, 1) both paused; }
+      .has-reveal .bay:not(:first-of-type) > div:first-child > * { animation: bay-left 700ms cubic-bezier(0.23, 1, 0.32, 1) calc(var(--j, 0) * 50ms) both paused; }
+      .bay > div:first-child > :nth-child(2) { --j: 1; } .bay > div:first-child > :nth-child(3) { --j: 2; }   /* the name, the title, the tags: in reading order */
+      .has-reveal .bay:not(:first-of-type) > div:first-child > h2 { animation: none; }   /* the title inks in instead (below) */
       .has-reveal .bay:not(:first-of-type) .bay__media { animation: bay-drop 700ms cubic-bezier(0.23, 1, 0.32, 1) both paused; }
       .has-reveal .bay:not(:first-of-type) .fields > div { animation: bay-resolve 320ms var(--ease-out) calc(80ms + var(--i, 0) * 60ms) both paused; }
       /* the rule over the fields, drawn like a dimension line */
@@ -125,6 +126,25 @@
       .has-reveal .bay:not(:first-of-type) .fields.is-shown::before { animation: none; }
       @keyframes bay-rule { from { scale: 0 1; } }
     }
+    /* Each record's title inks in out of a gooey mass as it comes into the window, the way the project sheet's tagline
+       does (inkIn() in the script at the end of the page). Until then it is held unseen; without the script, or with
+       reduced motion, it is plain text throughout. The first record's title doesn't slide with the name and the tags. */
+    .has-ink .bay h2:not(.is-inked) { visibility: hidden; }
+    /* The heading block reads in order: the name, then the title, then the tags. The tags wait until the title is
+       legible (the script adds .is-up), then slide in from the left one after another, 60ms apart, on the records'
+       700ms curve. The list itself doesn't move: !important because the first record's entrance is set on it by a
+       longer selector. A record shown at once (.is-shown) shows its tags at once. */
+    @media (prefers-reduced-motion: no-preference) {
+      .has-ink .bay .bay__meta { animation: none !important; }
+      .has-ink .bay .bay__meta > li { animation: bay-left 700ms cubic-bezier(0.23, 1, 0.32, 1) calc(var(--k, 0) * 60ms) both paused; }
+      .has-ink .bay .bay__meta.is-up > li { animation-play-state: running; }
+      .has-ink .bay > .is-shown .bay__meta > li { animation: none; }
+      .bay__meta > li:nth-child(2) { --k: 1; } .bay__meta > li:nth-child(3) { --k: 2; } .bay__meta > li:nth-child(4) { --k: 3; }
+    }
+    /* and the first record's cards wait for the tags too, like the others' */
+    .has-ink .bay:first-of-type .fields:not(.is-in), .has-ink .bay:first-of-type .fields:not(.is-in) > div { animation-play-state: paused !important; }
+    .has-ink .bay:first-of-type > div:first-child > h2 { animation: none; }
+    .bay__goo { display: block; }   /* a line of a title while it inks in; plain text again once it has */
     /* reduced motion: a record fades in, with no slide, drop or blur */
     @media (prefers-reduced-motion: reduce) { .has-board .bay:first-of-type { animation: bay-still 200ms ease-out both; } }
     @keyframes bay-still { from { opacity: 0; } }
@@ -617,23 +637,125 @@
   <script src="split-flap-versions.js"></script>
   <script src="sheet-versions.js"></script>   <!-- the project sheet's peek, as tuned in the Peek Lab -->
   <script>
-    /* The records' entrance below the first (see "Further down the page" in the styles): each part plays once, as it
-       comes an eighth of the way up the window. A part already above the window, say after a jump to a later record, is
-       simply shown. */
-    (function () {
+    /* Each record comes in as one tight sequence, in reading order: its name flips in, then its title inks in, then its
+       tags slide in, then the cards below resolve. A record below the first starts when its words come an eighth of the
+       way up the window; the first starts as it arrives under the board. The cards also wait to be in the window
+       themselves, so they never play out of sight. The picture beside the words drops in on its own, as it comes in.
+       A record already above the window, say after a jump to a later one, is simply shown.
+
+       The title inks in as the project sheet's tagline does (goo() in the sheet's script, which says how the filter
+       works): each line gets a blur followed by a colour matrix that keeps only pixels over about 40% opaque, so the
+       letters start as nothing, come up as blobs that swell and run together, and settle into the words. The sheet's
+       numbers, a little slower: a starting blur of half an em, 2000ms on the film's focus curve, lines 100ms apart,
+       with the opening fifth (where nothing shows yet) left out.
+
+       Timing, from the start: the name flips at once (the board's script flips it, on the record's "recordreveal"
+       event); the title starts at TITLE_AT, so its blobs come up as the name's last letters land; the tags go when the
+       title's first line is half done, and the cards CARDS_AFTER later. */
+    (() => {
       if (!('IntersectionObserver' in window)) return;
-      document.documentElement.classList.add('has-reveal');
-      var parts = document.querySelectorAll('.bay:not(:first-of-type) > div:first-child, .bay:not(:first-of-type) .bay__media, .bay:not(:first-of-type) .fields');
-      var seen = new IntersectionObserver(function (entries) {
-        entries.forEach(function (e) {
-          var above = e.boundingClientRect.bottom < 0;
-          if (!e.isIntersecting && !above) return;
-          if (above) e.target.classList.add('is-shown');
-          e.target.classList.add('is-in');
-          seen.unobserve(e.target);
+      const root = document.documentElement;
+      const motion = !matchMedia('(prefers-reduced-motion: reduce)').matches;
+      root.classList.add('has-reveal');
+      if (motion) root.classList.add('has-ink');
+      const LINE = { rootMargin: '0px 0px -12.5% 0px' };
+      const TITLE_AT = 250, CARDS_AFTER = 250;   // the cards start as the last tag is on its way
+      const GOO = 0.5, MS = 2000, STAGGER = 100, SKIP = 0.2;
+
+      const at = (a, b, u) => 3 * a * u * (1 - u) ** 2 + 3 * b * u * u * (1 - u) + u ** 3;
+      const focus = t => { let lo = 0, hi = 1; for (let n = 0; n < 20; n++) { const m = (lo + hi) / 2; if (at(0.3, 0.3, m) < t) lo = m; else hi = m; } return at(0, 1, (lo + hi) / 2); };
+      const matrix = (amp, off) => `1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 ${amp} ${off}`;
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      svg.setAttribute('aria-hidden', 'true'); svg.style.cssText = 'position:absolute;width:0;height:0;overflow:hidden';
+      document.body.append(svg);
+      let count = 0;
+
+      // ink a title in; legible() is called once its first line is half done
+      function inkIn(title, legible) {
+        const text = title.textContent, words = text.split(/\s+/).filter(Boolean);
+        // find the lines as they fall: a span per word, grouped by where each sits
+        title.replaceChildren(...words.flatMap((w, i) => { const s = document.createElement('span'); s.textContent = w; return i ? [' ', s] : [s]; }));
+        const lines = [];
+        title.querySelectorAll('span').forEach(s => {
+          const last = lines[lines.length - 1];
+          if (last && Math.abs(last.top - s.offsetTop) < 2) last.words.push(s.textContent); else lines.push({ top: s.offsetTop, words: [s.textContent] });
         });
-      }, { rootMargin: '0px 0px -12.5% 0px' });
-      parts.forEach(function (p) { seen.observe(p); });
+        const start = GOO * parseFloat(getComputedStyle(title).fontSize);
+        const parts = lines.map(line => {
+          const filter = document.createElementNS('http://www.w3.org/2000/svg', 'filter');
+          filter.id = 'title-goo-' + count++;
+          filter.setAttribute('x', '-10%'); filter.setAttribute('width', '120%'); filter.setAttribute('y', '-100%'); filter.setAttribute('height', '300%');
+          filter.setAttribute('color-interpolation-filters', 'sRGB');
+          filter.innerHTML = `<feGaussianBlur in="SourceGraphic" stdDeviation="${start}"/><feColorMatrix type="matrix" values="${matrix(20, -8)}"/>`;
+          svg.append(filter);
+          const el = document.createElement('span');
+          el.className = 'bay__goo'; el.textContent = line.words.join(' '); el.style.filter = `url(#${filter.id})`;
+          return { el, filter, blur: filter.firstChild, ink: filter.lastChild };
+        });
+        title.replaceChildren(...parts.map(p => p.el));
+        title.classList.add('is-inked');
+        const t0 = performance.now() - MS * SKIP;
+        let told = false;
+        const step = now => {
+          let done = true;
+          parts.forEach((p, i) => {
+            const lead = Math.min(i * STAGGER, MS * 0.5), t = Math.min(1, Math.max(0, (now - t0 - lead) / Math.max(1, MS - lead)));
+            const relax = Math.min(1, Math.max(0, (t - 0.65) / 0.35));   // the last 35%: the threshold eases back to plain
+            p.blur.setAttribute('stdDeviation', (start * (1 - focus(t))).toFixed(2));
+            p.ink.setAttribute('values', matrix(20 - 19 * relax, -8 * (1 - relax)));
+            if (t < 1) done = false;
+            if (i === 0 && t >= 0.5 && !told) { told = true; legible(); }
+          });
+          if (!done) return requestAnimationFrame(step);
+          title.textContent = text;   // plain text again
+          parts.forEach(p => p.filter.remove());
+        };
+        requestAnimationFrame(step);
+      }
+
+      // A jump down the page can pass a record without its watchers ever firing, so when one starts, any before it that
+      // hasn't is settled too: shown at once if it is above the window, played if it is in it.
+      const records = [];
+      const before = k => records.slice(0, k).forEach(r => r.settle());
+      document.querySelectorAll('.bay').forEach((bay, k) => {
+        const words = bay.querySelector(':scope > div:first-child'), title = words.querySelector('h2'),
+              tags = words.querySelector('.bay__meta'), media = bay.querySelector('.bay__media'), fields = bay.querySelector('.fields');
+        let tagsDone = false, fieldsSeen = false, started = false;
+        const cards = () => { if (tagsDone && fieldsSeen) fields.classList.add('is-in'); };
+        const showAll = () => {   // above the window: everything as it ends up, at once
+          if (started) return;
+          started = true; before(k);
+          [words, media, fields].forEach(el => el.classList.add('is-in', 'is-shown'));
+          title.classList.add('is-inked'); tags?.classList.add('is-up');
+          bay.dataset.revealed = 'instant'; bay.dispatchEvent(new CustomEvent('recordreveal', { detail: { instant: true } }));
+        };
+        const go = () => {
+          if (started) return;
+          started = true; before(k);
+          words.classList.add('is-in');
+          bay.dataset.revealed = 'go'; bay.dispatchEvent(new CustomEvent('recordreveal'));
+          const letTags = () => { tags?.classList.add('is-up'); setTimeout(() => { tagsDone = true; cards(); }, CARDS_AFTER); };
+          if (!motion) { title.classList.add('is-inked'); return letTags(); }
+          setTimeout(() => inkIn(title, letTags), TITLE_AT);
+        };
+        const watch = (el, seen) => {
+          const io = new IntersectionObserver(entries => entries.forEach(e => {
+            if (!e.isIntersecting && e.boundingClientRect.bottom >= 0) return;
+            io.unobserve(el);
+            seen(e.isIntersecting);
+          }), LINE);
+          io.observe(el);
+        };
+        records[k] = { settle: () => { if (!started) (words.getBoundingClientRect().bottom < 0 ? showAll() : go()); } };
+        watch(fields, inside => { if (!inside && !started) return showAll(); if (!inside) fields.classList.add('is-shown'); fieldsSeen = true; cards(); });
+        if (k === 0) {   // the first record starts as it arrives
+          const first = () => (bay.getBoundingClientRect().bottom < 0 ? showAll() : go());
+          if (root.classList.contains('is-arrived')) first(); else document.addEventListener('recordarrive', first, { once: true });
+          return;
+        }
+        watch(media, inside => { media.classList.add('is-in'); if (!inside) media.classList.add('is-shown'); });
+        watch(words, inside => (inside ? go() : showAll()));
+      });
     })();
   </script>
   <script src="drift-wall.js"></script>
@@ -766,9 +888,9 @@
       });
 
       const boardRows = () => [...document.querySelectorAll('#flap .sf-row')];
-      /* A record's nameplate is a row of the board in miniature. Below the first, they stay blank until their record is
-         the one in view; then, as its lamp lights, the name flips in, letter by letter from the left, the way the board's
-         rows do. Once each, so scrolling back and forth doesn't keep it chattering. */
+      /* A record's nameplate is a row of the board in miniature. Below the first, they stay blank until their record
+         starts its entrance (the sequence script's "recordreveal"); then the name flips in, letter by letter from the
+         left, the way the board's rows do. Once each, so scrolling back and forth doesn't keep it chattering. */
       const DRUM = ' ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789', BLANK = '\u00a0';
       const FLIP_MS = 45, STAGGER_MS = 35;
       let plates = [];
@@ -813,7 +935,6 @@
       let current = -1;
       function light(i) {
         if (i === current) return;
-        flipIn(i);
         [...keys.children].forEach((key, k) => { if (k === i) key.setAttribute('aria-current', 'location'); else key.removeAttribute('aria-current'); });
         boardRows().forEach((row, k) => row.classList.toggle('is-chosen', k === i));
         current = i;
@@ -914,6 +1035,17 @@
       });
       placeHeads();   // again, now the lamps exist
       makePlates();
+      // a name flips in when its record starts its entrance (the sequence script sends "recordreveal"); one already
+      // revealed instantly is simply shown
+      const reveal = (k, instant) => {
+        const plate = plates[k];
+        if (!plate || plate.done) return;
+        if (instant) { plate.done = true; plate.shown.textContent = plate.name; } else flipIn(k);
+      };
+      bays.forEach((bay, k) => {
+        bay.addEventListener('recordreveal', e => reveal(k, !!e.detail?.instant));
+        if (bay.dataset.revealed) reveal(k, bay.dataset.revealed === 'instant');   // it started before the plates were made
+      });
       // a window made wider or narrower: the board is rebuilt with the columns that fit now, showing what it showed
       let refit = 0;
       addEventListener('resize', () => {

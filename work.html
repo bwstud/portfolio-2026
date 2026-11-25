@@ -99,28 +99,31 @@
       @keyframes bay-fade { from { opacity: 0; } }
       @keyframes bay-resolve { from { opacity: 0; filter: blur(var(--record-blur, 0px)); } }
     }
-    /* Further down the page, each record plays the same entrance, but the scroll is its clock: the words come in from
-       the left and the picture drops into place as each one rises into the window, the rule over the fields is drawn
-       left to right, and the fields resolve one after another. Every part runs on its own place in the window, so they
-       arrive in the order you read them, and all of it is finished by the time a part is a third of the way up, so
-       nothing waits on the motion. Scrolling back runs it backwards. Browsers without scroll timelines show the records still. */
-    @supports ((animation-timeline: view()) and (animation-range: 0% 100%)) {
-      @media (prefers-reduced-motion: no-preference) {
-        .bay:not(:first-of-type) > div:first-child > *, .bay:not(:first-of-type) .bay__media, .bay:not(:first-of-type) .fields > div, .bay:not(:first-of-type) .fields::before {
-          animation-duration: auto; animation-timing-function: cubic-bezier(0.33, 1, 0.68, 1); animation-fill-mode: both;
-          animation-timeline: view(); animation-range: entry 10% cover 40%;
-        }
-        .bay:not(:first-of-type) > div:first-child > * { animation-name: bay-left; }
-        .bay:not(:first-of-type) .bay__media { animation-name: bay-drop; }
-        .bay:not(:first-of-type) .fields > div { animation-name: bay-resolve; animation-timing-function: linear; }
-        .bay:not(:first-of-type) .fields > div:nth-child(2) { animation-range: entry 25% cover 45%; }
-        .bay:not(:first-of-type) .fields > div:nth-child(3) { animation-range: entry 40% cover 50%; }
-        /* the rule over the fields, drawn like a dimension line */
-        .bay:not(:first-of-type) .fields { position: relative; border-top-color: transparent; }
-        .bay:not(:first-of-type) .fields::before { content: ""; position: absolute; inset: -1px 0 auto; height: 1px; background: var(--line);
-          transform-origin: left; animation-name: bay-rule; animation-range: entry 0% cover 35%; }
-        @keyframes bay-rule { from { scale: 0 1; } }
-      }
+    /* Further down the page, each record plays the same entrance as a short timed movement, set off as each part comes
+       into the window (the script at the end of the page adds .is-in): the words come in from the left and the picture
+       drops into place as the record rises in, then, as the fields rise in, the rule over them is drawn left to right and
+       they resolve out of the blur one after another. Each part starts once it is an eighth of the way up the window,
+       so the fields are sharp while they are still low on the screen, and it plays once. The timing is the page's own,
+       quicker than the first record's: 700ms for the words and the picture, 320ms for each field, 60ms apart. Without
+       the script (no .has-reveal), the records are simply there. */
+    @media (prefers-reduced-motion: no-preference) {
+      .has-reveal .bay:not(:first-of-type) > div:first-child > * { animation: bay-left 700ms cubic-bezier(0.23, 1, 0.32, 1) both paused; }
+      .has-reveal .bay:not(:first-of-type) .bay__media { animation: bay-drop 700ms cubic-bezier(0.23, 1, 0.32, 1) both paused; }
+      .has-reveal .bay:not(:first-of-type) .fields > div { animation: bay-resolve 320ms var(--ease-out) calc(80ms + var(--i, 0) * 60ms) both paused; }
+      /* the rule over the fields, drawn like a dimension line */
+      .has-reveal .bay:not(:first-of-type) .fields { position: relative; border-top-color: transparent; }
+      .has-reveal .bay:not(:first-of-type) .fields::before { content: ""; position: absolute; inset: -1px 0 auto; height: 1px; background: var(--line);
+        transform-origin: left; animation: bay-rule 320ms cubic-bezier(0.23, 1, 0.32, 1) both paused; }
+      .has-reveal .bay:not(:first-of-type) > div:first-child.is-in > *,
+      .has-reveal .bay:not(:first-of-type) .bay__media.is-in,
+      .has-reveal .bay:not(:first-of-type) .fields.is-in > div,
+      .has-reveal .bay:not(:first-of-type) .fields.is-in::before { animation-play-state: running; }
+      /* a part that was already above the window is shown as it is */
+      .has-reveal .bay:not(:first-of-type) > div:first-child.is-shown > *,
+      .has-reveal .bay:not(:first-of-type) .bay__media.is-shown,
+      .has-reveal .bay:not(:first-of-type) .fields.is-shown > div,
+      .has-reveal .bay:not(:first-of-type) .fields.is-shown::before { animation: none; }
+      @keyframes bay-rule { from { scale: 0 1; } }
     }
     /* reduced motion: a record fades in, with no slide, drop or blur */
     @media (prefers-reduced-motion: reduce) { .has-board .bay:first-of-type { animation: bay-still 200ms ease-out both; } }
@@ -613,6 +616,26 @@
   <script src="split-flap.js"></script>
   <script src="split-flap-versions.js"></script>
   <script src="sheet-versions.js"></script>   <!-- the project sheet's peek, as tuned in the Peek Lab -->
+  <script>
+    /* The records' entrance below the first (see "Further down the page" in the styles): each part plays once, as it
+       comes an eighth of the way up the window. A part already above the window, say after a jump to a later record, is
+       simply shown. */
+    (function () {
+      if (!('IntersectionObserver' in window)) return;
+      document.documentElement.classList.add('has-reveal');
+      var parts = document.querySelectorAll('.bay:not(:first-of-type) > div:first-child, .bay:not(:first-of-type) .bay__media, .bay:not(:first-of-type) .fields');
+      var seen = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          var above = e.boundingClientRect.bottom < 0;
+          if (!e.isIntersecting && !above) return;
+          if (above) e.target.classList.add('is-shown');
+          e.target.classList.add('is-in');
+          seen.unobserve(e.target);
+        });
+      }, { rootMargin: '0px 0px -12.5% 0px' });
+      parts.forEach(function (p) { seen.observe(p); });
+    })();
+  </script>
   <script src="drift-wall.js"></script>
   <script src="bison-versions.js"></script>   <!-- the version the Bison Lab has put on the site -->
   <script src="bison.js"></script>

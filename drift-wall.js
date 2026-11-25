@@ -7,7 +7,7 @@
    The folder holds 01.webp, 02.webp and so on up to data-count. Optional: data-cols (columns, default 6) and
    data-speed (how far a column travels each second, as a percentage of the wall's height; default 2), data-tilt (degrees
    the wall is laid back; default 66) and data-turn (degrees it is turned; default -45, columns running down to the right).
-   The far and near tiles are out of focus. The wall leans a few degrees toward the pointer. It stops while it is off screen, and has a pause button. */
+   The far and near tiles are out of focus. It stops while it is off screen, and has a pause button. */
 (function () {
   'use strict';
 
@@ -67,34 +67,6 @@
       col.appendChild(track);
       plane.appendChild(col);
     }
-
-    // Parallax: the whole wall leans a few degrees toward the pointer and settles back when it leaves.
-    var MAX = 4.8, TAU = 120;   // degrees at the wall's edge (the reference's parallax 0.6), and how quickly it follows
-    var still = window.matchMedia('(prefers-reduced-motion: reduce)');
-    var aim = { x: 0, y: 0 }, lean = { x: 0, y: 0 }, leanRaf = 0, leanAt = 0;
-    function leanStep(now) {
-      var k = 1 - Math.exp(-Math.min(50, now - leanAt) / TAU);
-      leanAt = now;
-      lean.x += (aim.x - lean.x) * k;
-      lean.y += (aim.y - lean.y) * k;
-      var done = Math.abs(aim.x - lean.x) < 0.01 && Math.abs(aim.y - lean.y) < 0.01;
-      if (done) { lean.x = aim.x; lean.y = aim.y; }
-      plane.style.setProperty('--wall-px', lean.x.toFixed(3) + 'deg');
-      plane.style.setProperty('--wall-py', lean.y.toFixed(3) + 'deg');
-      leanRaf = done ? 0 : requestAnimationFrame(leanStep);
-    }
-    function leanTo(x, y) {
-      aim.x = x; aim.y = y;
-      if (!leanRaf) { leanAt = performance.now(); leanRaf = requestAnimationFrame(leanStep); }
-    }
-
-    el.addEventListener('pointermove', function (e) {
-      if (!still.matches && e.pointerType !== 'touch') {
-        var box = el.getBoundingClientRect();
-        leanTo(((e.clientX - box.left) / box.width - 0.5) * MAX, -((e.clientY - box.top) / box.height - 0.5) * MAX);
-      }
-    });
-    el.addEventListener('pointerleave', function () { leanTo(0, 0); });
 
     var button = make('button', 'wall__pause');
     button.type = 'button';

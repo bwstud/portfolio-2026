@@ -35,6 +35,13 @@
   border-radius: 1.6cqh; background: #0b0c0d; box-shadow: 0 0 0 1px rgb(255 255 255 / 0.06), -1.2cqh 1.6cqh 3.5cqh rgb(0 0 0 / 0.5);
 }
 .wall__inner img { display: block; width: 100%; height: 100%; object-fit: cover; user-select: none; -webkit-user-drag: none; }
+/* A moving screen sits over its still (its own first frame) and fades in once it is really playing, then back out as it
+   leaves the sharp band. drift-wall.js adds and removes it. */
+.wall__clip {
+  position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; pointer-events: none;
+  opacity: 0; transition: opacity 400ms cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+.wall__tile.is-playing .wall__clip { opacity: 1; }
 
 /* Depth of field. With the wall turned 45 degrees, everything on one level of the picture is the same distance away, so
    focus is a matter of height: a sharp band below the middle, the far tiles above it blurring more the farther they are,

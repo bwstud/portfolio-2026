@@ -5,7 +5,8 @@
 <title>Groom Lake hero</title>
 <!--
   The Groom Lake hero video, composed in the browser from the Paper exports in src/ (Case Studies › Groom Lake Gallery
-  Assets, exported at 2x and named by frame id). Open it to watch it play; render.mjs steps it frame by frame (window.render)
+  Assets, exported at 2x and named by frame id) and, for its second half, recordings of Mazlan at work in the prototype
+  (src/ai/, made by record-ai.mjs and cut-ai.sh). Open it to watch it play; render.mjs steps it frame by frame (window.render)
   and encodes the MP4. On the site the film opens with a screen recording of the sign-in instead of scene 1: assemble.sh
   cuts the recording at the click and joins this film from 2.6 s.
   Every scene is a list of layers; each layer is a picture with keyframes (time, centre x/y on the 1920 × 1200 stage,
@@ -19,7 +20,7 @@
   #bg-light { position: absolute; inset: 0; background: #e8ebef; }
   #bg-dark { position: absolute; inset: 0; background: #0e1116; }
   .layer { position: absolute; left: 0; top: 0; transform-origin: 50% 50%; will-change: transform, opacity; border-radius: var(--r, 14px); overflow: hidden; }
-  .layer img { display: block; width: 100%; height: auto; }
+  .layer img, .layer video { display: block; width: 100%; height: auto; }
   .layer.dark { box-shadow: 0 0 0 1px rgb(255 255 255 / 0.07), 0 30px 80px rgb(0 0 0 / 0.55), 0 8px 24px rgb(0 0 0 / 0.35); }
   .layer.light { box-shadow: 0 0 0 1px rgb(20 30 50 / 0.06), 0 28px 70px rgb(20 30 50 / 0.16), 0 6px 18px rgb(20 30 50 / 0.08); }
   .layer.flat { box-shadow: none; }
@@ -48,6 +49,8 @@ const span = (t, a, b, ease = 'inout') => E[ease](clamp((t - a) / (b - a)));
 
 // a layer: a picture (src/<id>.png), its width on the stage, a look (dark | light), and keyframes
 // [t, x, y, scale, opacity, ease-into-this-key]. Before the first key and after the last it is hidden.
+// A layer with { video: true } is a recording instead (src/ai/<id>.mp4, cut by cut-ai.sh), playing from its start at its
+// first key; { from: s } starts it s seconds in.
 const L = [];
 function layer(id, w, look, keys, opts = {}) { L.push({ id, w, look, keys, ...opts }); }
 
@@ -70,73 +73,94 @@ burst(2.6, 0.45, 'dark', [
   ['21O-0', 1900, [960, 600, 1], [930, 600, 1.03]],      // a record row, edge to edge
 ]);
 
-// 3 · The dashboard (4.4–8.4): the one long breath, a slow lean toward the charts
-cut('1L1-0', 1500, 'dark', 4.4, 8.4, [960, 600, 1], [1010, 760, 1.32]);
+// 3 · The dashboard (4.4–7.2): the one long breath, a slow lean toward the charts
+cut('1L1-0', 1500, 'dark', 4.4, 7.2, [960, 600, 1], [1000, 720, 1.25]);
 
-// 4 · Dark to light (8.4–11.6): the chart and the profile menu, then a hard match cut to the same screen in light mode
-cut('1VJ-0', 1100, 'dark', 8.4, 10.2, [1130, 520, 1], [1112, 515, 1.01], { z: 1 });
-cut('5C1-0', 340, 'dark', 8.4, 10.2, [430, 640, 1], [428, 622, 1.01], { z: 2 });
-cut('72P-0', 1100, 'light', 10.2, 11.6, [1110, 515, 1.01], [1096, 510, 1.02], { z: 1 });
-cut('7QF-0', 340, 'light', 10.2, 11.6, [428, 622, 1.01], [426, 608, 1.02], { z: 2 });
+// 4 · Dark to light (7.2–9.6): the chart and the profile menu, then a hard match cut to the same screen in light mode
+cut('1VJ-0', 1100, 'dark', 7.2, 8.4, [1130, 520, 1], [1118, 517, 1.01], { z: 1 });
+cut('5C1-0', 340, 'dark', 7.2, 8.4, [430, 640, 1], [429, 628, 1.01], { z: 2 });
+cut('72P-0', 1100, 'light', 8.4, 9.6, [1110, 515, 1.01], [1098, 511, 1.02], { z: 1 });
+cut('7QF-0', 340, 'light', 8.4, 9.6, [428, 622, 1.01], [426, 610, 1.02], { z: 2 });
 
-// 5 · Burst (11.6–13.4): four close-ups of the light product
-burst(11.6, 0.45, 'light', [
+// 5 · Burst (9.6–11.4): four close-ups of the light product
+burst(9.6, 0.45, 'light', [
   ['B3D-0', 1800, [960, 600, 1], [990, 600, 1.04]],      // pinned reports
   ['ASB-0', 760, [960, 660, 1], [960, 540, 1]],          // due-date bars, sliding up
   ['B93-0', 1400, [960, 600, 1], [930, 600, 1.04]],      // indicators
   ['6VR-0', 2000, [1200, 600, 1], [1170, 600, 1.04]],    // the donut in light
 ]);
 
-// 6 · The cards (13.4–17.0): three columns already in motion, each at its own pace
-const col = (x, top, speed, ids) => {
+// 6 · The cards (11.4–13.8): three columns already in motion, each at its own pace
+const col = (x, top, speed, ids, t0 = 11.4, t1 = 13.8) => {
   let y = top;
   ids.forEach(([id, h]) => {
     const cy = y + h * 1.1 / 2;
-    cut(id, 440, 'light', 13.4, 17.0, [x, cy + speed * 0.35, 1], [x, cy - speed * 0.65, 1]);
+    cut(id, 440, 'light', t0, t1, [x, cy + speed * 0.35, 1], [x, cy - speed * 0.65, 1]);
     y += h * 1.1 + 36;
   });
 };
-col(460, 280, 170, [['6Y2-0', 187], ['6YM-0', 393], ['B93-0', 252]]);
-col(960, 170, 260, [['B02-0', 302], ['ASB-0', 639]]);
-col(1460, 240, 130, [['70C-0', 393], ['B5O-0', 365]]);
+col(460, 280, 120, [['6Y2-0', 187], ['6YM-0', 393], ['B93-0', 252]]);
+col(960, 170, 180, [['B02-0', 302], ['ASB-0', 639]]);
+col(1460, 240, 90, [['70C-0', 393], ['B5O-0', 365]]);
 
-// 7 · The data and the assistant (17.0–20.6): a hard cut back to dark; the table scrolls, the assistant slides in
-cut('2PD-0', 1240, 'dark', 17.0, 20.6, [860, 600, 1], [860, 590, 1], { window: 820, scroll: [17.2, 20.4, 0, 620] });
-layer('2I3-0', 400, 'dark', [[17.9, 1700, 600, 1, 0], [18.9, 1500, 600, 1, 1, 'out'], [20.6, 1494, 594, 1, 1, 'lin']], { z: 2 });
+// The second half is Mazlan at work, recorded from the prototype (record-ai.mjs, cut by cut-ai.sh): three moments, each
+// a short run of hard cuts that follows one request from the asking to the result, on the dark stage.
+const vcut = (id, w, t0, t1, a, b, opts = {}) => cut(id, w, 'dark', t0, t1, a, b, { video: true, ...opts });
 
-// 8 · Burst (20.6–21.95): three of the tools around the table
-burst(20.6, 0.45, 'dark', [
-  ['3UR-0', 900, [960, 900, 1], [960, 700, 1]],          // filters, sliding up
-  ['36P-0', 1000, [960, 640, 1], [960, 580, 1.02]],      // choosing columns
-  ['22B-0', 1700, [960, 600, 1], [990, 600, 1.04]],      // saving it as a report
-]);
+// 7 · A filter in plain words (13.8–18.6): the sentence, Mazlan's either/or reading of it, the expression it builds in
+// the filters, and the results it leaves
+vcut('filter-type', 1300, 13.8, 15.0, [960, 600, 1], [960, 592, 1.02]);
+vcut('filter-card', 760, 15.0, 16.3, [960, 610, 1], [960, 596, 1.02]);
+vcut('filter-expr', 1500, 16.3, 17.5, [960, 600, 1], [930, 600, 1.04]);
+vcut('filter-results', 1500, 17.5, 18.6, [960, 620, 1], [960, 580, 1.02]);
 
-// 9 · Create new (21.95–25.2): the list, then the modules open beside it and the list steps back
-layer('22W-0', 440, 'dark', [[21.95, 960, 600, 1, 1], [22.6, 960, 596, 1, 1, 'lin'], [23.5, 560, 600, 0.96, 0.55, 'inout'], [25.2, 548, 596, 0.96, 0.55, 'lin']]);
-layer('28G-0', 700, 'dark', [[22.7, 1260, 610, 0.94, 0], [23.6, 1170, 600, 1, 1, 'out'], [25.2, 1162, 596, 1, 1, 'lin']], { z: 2 });
+// 8 · An incident, spoken (18.6–23.4): the description dictated, Mazlan working out what it is, and the draft record
+// opening beside the chat, already filled in
+vcut('intake-voice', 1400, 18.6, 20.1, [960, 600, 1], [960, 590, 1.03]);
+vcut('intake-think', 1300, 20.1, 21.1, [960, 600, 1], [975, 600, 1.02]);
+vcut('intake-record', 1760, 21.1, 23.4, [960, 600, 1], [880, 620, 1.1]);
 
-// 10 · The dashboard assembles from its parts (25.2–30), then the stage empties for the loop
-const fin = (id, w, x, y, dx, dy, d, z) => layer(id, w, 'dark', [[25.3 + d, x + dx, y + dy, 0.97, 0], [26.5 + d, x, y, 1, 1, 'out'], [29.0, x, y - 6, 1, 1, 'lin'], [29.8, x, y - 20, 0.99, 0, 'in']], { z });
-fin('1DF-0', 1300, 960, 200, 0, -40, 0.0, 3);
-fin('1GD-0', 360, 490, 700, -70, 0, 0.12, 2);
-fin('1E9-0', 880, 1180, 410, 0, 70, 0.24, 1);
-fin('1VJ-0', 880, 1180, 805, 0, 70, 0.36, 1);
+// 9 · A component, asked for (23.4–30): the request, Mazlan's quick questions, the preview, and the new component on
+// the dashboard; then the stage empties for the loop
+vcut('build-ask', 1300, 23.4, 24.8, [960, 600, 1], [950, 594, 1.02]);
+vcut('build-plan', 820, 24.8, 26.3, [960, 600, 1], [960, 585, 1.02]);
+vcut('build-preview', 560, 26.3, 27.6, [960, 620, 1], [960, 590, 1.02]);
+layer('build-landed', 1700, 'dark', [[27.6, 960, 600, 1, 1], [29.0, 1120, 500, 1.12, 1, 'lin'], [29.8, 1132, 490, 1.13, 0, 'in']], { video: true });
 
 // the stage is light, by hard cuts, from the match cut to the end of the cards
-const lightAt = t => (t >= 10.2 && t < 17.0 ? 1 : 0);
+const lightAt = t => (t >= 8.4 && t < 13.8 ? 1 : 0);
 
 // build the layers
 const box = document.getElementById('layers');
 const els = L.map(l => {
   const el = document.createElement('div'); el.className = 'layer ' + l.look;
-  const img = new Image(); img.src = 'src/' + l.id + '.png'; img.decoding = 'sync'; el.append(img);
+  if (l.video) {
+    const v = document.createElement('video'); v.src = 'src/ai/' + l.id + '.mp4'; v.muted = true; v.preload = 'auto'; v.playsInline = true;
+    el.append(v); l.img = v;
+  } else { const img = new Image(); img.src = 'src/' + l.id + '.png'; img.decoding = 'sync'; el.append(img); l.img = img; }
   el.style.width = l.w + 'px'; el.style.zIndex = l.z || 0;
-  box.append(el); l.el = el; l.img = img; return el;
+  box.append(el); l.el = el; return el;
 });
-window.ready = Promise.all(L.map(l => l.img.decode().then(() => {
-  l.h = l.w * l.img.naturalHeight / l.img.naturalWidth;
+const loaded = l => l.video
+  ? new Promise(r => (l.img.readyState >= 2 ? r() : l.img.addEventListener('loadeddata', r, { once: true }))).then(() => [l.img.videoWidth, l.img.videoHeight])
+  : l.img.decode().then(() => [l.img.naturalWidth, l.img.naturalHeight]);
+window.ready = Promise.all(L.map(l => loaded(l).then(([w, h]) => {
+  l.h = l.w * h / w;
   if (l.window) { l.el.style.height = l.window + 'px'; l.h = l.window; }
 })));
+// a recording on show is moved to the film's time; render() resolves once every one of them shows that frame
+const seek = (v, s) => new Promise(r => {
+  s = Math.min(Math.max(0, s), (v.duration || 0) - 0.001);
+  if (Math.abs(v.currentTime - s) < 0.0005) return r();
+  // the frame is shown once it is presented; a seek that lands on the frame already showing presents nothing new, so
+  // after a moment it counts as shown
+  v.addEventListener('seeked', () => {
+    let done = false; const fin = () => { if (!done) { done = true; r(); } };
+    if (v.requestVideoFrameCallback) v.requestVideoFrameCallback(fin);
+    setTimeout(fin, 120);
+  }, { once: true });
+  v.currentTime = s;
+});
 
 function at(l, t) {
   const k = l.keys;
@@ -152,6 +176,7 @@ function at(l, t) {
 
 window.render = t => {
   t = ((t % D) + D) % D;
+  const seeks = [];
   const light = lightAt(t);
   document.getElementById('bg-light').style.opacity = light;
   // a slow, constant drift of the whole camera, a few pixels, so nothing ever sits dead still
@@ -165,7 +190,9 @@ window.render = t => {
     l.el.style.opacity = o;
     l.el.style.transform = `translate(${x - l.w / 2}px, ${y - l.h / 2}px) scale(${sc})`;
     if (l.scroll) { const [a, b, from, to] = l.scroll; l.img.style.transform = `translateY(${-(from + (to - from) * span(t, a, b, 'inout'))}px)`; }
+    if (l.video) seeks.push(seek(l.img, (l.from || 0) + t - l.keys[0][0]));
   }
+  return Promise.all(seeks);
 };
 
 // open it in a browser to watch: it plays on the page's clock (?t=12 holds a moment)
@@ -173,7 +200,8 @@ const q = new URLSearchParams(location.search);
 window.ready.then(() => {
   if (q.has('render')) return;
   if (q.has('t')) return render(parseFloat(q.get('t')));
-  const t0 = performance.now(); const tick = now => { render((now - t0) / 1000); requestAnimationFrame(tick); }; requestAnimationFrame(tick);
+  const t0 = performance.now(); let busy = false;
+  const tick = now => { if (!busy) { busy = true; render((now - t0) / 1000).then(() => (busy = false)); } requestAnimationFrame(tick); }; requestAnimationFrame(tick);
 });
 </script>
 </body>

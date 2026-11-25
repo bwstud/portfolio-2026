@@ -20,13 +20,13 @@ await send('Runtime.enable');
 await send('Emulation.setDeviceMetricsOverride', { width: W, height: H, deviceScaleFactor: S, mobile: false });
 await send('Page.navigate', { url: pathToFileURL(path.join(here, 'compose.html')).href + '?render' });
 await wait(1500);
-await send('Runtime.evaluate', { expression: 'window.ready', awaitPromise: true });
+await send('Runtime.evaluate', { expression: 'window.ready', awaitPromise: true });   // pictures decoded, recordings loaded
 const D = (await send('Runtime.evaluate', { expression: 'window.D', returnByValue: true })).result.result.value;   // the film's length, from compose.html
 const ff = spawn('ffmpeg', ['-y', '-loglevel', 'error', '-f', 'image2pipe', '-framerate', String(FPS), '-i', '-',
   '-c:v', 'libx264', '-preset', 'slow', '-crf', crf, '-pix_fmt', 'yuv420p', '-tune', 'animation', '-movflags', '+faststart', '-an', out], { stdio: ['pipe', 'inherit', 'inherit'] });
 const N = Math.round(D * FPS);
 for (let f = 0; f < N; f++) {
-  await send('Runtime.evaluate', { expression: `render(${f / FPS})` });
+  await send('Runtime.evaluate', { expression: `render(${f / FPS})`, awaitPromise: true });   // waits for any recording to reach the frame
   const r = await send('Page.captureScreenshot', { format: 'png', clip: { x: 0, y: 0, width: W, height: H, scale: 1 } });
   if (!ff.stdin.write(Buffer.from(r.result.data, 'base64'))) await new Promise(r => ff.stdin.once('drain', r));
   if (f % (FPS * 5) === 0) process.stderr.write(`${(f / FPS).toFixed(0)}s `);

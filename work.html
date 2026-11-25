@@ -394,10 +394,8 @@
     </div>
     <nav class="nav__links">
       <a class="chip" href="bio.html"><svg class="chip__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Bio</a>
-      <a class="chip" href="how-i-work.html"><svg class="chip__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="8" height="8" x="3" y="3" rx="2"/><path d="M7 11v4a2 2 0 0 0 2 2h4"/><rect width="8" height="8" x="13" y="13" rx="2"/></svg>How I Work</a>
       <a class="chip" href="experiments/"><svg class="chip__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12.99 6.74 1.93 3.44"/><path d="M19.136 12a10 10 0 0 1-14.271 0"/><path d="m21 21-2.16-3.84"/><path d="m3 21 8.02-14.26"/><circle cx="12" cy="5" r="2"/></svg>Experiments</a>
       <a class="chip" href="experiments/design-system/"><svg class="chip__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 17a4 4 0 0 1-8 0V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2Z"/><path d="M16.7 13H19a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2H7"/><path d="M7 17h.01"/><path d="m11 8 2.3-2.3a2.4 2.4 0 0 1 3.404.004L18.6 7.6a2.4 2.4 0 0 1 .026 3.434L9.9 19.8"/></svg>Matte</a>
-      <a class="chip" href="#contact"><svg class="chip__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="10" r="3"/><path d="M7 20.662V19a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v1.662"/></svg>Contact</a>
       <a class="chip" href="https://www.linkedin.com/in/bwstudwell" target="_blank" rel="noopener"><svg class="chip__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect width="4" height="12" x="2" y="9"/><circle cx="4" cy="4" r="2"/></svg>LinkedIn</a>
       <a class="chip" href="llms.txt" download="brian.md" title="Download a Markdown summary to give to your agent">brian.md<svg class="chip__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/></svg></a>
       <div class="dropdown dropdown--controls">
@@ -451,7 +449,7 @@
           <ul class="bay__meta mono"><li>Platform Redesign</li><li>Agentic Design Systems</li><li>Pervasive AI</li></ul>
         </div>
         <figure class="bay__media" data-wall="images/groom-lake-wall/" data-count="24" data-clips="all" data-compare="images/groom-lake-compare/"
-                data-film="images/groom-lake-hero.mp4" data-film-poster="images/groom-lake-hero-poster.webp"
+                data-film="images/groom-lake-hero.mp4?v=2" data-film-poster="images/groom-lake-hero-poster.webp?v=2"
                 data-label="A drifting wall of screens from the redesigned Ideagen EHS application: dashboards, incident records, audits, reports and forms">
           <img src="images/groom-lake-dashboard-1200.webp"
                srcset="images/groom-lake-dashboard-1200.webp 1200w, images/groom-lake-dashboard-2000.webp 2000w"
@@ -498,7 +496,7 @@
           </figure>
           <p>The bread and butter of the application is workers creating records. Someone gets burned; file an injury report. A shipment fails purity testing; log a non-conformance. A piece coming off an assembly line shows a defect; kick off a root cause investigation and start a corrective action. Day in and day out, this is what our customers do in Enterprise.</p>
           <p>The exact details and the exact workflow are unique to the implementation. Organizations often have their own way of doing things and a lexicon that’s anything but standard.</p>
-          <p>The issue is that at the scale of a national lab or a global manufacturing firm, there may be 50 or 100 different workflows in the system. How is a worker supposed to know which one fits the situation? In some cases, the proper course of action is obvious and routine. In others, anything but.</p>
+          <p>The issue is that at the scale of a national lab or a global manufacturing firm, there may be dozens or hundreds of different workflows in the system. How is a worker supposed to know which one fits the situation? In some cases, the proper course of action is obvious and routine. In others, anything but.</p>
           <p>AI has proven a fantastic triage partner. I designed a new way of creating records in the product, guided by Mazlan, Ideagen’s AI. Users describe the events surrounding them, or the problem they’re trying to solve, and Mazlan directs them to the appropriate workflow. As the user adds information to the conversation, Mazlan transposes it to the corresponding fields in the form. If a user isn’t sure how to proceed, Mazlan knows what the steps are and who the next step is assigned to. If a user already knows what they need to do and wants to just get to work, that path remains available to them. AI assists when called on, and defers otherwise.</p>
           <p>This operating model was particularly exciting in the mobile world. Enterprise users are often in the field, on shop floors, or in remote locations. They’re people who work on their feet and with their hands. A really great experience with fluid image and video capture, speech-to-text data input, and geolocation had never made it to the product. Mazlan, in Enterprise’s mobile version, allows users to do all that and more, doing work and recording information from unknown locations, wearing PPE, in the wind and the rain. The wrinkle here, which is beyond the scope of this case study, is providing an exceptional user experience in low- or no-connectivity environments.</p>
         </template>
@@ -650,7 +648,7 @@
     <div class="m-notice__cap"><h2 class="m-title" id="wip-title">Work in progress</h2><svg class="m-notice__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m12.99 6.74 1.93 3.44"/><path d="M19.136 12a10 10 0 0 1-14.271 0"/><path d="m21 21-2.16-3.84"/><path d="m3 21 8.02-14.26"/><circle cx="12" cy="5" r="2"/></svg></div>
     <div class="m-notice__body"><p class="m-prose" id="wip-words">This portfolio is still being built. Some case studies are unfinished, and a few sections hold placeholders for now.</p></div>
     <span class="m-seam"></span>
-    <div class="m-notice__foot"><button class="m-key m-key--lg" type="button" id="wip-close">See the work</button></div>
+    <div class="m-notice__foot"><button class="m-key m-key--lg" type="button" id="wip-close">Go boldly</button></div>
   </dialog>
   <footer class="endfoot">
       <div class="foot-col">
@@ -1349,7 +1347,7 @@
         if (filmed) {
           const figure = make('figure', 'sheet__film'), video = document.createElement('video');
           video.muted = true; video.loop = true; video.playsInline = true; video.preload = 'auto';
-          video.setAttribute('aria-label', 'A short film of the ' + name + ' work: signing in, the dashboard, dark and light, cards, records with the assistant, creating a record');
+          video.setAttribute('aria-label', 'A short film of the ' + name + ' work: signing in, the dashboard in dark and light, then Mazlan turning a sentence into search filters, drafting an incident record from a spoken description, and building a dashboard component on request');
           if (filmed.dataset.filmPoster) video.poster = filmed.dataset.filmPoster;
           video.src = filmed.dataset.film;
           if (matchMedia('(prefers-reduced-motion: reduce)').matches) video.controls = true;   // still until asked to play

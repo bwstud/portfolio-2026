@@ -1,5 +1,5 @@
 // What the front page's plate is covered in. The cover (index.html) draws the figure; this file holds the
-// materials it can draw it with, and the Controls menu, bottom left, that switches between them.
+// materials it can draw it with, and the Materials menu, bottom left, that switches between them.
 //
 // Two kinds:
 //   - grains: the plate's own simulation (sand, salt, iron filings). Each is a look and a few numbers for the physics.
@@ -67,7 +67,8 @@
       vec3 col = max(shade(warp(q), px), 0.0) * m;
       float d = max(max(uRect.x - px.x, px.x - uRect.z), max(uRect.y - px.y, px.y - uRect.w));   // it goes quiet behind the sentence
       col *= mix(1.0 - QUIET * uDim, 1.0, smoothstep(-10.0, 100.0, d)) * uFade;
-      gl_FragColor = vec4(vec3(4.0, 10.0, 19.0) / 255.0 + col, 1.0);
+      col = min(col, 1.0);
+      gl_FragColor = vec4(col, max(col.r, max(col.g, col.b)));   // light over the page's ground (premultiplied): clear where the field is dark
     }`;
 
   const LIST = [
@@ -161,46 +162,41 @@
   let current = LIST[0];
   try { current = byId(new URLSearchParams(location.search).get('material')) || byId(localStorage.getItem(KEY)) || LIST[0]; } catch (err) { /* sand */ }
 
-  // ---- the Controls menu, bottom left: a Matte key that opens a list of the materials ---------------
+  // ---- the Materials menu, bottom left: a Matte key that opens a list of the materials ---------------
+  // Built from Matte's menu: a head on the rows' text edge, a seam between rows, a lamp at the left of each, lit on
+  // the material in use. It is as tall as its rows, never scrolled. The cover puts the iron filings on the key (index.html).
+  const PILE = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="19" r="2"/><circle cx="12" cy="5" r="2"/><circle cx="16" cy="12" r="2"/><circle cx="20" cy="19" r="2"/><circle cx="4" cy="19" r="2"/><circle cx="8" cy="12" r="2"/></svg>';   // Lucide's circle-pile
   function menu(onPick) {
     const css = document.createElement('style');
     css.textContent = `
       .mats { position: fixed; left: 20px; bottom: 20px; z-index: 100; transition: opacity 200ms ease; }
       .is-leaving .mats { opacity: 0; pointer-events: none; }
       .is-lab .mats { display: none; }
-      .mats .mats__toggle { height: 36px; margin-bottom: 0; padding: 0 14px; }
+      .mats .mats__toggle { height: 36px; margin-bottom: 0; padding: 0 14px; font-size: var(--step--1); }   /* Recent Work's size */
       .mats .mats__toggle[aria-expanded="true"] { color: var(--m-print-hi); }
-      .mats__caret { width: 8px; height: 8px; border: solid currentColor; border-width: 1px 1px 0 0; transform: translateY(2px) rotate(-45deg); transition: transform 150ms; }
-      .mats__toggle[aria-expanded="true"] .mats__caret { transform: translateY(-2px) rotate(135deg); }
-      .mats .mats__menu { position: absolute; left: 0; bottom: calc(100% + 8px); display: flex; min-width: 220px; max-height: calc(100vh - 100px); overflow-y: auto; margin: 0; list-style: none;
+      .mats .mats__toggle svg { width: 14px; height: 14px; }
+      .mats .mats__menu { position: absolute; left: 0; bottom: calc(100% + 8px); display: flex; min-width: 220px; margin: 0; list-style: none;
         opacity: 0; transform: translateY(6px); visibility: hidden; transition: opacity 150ms, transform 150ms cubic-bezier(0.23, 1, 0.32, 1), visibility 0s 150ms; }
       .mats.is-open .mats__menu { opacity: 1; transform: none; visibility: visible; transition-delay: 0s; }
-      .mats .mats__menu li { display: block; }
-      .mats .mats__menu li.m-seam { flex: none; }
-      .mats .mats__head { padding: 8px 10px 6px; }
-      .mats .mats__menu button { appearance: none; border: 0; background: none; font: inherit; letter-spacing: inherit; text-transform: inherit; color: inherit; cursor: pointer; white-space: nowrap; padding: 8px 10px; }
-      .mats .mats__menu button::before { content: ""; flex: none; width: 6px; height: 6px; border-radius: 50%; }
-      .mats .mats__menu button[aria-checked="true"] { color: var(--m-print-hi); }
-      .mats .mats__menu button[aria-checked="true"]::before { background: var(--m-signal); box-shadow: 0 0 5px color-mix(in srgb, var(--m-signal) 60%, transparent); }
+      .mats .mats__menu li:not(.m-menu__head) { display: block; }
+      .mats .mats__menu { --m-menu-row: 38px; }   /* the rows' height (18px of text and 10px above and below), so the head matches it */
+      .mats .mats__menu button { appearance: none; border: 0; background-color: transparent; font: inherit; line-height: 18px; letter-spacing: inherit; text-transform: inherit; cursor: pointer; white-space: nowrap; }
       @media (max-width: 600px), (max-height: 520px) {
         .mats { top: max(12px, env(safe-area-inset-top)); left: max(12px, env(safe-area-inset-left)); bottom: auto; }
-        .mats__caret { transform: translateY(-2px) rotate(135deg); }
-        .mats__toggle[aria-expanded="true"] .mats__caret { transform: translateY(2px) rotate(-45deg); }
         .mats .mats__menu { top: calc(100% + 8px); bottom: auto; transform: translateY(-6px); }
       }
-      @media (prefers-reduced-motion: reduce) { .mats__menu, .mats__caret { transition: none; } }`;
+      @media (prefers-reduced-motion: reduce) { .mats__menu { transition: none; } }`;
     document.head.append(css);
 
-    const firstField = LIST.findIndex((m) => m.field);
     const nav = document.createElement('nav');
     nav.className = 'mats matte matte--dark';
     nav.setAttribute('aria-label', 'Plate controls: material');
     nav.innerHTML = `
       <ul class="mats__menu m-panel m-panel--col m-menu" id="mats-menu" role="radiogroup" aria-label="Material">
-        <li class="mats__head m-legend m-legend--dim" role="presentation">Material</li>
-        ${LIST.map((m, i) => `${i === firstField ? '<li class="m-seam" role="presentation"></li>' : ''}<li role="presentation"><button class="m-menu__item" type="button" role="radio" data-id="${m.id}" aria-checked="${m === current}">${m.name}</button></li>`).join('')}
+        <li class="m-menu__head m-legend m-legend--dim" role="presentation">Material</li>
+        ${LIST.map((m) => `<li role="presentation"><button class="m-menu__item" type="button" role="radio" data-id="${m.id}" aria-checked="${m === current}">${m.name}</button></li>`).join('')}
       </ul>
-      <button class="mats__toggle m-key" type="button" aria-expanded="false" aria-controls="mats-menu">Controls<span class="mats__caret" aria-hidden="true"></span></button>`;
+      <button class="mats__toggle m-key" type="button" aria-expanded="false" aria-controls="mats-menu">${PILE}Materials</button>`;
     document.body.append(nav);
 
     const toggle = nav.querySelector('.mats__toggle');

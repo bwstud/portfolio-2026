@@ -35,7 +35,8 @@
    which flattened them into hard steps, plainest on a 1x screen. a is chosen so the flaps (about 14/255) lift as far as
    brightness 1.75 (in view) and 1.3 (under the pointer) took them.
    On the light board, where the flaps are already near white, the row takes a shade instead. */
-.board__flap .sf canvas { transition: filter .2s ease; }
+.board__flap .sf canvas { transition: filter 500ms cubic-bezier(0.25, 0.1, 0.25, 1); }   /* a row's light fades out slowly, */
+.board__flap .sf-row.is-hover .sf canvas, .board__flap .sf-row.is-chosen .sf canvas { transition-duration: 300ms; }   /* and comes up a little quicker */
 .board__flap .sf-row.is-hover .sf canvas { filter: contrast(.9657) brightness(1.0175); }
 .board__flap .sf-row.is-chosen .sf canvas { filter: contrast(.9163) brightness(1.0437); }
 :root[data-theme="light"] .board__flap .sf-row.is-hover .sf canvas { filter: brightness(.97); }

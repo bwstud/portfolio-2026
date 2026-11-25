@@ -451,13 +451,31 @@ select.m-input { appearance: none; -webkit-appearance: none; padding-right: 30px
 .m-pop:not(:popover-open) { display: none; }
 .m-pop:popover-open { opacity: 1; transform: none; transition: opacity var(--m-enter) var(--m-ease), transform var(--m-enter) var(--m-ease); }
 @starting-style { .m-pop:popover-open { opacity: 0; transform: translateY(-4px); } }
-/* Menu: a popover holding a list of actions */
-.m-menu { flex-direction: column; gap: 1px; min-width: 190px; padding: 5px; }
-.matte .m-menu__item { display: flex; align-items: center; gap: 10px; width: 100%; box-sizing: border-box; padding: 9px 10px; border-radius: 4px; text-align: left; text-decoration: none;
+/* Menu: a popover holding a list of rows. Each row is divided from the next by a recessed seam that runs the menu's
+   full width, so a menu reads as a stack of fitted parts, never a bare list. A menu can open with a head
+   (.m-menu__head, with .m-legend .m-legend--dim): it is as tall as a row, sits on the same left edge as the rows' text,
+   and the seam under it divides it from them. A row that is a choice (aria-checked) carries a lamp in its own lane at the left, lit when it
+   is the one chosen, and every choice has one, so the lamps line up down the menu and the text after them does too; in
+   a menu of choices the head moves over to that text's edge. A .m-seam among the rows marks a group, with a little air
+   around it. */
+.m-menu { flex-direction: column; gap: 2px; min-width: 190px; padding: 4px 0; --m-menu-x: 12px; --m-menu-row: calc(var(--m-text-legend) + 20px); }   /* --m-menu-row: a row's height, which the head matches; a menu whose rows use other type sets its own */
+.matte .m-menu__item { position: relative; display: flex; align-items: center; gap: 10px; width: 100%; box-sizing: border-box; padding: 10px var(--m-menu-x); border-radius: 0; text-align: left; text-decoration: none;
   color: var(--m-print); font: 400 var(--m-text-legend)/1 var(--m-font); letter-spacing: 0.1em; text-transform: uppercase; }
-.matte .m-menu__item:hover, .matte .m-menu__item:focus-visible { background: color-mix(in srgb, var(--m-print) 12%, transparent); color: var(--m-print-hi); }
+.matte .m-menu__item:hover, .matte .m-menu__item:focus-visible { background: color-mix(in srgb, var(--m-print) 8%, transparent); color: var(--m-print-hi); }
 .m-menu__item > :last-child:not(:first-child) { margin-left: auto; color: var(--m-print-dim); }
+.m-menu__head { display: flex; align-items: center; box-sizing: border-box; min-height: var(--m-menu-row); padding: 0 var(--m-menu-x); }   /* as tall as a row, so it reads as one of the stack */
+.m-menu:has(.m-menu__item[aria-checked]) .m-menu__head { padding-left: calc(var(--m-menu-x) + 16px); }   /* past the lamp lane (6px lamp, 10px gap) */
+/* the seam above every row but the first, in the gap between them, edge to edge */
+.m-menu > .m-menu__item:not(:first-child)::before, .m-menu > :not(:first-child) > .m-menu__item::before {
+  content: ""; position: absolute; left: 0; right: 0; top: -2px; height: 2px; pointer-events: none;
+  background: linear-gradient(180deg, var(--m-well) 50%, rgb(255 255 255 / calc(0.055 * var(--m-gloss))) 50%); }
+.m-menu > .m-seam + .m-menu__item::before, .m-menu > .m-seam + * > .m-menu__item::before { content: none; }   /* a group's seam is already there */
 .m-menu > .m-seam { width: auto; height: 2px; margin: 4px 0; background: linear-gradient(180deg, var(--m-well) 50%, rgb(255 255 255 / calc(0.055 * var(--m-gloss))) 50%); }
+/* a choice's lamp, drawn as a .m-led, first in the row */
+.matte .m-menu__item[aria-checked]::after { content: ""; order: -1; flex: none; width: 6px; height: 6px; border-radius: 50%; background: var(--m-cap-hi);
+  box-shadow: 0 1px 1px rgb(0 0 0 / calc(0.8 * var(--m-shade))) inset, 0 0 0 1px var(--m-edge); transition: background var(--m-light-off), box-shadow var(--m-light-off); }
+.matte .m-menu__item[aria-checked="true"] { color: var(--m-print-hi); }
+.matte .m-menu__item[aria-checked="true"]::after { background: var(--m-signal); box-shadow: 0 0 0 1px var(--m-edge), 0 0 5px color-mix(in srgb, var(--m-signal) 75%, transparent); transition-duration: var(--m-light-on); }
 
 /* Tooltip: a strip of label tape. Add data-tip="…" to any control; matte.js shows it after a short rest */
 .m-tip { position: fixed; z-index: var(--m-layer-tip); left: 0; top: 0; padding: 6px 8px; border-radius: 3px; pointer-events: none; white-space: nowrap;

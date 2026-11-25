@@ -14,7 +14,11 @@
     /* The front page. Sand on a vibrating plate fills the page, the pattern drifts from one figure to
        the next, and the sentence arrives over it. Recent Work opens the site (work.html).
        The Covers menu, bottom right, switches to the other covers in cover/. */
-    html, body { height: 100%; margin: 0; overflow: hidden; background: var(--c-night); }
+    html, body { height: 100%; margin: 0; overflow: hidden; background: #070708; }
+    /* The ground behind the plate: the Work page's and the project sheet's off-black with the same fine speckle
+       (matte-page.css, --ground and --page-speckle), a step darker here. The plate's canvas is clear where nothing is
+       drawn, so the speckle shows through it. */
+    body { background: #070708 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.1' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .126 -.059'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E"); }
     @media (prefers-reduced-motion: no-preference) { @view-transition { navigation: auto; } }   /* the work page fades in over the empty plate */
     /* Recent Work pressed: the sand is gone at once, the sentence and the key rise and fade, and the panel dissolves into
        particles that fall upward (cover/dissolve.js) */
@@ -189,7 +193,7 @@
   <script src="cover/dissolve.js"></script>
   <script src="cover/boom.js"></script>
   <script src="halftone.js"></script>          <!-- for its cursor wake (Halftone.stir), which the vapor rides -->
-  <script src="cover/materials.js"></script>   <!-- what the plate is covered in, and the Controls menu that picks it -->
+  <script src="cover/materials.js"></script>   <!-- what the plate is covered in, and the Materials menu that picks it -->
   <script src="filings-versions.js"></script>
   <script src="filings.js"></script>
   <script>
@@ -241,7 +245,7 @@
 
     // ---- the plate -------------------------------------------------------------------------
     const canvas = document.getElementById('plate');
-    const gl = canvas.getContext('webgl', { antialias: false, alpha: false });
+    const gl = canvas.getContext('webgl', { antialias: false, alpha: true, premultipliedAlpha: true });   // clear where nothing is drawn: the page's ground shows
     if (!gl) { intro(Infinity); return; }                    // no plate: the sentence simply arrives
 
     // Chladni figures: cos(nπu)cos(mπv) ± cos(mπu)cos(nπv) on a square plate as wide as the
@@ -536,7 +540,7 @@
     seedBuf = gl.createBuffer(); posBuf = gl.createBuffer();
     const aPos = gl.getAttribLocation(prog, 'aPos'), aSeed = gl.getAttribLocation(prog, 'aSeed');
     gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
-    gl.clearColor(4 / 255, 10 / 255, 19 / 255, 1);
+    gl.clearColor(0, 0, 0, 0);
 
     // ---- field materials: one full-page shader each, built the first time it is picked ----------------------
     const quad = gl.createBuffer();

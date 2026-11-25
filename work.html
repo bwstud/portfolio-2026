@@ -24,7 +24,7 @@
   <link rel="preload" href="fonts/soehne-mono-buch.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="matte.css?v=16">   <!-- the Matte system: the nav keys, the menu and the board's housing -->
-  <link rel="stylesheet" href="board.css">   <!-- the project board's finish, shared with the Split-Flap Lab -->
+  <link rel="stylesheet" href="board.css?v=2">   <!-- the project board's finish, shared with the Split-Flap Lab -->
   <link rel="stylesheet" href="drift-wall.css">   <!-- the drifting wall of screenshots in a project's record -->
   <link rel="stylesheet" href="matte-page.css">   <!-- the shared page: rail nav, off-black ground, footer band -->
   <style>
@@ -65,6 +65,31 @@
     /* The board spans the content column, edge to edge, whatever its module count. */
     .has-board .board { display: block; }
     .board-pending main { visibility: hidden; }                                /* until the board has settled the layout (see the head) */
+    /* The board is docked: one row, held at the top of the window as the page scrolls under it, showing the project in
+       view; it spins to the next as a new record comes up. Under the pointer (or with focus in it) it opens: the full
+       board unfolds down from the row, over the page, and its rows take you to their records. The strip it sits in is
+       the page's own ground, so the records pass under it. */
+    .has-board #work { position: sticky; top: 0; z-index: 30; background: var(--ground); padding-bottom: 0; }
+    :root:not([data-theme="light"]) .has-board #work { background: var(--ground) var(--page-speckle); }
+    .has-board #work::after { content: ""; position: absolute; left: 0; right: 0; top: 100%; height: 96px; pointer-events: none;
+      background: linear-gradient(color-mix(in srgb, var(--ground) 55%, transparent), color-mix(in srgb, var(--ground) 32%, transparent) 25%,
+        color-mix(in srgb, var(--ground) 14%, transparent) 55%, color-mix(in srgb, var(--ground) 4%, transparent) 80%, transparent); }   /* the page fades in under the strip's edge: a long, eased falloff, not a band */
+    .board__dock { position: relative; }
+    .board__bar { position: relative; }
+    .board__bar .board__keys button { cursor: default; }
+    /* In order: opening, the plate unfolds and the rows below the first fade in as it reaches them; closing, those rows
+       fade out first and only then does the plate fold back up to the one row. */
+    .board__stage { position: absolute; inset: 0 0 auto; z-index: 1; visibility: hidden; pointer-events: none;
+      clip-path: inset(0 0 calc(100% - var(--bar-h, 0px)) 0 round var(--m-radius));
+      transition: clip-path 180ms cubic-bezier(0.23, 1, 0.32, 1) 130ms, visibility 0s linear 310ms; }
+    .board__dock.is-open .board__stage { visibility: visible; pointer-events: auto; clip-path: inset(-40px round var(--m-radius));
+      transition: clip-path 260ms cubic-bezier(0.23, 1, 0.32, 1), visibility 0s; }
+    .board__stage .sf-row ~ .sf-row { opacity: 0; transition: opacity 160ms ease-out; }
+    .board__dock.is-open .board__stage .sf-row ~ .sf-row { opacity: 1; transition: opacity 200ms ease-out 90ms; }
+    @media (prefers-reduced-motion: reduce) {
+      .board__stage, .board__dock.is-open .board__stage, .board__stage .sf-row ~ .sf-row, .board__dock.is-open .board__stage .sf-row ~ .sf-row { transition: none; }
+    }
+    .has-board .bay { scroll-margin-top: calc(var(--dock-h, 0px) + var(--space-6)); }
     /* the board's own look (housing, labels, lamps, lit row) is in board.css, which the Split-Flap Lab shares */
 
     /* A project's record */
@@ -139,6 +164,13 @@
       .has-ink .bay .bay__meta > li { animation: bay-left 700ms cubic-bezier(0.23, 1, 0.32, 1) calc(var(--k, 0) * 60ms) both paused; }
       .has-ink .bay .bay__meta.is-up > li { animation-play-state: running; }
       .has-ink .bay > .is-shown .bay__meta > li { animation: none; }
+    /* the footer: once the last record's cards are in, its column heads and links slide in from the left like the tags,
+       60ms apart down each column, the second column a step behind the first (the script sets --f and adds .is-in) */
+    @media (prefers-reduced-motion: no-preference) {
+      .has-reveal .endfoot .foot h2, .has-reveal .endfoot .foot li { animation: bay-left 700ms cubic-bezier(0.23, 1, 0.32, 1) calc(var(--f, 0) * 60ms) both paused; }
+      .has-reveal .endfoot .foot.is-in h2, .has-reveal .endfoot .foot.is-in li { animation-play-state: running; }
+      .has-reveal .endfoot .foot.is-shown h2, .has-reveal .endfoot .foot.is-shown li { animation: none; }
+    }
       .bay__meta > li:nth-child(2) { --k: 1; } .bay__meta > li:nth-child(3) { --k: 2; } .bay__meta > li:nth-child(4) { --k: 3; }
     }
     /* and the first record's cards wait for the tags too, like the others' */
@@ -305,7 +337,7 @@
     }
     .bay__name { margin: 0 0 var(--space-3); }
     .bay__name .vh { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }   /* read out; the flaps beside it are what shows */
-    .bay h2 { font: 600 var(--step-4)/1.08 "Söhne Breit", sans-serif; letter-spacing: -.01em; text-wrap: balance; margin: 0; }
+    .bay h2 { font: 600 var(--step-2)/1.08 "Söhne Breit", sans-serif; letter-spacing: -.01em; text-wrap: balance; margin: 0; }
     .bay__meta { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-1); margin: var(--space-5) 0 0; padding: 0; list-style: none; }   /* one tag a line */
     .bay__media { display: grid; place-items: center start; min-width: 0; margin: 0; }   /* a picture narrower than its columns keeps to their left edge */
     .bay__media img { border-radius: var(--radius-sm); max-height: 26rem; width: auto; max-width: 100%; height: auto; }
@@ -322,6 +354,21 @@
     .fields .m-panel dt { position: relative; padding: var(--m-pad-y) var(--m-pad-x); }
     .fields .m-panel dt::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px;
       background: linear-gradient(180deg, var(--m-well) 50%, rgb(255 255 255 / calc(0.055 * var(--m-gloss))) 50%); }   /* the module's seam */
+    /* As a card arrives, a glint runs once across its copper label, left to right, as if light caught it. The label is
+       painted by a long gradient clipped to the letters: flat copper everywhere but a narrow bright band in the middle,
+       which starts left of the letters and ends right of them, so at rest the label is plain copper. */
+    @supports ((-webkit-background-clip: text) or (background-clip: text)) {
+      @media (prefers-reduced-motion: no-preference) {
+        .has-reveal .fields .m-panel dt { color: transparent; -webkit-background-clip: text; background-clip: text; background-origin: content-box;
+          background-repeat: no-repeat; background-size: 60em 100%; background-position: -21em 0;
+          background-image: linear-gradient(110deg, var(--signal) calc(50% - 1.6em), color-mix(in srgb, var(--signal) 45%, #fff) calc(50% - 0.35em),
+            #fff8ee 50%, color-mix(in srgb, var(--signal) 45%, #fff) calc(50% + 0.35em), var(--signal) calc(50% + 1.6em));
+          animation: field-glint 900ms cubic-bezier(0.4, 0, 0.6, 1) calc(520ms + var(--i, 0) * 60ms) both paused; }
+        .has-reveal .fields.is-in .m-panel dt { animation-play-state: running; }
+        .has-reveal .fields.is-shown .m-panel dt { animation: none; }
+        @keyframes field-glint { from { background-position: -32.5em 0; } }
+      }
+    }
     .fields .m-panel dd { padding: 0 var(--m-pad-x); color: var(--m-print-hi); }
     .fields .m-panel dt + dd { padding-top: calc(var(--m-pad-y) + 2px); }
     .fields .m-panel dd:last-child { padding-bottom: var(--m-pad-y); }
@@ -384,9 +431,15 @@
         </ul>
         <div class="board matte">
           <div class="board__head mono" aria-hidden="true"><span>Project</span><span>Released</span></div>
-          <div class="board__stage">
-            <p class="board__flap" id="flap" aria-hidden="true"></p>
-            <div class="board__keys" id="keys" role="group" aria-label="Choose a project"></div>
+          <div class="board__dock">
+            <div class="board__bar">
+              <p class="board__flap" id="bar" aria-hidden="true"></p>
+              <div class="board__keys" id="bar-key"></div>
+            </div>
+            <div class="board__stage">
+              <p class="board__flap" id="flap" aria-hidden="true"></p>
+              <div class="board__keys" id="keys" role="group" aria-label="Choose a project"></div>
+            </div>
           </div>
         </div>
       </section>
@@ -406,7 +459,7 @@
                alt="The redesigned Ideagen home dashboard: a personal greeting, quick actions, an equipment calibration chart and quality indicators">
         </figure>
         <dl class="fields">
-          <div class="matte m-panel m-panel--col"><dt class="mono">Problem</dt><dd>Enterprises shouldn’t have to use slow, ugly, awkward software to meet their compliance obligations and stay safe.</dd></div>
+          <div class="matte m-panel m-panel--col"><dt class="mono">Problem</dt><dd>Legacy enterprise UI was losing sales, hurting adoption, and made no room for AI enhancements.</dd></div>
           <div class="matte m-panel m-panel--col"><dt class="mono">What I did</dt><dd>I led a down-to-the-studs redesign of our flagship EHS application: an agent-first design system, overhauled core features, and a carefully constructed interface. Embracing AI tooling made it all possible.</dd></div>
           <div class="is-result matte m-panel m-panel--col"><dt class="mono">Outcome</dt><dd><ul class="result-list"><li>Deal loss related to UX reduced from 14% to 2%</li><li>NPS increased from −53 to +71</li><li>WAUs increased from ~3,200 to ~11,000</li></ul></dd></div>
         </dl>
@@ -624,9 +677,11 @@
       </div>
   </footer>
   <!-- The page ends on a bison galloping in type (bison.js, the Bison Lab's drawing) -->
-  <section class="bison-run" aria-label="A bison galloping, drawn in characters">
-    <canvas role="img" aria-label="A bison galloping in place, drawn as a grid of characters"></canvas>
-  </section>
+  <div class="home page page--foot">
+    <figure class="bison-run m-panel m-panel--col matte">
+      <div class="bison-run__window"><canvas role="img" aria-label="A bison galloping in place, drawn as a grid of characters"></canvas></div>
+    </figure>
+  </div>
 
   <script src="nav.js"></script>
   <script src="spark.js" defer></script>
@@ -721,7 +776,7 @@
         const words = bay.querySelector(':scope > div:first-child'), title = words.querySelector('h2'),
               tags = words.querySelector('.bay__meta'), media = bay.querySelector('.bay__media'), fields = bay.querySelector('.fields');
         let tagsDone = false, fieldsSeen = false, started = false;
-        const cards = () => { if (tagsDone && fieldsSeen) fields.classList.add('is-in'); };
+        const cards = () => { if (tagsDone && fieldsSeen && !fields.classList.contains('is-in')) { fields.classList.add('is-in'); bay.dispatchEvent(new CustomEvent('recordcards')); } };
         const showAll = () => {   // above the window: everything as it ends up, at once
           if (started) return;
           started = true; before(k);
@@ -756,6 +811,24 @@
         watch(media, inside => { media.classList.add('is-in'); if (!inside) media.classList.add('is-shown'); });
         watch(words, inside => (inside ? go() : showAll()));
       });
+
+      // The footer comes after the last record: its links stagger in once it is in view and that record's cards are
+      // mostly in (FOOT_AFTER after they start); above the window, it is simply there.
+      const foot = document.querySelector('.endfoot .foot'), last = [...document.querySelectorAll('.bay')].pop();
+      if (foot && last) {
+        const FOOT_AFTER = 400;
+        foot.querySelectorAll(':scope > div').forEach((col, c) => col.querySelectorAll('h2, li').forEach((el, n) => el.style.setProperty('--f', n + c)));
+        const play = () => foot.classList.add('is-in');
+        const io = new IntersectionObserver(entries => entries.forEach(e => {
+          if (!e.isIntersecting && e.boundingClientRect.bottom >= 0) return;
+          io.unobserve(foot);
+          if (!e.isIntersecting) return foot.classList.add('is-in', 'is-shown');
+          records.forEach(r => r.settle());
+          if (last.querySelector('.fields').classList.contains('is-in')) play();
+          else last.addEventListener('recordcards', () => setTimeout(play, FOOT_AFTER), { once: true });
+        }), LINE);
+        io.observe(foot);
+      }
     })();
   </script>
   <script src="drift-wall.js"></script>
@@ -799,7 +872,7 @@
       const mode = () => document.documentElement.dataset.theme === 'light' ? 'light' : 'dark';
       const keys = document.getElementById('keys');
       const t0 = performance.now(), now = () => performance.now() - t0;
-      let flap, running = false;
+      let flap, bar, running = false;
 
       let busyUntil = 0;   // a lifted flap or a clicked module keeps the board drawing past its own schedule
       function run() {
@@ -807,8 +880,8 @@
         running = true;
         requestAnimationFrame(function frame() {
           const t = now();
-          flap.seek(t);
-          if (t < Math.max(flap.duration, busyUntil) + 200) requestAnimationFrame(frame); else running = false;
+          flap.seek(t); bar?.seek(t);
+          if (t < Math.max(flap.duration, bar ? bar.duration : 0, busyUntil) + 200) requestAnimationFrame(frame); else running = false;
         });
       }
 
@@ -845,8 +918,18 @@
         busyUntil = Math.max(busyUntil, flap.duration);
         run();
       }
-      keys.addEventListener('pointermove', e => { if (e.pointerType !== 'touch') lift(moduleAt(e.clientX, e.clientY), e.clientY); });
-      keys.addEventListener('pointerleave', () => lift(null));
+      // a row lightens while the pointer is over the band its modules make, first module to last, gaps between them
+      // included, and not over the plate's margin or the space between rows
+      function rowAt(x, y) {
+        return boardRows().findIndex(el => {
+          const mods = el.querySelectorAll('.sf'); if (!mods.length) return false;
+          const a = mods[0].getBoundingClientRect(), z = mods[mods.length - 1].getBoundingClientRect();
+          return x >= a.left && x < z.right && y >= a.top && y < a.bottom;
+        });
+      }
+      const hoverRow = row => boardRows().forEach((el, k) => el.classList.toggle('is-hover', k === row));
+      keys.addEventListener('pointermove', e => { if (e.pointerType === 'touch') return; hoverRow(rowAt(e.clientX, e.clientY)); lift(moduleAt(e.clientX, e.clientY), e.clientY); });
+      keys.addEventListener('pointerleave', () => { hoverRow(-1); lift(null); });
       // A zero in Blackbird's release number turns the whole board to a shrug, the Z in Maz to a
       // dancer in shades and the K in Lake to a flipped table, centred on the middle row. It stays
       // until the board is clicked again, anywhere, which turns it back to the projects.
@@ -938,6 +1021,18 @@
         [...keys.children].forEach((key, k) => { if (k === i) key.setAttribute('aria-current', 'location'); else key.removeAttribute('aria-current'); });
         boardRows().forEach((row, k) => row.classList.toggle('is-chosen', k === i));
         current = i;
+        showOnBar(i);
+      }
+      // the docked row turns to the project in view: every module runs on round the drum to its new letter
+      let barAt = -1;
+      function showOnBar(i) {
+        if (!bar || i < 0 || i === barAt) return;
+        barAt = i;
+        barKey.setAttribute('aria-label', 'Projects: ' + rows[i].name + ', released ' + rows[i].status.toLowerCase());
+        if (still) { bar.spinTo([lines[i]], -1e6); return bar.seek(Infinity); }
+        bar.spinTo([lines[i]], now(), { speed: 0.7 });
+        busyUntil = Math.max(busyUntil, bar.duration);
+        run();
       }
       // the record in view: the last whose top has passed a third of the way down the window (the last of all at the page's end)
       function inView() {
@@ -952,6 +1047,7 @@
       // choosing a row scrolls to its record (gliding with the page's smooth scroll, where it has one)
       function jump(i, { instant = false } = {}) {
         const bay = bays[i];
+        shut(true);   // close, so the row is seen turning as the page goes
         if (location.hash !== '#' + rows[i].id) history.replaceState(null, '', '#' + rows[i].id);
         const offset = -parseFloat(getComputedStyle(bay).scrollMarginTop || 0);
         if (window.siteLenis) siteLenis.scrollTo(bay, { offset, immediate: instant });
@@ -984,9 +1080,35 @@
         lines, sequence: [[SHRUG], [PARTY], [TABLE]],   // listed so the drum carries its characters
       });
 
+      // the docked row: the same board, one row tall, starting on the project the address names (or the first)
+      const barConfig = i => ({ ...boardConfig(), lines: [lines[i]], sequence: [...lines.map(l => [l]), [SHRUG], [PARTY], [TABLE]] });
       try {
         flap = SplitFlap.mount(document.getElementById('flap'), boardConfig());
+        barAt = Math.max(0, rows.findIndex(r => '#' + r.id === location.hash));
+        bar = SplitFlap.mount(document.getElementById('bar'), barConfig(barAt));
       } catch (e) { return unpend(); }   // no board: the links and stacked records stay
+
+      // Opening and closing: the pointer over the dock, or focus inside it, opens the full board; leaving closes it.
+      // A row chosen closes it until the pointer has left and come back.
+      const dock = document.querySelector('.board__dock'), barKey = document.createElement('button');
+      barKey.type = 'button'; barKey.innerHTML = '<span class="m-led" aria-hidden="true"></span>';
+      barKey.setAttribute('aria-current', 'location'); barKey.setAttribute('aria-expanded', 'false'); barKey.setAttribute('aria-controls', 'keys');
+      document.getElementById('bar-key').appendChild(barKey);
+      barKey.setAttribute('aria-label', 'Projects: ' + rows[barAt].name + ', released ' + rows[barAt].status.toLowerCase());
+      let held = false;
+      const open = () => { if (held) return; dock.classList.add('is-open'); barKey.setAttribute('aria-expanded', 'true'); };
+      function shut(hold) {
+        if (hold) held = true;
+        dock.classList.remove('is-open'); barKey.setAttribute('aria-expanded', 'false');
+        boardRows().forEach(row => row.classList.remove('is-hover'));   // the light under the pointer goes as it starts to close
+        lift(null);
+      }
+      dock.addEventListener('pointerenter', e => { if (e.pointerType !== 'touch') open(); });
+      dock.addEventListener('pointerleave', e => { held = false; if (e.pointerType !== 'touch' && !dock.contains(document.activeElement)) shut(); });
+      dock.addEventListener('focusin', open);
+      dock.addEventListener('focusout', e => { if (!dock.contains(e.relatedTarget) && !dock.matches(':hover')) shut(); });
+      barKey.addEventListener('click', e => { if (e.detail === 0) dock.classList.contains('is-open') ? shut() : (held = false, open()); });   // Enter or Space; a pointer has opened it already
+      dock.addEventListener('keydown', e => { if (e.key === 'Escape' && dock.classList.contains('is-open')) { shut(); barKey.focus(); } });
 
       // The headings start where their columns' first characters do: Project at the first name
       // module, Released at the first module the longest release value reaches (they end at the right).
@@ -1009,6 +1131,12 @@
           const row = rowEls[k]?.getBoundingClientRect(), box = key.getBoundingClientRect();
           if (row) key.style.setProperty('--lamp-y', (row.top + row.bottom) / 2 - box.top + 'px');
         });
+        // the docked row's lamp sits where the open board's lamps do; the dock and its strip publish their heights
+        const barKeys = document.getElementById('bar-key'), barRow = document.querySelector('#bar .sf-row');
+        barKeys.style.setProperty('--lamp-x', keys.style.getPropertyValue('--lamp-x'));
+        if (barRow) barKeys.style.setProperty('--lamp-y', (barRow.getBoundingClientRect().top + barRow.getBoundingClientRect().bottom) / 2 - barKeys.getBoundingClientRect().top + 'px');
+        dock.style.setProperty('--bar-h', document.querySelector('.board__bar').offsetHeight + 'px');
+        document.documentElement.style.setProperty('--dock-h', document.getElementById('work').offsetHeight + 'px');
       }
       placeHeads();
       // on a change of width only
@@ -1028,8 +1156,6 @@
           key.innerHTML = '<span class="m-led" aria-hidden="true"></span>';
           key.setAttribute('aria-label', r.name + ', released ' + r.status.toLowerCase());
           key.addEventListener('click', () => jump(i));
-          key.addEventListener('pointerenter', () => boardRows()[i]?.classList.add('is-hover'));
-          key.addEventListener('pointerleave', () => boardRows()[i]?.classList.remove('is-hover'));
         }
         keys.appendChild(key);
       });
@@ -1059,6 +1185,7 @@
           flapEl.classList.remove('is-aside');
           flap.update(boardConfig());
           flap.seek(still ? Infinity : now());
+          if (barAt >= 0) { bar.update(barConfig(barAt)); bar.seek(Infinity); }
           const was = current; current = -1; light(was);   // the rebuilt rows take the light again
           placeHeads();
         }, 150);
@@ -1077,19 +1204,19 @@
       if (!still && !seen) document.documentElement.classList.add('is-arriving');   // the first time, the record holds back until the board resolves
 
       const fromHash = () => rows.findIndex(r => '#' + r.id === location.hash);
-      flap.ready.then(() => {
+      Promise.all([flap.ready, bar.ready]).then(() => {
         unpend();   // every record on the page, and the board in its place
         // a link to one project lands on its record, now that the board has its height
         if (fromHash() > 0) jump(fromHash(), { instant: true });
         current = -1; light(inView());
-        if (still) { arrive(); return flap.seek(Infinity); }
+        if (still) { arrive(); bar.seek(Infinity); return flap.seek(Infinity); }
         run();   // the rows flip in once; choosing a row leaves the board as it is
         if (seen) arrive();   // the record is already showing
         // the record starts down as the last flaps are landing, so the two finish together
-        else setTimeout(() => { document.documentElement.classList.remove('is-arriving'); arrive(); }, Math.max(0, flap.duration - entrance.recordLeadMs));
+        else setTimeout(() => { document.documentElement.classList.remove('is-arriving'); arrive(); }, Math.max(0, bar.duration - entrance.recordLeadMs));
       });
       addEventListener('hashchange', () => { if (fromHash() >= 0) jump(fromHash()); });
-      document.addEventListener('themechange', () => { flap.restyle(SplitFlap.activeStyle(mode())); if (!running) flap.seek(now()); });
+      document.addEventListener('themechange', () => { flap.restyle(SplitFlap.activeStyle(mode())); bar.restyle(SplitFlap.activeStyle(mode())); if (!running) { flap.seek(now()); bar.seek(now()); } });
       // crossing to phone width hands back to the links and shows every record
       wide.addEventListener('change', e => {
         document.documentElement.classList.toggle('has-board', e.matches);

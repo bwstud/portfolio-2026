@@ -28,7 +28,7 @@
       padding: 9px 12px; border: 0; background: none; color: inherit;
       font: inherit; font-weight: 600; text-align: left; cursor: pointer;
     }
-    .matte .notes__head { padding: 10px 12px; color: var(--m-print); font: 400 var(--m-text-legend)/1 var(--m-font); letter-spacing: 0.1em; text-transform: uppercase; }
+    .matte .notes__head { padding: 10px 12px; color: var(--m-print); font: 400 var(--m-text-legend)/1 var(--m-font); letter-spacing: 0.02em; }   /* sentence case: no capitals on this site */
     .matte .notes__head:hover { color: var(--m-print-hi); }
     .notes__head:focus-visible { outline: 2px solid var(--m-signal, var(--accent, var(--teal, #fff))); outline-offset: -2px; }
     .notes__caret { transition: transform 0.2s; opacity: 0.7; }

@@ -1,0 +1,30 @@
+/* Blackbird reel: a ring of Blackbird phones turning slowly, head on, each playing a clip recorded from the app.
+   bb-reel.js builds it inside a figure with data-reel, in the same 16:11 box as a drift wall. Until it is built (and
+   wherever WebGL or the script can't run) the figure shows its still. */
+.reel { position: relative; display: block; width: 100%; aspect-ratio: 16 / 11; }
+.reel > img { display: none; }
+
+.reel__stage {
+  position: absolute; inset: 0; overflow: hidden;
+  /* the edges fall away into the page on all four sides: head on, nothing hides a hard edge the way a drift wall's
+     angle does */
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 14%, #000 86%, transparent 100%), linear-gradient(to bottom, transparent 0%, #000 15%, #000 85%, transparent 100%);
+  -webkit-mask-composite: source-in;
+  mask-image: linear-gradient(to right, transparent 0%, #000 14%, #000 86%, transparent 100%), linear-gradient(to bottom, transparent 0%, #000 15%, #000 85%, transparent 100%);
+  mask-composite: intersect;
+}
+.reel__stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.reel__bin { position: absolute; width: 1px; height: 1px; overflow: hidden; opacity: 0; pointer-events: none; }   /* the playing clips' video elements */
+
+/* Pause and play, as on a drift wall */
+.reel__pause {
+  position: absolute; right: 10px; bottom: 10px; z-index: 2; width: 30px; height: 30px; padding: 0; display: grid; place-items: center;
+  border: 1px solid rgb(255 255 255 / 0.18); border-radius: 50%; background: rgb(8 10 10 / 0.6); color: #fff; cursor: pointer;
+  opacity: 0.55; transition: opacity 160ms ease-out, background-color 160ms ease-out;
+}
+.reel__pause:hover, .reel__pause:focus-visible, .reel.is-paused .reel__pause { opacity: 1; }
+.reel__pause:focus-visible { outline: 2px solid var(--signal, #fff); outline-offset: 2px; }
+.reel__pause svg { width: 12px; height: 12px; fill: currentColor; }
+.reel__pause .reel__play, .reel.is-paused .reel__pause .reel__stop { display: none; }
+.reel.is-paused .reel__pause .reel__play { display: block; }
+@media (prefers-reduced-motion: reduce) { .reel__pause { display: none; } }

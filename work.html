@@ -26,6 +26,7 @@
   <link rel="stylesheet" href="matte.css?v=16">   <!-- the Matte system: the nav keys, the menu and the board's housing -->
   <link rel="stylesheet" href="board.css?v=2">   <!-- the project board's finish, shared with the Split-Flap Lab -->
   <link rel="stylesheet" href="drift-wall.css">   <!-- the drifting wall of screenshots in a project's record -->
+  <link rel="stylesheet" href="bb-reel.css">   <!-- the Blackbird record's phone screens, in the arrangement being compared -->
   <link rel="stylesheet" href="matte-page.css">   <!-- the shared page: rail nav, off-black ground, footer band -->
   <style>
     /* Home page. The split-flap board is the table of contents: one row per project. Every record
@@ -540,7 +541,8 @@
           <h2 id="blackbird-h">Agents that help workers stay safe, informed, and on task.</h2>
           <ul class="bay__meta mono"><li>Design lead, 0–1</li><li>Agentic triage</li><li>Product strategy</li><li>Offline patterns</li></ul>
         </div>
-        <figure class="bay__media">
+        <figure class="bay__media" data-reel="images/blackbird-screens/" data-light="17" data-dark="16" data-clips="mazlan-intake inspection evacuation search gate-pass mazlan-actions scan-machine home inbox tabs appearance site-admin"
+                data-label="A slowly turning ring of phones running the Blackbird mobile app in light and dark: Mazlan working out an incident report, a machine inspection, an evacuation alert, search, a gate pass, a site admin's home and more">
           <img class="is-phone" src="images/blackbird-intake-480.webp"
                srcset="images/blackbird-intake-480.webp 480w, images/blackbird-intake-960.webp 960w"
                sizes="230px" width="480" height="1044" loading="lazy" decoding="async"
@@ -830,6 +832,7 @@
     })();
   </script>
   <script src="drift-wall.js"></script>
+  <script src="bb-reel.js"></script>
   <script src="bison-versions.js"></script>   <!-- the version the Bison Lab has put on the site -->
   <script src="bison.js"></script>
   <!-- smooth scroll (smooth-scroll.js says how): lerp 0.05, the project sheet too (its own instance, siteSmoothIn); the notice keeps its own scrolling -->

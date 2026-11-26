@@ -1,0 +1,12 @@
+mazlan-intake|tap:New;wait:1.2|wait:0.4;tapxy:200,265;wait:0.3;typewords:Chlorine leak at Bay 4, Leo got splashed in the eyes;wait:0.4;tapxy:347,342;wait:9
+mazlan-actions|tap:New;wait:1.2;tapxy:200,265;wait:0.3;typewords:Chlorine leak at Bay 4, Leo got splashed in the eyes;wait:0.4;tapxy:347,342;wait:9|wait:0.6;tapxy:52,785;wait:0.9;tapxy:150,766;wait:1.2;tapxy:201,779;wait:5.5;tapxy:200,666;wait:2.5;slow:-200,600;wait:0.8
+inspection|tapxy:38,84;wait:0.8;tap:Demos;wait:0.8;tap:Scan Machine;wait:3;tap:Open Record;wait:1.5|wait:0.6;tapxy:200,630;wait:1;tapxy:110,444;wait:0.5;tapxy:110,570;wait:0.5;tapxy:110,695;wait:0.5;tapxy:110,817;wait:0.6;slow:-260,640;wait:0.5;tapxy:110,678;wait:1.6
+scan-machine|tapxy:38,84;wait:0.8;tap:Demos;wait:0.8|tap:Scan Machine;wait:0.35;mark:start;wait:3.2;tapxy:200,739;wait:1.6;slow:-260,640;wait:0.8;slow:-260,640;wait:1.2
+evacuation|tapxy:38,84;wait:0.8;tap:Demos;wait:0.8|tap:Raise Alarm;wait:0.35;mark:start;wait:3.5;tapxy:200,732;wait:1.8;slow:-300,700;wait:2
+home|wait:0.5|wait:1;slow:-320,700;wait:1;slow:-320,700;wait:1.2;slow:640,250;wait:1
+inbox|tap:Inbox;wait:1.2|wait:0.8;tapxy:85,150;wait:1.4;tapxy:85,150;wait:1;tapxy:200,300;wait:1.8;slow:-300,700;wait:1.4
+search|tap:Search;wait:1.2|wait:0.8;tapxy:180,142;wait:0.4;typewords:Bay 4;wait:2;slow:-300,700;wait:0.8;tapxy:200,280;wait:2.2
+gate-pass|wait:0.5|wait:0.6;tapxy:360,84;wait:0.8;tapxy:190,96;wait:2;tapxy:200,546;wait:2.4;slow:-280,700;wait:1.4
+tabs|wait:0.5|wait:0.5;tapxy:132,822;wait:0.4;tapxy:269,822;wait:0.4;tapxy:338,822;wait:0.4;tapxy:63,822;wait:0.6
+appearance|wait:0.5|wait:1;slow:-200,700;wait:0.6;mark:flip;wait:2.4;slow:200,400;wait:1.2
+site-admin|tapxy:38,84;wait:0.8;tap:Prototype Controls;wait:0.8;tap:Personas;wait:0.8|tap:Site Admin;wait:0.4;mark:start;wait:1.8;slow:-300,700;wait:1;slow:-300,700;wait:1.2|tapxy:38,84;wait:0.8;tap:Prototype Controls;wait:0.8;tap:Personas;wait:0.8;tap:Field worker;wait:1.5

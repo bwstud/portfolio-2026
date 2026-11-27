@@ -6,7 +6,11 @@
    -light, as .mp4 (H.264), .av1.mp4 and a .webp of the first frame. Light and dark alternate around the ring. Only the
    phones facing the camera play; the rest show their first frame, which is where every clip starts, so a phone comes
    to life without a jump. The ring turns only while the picture is on screen, the tab is showing and it isn't paused;
-   with reduced motion it is drawn once, at rest, with no clips. */
+   with reduced motion it is drawn once, at rest, with no clips.
+   A phone can be picked up, as a screen is off a drift wall with data-focus: under the pointer a phone facing the camera
+   rises off the ring; pressing it stops the ring, and the phone rises, turns to face the viewer square on and fills the
+   frame, still playing. Pressing again, or Escape, puts it back. It moves by the walls' settings (DriftWall.FOCUS, which
+   the Lift Lab tunes), lengths measured in the reel's height at the front of the ring. */
 (function () {
   'use strict';
   var STILL = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -18,6 +22,20 @@
   var SCREEN_W = 600, SCREEN_H = 1304, SCREEN_R = 85, BAND = 7, BEZEL = 19, P = BAND + BEZEL;
   var ISLAND = [228, 19, 144, 58];           // over the screenshots' own Dynamic Island, where they have one
 
+  // the walls' pick-up settings, if drift-wall.js isn't on the page
+  var LIFT = { hover: 1.4, hoverMs: 200, lift: 5, fill: 0.94, dim: 0.62, motion: 'two', riseMs: 140, turnMs: 480, oneMs: 560, outMs: 440,
+    riseX1: 0.3, riseY1: 0, riseX2: 0.2, riseY2: 1, turnX1: 0.23, turnY1: 1, turnX2: 0.32, turnY2: 1, oneX1: 0.23, oneY1: 1, oneX2: 0.32, oneY2: 1 };
+  // a CSS cubic-bezier as a function of time
+  function bezier(x1, y1, x2, y2) {
+    var at = function (a, b, t) { return ((1 - 3 * b + 3 * a) * t + (3 * b - 6 * a)) * t * t + 3 * a * t; };
+    return function (x) {
+      if (x <= 0) return 0; if (x >= 1) return 1;
+      var lo = 0, hi = 1, t = x;
+      for (var i = 0; i < 24; i++) { var v = at(x1, x2, t); if (Math.abs(v - x) < 1e-5) break; if (v < x) lo = t; else hi = t; t = (lo + hi) / 2; }
+      return at(y1, y2, t);
+    };
+  }
+  var OUT = bezier(0.23, 1, 0.32, 1);   // the hover rise, as on the walls
   function make(tag, cls) { var n = document.createElement(tag); if (cls) n.className = cls; return n; }
   function mod(a, n) { return ((a % n) + n) % n; }
 
@@ -145,7 +163,8 @@
         refl.scale.y = -1; refl.position.y = -CH - 0.035;
         screenRefl.scale.y = -1; screenRefl.position.set(0, -CH - 0.035, 0.0015);
         holder.add(face, back, refl, screen, screenRefl); group.add(holder);
-        return { a: a, clip: clips[i], screen: screen, screenRefl: screenRefl, v: null, vt: null };
+        return { a: a, clip: clips[i], screen: screen, screenRefl: screenRefl, v: null, vt: null, holder: holder, face: face,
+          refl: refl, up: 0 };
       });
 
       /* ---- the clips: a video texture each, made when a phone turns to face the camera and let go when it turns away */
@@ -178,17 +197,133 @@
           if (facing && live && !cd.v) start(cd);
           else if (!facing && cd.v) stop(cd);
           if (!cd.v) return;
-          if (live && cd.v.paused) { var q = cd.v.play(); if (q && q.catch) q.catch(function () {}); }
-          else if (!live && !cd.v.paused) cd.v.pause();
+          var on = held ? held.cd === cd : live;   // a phone picked up plays on; the rest hold still behind it
+          if (on && cd.v.paused) { var q = cd.v.play(); if (q && q.catch) q.catch(function () {}); }
+          else if (!on && !cd.v.paused) cd.v.pause();
         });
       }
 
+      /* ---- picking a phone up ---- */
+      var F = function () { return (window.DriftWall && window.DriftWall.FOCUS) || LIFT; };
+      var half = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
+      // a share of the reel's height (cqh), as a length at the front of the ring
+      var cqh = function (n) { return n * 2 * half * camera.position.distanceTo(new THREE.Vector3(0, 0, R)) / 100; };
+      var ray = new THREE.Raycaster(), ndc = new THREE.Vector2(), FINE = window.matchMedia('(hover: hover) and (pointer: fine)');
+      var hovered = null, held = null, pointer = null, dim = 0, lastHover = 0;
+      /* A phone picked up is drawn on a canvas of its own over the ring's, so the ring's can be dimmed and blurred
+         behind it. Made the first time a phone is picked up. */
+      var layer = null;
+      function lift() {
+        if (layer) return layer;
+        var r2 = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'low-power' });
+        r2.setPixelRatio(renderer.getPixelRatio()); r2.outputColorSpace = THREE.SRGBColorSpace;
+        var box = make('div', 'reel__lift'); box.appendChild(r2.domElement); el.insertBefore(box, stage.nextSibling);
+        layer = { r: r2, scene: new THREE.Scene(), size: function () { r2.setSize(stage.clientWidth, stage.clientHeight, false); } };
+        layer.size();
+        return layer;
+      }
+      function under(cx, cy) {
+        var r = stage.getBoundingClientRect();
+        ndc.set((cx - r.left) / r.width * 2 - 1, -((cy - r.top) / r.height) * 2 + 1);
+        ray.setFromCamera(ndc, camera);
+        var faces = cards.filter(function (cd) { return Math.cos(cd.a + group.rotation.y) > FACING; }).map(function (cd) { return cd.face; });
+        var hit = ray.intersectObjects(faces, false)[0];
+        return hit ? cards.filter(function (cd) { return cd.face === hit.object; })[0] : null;
+      }
+      function hover(cd) { hovered = cd; el.classList.toggle('is-pointing', !!cd); }
+      // the pose a phone has on the ring, risen off it by d along the way it faces
+      function home(cd, d) {
+        var m = new THREE.Matrix4().compose(new THREE.Vector3(Math.sin(cd.a) * R, 0, Math.cos(cd.a) * R), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), cd.a), new THREE.Vector3(1, 1, 1));
+        m.premultiply(group.matrixWorld);
+        var p = new THREE.Vector3(), q = new THREE.Quaternion(); m.decompose(p, q, new THREE.Vector3());
+        return { p: p.add(new THREE.Vector3(0, 0, 1).applyQuaternion(q).multiplyScalar(d)), q: q };
+      }
+      // square on to the camera, as large as fills that share of the frame
+      function framed() {
+        var k = 2 * half * F().fill, d = Math.max(CH / k, CW / (k * camera.aspect));
+        return { p: camera.position.clone().add(camera.getWorldDirection(new THREE.Vector3()).multiplyScalar(d)), q: camera.quaternion.clone() };
+      }
+      function place(cd, at) { cd.holder.position.copy(at.p); cd.holder.quaternion.copy(at.q); }
+      function mix(a, b, t) { return { p: a.p.clone().lerp(b.p, t), q: a.q.clone().slerp(b.q, t) }; }
+      // a path of poses, each leg with its share of the time and its curve
+      function path(legs, ms, done) {
+        var t0 = performance.now();
+        return function (now) {
+          var t = Math.min(1, (now - t0) / ms), s = 0, i = 0;
+          while (i < legs.length - 1 && t > s + legs[i].share) { s += legs[i].share; i++; }
+          var leg = legs[i], u = leg.share ? Math.min(1, (t - s) / leg.share) : 1;
+          place(held.cd, mix(leg.a, leg.b, leg.ease(u)));
+          if (t >= 1 && done) done();
+          return t >= 1;
+        };
+      }
+      function curve(m) { var f = F(); return bezier(f[m + 'X1'], f[m + 'Y1'], f[m + 'X2'], f[m + 'Y2']); }
+      function open(cd) {
+        if (held || STILL.matches) return;
+        var f = F(), one = f.motion === 'one', ms = one ? f.oneMs : f.riseMs + f.turnMs, rise = one || !ms ? 0 : f.riseMs / ms;
+        var risen = cqh(f.hover) * OUT(cd.up), from = home(cd, risen), up = home(cd, risen + cqh(f.lift)), to = framed();
+        hover(null);
+        group.remove(cd.holder); lift().scene.add(cd.holder); place(cd, from);
+        if (cd.clip && !cd.v) start(cd);
+        held = { cd: cd, from: from, up: up, to: to, rise: rise, run: path(one ? [{ a: from, b: to, share: 1, ease: curve('one') }]
+          : [{ a: from, b: up, share: rise, ease: curve('rise') }, { a: up, b: to, share: 1 - rise, ease: curve('turn') }], ms) };
+        el.style.setProperty('--reel-in-ms', ms + 'ms'); el.style.setProperty('--reel-out-ms', f.outMs + 'ms');
+        el.classList.add('is-focused');
+      }
+      function close(now) {
+        if (!held || held.closing) return;
+        var h = held, cd = h.cd, f = F(), at = { p: cd.holder.position.clone(), q: cd.holder.quaternion.clone() };
+        h.closing = true;
+        el.classList.remove('is-focused');
+        var back = function () {
+          layer.scene.remove(cd.holder); group.add(cd.holder);
+          cd.holder.position.set(Math.sin(cd.a) * R, 0, Math.cos(cd.a) * R); cd.holder.quaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), cd.a);
+          cd.up = 0; held = null;
+        };
+        if (now === true || STILL.matches) { back(); return draw(); }
+        // the way back runs the way up in turn: the turn back to the ring, then down onto it, a step quicker
+        h.run = path(f.motion === 'one' ? [{ a: at, b: h.from, share: 1, ease: curve('one') }]
+          : [{ a: at, b: h.up, share: 1 - h.rise, ease: curve('turn') }, { a: h.up, b: h.from, share: h.rise, ease: curve('rise') }], f.outMs, back);
+      }
+      // the ring under a still pointer turns, so while the pointer is over it, look again each frame
+      function point(now) {
+        var dt = lastHover ? now - lastHover : 0, f = F(); lastHover = now;
+        if (!held) hover(pointer ? under(pointer.x, pointer.y) : null);
+        var moving = false;
+        cards.forEach(function (cd) {
+          var aim = cd === hovered ? 1 : 0;
+          if (cd.up === aim || (held && held.cd === cd)) return;
+          cd.up = aim > cd.up ? Math.min(1, cd.up + dt / f.hoverMs) : Math.max(0, cd.up - dt / f.hoverMs);
+          var e = OUT(cd.up);
+          cd.holder.position.set(Math.sin(cd.a) * (R + cqh(f.hover) * e), 0, Math.cos(cd.a) * (R + cqh(f.hover) * e));
+          moving = true;
+        });
+        // the phone picked up leaves its reflection on the floor (the ring behind it dims and blurs in bb-reel.css)
+        var want = held && !held.closing ? 1 : 0, ms = want ? (f.motion === 'one' ? f.oneMs : f.riseMs + f.turnMs) : f.outMs;
+        if (dim !== want) {
+          dim = want > dim ? Math.min(1, dim + dt / ms) : Math.max(0, dim - dt / ms);
+          if (held) held.cd.refl.material.opacity = held.cd.screenRefl.material.opacity = 0.16 * (1 - OUT(dim));
+          moving = true;
+        }
+        if (held && held.run && held.run(now)) { if (held) held.run = null; }
+        return moving || !!held;
+      }
+      stage.addEventListener('pointermove', function (e) { if (e.pointerType === 'mouse' && FINE.matches) pointer = { x: e.clientX, y: e.clientY }; });
+      stage.addEventListener('pointerleave', function () { pointer = null; });
+      stage.addEventListener('click', function (e) {
+        if (held) return close();
+        var cd = under(e.clientX, e.clientY);
+        if (cd) open(cd);
+      });
+      document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && held) close(); });
+      window.addEventListener('resize', function () { close(true); });
+
       /* ---- size, motion and its controls ---- */
       var clock = 0, last = 0;
-      function draw() { group.rotation.y = -clock * Math.PI * 2 / TURN; renderer.render(world, camera); }
+      function draw() { if (!held) group.rotation.y = -clock * Math.PI * 2 / TURN; group.updateMatrixWorld(); renderer.render(world, camera); if (layer) layer.r.render(layer.scene, camera); }
       new ResizeObserver(function (e) {
         var r = e[0].contentRect; if (!r.width || !r.height) return;
-        renderer.setSize(r.width, r.height, false); camera.aspect = r.width / r.height; camera.updateProjectionMatrix(); draw();
+        renderer.setSize(r.width, r.height, false); camera.aspect = r.width / r.height; camera.updateProjectionMatrix(); if (layer) layer.size(); draw();
       }).observe(stage);
 
       var button = make('button', 'reel__pause'); button.type = 'button';
@@ -198,15 +333,18 @@
       button.addEventListener('click', function () { el.classList.toggle('is-paused'); label(); });
       label(); el.appendChild(button);
 
-      if ('IntersectionObserver' in window) {
-        new IntersectionObserver(function (en) { el.classList.toggle('is-offscreen', !en[0].isIntersecting); }, { rootMargin: '100px' }).observe(el);
+      if ('IntersectionObserver' in window) {   // off screen until the observer's first report says otherwise
+        el.classList.add('is-offscreen');
+        new IntersectionObserver(function (en) { var off = !en[en.length - 1].isIntersecting; el.classList.toggle('is-offscreen', off); if (off) close(true); }).observe(el);
       }
       function running() { return !STILL.matches && !document.hidden && !el.classList.contains('is-paused') && !el.classList.contains('is-offscreen'); }
 
       function loop(now) {
         var dt = last ? Math.min(0.1, (now - last) / 1000) : 0, live = running(); last = now;
         follow(live);
-        if (live) { clock += dt; draw(); }
+        var busy = !STILL.matches && point(now);
+        if (live && !held) clock += dt;
+        if (live || busy) draw();
         requestAnimationFrame(loop);
       }
       draw();
@@ -214,5 +352,17 @@
     }, function () { /* three.js didn't load: the still stays */ });
   }
 
-  document.querySelectorAll('[data-reel]').forEach(build);
+  // three.js, the stills and the clips load only as the reel nears the window. It starts watching once the page has
+  // loaded: before its fonts and pictures are in, the page is shorter and the reel would seem nearer than it is.
+  function watch() {
+    document.querySelectorAll('[data-reel]').forEach(function (el) {
+      if (!('IntersectionObserver' in window)) return build(el);
+      var io = new IntersectionObserver(function (en) {
+        if (!en[en.length - 1].isIntersecting) return;
+        io.disconnect(); build(el);
+      }, { rootMargin: '200px 0px' });
+      io.observe(el);
+    });
+  }
+  if (document.readyState === 'complete') watch(); else window.addEventListener('load', watch, { once: true });
 })();

@@ -3,6 +3,8 @@
 // The clips module exports { base, prepare(ctx), clips: [{ name, url, theme, act(page, h) }] }.
 // Each clip is filmed with Chrome's screencast (lossless frames, true timestamps), then made a constant 30 fps loop at
 // 720x468 by encode.sh. act() must leave the page as it found it, so the last frame matches the first.
+// With hd: true in the module, each clip also gets <name>.hd.mp4 at the size it was filmed: the one a wall plays for a
+// screen picked up and filling the frame. HD_ONLY=1 makes just those, from the raw recordings already in <out dir>/raw.
 import { createRequire } from 'module';
 import fs from 'fs';
 import path from 'path';
@@ -41,6 +43,7 @@ const posters = [];
 for (const clip of spec.clips) {
   if (only.length && !only.includes(clip.name)) continue;
   const rawDone = path.join(OUT, 'raw', clip.name + '.mp4');
+  if (process.env.HD_ONLY) { if (fs.existsSync(rawDone)) { hd(rawDone, clip); } else console.warn(`${clip.name}: no raw recording`); continue; }
   if (process.env.ENCODE_ONLY) { if (fs.existsSync(rawDone)) { finish(rawDone, clip); console.log(`${clip.name}: encoded`); } else console.warn(`${clip.name}: no raw recording`); continue; }
   const ctx = await browser.newContext({ viewport: { width: W, height: H }, deviceScaleFactor: 1, reducedMotion: 'no-preference' });
   if (spec.prepare) await spec.prepare(ctx, clip);
@@ -110,16 +113,30 @@ async function webp(list) {
 
 // The tile's clip: 720x468, H.264, no sound, starting on its poster. With seam: 'fade', the end dissolves into the
 // opening (for interactions that can't be undone), so the loop still has no cut.
-function finish(raw, clip) {
+// The loop's filter: scaled, 24 fps, and with seam: 'fade' its end dissolved into its opening. The tile's clip and its HD
+// twin go through the same one at different sizes, so their frames fall at the same moments.
+function loop(raw, clip, size) {
   const dur = parseFloat(execFileSync('ffprobe', ['-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', raw]).toString());
-  const out = path.join(OUT, 'clips', clip.name + '.mp4');
-  fs.mkdirSync(path.dirname(out), { recursive: true });
   // 24 frames a second is plenty for interface motion, and a quarter fewer frames to store
-  const scale = 'scale=720:468:flags=lanczos,setsar=1,fps=24';
+  const scale = (size ? `scale=${size}:flags=lanczos,` : '') + 'setsar=1,fps=24';
   const F = clip.fade ?? 0.5;
-  const vf = clip.seam === 'fade'
+  return clip.seam === 'fade'
     ? `[0]${scale},split[x][y];[x]trim=start=${F},setpts=PTS-STARTPTS[a];[y]trim=end=${F},setpts=PTS-STARTPTS[b];[a][b]xfade=transition=fade:duration=${F}:offset=${(dur - 2 * F).toFixed(3)}[v]`
     : `[0]${scale}[v]`;
+}
+// A screen picked up fills the frame, far larger than its tile: its HD twin is the size it was filmed at, H.264 only (a
+// wall plays one at a time, so it needn't be decoded in hardware), and lighter on compression than the tile's.
+function hd(raw, clip) {
+  const out = path.join(OUT, 'clips', clip.name + '.hd.mp4');
+  fs.mkdirSync(path.dirname(out), { recursive: true });
+  execFileSync('ffmpeg', ['-v', 'error', '-y', '-i', raw, '-filter_complex', loop(raw, clip, ''), '-map', '[v]', '-an', '-c:v', 'libx264', '-profile:v', 'high',
+    '-crf', String(clip.hdcrf ?? 24), '-preset', 'veryslow', '-tune', 'animation', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', out], { stdio: ['ignore', 'ignore', 'inherit'] });
+  console.log(`  -> ${path.basename(out)} ${Math.round(fs.statSync(out).size / 1024)} KB`);
+}
+function finish(raw, clip) {
+  const out = path.join(OUT, 'clips', clip.name + '.mp4');
+  fs.mkdirSync(path.dirname(out), { recursive: true });
+  const vf = loop(raw, clip, '720:468');
   const enc = (file, codec) => execFileSync('ffmpeg', ['-v', 'error', '-y', '-i', raw, '-filter_complex', vf, '-map', '[v]', '-an', ...codec, '-pix_fmt', 'yuv420p', '-movflags', '+faststart', file], { stdio: ['ignore', 'ignore', 'inherit'] });
   // Two encodes; the wall picks one (drift-wall.js). AV1 is the smaller by about half, for browsers that decode it in
   // hardware; H.264 is for the rest (older Safari, and machines that would have to decode AV1 in software).
@@ -129,5 +146,6 @@ function finish(raw, clip) {
   const png = out.replace(/\.mp4$/, '.png');
   execFileSync('ffmpeg', ['-v', 'error', '-y', '-i', out, '-frames:v', '1', png]);
   posters.push(png);
+  if (spec.hd) hd(raw, clip);
   console.log(`  -> ${path.basename(out)} ${Math.round(fs.statSync(out).size / 1024)} KB, AV1 ${Math.round(fs.statSync(av1).size / 1024)} KB`);
 }

@@ -66,6 +66,27 @@
     /* The board spans the content column, edge to edge, whatever its module count. */
     .has-board .board { display: block; }
     .board-pending main { visibility: hidden; }                                /* until the board has settled the layout (see the head) */
+    /* The opening: the board and the first record's wall come up together out of a blur, from unseen to sharp, on one
+       curve, the wall a beat behind the board. The wall waits for its pictures (drift-wall.js adds .is-ready once they
+       are decoded, or after 1.5s), so none of them pops in on the way. The filter is gone once each has arrived. */
+    :root { --resolve-ms: 1200ms; --resolve-ease: cubic-bezier(0.25, 0.1, 0.25, 1); --resolve-blur: 18px; --resolve-beat: 150ms; --resolve-words: 0ms; }   /* words: how far into the wall's resolve the record's words start */
+    @media (prefers-reduced-motion: no-preference) {
+      :root.has-board:not(.board-pending) .board { animation: resolve var(--resolve-ms) var(--resolve-ease) backwards; }
+      .bay:first-of-type .bay__media.wall:not(.is-ready) { opacity: 0; }
+      :root:not(.board-pending) .bay:first-of-type .bay__media.wall.is-ready { animation: resolve var(--resolve-ms) var(--resolve-ease) var(--resolve-beat) backwards; }
+      @keyframes resolve { from { opacity: 0; filter: blur(var(--resolve-blur)); } }
+      /* the rail comes up with them: its buttons one after another, 40ms apart down the rail (the board's script sets
+         --n), each taking that much less time, so all of them settle as the board does; the hairline with the board.
+         The lit button keeps its brightness the whole way. */
+      @media (min-width: 1100px) {
+        .board-pending .nav .chip, .board-pending body::before { opacity: 0; }
+        :root.has-board:not(.board-pending) body::before { animation: resolve var(--resolve-ms) var(--resolve-ease) backwards; }
+        :root.has-board:not(.board-pending) .nav .chip { --rest: calc(var(--n, 0) * 40ms);
+          animation: rail-resolve calc(var(--resolve-ms) - var(--rest)) var(--resolve-ease) var(--rest) backwards; }
+        .nav .chip[aria-current="page"] { --chip-b: var(--chip-current); }
+        @keyframes rail-resolve { from { opacity: 0; filter: blur(var(--resolve-blur)) brightness(var(--chip-b, 1)); } to { filter: blur(0px) brightness(var(--chip-b, 1)); } }
+      }
+    }
     /* The board is docked: one row, held at the top of the window as the page scrolls under it, showing the project in
        view; it spins to the next as a new record comes up. Under the pointer (or with focus in it) it opens: the full
        board unfolds down from the row, over the page, and its rows take you to their records. The strip it sits in is
@@ -112,14 +133,17 @@
        time the first movement, Drop (--record-drop) is how far the words and the picture travel, and Blur (--record-blur)
        is what the fields resolve from. The fields keep a fixed share of the Duration: they start a tenth of the way in,
        0.03 apart, and each takes 0.16 of it (200, 60 and 320ms at a Duration of 2000). */
-    .is-arriving .bay { opacity: 0; }
+    .is-arriving .bay:not(:first-of-type), .is-arriving .bay:first-of-type > :not(.bay__media) { opacity: 0; }   /* the first picture comes in with the board (below) */
     @media (prefers-reduced-motion: no-preference) {
       .has-board:not(.is-arriving) .bay { --bay-ms: var(--record-ms, 700ms); --bay-ease: var(--record-ease, cubic-bezier(0.23, 1, 0.32, 1)); }
       .has-board:not(.is-arriving) .bay:first-of-type > div:first-child > * { animation: bay-left var(--bay-ms) var(--bay-ease) both; }
-      .has-board:not(.is-arriving) .bay:first-of-type .bay__media { animation: bay-drop var(--bay-ms) var(--bay-ease) both; }
       .has-board:not(.is-arriving) .bay:first-of-type .fields { animation: bay-fade calc(var(--bay-ms) * 0.11) linear calc(var(--bay-ms) * 0.1) both; }   /* the rule above the fields */
       .has-board:not(.is-arriving) .bay:first-of-type .fields > div { animation: bay-resolve calc(var(--bay-ms) * 0.16) var(--ease-out) calc(var(--bay-ms) * (0.1 + var(--i, 0) * 0.03)) both; }
       .fields > div:nth-child(2) { --i: 1; } .fields > div:nth-child(3) { --i: 2; }
+      /* the first record's name doesn't slide: it comes up out of a blur on the title's focus curve, and is sharp as the
+         title finishes inking in (--ink-ends, set by the sequence script) */
+      .has-board:not(.is-arriving) .bay:first-of-type > div:first-child > .bay__name { animation: name-resolve var(--ink-ends, 1850ms) cubic-bezier(0.3, 0, 0.3, 1) both; }
+      @keyframes name-resolve { from { opacity: 0; filter: blur(var(--resolve-blur, 18px)); } }
       @keyframes bay-left { from { opacity: 0; transform: translateX(calc(-1 * var(--record-drop, 24px))); } }
       @keyframes bay-drop { from { opacity: 0; transform: translateY(calc(-1 * var(--record-drop, 24px))); } }
       @keyframes bay-fade { from { opacity: 0; } }
@@ -196,6 +220,11 @@
     .bay__open:focus-visible span { opacity: 1; translate: 0 0; }
     @media (hover: hover) and (pointer: fine) { .bay__open:hover span { opacity: 1; translate: 0 0; } }
     @media (hover: none), (pointer: coarse) { .bay__open span { opacity: 1; translate: 0 0; } }   /* no hover to bring it up, so it stays */
+    /* On a wall whose screens can be picked up (data-focus), a press on a screen is for the screen, so opening the
+       project is its own key in the corner, always showing, beside the pause key */
+    .wall--focus > .bay__open { inset: auto auto 10px 10px; z-index: 2; height: 30px; border-radius: 4px; }
+    .wall--focus > .bay__open span { position: static; display: block; opacity: 1; translate: 0 0; padding: 0 10px; line-height: 30px; height: 30px; box-sizing: border-box;
+      border: 1px solid rgb(255 255 255 / 0.18); background: rgb(8 10 10 / 0.6); }
 
     .sheet { --sheet-left: 0px; --sheet-ms: var(--sheet-leave-ms, 520ms); position: fixed; inset: 0 0 0 auto; width: calc(100vw - var(--sheet-left)); max-width: none; height: 100dvh; max-height: none;
       margin: 0; padding: 0; border: 0; overflow: hidden; color: var(--fg); background: color-mix(in srgb, var(--ground) 95%, #fff);
@@ -264,7 +293,7 @@
     .sheet__facts dd { margin: 2px 0 0; line-height: 1.45; text-wrap: pretty; }   /* a value can run to a paragraph, as Summary does */
     .sheet__index { display: none; }
     .sheet__body { display: grid; gap: var(--space-7); margin-top: var(--space-7); }
-    .sheet h3 { font-size: var(--step--1); font-weight: 400; color: var(--muted); margin: 0 0 var(--space-3); }
+    .sheet h3 { font: 600 var(--step-1)/1.2 "Söhne Breit", sans-serif; letter-spacing: -.005em; text-transform: none; color: var(--muted); margin: 0 0 var(--space-5); }   /* a section's title, after its number, both in grey */
     .sheet section { scroll-margin-top: var(--space-7); }
     .sheet section p { margin: 0; max-width: 38em; font-size: var(--step-1); line-height: 1.45; text-wrap: pretty; }
     /* the body copy: a serif on trial, chosen in the font switcher (Shift+F, or ?fonts), at a step of the type scale.
@@ -332,7 +361,8 @@
       .sheet__index { display: grid; gap: var(--space-2); justify-items: start; margin-top: auto; padding-top: var(--space-7); }
       .sheet__index a { display: inline-flex; align-items: center; gap: var(--space-2); color: var(--muted); text-decoration: none; transition: color var(--m-light-off); }
       .sheet__index a:hover, .sheet__index a:focus-visible, .sheet__index a[aria-current] { color: var(--fg); }
-      .sheet__index a[aria-current] { transition-duration: var(--m-light-on); }   /* the item in view: its lamp lit (.m-led.is-on, matte.css) */
+      .sheet__index a[aria-current] { transition-duration: var(--m-light-on); }
+      .sheet__num { font-variant-numeric: tabular-nums; }   /* the section's number, its figures one width so the names line up */   /* the item in view: its lamp lit (.m-led.is-on, matte.css) */
       .sheet__body { margin-top: var(--space-8); }
       .sheet__body:has(> :first-child .sheet__film, > .sheet__film:first-child) { margin-top: 0; }   /* a film starts the details level with the name and title beside it */
     }
@@ -411,6 +441,7 @@
           <li><a href="experiments/button-lab/">Button Lab</a></li>
           <li><a href="experiments/dissolve-lab/">Dissolve Lab</a></li>
           <li><a href="experiments/peek-lab/">Peek Lab</a></li>
+          <li><a href="experiments/lift-lab/">Lift Lab</a></li>
           <li><a href="experiments/bison-lab/">Bison Lab</a></li>
         </ul>
       </div>
@@ -449,7 +480,7 @@
           <h2 id="groom-lake-h">Overhauling a flagship to compete in the AI era</h2>
           <ul class="bay__meta mono"><li>Platform Redesign</li><li>Agentic Design Systems</li><li>Pervasive AI</li></ul>
         </div>
-        <figure class="bay__media" data-wall="images/groom-lake-wall/" data-count="24" data-clips="all" data-compare="images/groom-lake-compare/"
+        <figure class="bay__media" data-hold data-wall="images/groom-lake-wall/" data-count="24" data-clips="all" data-focus data-hd data-compare="images/groom-lake-compare/"
                 data-film="images/groom-lake-hero.mp4?v=2" data-film-poster="images/groom-lake-hero-poster.webp?v=2"
                 data-label="A drifting wall of screens from the redesigned Ideagen EHS application: dashboards, incident records, audits, reports and forms">
           <img src="images/groom-lake-dashboard-1200.webp"
@@ -561,7 +592,7 @@
           <h2 id="mazlan-builder-h">Professional Services on demand, on point, ready to help.</h2>
           <ul class="bay__meta mono"><li>AX Patterns</li><li>Autonomy Levels</li><li>Judgment Gates</li></ul>
         </div>
-        <figure class="bay__media" data-wall="images/mazlan-wall/" data-count="21" data-clips="all" data-tilt="56" data-turn="40"
+        <figure class="bay__media" data-wall="images/mazlan-wall/" data-count="21" data-clips="all" data-tilt="56" data-turn="40" data-focus data-hd
                 data-label="A drifting wall of screens from Mazlan Builder: conversations with Mazlan, module snapshots, process diagrams, requirements and specifications, in light and dark">
           <img src="images/mazlan-builder-1200.webp" width="1200" height="753" decoding="async"
                alt="Mazlan Builder: a conversation with Mazlan beside the requirements it is gathering for a configuration change">
@@ -716,6 +747,11 @@
       const LINE = { rootMargin: '0px 0px -12.5% 0px' };
       const TITLE_AT = 250, CARDS_AFTER = 250;   // the cards start as the last tag is on its way
       const GOO = 0.5, MS = 2000, STAGGER = 100, SKIP = 0.2;
+      // The first record keeps pace with the opening: its words start with its wall, and its title (with the name beside
+      // it) inks in over the wall's resolve (--resolve-ms), so all three are sharp together. It starts sooner and runs quicker.
+      const FIRST_AT = 100, opening = parseFloat(getComputedStyle(root).getPropertyValue('--resolve-ms')) || 1200;
+      const FIRST_MS = (opening - FIRST_AT) / (1 - SKIP);
+      root.style.setProperty('--ink-ends', opening + 'ms');   // when the first record's title has inked in, from its start: its name lands then too
 
       const at = (a, b, u) => 3 * a * u * (1 - u) ** 2 + 3 * b * u * u * (1 - u) + u ** 3;
       const focus = t => { let lo = 0, hi = 1; for (let n = 0; n < 20; n++) { const m = (lo + hi) / 2; if (at(0.3, 0.3, m) < t) lo = m; else hi = m; } return at(0, 1, (lo + hi) / 2); };
@@ -726,7 +762,7 @@
       let count = 0;
 
       // ink a title in; legible() is called once its first line is half done
-      function inkIn(title, legible) {
+      function inkIn(title, legible, follower, at = TITLE_AT, ms = MS) {   // follower: an animation kept on the ink's clock, so it lands as the ink does; at, ms: when it started and how long it inks
         const text = title.textContent, words = text.split(/\s+/).filter(Boolean);
         // find the lines as they fall: a span per word, grouped by where each sits
         title.replaceChildren(...words.flatMap((w, i) => { const s = document.createElement('span'); s.textContent = w; return i ? [' ', s] : [s]; }));
@@ -758,13 +794,14 @@
         title.classList.add('is-inked');
         // The clock moves at most a frame and a bit per frame, so a busy phone that drops frames slows the ink down
         // rather than skipping to the end of it.
-        let elapsed = MS * SKIP, last = performance.now(), told = false;
+        let elapsed = ms * SKIP, last = performance.now(), told = false;
         const step = now => {
           let done = true;
           elapsed += Math.min(Math.max(0, now - last), 50); last = now;
+          if (follower && follower.playState !== 'finished') follower.currentTime = at + elapsed - ms * SKIP;
           flip ^= 1;
           parts.forEach((p, i) => {
-            const lead = Math.min(i * STAGGER, MS * 0.5), t = Math.min(1, Math.max(0, (elapsed - lead) / Math.max(1, MS - lead)));
+            const lead = Math.min(i * STAGGER, ms * 0.5), t = Math.min(1, Math.max(0, (elapsed - lead) / Math.max(1, ms - lead)));
             const relax = Math.min(1, Math.max(0, (t - 0.65) / 0.35));   // the last 35%: the threshold eases back to plain
             const f = p.filters[flip];
             f.firstChild.setAttribute('stdDeviation', (start * (1 - focus(t))).toFixed(2));
@@ -803,7 +840,10 @@
           bay.dataset.revealed = 'go'; bay.dispatchEvent(new CustomEvent('recordreveal'));
           const letTags = () => { tags?.classList.add('is-up'); setTimeout(() => { tagsDone = true; cards(); }, CARDS_AFTER); };
           if (!motion) { title.classList.add('is-inked'); return letTags(); }
-          setTimeout(() => inkIn(title, letTags), TITLE_AT);
+          // the first record's name resolves alongside the title (its CSS), held to the ink's clock
+          const name = k === 0 && words.querySelector('.bay__name')?.getAnimations().find(a => a.animationName === 'name-resolve');
+          if (k === 0) setTimeout(() => inkIn(title, letTags, name, FIRST_AT, FIRST_MS), FIRST_AT);
+          else setTimeout(() => inkIn(title, letTags), TITLE_AT);
         };
         const watch = (el, seen) => {
           const io = new IntersectionObserver(entries => entries.forEach(e => {
@@ -843,6 +883,7 @@
       }
     })();
   </script>
+  <script src="wall-focus-versions.js"></script>   <!-- the Lift Lab's saved settings for picking a screen up off a wall -->
   <script src="drift-wall.js"></script>
   <script src="bb-reel.js"></script>
   <script src="bison-versions.js"></script>   <!-- the version the Bison Lab has put on the site -->
@@ -851,7 +892,15 @@
   <script src="https://cdn.jsdelivr.net/npm/lenis@1.3.27/dist/lenis.min.js"></script>
   <script src="smooth-scroll.js" data-lerp="0.05"></script>
   <script>
-    if (window.Bison) Bison.mount(document.querySelector('.bison-run canvas'), { src: 'experiments/bison-lab/bison.png', marks: 'experiments/bison-lab/bison-marks.png', config: Bison.activeConfig() });
+    // the bison's drawing loads only as the page's end nears the window
+    (function () {
+      const view = document.querySelector('.bison-run canvas');
+      if (!window.Bison || !view) return;
+      const go = () => Bison.mount(view, { src: 'experiments/bison-lab/bison.png', marks: 'experiments/bison-lab/bison-marks.png', config: Bison.activeConfig() });
+      if (!('IntersectionObserver' in window)) return go();
+      const io = new IntersectionObserver(en => { if (en[en.length - 1].isIntersecting) { io.disconnect(); go(); } }, { rootMargin: '800px 0px' });
+      io.observe(view.closest('.bison-run'));
+    })();
 
     /* ---- The board: project rows on the left, release dates on the right. Its size, columns, timing and
        look are the active version from the Split-Flap Lab; the rows come from the links above. ---- */
@@ -874,6 +923,7 @@
       // a board of modules can't be read on a small screen: those keep the rows as links, with every record on the page
       const wide = matchMedia('(min-width: 1100px)');   // narrower, the modules are too small to read
       const unpend = () => document.documentElement.classList.remove('board-pending');   // the layout is final: show the page
+      [...document.querySelectorAll('.nav .chip')].filter(chip => chip.offsetParent).forEach((chip, n) => chip.style.setProperty('--n', n));   // the rail's buttons as shown, in order, for their entrance
       // the record has arrived: the page's notices wait for this (see the notice script)
       const arrive = () => { document.documentElement.classList.add('is-arrived'); document.dispatchEvent(new Event('recordarrive')); };
       if (!wide.matches || !window.SplitFlap) { unpend(); return arrive(); }
@@ -1133,8 +1183,13 @@
         head.style.setProperty('--project-x', x(0) + 'px');
         head.style.setProperty('--released-x', x(cols.nameCols + cols.statusCols - longest) + 'px');
         // the rail's first button sits level with the top of the board's plate (offsets, so the arrival's rise doesn't skew it)
+        // A sticky ancestor (#work) counts where it sits unstuck: stuck, its offset includes how far the page has
+        // scrolled, which pushed the rail off the bottom of the window after a reload part way down.
         let top = 0;
-        for (let el = document.querySelector('.sf-board.is-framed') || document.getElementById('flap'); el; el = el.offsetParent) top += el.offsetTop;
+        for (let el = document.querySelector('.sf-board.is-framed') || document.getElementById('flap'); el; el = el.offsetParent) {
+          if (getComputedStyle(el).position !== 'sticky') { top += el.offsetTop; continue; }
+          const was = el.style.position; el.style.position = 'relative'; top += el.offsetTop; el.style.position = was;
+        }
         document.documentElement.style.setProperty('--rail-top', top + 'px');
         const rowEls = boardRows();
         // the lamps: half way across the plate's left margin, each level with the middle of its row
@@ -1214,7 +1269,7 @@
         : `linear(${Array.from({ length: 41 }, (_, i) => +curve(i / 40).toFixed(4)).join(', ')})`);
       root.setProperty('--record-drop', entrance.recordDrop + 'px');
       root.setProperty('--record-blur', entrance.recordBlur + 'px');
-      if (!still && !seen) document.documentElement.classList.add('is-arriving');   // the first time, the record holds back until the board resolves
+      if (!still) document.documentElement.classList.add('is-arriving');   // the record's words hold back until its wall comes up
 
       const fromHash = () => rows.findIndex(r => '#' + r.id === location.hash);
       Promise.all([flap.ready, bar.ready]).then(() => {
@@ -1224,9 +1279,15 @@
         current = -1; light(inView());
         if (still) { arrive(); bar.seek(Infinity); return flap.seek(Infinity); }
         run();   // the rows flip in once; choosing a row leaves the board as it is
-        if (seen) arrive();   // the record is already showing
-        // the record starts down as the last flaps are landing, so the two finish together
-        else setTimeout(() => { document.documentElement.classList.remove('is-arriving'); arrive(); }, Math.max(0, bar.duration - entrance.recordLeadMs));
+        // the record's name, title and tags follow its wall: they wait for the wall's pictures (drift-wall.js marks it
+        // .is-ready), so the words don't come before the picture they belong with
+        const media = document.querySelector('.bay .bay__media');
+        const token = name => parseFloat(getComputedStyle(document.documentElement).getPropertyValue(name)) || 0;
+        const go = () => setTimeout(() => { document.documentElement.classList.remove('is-arriving'); arrive(); }, token('--resolve-beat') + token('--resolve-words'));
+        // its clips wait until it is sharp: under the blur they can't be seen, and starting them then costs the opening frames
+        media?.addEventListener('animationend', e => { if (e.animationName === 'resolve') media.removeAttribute('data-hold'); });
+        if (!media || !media.classList.contains('wall') || media.classList.contains('is-ready')) go();
+        else media.addEventListener('wallready', go, { once: true });
       });
       addEventListener('hashchange', () => { if (fromHash() >= 0) jump(fromHash()); });
       document.addEventListener('themechange', () => { flap.restyle(SplitFlap.activeStyle(mode())); bar.restyle(SplitFlap.activeStyle(mode())); if (!running) { flap.seek(now()); bar.seek(now()); } });
@@ -1311,7 +1372,7 @@
       }
       let clips = null;   // watches the sheet's section clips, to play the one in view
       function fill(bay) {
-        const name = bay.querySelector('.bay__name').textContent, wall = bay.querySelector('[data-wall]'), lead = bay.querySelector('.bay__media > img');
+        const plate = bay.querySelector('.bay__name'), name = (plate.querySelector('.vh') || plate).textContent.trim(), wall = bay.querySelector('[data-wall]'), lead = bay.querySelector('.bay__media > img');
         sheet.querySelector('.sheet__name').textContent = name;
         sheet.querySelector('#sheet-title').textContent = bay.querySelector('h2').textContent;
         const facts = bay.querySelector('template.bay__facts'), factList = sheet.querySelector('.sheet__facts');
@@ -1322,7 +1383,6 @@
         if (written.length) {   // a record that writes its own sections: those, in order, in place of the fields and screens
           written.forEach(tpl => {
             const section = make('section', 'sheet__prose');
-            if (!tpl.hasAttribute('data-untitled')) section.append(make('h3', '', tpl.dataset.title));
             section.append(tpl.content.cloneNode(true));
             parts.push([tpl.dataset.title, section]);
           });
@@ -1340,7 +1400,6 @@
         }
         bay.querySelectorAll('.fields > div').forEach(field => {
           const section = make('section', field.className);
-          section.append(make('h3', '', field.querySelector('dt').textContent));
           field.querySelectorAll('dd').forEach(dd => { const p = make('p'); p.innerHTML = dd.innerHTML; section.append(p); });   // each line of the field, a result per line
           parts.push([field.querySelector('dt').textContent, section]);
         });
@@ -1352,11 +1411,16 @@
             img.src = dir + String(n).padStart(2, '0') + '.webp';
             const item = make('li'); item.append(img); list.append(item);
           }
-          section.append(make('h3', '', 'Screens'), list);
+          section.append(list);
           parts.push(['Screens', section]);
         }
         }
-        body.replaceChildren(...parts.map(([, section], i) => { section.id = 'sheet-' + i; return section; }));
+        // every section opens on its title, numbered as in the contents: "01 Intro"
+        const number = i => String(i + 1).padStart(2, '0');
+        body.replaceChildren(...parts.map(([heading, section], i) => {
+          const h = make('h3'); h.append(make('span', 'sheet__num', number(i)), ' ' + heading);
+          section.prepend(h); section.id = 'sheet-' + i; return section;
+        }));
         // the project's film, if it has one, opens the details: right of the name and title, at the head of the first section
         const filmed = bay.querySelector('[data-film]');
         if (filmed) {
@@ -1368,7 +1432,7 @@
           if (matchMedia('(prefers-reduced-motion: reduce)').matches) video.controls = true;   // still until asked to play
           else video.autoplay = true;
           figure.append(video);
-          (written.length ? body.firstElementChild : body).prepend(figure);
+          if (written.length) body.firstElementChild.querySelector(':scope > h3').after(figure); else body.prepend(figure);   // under the first title
         }
         clips?.disconnect();
         const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -1379,8 +1443,8 @@
         index.replaceChildren(...parts.map(([heading], i) => {
           const a = make('a');
           a.href = '#sheet-' + i;
-          a.append(make('span', 'm-led'), heading);
-          a.firstChild.setAttribute('aria-hidden', 'true');
+          a.append(make('span', 'm-led'), make('span', 'sheet__num', number(i)), heading);   // numbered 01, 02…
+          a.firstChild.setAttribute('aria-hidden', 'true'); a.children[1].setAttribute('aria-hidden', 'true');
           a.addEventListener('click', e => {
             e.preventDefault();
             const to = document.getElementById('sheet-' + i);
@@ -1398,7 +1462,7 @@
         const open = make('button', 'bay__open');
         open.type = 'button';
         open.setAttribute('aria-haspopup', 'dialog');
-        open.setAttribute('aria-label', 'Open the ' + bay.querySelector('.bay__name').textContent + ' project');
+        open.setAttribute('aria-label', 'Open the ' + (bay.querySelector('.bay__name .vh') || bay.querySelector('.bay__name')).textContent.trim() + ' project');
         open.append(make('span', '', 'Open project'));
         open.addEventListener('click', () => { fill(bay); show(); });
         media.append(open);

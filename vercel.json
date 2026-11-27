@@ -2,5 +2,11 @@
   "redirects": [
     { "source": "/tinkering", "destination": "/experiments/", "permanent": true },
     { "source": "/tinkering/(.*)", "destination": "/experiments/$1", "permanent": true }
+  ],
+  "headers": [
+    {
+      "source": "/images/(.*)",
+      "headers": [{ "key": "Cache-Control", "value": "public, max-age=86400, stale-while-revalidate=604800" }]
+    }
   ]
 }

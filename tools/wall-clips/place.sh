@@ -1,6 +1,7 @@
 #!/bin/sh
 # Copy recorded clips onto wall tiles: place.sh <clips dir> <wall dir> <tiles file>
-# The tiles file has one "NN name" per line: tile NN gets clips/<name>.mp4, its AV1 twin and its poster.
+# The tiles file has one "NN name" per line: tile NN gets clips/<name>.mp4, its AV1 twin, its HD twin if there is one,
+# and its poster.
 # Spread the tiles over the wall's columns: tile n sits in column (n - 1) % 6.
 set -e
 SRC="$1"; WALL="$2"; LIST="$3"
@@ -10,5 +11,6 @@ while read -r n name; do
   cp "$SRC/$name.mp4" "$WALL/clips/$n.mp4"
   cp "$SRC/$name.av1.mp4" "$WALL/clips/$n.av1.mp4"
   cp "$SRC/$name.webp" "$WALL/clips/$n.webp"
+  if [ -f "$SRC/$name.hd.mp4" ]; then cp "$SRC/$name.hd.mp4" "$WALL/clips/$n.hd.mp4"; fi
 done < "$LIST"
 echo "data-clips=\"$(awk '{printf "%s%d", (NR>1?" ":""), $1}' "$LIST")\""

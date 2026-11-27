@@ -1,6 +1,6 @@
 /* Local server for the site. It serves exactly what .vercelignore ships, lets the
    Split-Flap Lab write split-flap-versions.js, the Halftone Lab halftone-versions.js and the
-   Button Lab button-versions.js, the Dissolve Lab cover/dissolve-versions.js, the Peek Lab sheet-versions.js, the Bison Lab bison-versions.js and Tatankagram experiments/tatankagram/versions.js,
+   Button Lab button-versions.js, the Dissolve Lab cover/dissolve-versions.js, the Peek Lab sheet-versions.js, the Bison Lab bison-versions.js, the Lift Lab wall-focus-versions.js and Tatankagram experiments/tatankagram/versions.js,
    lets Domino Run save runs, elements and lab settings into experiments/domino-run/, and lets
    the Kaleidoscope Lab write experiments/kaleidoscopes/configs.json, and runs api/xmas.mjs
    (Xmastreemagochi accounts) against a local JSON file instead of Redis. Never deployed. Start it with `dvs`. */
@@ -50,6 +50,11 @@ const STORES = {
     file: path.join(ROOT, 'experiments', 'tatankagram', 'versions.js'),
     global: 'TATANKAGRAM_VERSIONS',
     header: '/* Written by Tatankagram. The experiment opens with the version named by "active". */\n',
+  },
+  '/__lab/lift': {
+    file: path.join(ROOT, 'wall-focus-versions.js'),
+    global: 'WALL_FOCUS_VERSIONS',
+    header: '/* Written by the Lift Lab. Drift walls with data-focus pick screens up with the version named by "active". */\n',
   },
   '/__lab/buttons': {
     file: path.join(ROOT, 'button-versions.js'),

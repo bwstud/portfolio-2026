@@ -130,6 +130,7 @@ const toView = n => async p => { await p.click(VIEW(n)); };
 export default {
   base: 'http://127.0.0.1:8081/',
   viewport: [1600, 1040],
+  hd: true,   // each clip also at full size, for a screen picked up off the wall
   css: '.proto-controls, .proto-controls__btn { display: none !important; }',
   async prepare(ctx, c) {
     await ctx.addInitScript(([t, who]) => { sessionStorage.setItem('gl-authed', '1'); localStorage.setItem('gl-theme', t); localStorage.setItem('gl-persona', who); }, [c.theme || 'dark', c.persona || 'manager']);

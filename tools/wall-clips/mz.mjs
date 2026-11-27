@@ -99,6 +99,7 @@ async function engDepmap(p, h) {
 export default {
   base: 'http://127.0.0.1:8084/',
   viewport: [1512, 982],
+  hd: true,   // each clip also at full size, for a screen picked up off the wall
   css: '.demo-start, #startDemoBtn, .dev-fab, #devFab { display: none !important; }',
   clips: [
     // Mazlan Home (the customer's own Mazlan, dark)

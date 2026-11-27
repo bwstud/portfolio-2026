@@ -13,6 +13,22 @@
   mask-image: linear-gradient(to right, transparent 0%, #000 14%, #000 86%, transparent 100%), linear-gradient(to bottom, transparent 0%, #000 15%, #000 85%, transparent 100%);
   mask-composite: intersect;
 }
+/* A phone picked up (bb-reel.js) is drawn on a layer of its own over the stage. The ring behind it holds still, goes
+   dark and falls out of focus. The layer fades at its edges as the stage does until the phone is up, then lets the fade
+   go: the phone fills the frame from top to bottom. */
+@property --reel-fade-y { syntax: '<percentage>'; inherits: false; initial-value: 15%; }
+.reel { --reel-dim: 0.22; --reel-blur: 10px; }
+.reel__stage canvas { transition: filter var(--reel-out-ms, 440ms) cubic-bezier(0.23, 1, 0.32, 1); }
+.reel.is-focused .reel__stage canvas { filter: blur(var(--reel-blur)) brightness(var(--reel-dim)); transition-duration: var(--reel-in-ms, 620ms); }
+.reel__lift { position: absolute; inset: 0; pointer-events: none; }
+.reel__lift canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.reel__lift { --reel-fade-y: 15%; transition: --reel-fade-y var(--reel-out-ms, 440ms) cubic-bezier(0.23, 1, 0.32, 1);
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 14%, #000 86%, transparent 100%), linear-gradient(to bottom, transparent 0%, #000 var(--reel-fade-y), #000 calc(100% - var(--reel-fade-y)), transparent 100%);
+  -webkit-mask-composite: source-in;
+  mask-image: linear-gradient(to right, transparent 0%, #000 14%, #000 86%, transparent 100%), linear-gradient(to bottom, transparent 0%, #000 var(--reel-fade-y), #000 calc(100% - var(--reel-fade-y)), transparent 100%);
+  mask-composite: intersect; }
+.reel.is-focused .reel__lift { --reel-fade-y: 0%; transition-duration: var(--reel-in-ms, 620ms); }
+.reel.is-pointing .reel__stage, .reel.is-focused .reel__stage { cursor: pointer; }
 .reel__stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 .reel__bin { position: absolute; width: 1px; height: 1px; overflow: hidden; opacity: 0; pointer-events: none; }   /* the playing clips' video elements */
 

@@ -346,7 +346,7 @@ window.SPLIT_FLAP_VERSIONS = {
         "lines": [
           "GROOM LAKE|1014",
           "BLACKBIRD|0120",
-          "MAZ BUILDER|1002"
+          "MAZLAN BUILDER|1002"
         ],
         "chars": " ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890",
         "flipMs": 100,
@@ -364,7 +364,7 @@ window.SPLIT_FLAP_VERSIONS = {
         "boardWidth": 1800,
         "gap": 4,
         "fillRows": true,
-        "nameCols": 11,
+        "nameCols": 14,
         "statusCols": 7,
         "recordFadeMs": 2000,
         "recordDrop": 32,

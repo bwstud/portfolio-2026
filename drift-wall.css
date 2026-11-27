@@ -41,7 +41,7 @@
   position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; pointer-events: none;
   opacity: 0; transition: opacity 400ms cubic-bezier(0.25, 0.1, 0.25, 1);
 }
-.wall__tile.is-playing .wall__clip { opacity: 1; }
+.wall__tile.is-playing .wall__clip, .wall__inner.is-playing .wall__clip { opacity: 1; }
 
 /* Depth of field. With the wall turned 45 degrees, everything on one level of the picture is the same distance away, so
    focus is a matter of height: a sharp band below the middle, the far tiles above it blurring more the farther they are,
@@ -75,3 +75,30 @@
 .wall__pause .wall__play, .wall.is-paused .wall__pause .wall__stop { display: none; }
 .wall.is-paused .wall__pause .wall__play { display: block; }
 @media (prefers-reduced-motion: reduce) { .wall__pause { display: none; } }   /* nothing moves, so nothing to pause */
+
+/* Screens to pick up (data-focus; drift-wall.js adds .wall--focus). Under the pointer a screen rises off the wall: it
+   slides within the wall's plane by the amount that shows as a straight rise (--wall-rise-x and -y, worked out from the
+   wall's tilt and turn), and its shadow falls farther and softer. Pressed, it leaves for .wall__lift, a flat layer over
+   the wall, which darkens the wall behind it; its empty place in the wall stays as a faint socket. */
+/* drift-wall.js works out which screen is under the pointer itself and marks it .is-hover: the browser's own hit test
+   is unreliable on a wall laid back in 3D */
+.wall--focus .wall__scene { pointer-events: none; }
+.wall--focus.is-pointing .wall__stage { cursor: pointer; }
+.wall--focus .wall__inner { transition: translate var(--wall-hover-ms, 200ms) cubic-bezier(0.23, 1, 0.32, 1), box-shadow var(--wall-hover-ms, 200ms) cubic-bezier(0.23, 1, 0.32, 1); }
+@media (hover: hover) and (pointer: fine) {
+  .wall--focus:not(.is-focused) .wall__tile.is-hover .wall__inner {
+    translate: calc(var(--wall-rise-x) * 1cqh) calc(var(--wall-rise-y) * 1cqh);
+    box-shadow: 0 0 0 1px rgb(255 255 255 / 0.1), -2.6cqh 3.4cqh 5cqh rgb(0 0 0 / 0.55);
+  }
+}
+.wall.is-holding .wall__track { animation-play-state: paused !important; }
+.wall__tile.is-lifted::after { content: ''; position: absolute; inset: calc(var(--wall-gap) / 2); border-radius: 1.6cqh; box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.05); }
+.wall__lift { position: absolute; inset: 0; z-index: 1; overflow: hidden; pointer-events: none; border-radius: inherit;
+  background: rgb(0 0 0 / 0); transition: background-color var(--wall-out-ms, 440ms) cubic-bezier(0.23, 1, 0.32, 1); }
+.wall.is-focused .wall__lift { background: rgb(0 0 0 / var(--wall-dim, 0.62)); cursor: pointer; transition-duration: var(--wall-in-ms, 620ms); }
+.wall__lift > .wall__inner { position: absolute; left: 0; top: 0; inset: auto; will-change: transform;
+  box-shadow: 0 0 0 1px rgb(255 255 255 / 0.08), 0 2cqh 6cqh rgb(0 0 0 / 0.5); }
+.wall--focus .wall__pause { z-index: 2; }
+/* a screen picked up plays its clip's full-size twin (data-hd), faded in over the small one once the two are in step */
+.wall__lift .wall__inner .wall__clip--hd { opacity: 0; transition: opacity 180ms cubic-bezier(0.23, 1, 0.32, 1); }
+.wall__lift .wall__inner .wall__clip--hd.is-sharp { opacity: 1; }
